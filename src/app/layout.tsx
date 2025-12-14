@@ -5,7 +5,7 @@ import { TRPCReactProvider } from "@/trpc/react";
 import { ThemeProvider } from "@/components/theme-provider";
 
 export const metadata: Metadata = {
-  title: "Optix - High Performance Image Optimization",
+  title: "OptStuff - High Performance Image Optimization",
   description:
     "Transform, resize, and optimize your images on-the-fly with our powerful image processing API. Built on sharp and libvips.",
   generator: "v0.app",
@@ -32,7 +32,7 @@ export default function RootLayout({
           attribute="class"
           defaultTheme="system"
           enableSystem
-          disableTransitionOnChange
+          // disableTransitionOnChange
         >
           <TRPCReactProvider>{children}</TRPCReactProvider>
         </ThemeProvider>

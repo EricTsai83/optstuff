@@ -1,25 +1,25 @@
 /* ==========================================================================
-   Global Styles
-   ========================================================================== */
+Global Styles
+========================================================================== */
 
 /* ==========================================================================
-   1. Imports
-   ========================================================================== */
+1. Imports
+========================================================================== */
 @import "tailwindcss";
 @import "tw-animate-css";
 
 /* ==========================================================================
-   2. Custom Variant for Dark Mode
-   ========================================================================== */
+2. Custom Variant for Dark Mode
+========================================================================== */
 @custom-variant dark (&:is(.dark *));
 
 /* ==========================================================================
-   3. CSS Custom Properties (Design Tokens)
-   ========================================================================== */
+3. CSS Custom Properties (Design Tokens)
+========================================================================== */
 
 /* --------------------------------------------------------------------------
-   3.1 Light Mode Theme
-   -------------------------------------------------------------------------- */
+3.1 Light Mode Theme
+-------------------------------------------------------------------------- */
 :root {
   /* Core colors */
   --background: oklch(0.99 0 0);
@@ -80,8 +80,8 @@
 }
 
 /* --------------------------------------------------------------------------
-   3.2 Dark Mode Theme
-   -------------------------------------------------------------------------- */
+3.2 Dark Mode Theme
+-------------------------------------------------------------------------- */
 .dark {
   /* Core colors */
   --background: oklch(0.1 0.01 260);
@@ -139,8 +139,8 @@
 }
 
 /* ==========================================================================
-   4. Tailwind Theme Configuration
-   ========================================================================== */
+4. Tailwind Theme Configuration
+========================================================================== */
 @theme inline {
   /* Typography */
   --font-sans: "Geist", "Geist Fallback";
@@ -195,13 +195,33 @@
   --animate-scale-in: scale-in 0.4s ease-out forwards;
   --animate-slide-in-left: slide-in-left 0.5s ease-out forwards;
   --animate-slide-in-right: slide-in-right 0.5s ease-out forwards;
-  --animate-float: float 3s ease-in-out infinite;
   --animate-pulse-soft: pulse-soft 2s ease-in-out infinite;
+  --animate-hero-card-border-flash: hero-card-border-flash 650ms
+    cubic-bezier(0.25, 0.1, 0.25, 1) 500ms both;
+
+  /* Tab animations */
+  --animate-tab-slide-in-from-right: tab-slide-in-from-right 0.25s
+    cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+  --animate-tab-slide-in-from-left: tab-slide-in-from-left 0.25s
+    cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+  --animate-tab-slide-out-to-left: tab-slide-out-to-left 0.15s
+    cubic-bezier(0.55, 0.085, 0.68, 0.53) forwards;
+  --animate-tab-slide-out-to-right: tab-slide-out-to-right 0.15s
+    cubic-bezier(0.55, 0.085, 0.68, 0.53) forwards;
+  --animate-indicator-squash-stretch: indicator-squash-stretch 0.35s
+    cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+
+  /* Hero & text animations */
+  --animate-scan-line: scan-line 0.15s ease-out forwards;
+  --animate-hero-soundwave: hero-soundwave 2s cubic-bezier(0.1, 0, 0.3, 1)
+    infinite;
+  --animate-text-sweep-glow: text-sweep-glow 1.5s cubic-bezier(0, 0, 0.2, 1)
+    forwards;
 }
 
 /* ==========================================================================
-   5. Base Layer Styles
-   ========================================================================== */
+5. Base Layer Styles
+========================================================================== */
 @layer base {
   * {
     @apply border-border outline-ring/50;
@@ -213,8 +233,8 @@
 }
 
 /* ==========================================================================
-   6. Basic Animations (Fade, Scale, Slide)
-   ========================================================================== */
+6. Basic Animations (Fade, Scale, Slide)
+========================================================================== */
 
 /* --- Fade In --- */
 @keyframes fade-in {
@@ -224,10 +244,6 @@
   to {
     opacity: 1;
   }
-}
-
-.animate-fade-in {
-  animation: fade-in 0.6s ease-out forwards;
 }
 
 /* --- Fade In Up --- */
@@ -242,10 +258,6 @@
   }
 }
 
-.animate-fade-in-up {
-  animation: fade-in-up 0.6s ease-out forwards;
-}
-
 /* --- Fade In Down --- */
 @keyframes fade-in-down {
   from {
@@ -256,10 +268,6 @@
     opacity: 1;
     transform: translateY(0);
   }
-}
-
-.animate-fade-in-down {
-  animation: fade-in-down 0.5s ease-out forwards;
 }
 
 /* --- Scale In --- */
@@ -274,10 +282,6 @@
   }
 }
 
-.animate-scale-in {
-  animation: scale-in 0.4s ease-out forwards;
-}
-
 /* --- Slide In Left --- */
 @keyframes slide-in-left {
   from {
@@ -288,10 +292,6 @@
     opacity: 1;
     transform: translateX(0);
   }
-}
-
-.animate-slide-in-left {
-  animation: slide-in-left 0.5s ease-out forwards;
 }
 
 /* --- Slide In Right --- */
@@ -306,28 +306,9 @@
   }
 }
 
-.animate-slide-in-right {
-  animation: slide-in-right 0.5s ease-out forwards;
-}
-
 /* ==========================================================================
-   7. Continuous Animations (Infinite Loop)
-   ========================================================================== */
-
-/* --- Float --- */
-@keyframes float {
-  0%,
-  100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-6px);
-  }
-}
-
-.animate-float {
-  animation: float 3s ease-in-out infinite;
-}
+7. Continuous Animations (Infinite Loop)
+========================================================================== */
 
 /* --- Pulse Soft --- */
 @keyframes pulse-soft {
@@ -340,13 +321,9 @@
   }
 }
 
-.animate-pulse-soft {
-  animation: pulse-soft 2s ease-in-out infinite;
-}
-
 /* ==========================================================================
-   8. Animation Delay Utilities
-   ========================================================================== */
+8. Animation Delay Utilities
+========================================================================== */
 .animation-delay-100 {
   animation-delay: 100ms;
 }
@@ -363,30 +340,18 @@
   animation-delay: 400ms;
 }
 
-.animation-delay-500 {
-  animation-delay: 500ms;
-}
-
-.animation-delay-600 {
-  animation-delay: 600ms;
-}
-
-.animation-delay-700 {
-  animation-delay: 700ms;
-}
-
 /* ==========================================================================
-   9. Scroll Animation Helper
-   Elements start invisible and animate when scrolled into view
-   ========================================================================== */
+9. Scroll Animation Helper
+Elements start invisible and animate when scrolled into view
+========================================================================== */
 .animate-on-scroll {
   opacity: 0;
 }
 
 /* ==========================================================================
-   9.1 Feature Card Entrance Animation
-   Staggered fade-in-up animation for feature cards
-   ========================================================================== */
+9.1 Feature Card Entrance Animation
+Staggered fade-in-up animation for feature cards
+========================================================================== */
 @keyframes feature-card-enter {
   from {
     opacity: 0;
@@ -404,9 +369,9 @@
 }
 
 /* ==========================================================================
-   9.2 Feature Card Hover Effect
-   Smooth lift effect with shadow on hover
-   ========================================================================== */
+9.2 Feature Card Hover Effect
+Smooth lift effect with shadow on hover
+========================================================================== */
 .feature-card-hover {
   transform: translateY(0);
   transition:
@@ -424,9 +389,9 @@
 }
 
 /* ==========================================================================
-   10. Tab Content Transition Animations
-   Uses percentage-based translate values (30%) for smooth, responsive animations
-   ========================================================================== */
+10. Tab Content Transition Animations
+Uses percentage-based translate values (30%) for smooth, responsive animations
+========================================================================== */
 
 /* --- Tab Slide In From Right --- */
 @keyframes tab-slide-in-from-right {
@@ -438,11 +403,6 @@
     opacity: 1;
     transform: translateX(0);
   }
-}
-
-.animate-tab-slide-in-from-right {
-  animation: tab-slide-in-from-right 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94)
-    forwards;
 }
 
 /* --- Tab Slide In From Left --- */
@@ -457,11 +417,6 @@
   }
 }
 
-.animate-tab-slide-in-from-left {
-  animation: tab-slide-in-from-left 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94)
-    forwards;
-}
-
 /* --- Tab Slide Out To Left --- */
 @keyframes tab-slide-out-to-left {
   from {
@@ -474,11 +429,6 @@
   }
 }
 
-.animate-tab-slide-out-to-left {
-  animation: tab-slide-out-to-left 0.15s cubic-bezier(0.55, 0.085, 0.68, 0.53)
-    forwards;
-}
-
 /* --- Tab Slide Out To Right --- */
 @keyframes tab-slide-out-to-right {
   from {
@@ -489,11 +439,6 @@
     opacity: 0;
     transform: translateX(30%);
   }
-}
-
-.animate-tab-slide-out-to-right {
-  animation: tab-slide-out-to-right 0.15s cubic-bezier(0.55, 0.085, 0.68, 0.53)
-    forwards;
 }
 
 /* --- Tab Indicator Squash-and-Stretch (for velocity feel) --- */
@@ -515,137 +460,15 @@
   }
 }
 
-.animate-indicator-squash-stretch {
-  animation: indicator-squash-stretch 0.35s cubic-bezier(0.34, 1.56, 0.64, 1)
-    forwards;
-}
-
 /* ==========================================================================
-   11. Feature Card Icon Animations
-   Unique animations for each icon type to add visual interest on hover
-   ========================================================================== */
+11. Feature Card Icon Animations
+Unique animations for each icon type to add visual interest on hover
+========================================================================== */
 
 /* --------------------------------------------------------------------------
-   11.1 Icon Container Base Styles
-   Sets up positioning and isolation for pseudo-element effects
-   -------------------------------------------------------------------------- */
-.icon-container-icon-zap,
-.icon-container-icon-shield,
-.icon-container-icon-globe,
-.icon-container-icon-code,
-.icon-container-icon-layers,
-.icon-container-icon-image {
-  position: relative;
-  isolation: isolate;
-}
-
-/* --------------------------------------------------------------------------
-   11.2 Icon Container Border Effect
-   Creates an expanding border effect on hover using pseudo-element
-   -------------------------------------------------------------------------- */
-@keyframes icon-container-border-expand {
-  0% {
-    opacity: 0;
-    clip-path: circle(0% at center);
-  }
-  40% {
-    opacity: 0.04;
-    clip-path: circle(40% at center);
-  }
-  60% {
-    opacity: 0.06;
-    clip-path: circle(60% at center);
-  }
-  80% {
-    opacity: 0.1;
-    clip-path: circle(80% at center);
-  }
-  100% {
-    opacity: 0.1;
-    clip-path: circle(75% at center);
-  }
-}
-
-.icon-container-icon-zap::before,
-.icon-container-icon-shield::before,
-.icon-container-icon-globe::before,
-.icon-container-icon-code::before,
-.icon-container-icon-layers::before,
-.icon-container-icon-image::before {
-  content: "";
-  position: absolute;
-  inset: -1px;
-  border-radius: 13px;
-  border: 1px solid oklch(0.7 0.18 160);
-  clip-path: circle(0% at center);
-  z-index: 0;
-  pointer-events: none;
-}
-
-.group:hover .icon-container-icon-zap::before,
-.group:hover .icon-container-icon-shield::before,
-.group:hover .icon-container-icon-globe::before,
-.group:hover .icon-container-icon-code::before,
-.group:hover .icon-container-icon-layers::before,
-.group:hover .icon-container-icon-image::before {
-  animation: icon-container-border-expand 0.5s ease-out forwards;
-}
-
-/* --------------------------------------------------------------------------
-   11.3 Icon Container Glow Effect - Light Mode
-   Soft elevation shadow with backlight effect
-   -------------------------------------------------------------------------- */
-@keyframes icon-container-glow-light {
-  0% {
-    box-shadow: 0 0 0 0 transparent;
-  }
-  100% {
-    box-shadow:
-      /* Backlight glow (even spread from all sides) */
-      0 0 16px 2px oklch(0.7 0.18 160 / 0.3),
-      0 0 32px 4px oklch(0.7 0.18 160 / 0.15),
-      /* Border highlight */ 0 0 0 2px oklch(0.7 0.18 160 / 0.15);
-  }
-}
-
-.group:hover .icon-container-icon-zap,
-.group:hover .icon-container-icon-shield,
-.group:hover .icon-container-icon-globe,
-.group:hover .icon-container-icon-code,
-.group:hover .icon-container-icon-layers,
-.group:hover .icon-container-icon-image {
-  animation: icon-container-glow-light 0.6s ease-out forwards;
-}
-
-/* --------------------------------------------------------------------------
-   11.4 Icon Container Glow Effect - Dark Mode
-   Neon glowing effect
-   -------------------------------------------------------------------------- */
-@keyframes icon-container-glow-dark {
-  0% {
-    box-shadow: 0 0 0 0 transparent;
-  }
-  100% {
-    box-shadow:
-      0 0 16px 4px oklch(0.7 0.18 160 / 0.4),
-      0 0 32px 8px oklch(0.7 0.18 160 / 0.2),
-      0 0 48px 12px oklch(0.7 0.18 160 / 0.1);
-  }
-}
-
-.dark .group:hover .icon-container-icon-zap,
-.dark .group:hover .icon-container-icon-shield,
-.dark .group:hover .icon-container-icon-globe,
-.dark .group:hover .icon-container-icon-code,
-.dark .group:hover .icon-container-icon-layers,
-.dark .group:hover .icon-container-icon-image {
-  animation: icon-container-glow-dark 0.6s ease-out forwards;
-}
-
-/* --------------------------------------------------------------------------
-   11.5 Zap Icon Animation
-   Electric vibration effect - rotate, shake, then rotate back
-   -------------------------------------------------------------------------- */
+11.1 Zap Icon Animation
+Electric vibration effect - rotate, shake, then rotate back
+-------------------------------------------------------------------------- */
 @keyframes icon-zap-animate {
   /* Phase 1: Rotate to 24deg */
   0% {
@@ -693,9 +516,9 @@
 }
 
 /* --------------------------------------------------------------------------
-   11.6 Shield Icon Animation
-   Forward block effect - like deflecting an incoming attack
-   -------------------------------------------------------------------------- */
+11.2 Shield Icon Animation
+Forward block effect - like deflecting an incoming attack
+-------------------------------------------------------------------------- */
 @keyframes icon-shield-animate {
   0% {
     transform: scale(1) translateY(0) rotate(0deg);
@@ -719,9 +542,9 @@
 }
 
 /* --------------------------------------------------------------------------
-   11.7 Globe Icon Animation
-   Rotation animation
-   -------------------------------------------------------------------------- */
+11.3 Globe Icon Animation
+Rotation animation
+-------------------------------------------------------------------------- */
 @keyframes icon-globe-animate {
   0% {
     transform: rotate(0deg) scale(1);
@@ -736,9 +559,9 @@
 }
 
 /* --------------------------------------------------------------------------
-   11.8 Code Icon Animation
-   Squash and stretch bounce effect
-   -------------------------------------------------------------------------- */
+11.4 Code Icon Animation
+Squash and stretch bounce effect
+-------------------------------------------------------------------------- */
 @keyframes icon-code-animate {
   0% {
     transform: scale(1, 1);
@@ -785,9 +608,9 @@
 }
 
 /* --------------------------------------------------------------------------
-   11.9 Layers Icon Animation
-   Stacking animation
-   -------------------------------------------------------------------------- */
+11.5 Layers Icon Animation
+Stacking animation
+-------------------------------------------------------------------------- */
 @keyframes icon-layers-animate {
   0% {
     transform: translateY(0);
@@ -808,9 +631,9 @@
 }
 
 /* --------------------------------------------------------------------------
-   11.10 Image Icon Animation
-   Camera flash effect - like auto-focus capturing
-   -------------------------------------------------------------------------- */
+11.6 Image Icon Animation
+Camera flash effect - like auto-focus capturing
+-------------------------------------------------------------------------- */
 @keyframes icon-image-animate {
   0% {
     filter: brightness(1);
@@ -836,4 +659,319 @@
 
 .group:hover .icon-image {
   animation: icon-image-animate 0.5s ease-in-out;
+}
+
+/* ==========================================================================
+12. Text Decode Animation Effects
+Cyber-style text decoding animations
+========================================================================== */
+
+/* --------------------------------------------------------------------------
+12.1 Scan Line Animation
+Horizontal scanning line effect for text decode
+-------------------------------------------------------------------------- */
+@keyframes scan-line {
+  0% {
+    left: 0;
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.8;
+  }
+  100% {
+    left: 100%;
+    opacity: 0;
+  }
+}
+
+/* --------------------------------------------------------------------------
+12.x Hero Skeleton Soundwave
+Center-out expanding rings like audio waves emanating from center
+-------------------------------------------------------------------------- */
+@keyframes hero-soundwave {
+  0% {
+    transform: scale(0.15);
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.7;
+  }
+  50% {
+    opacity: 0.4;
+  }
+  100% {
+    transform: scale(1.6);
+    opacity: 0;
+  }
+}
+
+/* --------------------------------------------------------------------------
+12.1 Hero Card Border Flash
+Border highlight pulse used on "optimized" transition
+-------------------------------------------------------------------------- */
+@keyframes hero-card-border-flash {
+  0% {
+    opacity: 0;
+    box-shadow: 0 0 0 transparent;
+  }
+  15% {
+    opacity: 1;
+    box-shadow:
+      0 0 32px rgba(16, 185, 129, 0.5),
+      0 0 60px rgba(16, 185, 129, 0.25),
+      inset 0 0 20px rgba(16, 185, 129, 0.15);
+  }
+  40% {
+    opacity: 0.7;
+    box-shadow:
+      0 0 24px rgba(16, 185, 129, 0.35),
+      0 0 45px rgba(16, 185, 129, 0.18),
+      inset 0 0 14px rgba(16, 185, 129, 0.1);
+  }
+  65% {
+    opacity: 0.35;
+    box-shadow:
+      0 0 16px rgba(16, 185, 129, 0.2),
+      0 0 30px rgba(16, 185, 129, 0.1),
+      inset 0 0 8px rgba(16, 185, 129, 0.05);
+  }
+  100% {
+    opacity: 0;
+    box-shadow: 0 0 0 transparent;
+  }
+}
+
+/* --------------------------------------------------------------------------
+12.2 Text Sweep Glow Effect
+Quick flash up, smooth fade back
+-------------------------------------------------------------------------- */
+@keyframes text-sweep-glow {
+  0% {
+    text-shadow:
+      0 0 8px oklch(0.7 0.18 160 / 0.4),
+      0 0 0 oklch(0.7 0.18 160 / 0),
+      0 0 0 oklch(1 0 0 / 0);
+    filter: brightness(1);
+  }
+  8% {
+    text-shadow:
+      0 0 14px oklch(0.85 0.2 160 / 0.8),
+      0 0 28px oklch(0.8 0.18 160 / 0.5),
+      0 0 6px oklch(1 0 0 / 0.4);
+    filter: brightness(1.4);
+  }
+  100% {
+    text-shadow:
+      0 0 8px oklch(0.7 0.18 160 / 0.4),
+      0 0 0 oklch(0.7 0.18 160 / 0),
+      0 0 0 oklch(1 0 0 / 0);
+    filter: brightness(1);
+  }
+}
+
+/* Static glow state for use after sweep animation completes */
+/* Light mode - subtle glow */
+.text-glow-stay {
+  text-shadow: 0 0 14px oklch(0.85 0.2 160 / 0.8);
+  filter: brightness(1.1);
+}
+
+/* Dark mode - stronger glow */
+.dark .text-glow-stay {
+  text-shadow:
+    0 0 14px oklch(0.85 0.2 160 / 0.8),
+    0 0 28px oklch(0.8 0.18 160 / 0.5),
+    0 0 6px oklch(1 0 0 / 0.4);
+  filter: brightness(1.4);
+}
+/* --------------------------------------------------------------------------
+12.3 Animated Underline Grow Effect
+Underline that grows from left to right using scaleX transform
+-------------------------------------------------------------------------- */
+.animate-underline-grow {
+  position: relative;
+  display: inline-block;
+}
+
+.animate-underline-grow::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -2px;
+  width: 100%;
+  height: 1px;
+  background: currentColor;
+  transform: scaleX(0);
+  transform-origin: left center;
+  animation: underline-grow 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+  animation-delay: inherit;
+}
+
+@keyframes underline-grow {
+  0% {
+    transform: scaleX(0);
+  }
+  100% {
+    transform: scaleX(1);
+  }
+}
+
+/* ==========================================================================
+13. Image Optimization Card Styles
+========================================================================== */
+
+/* 背景光暈 - 簡潔柔和 */
+@keyframes opt-glow-pulse {
+  0%,
+  100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
+.opt-bg-glow {
+  background: radial-gradient(
+    circle at center top,
+    color-mix(in srgb, var(--color) 20%, transparent) 0%,
+    transparent 70%
+  );
+  animation: opt-glow-pulse 4s ease-in-out infinite;
+}
+
+/* 卡片容器 */
+.opt-card {
+  --shadow-default:
+    0 4px 20px rgba(0, 0, 0, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.1);
+  box-shadow: var(--shadow-default);
+}
+
+.opt-card[data-complete="true"] {
+  box-shadow:
+    0 0 30px color-mix(in srgb, var(--color) 40%, transparent),
+    0 0 60px color-mix(in srgb, var(--color) 20%, transparent),
+    inset 0 1px 1px rgba(255, 255, 255, 0.1);
+}
+
+/* 頂部光線 */
+.opt-top-glow {
+  background: linear-gradient(
+    to right,
+    transparent,
+    color-mix(in srgb, var(--color) 60%, transparent),
+    transparent
+  );
+  box-shadow: 0 0 8px color-mix(in srgb, var(--color) 40%, transparent);
+}
+
+/* 進度條發光 */
+.opt-progress-bar {
+  box-shadow:
+    0 0 10px color-mix(in srgb, var(--color) 60%, transparent),
+    0 0 20px color-mix(in srgb, var(--color) 40%, transparent);
+}
+
+/* 粒子尾巴 */
+.opt-particle {
+  box-shadow: 0 0 6px 2px rgba(255, 255, 255, 0.8);
+}
+
+/* 圖標發光 */
+.opt-icon-glow {
+  filter: drop-shadow(
+    0 0 2px color-mix(in srgb, var(--color) 50%, transparent)
+  );
+}
+
+.opt-icon-glow-strong {
+  filter: drop-shadow(
+    0 0 3px color-mix(in srgb, var(--color) 60%, transparent)
+  );
+}
+
+/* 文字發光 */
+.opt-text-glow {
+  text-shadow: 0 0 8px color-mix(in srgb, var(--color) 60%, transparent);
+}
+
+.opt-text-glow-strong {
+  text-shadow: 0 0 10px color-mix(in srgb, var(--color) 80%, transparent);
+}
+
+/* 完成邊框 */
+.opt-complete-border {
+  border-color: color-mix(in srgb, var(--color) 50%, transparent);
+}
+
+/* ==========================================================================
+14. Scan Card Skeleton Animations
+掃描卡片骨架載入動畫
+========================================================================== */
+
+/* 光源擴散動畫 - 快速 */
+@keyframes light-shoot {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  30% {
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1.5);
+    opacity: 0.3;
+  }
+}
+
+/* 光源擴散動畫 - 慢速 */
+@keyframes light-shoot-slow {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  40% {
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(1.8);
+    opacity: 0.2;
+  }
+}
+
+.animate-light-shoot {
+  animation: light-shoot 0.5s ease-out forwards;
+}
+
+.animate-light-shoot-slow {
+  animation: light-shoot-slow 1s ease-out forwards;
+}
+
+/* Canvas 浮現動畫 */
+@keyframes canvas-fade-in {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+.animate-canvas-fade-in {
+  animation: canvas-fade-in 0.6s ease-out forwards;
+}
+
+/* Skeleton 淡出動畫 - 延遲到 canvas 浮現完成後 */
+@keyframes skeleton-fade-out {
+  0% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    pointer-events: none;
+  }
+}
+
+.animate-skeleton-fade-out {
+  animation: skeleton-fade-out 0.5s ease-out 0s forwards;
 }

@@ -208,11 +208,11 @@ export function ImageOptimizationDemo() {
           >
             {/* Sliding indicator with squash-and-stretch effect */}
             <div
-              className={`bg-background absolute top-1 h-9 rounded-full shadow-sm transition-[left,width] duration-300 ease-out ${
+              className={`bg-background absolute top-1 h-9 rounded-full shadow-sm transition-[left,width,opacity] duration-300 ease-out ${
                 indicatorStyle.isSquashing
                   ? "animate-indicator-squash-stretch"
                   : ""
-              }`}
+              } ${indicatorStyle.width === 0 ? "opacity-0" : "opacity-100"}`}
               style={{
                 left: indicatorStyle.left,
                 width: indicatorStyle.width,

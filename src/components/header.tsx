@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/logo";
+import { ModeToggleButton } from "@/components/mode-toggle";
 
 export function Header() {
   return (
@@ -13,35 +14,36 @@ export function Header() {
         <nav className="hidden items-center gap-8 md:flex">
           <Link
             href="#demo"
-            className="text-muted-foreground hover:text-foreground after:bg-foreground relative text-sm transition-colors after:absolute after:bottom-0 after:left-0 after:h-px after:w-0 after:transition-all after:duration-300 hover:after:w-full"
+            className="text-muted-foreground dark:text-accent-foreground hover:text-foreground after:bg-foreground relative text-sm transition-colors after:absolute after:bottom-0 after:left-0 after:h-px after:w-0 after:transition-all after:duration-300 hover:after:w-full"
           >
             Demo
           </Link>
           <Link
             href="#features"
-            className="text-muted-foreground hover:text-foreground after:bg-foreground relative text-sm transition-colors after:absolute after:bottom-0 after:left-0 after:h-px after:w-0 after:transition-all after:duration-300 hover:after:w-full"
+            className="text-muted-foreground dark:text-accent-foreground hover:text-foreground after:bg-foreground relative text-sm transition-colors after:absolute after:bottom-0 after:left-0 after:h-px after:w-0 after:transition-all after:duration-300 hover:after:w-full"
           >
             Features
           </Link>
           <Link
             href="#docs"
-            className="text-muted-foreground hover:text-foreground after:bg-foreground relative text-sm transition-colors after:absolute after:bottom-0 after:left-0 after:h-px after:w-0 after:transition-all after:duration-300 hover:after:w-full"
+            className="text-muted-foreground dark:text-accent-foreground hover:text-foreground after:bg-foreground relative text-sm transition-colors after:absolute after:bottom-0 after:left-0 after:h-px after:w-0 after:transition-all after:duration-300 hover:after:w-full"
           >
             Docs
           </Link>
           <Link
             href="#pricing"
-            className="text-muted-foreground hover:text-foreground after:bg-foreground relative text-sm transition-colors after:absolute after:bottom-0 after:left-0 after:h-px after:w-0 after:transition-all after:duration-300 hover:after:w-full"
+            className="text-muted-foreground dark:text-accent-foreground hover:text-foreground after:bg-foreground relative text-sm transition-colors after:absolute after:bottom-0 after:left-0 after:h-px after:w-0 after:transition-all after:duration-300 hover:after:w-full"
           >
             Pricing
           </Link>
         </nav>
 
         <div className="flex items-center gap-2">
+          <ModeToggleButton />
           <Button
             variant="ghost"
             size="sm"
-            className="text-muted-foreground hidden transition-transform hover:scale-105 md:inline-flex"
+            className="text-muted-foreground dark:text-accent-foreground hidden transition-transform hover:scale-105 md:inline-flex"
           >
             Log in
           </Button>
