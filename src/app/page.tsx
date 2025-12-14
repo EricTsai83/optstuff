@@ -6,6 +6,8 @@ import { IntegrationSteps } from "@/components/integration-steps";
 import { Features } from "@/components/features";
 import { CodeExample } from "@/components/code-example";
 import { Footer } from "@/components/footer";
+import { HeroBackground } from "@/components/_hero-background";
+import { ImageOptimizationCard } from "@/components/image-optimization-card";
 
 export default function Home() {
   return (
@@ -14,6 +16,7 @@ export default function Home() {
       <main>
         <section id="demo" className="pt-16 pb-24 md:pt-24 md:pb-32">
           <div className="container mx-auto px-4 md:px-6">
+            <ImageOptimizationCard />
             <HeroIntro />
             <ImageOptimizationDemo />
           </div>

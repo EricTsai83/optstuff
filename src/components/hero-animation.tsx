@@ -199,7 +199,7 @@ function MainCard({ isOptimized, children }: MainCardProps) {
           ? [
               "border-accent/30 ring-accent/20 bg-white/[0.024] ring-1 ring-inset",
               "[transition-delay:500ms] duration-200",
-              "before:animate-[hero-card-border-flash_650ms_cubic-bezier(0.25,0.1,0.25,1)_both] before:[animation-delay:500ms]",
+              "before:animate-hero-card-border-flash",
             ]
           : "border-accent/10 bg-white/[0.018] [transition-delay:0ms] duration-500",
       )}
