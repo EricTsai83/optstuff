@@ -7,7 +7,7 @@ import {
   drawStatusBadge,
   drawFileSizeDisplay,
 } from "./canvas-utils";
-import { useScanAnimation } from "./use-scan-animation";
+import { useScanAnimation } from "@/components/scan-card/use-scan-animation";
 
 type AnimationState = {
   readonly scanProgress: number;
@@ -331,13 +331,9 @@ export function ScanCanvas({
   );
 
   useScanAnimation({
-    width,
-    height,
     autoPlay,
-    savingsPercent,
     scanDuration,
     pauseDuration,
-    originalSize,
     onFrame: handleFrame,
   });
 

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef } from "react";
 
 type AnimationState = {
   readonly scanProgress: number;
@@ -11,13 +11,9 @@ type AnimationState = {
 };
 
 type UseScanAnimationParams = {
-  readonly width: number;
-  readonly height: number;
   readonly autoPlay: boolean;
-  readonly savingsPercent: number;
   readonly scanDuration: number;
   readonly pauseDuration: number;
-  readonly originalSize: number;
   readonly onFrame: (state: AnimationState) => void;
 };
 
@@ -25,16 +21,12 @@ type UseScanAnimationParams = {
  * 掃描動畫邏輯 Hook
  */
 export const useScanAnimation = ({
-  width,
-  height,
   autoPlay,
-  savingsPercent,
   scanDuration,
   pauseDuration,
-  originalSize,
   onFrame,
 }: UseScanAnimationParams): void => {
-  const animationFrameIdRef = useRef<number>();
+  const animationFrameIdRef = useRef<number | undefined>(undefined);
   const scanProgressRef = useRef(0);
   const isOptimizedRef = useRef(false);
   const startTimeRef = useRef(Date.now());
