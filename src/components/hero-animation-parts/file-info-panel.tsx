@@ -25,12 +25,8 @@ export function FileInfoPanel({
 }: FileInfoPanelProps) {
   return (
     <div className="absolute right-4 bottom-3 flex flex-col items-end gap-1 font-mono text-xs">
-      <StatRow label="Format" isOptimized={isOptimized}>
-        {currentFormat}
-      </StatRow>
-      <StatRow label="Size" isOptimized={isOptimized}>
-        {currentSize.toLocaleString()}KB
-      </StatRow>
+      <StatRow label="Format">{currentFormat}</StatRow>
+      <StatRow label="Size">{currentSize.toLocaleString()}KB</StatRow>
       <HighlightValue
         isHighlighted={isOptimized}
         delay={OPTIMIZATION_HIGHLIGHT_DELAY_MS}
@@ -56,7 +52,6 @@ export function FileInfoPanel({
 
 type StatRowProps = {
   readonly label: string;
-  readonly isOptimized: boolean;
   readonly children: React.ReactNode;
 };
 
