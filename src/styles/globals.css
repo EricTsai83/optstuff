@@ -815,3 +815,91 @@ Underline that grows from left to right using scaleX transform
     transform: scaleX(1);
   }
 }
+
+/* ==========================================================================
+13. Image Optimization Card Styles
+========================================================================== */
+
+/* 背景光暈 - 簡潔柔和 */
+@keyframes opt-glow-pulse {
+  0%,
+  100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
+.opt-bg-glow {
+  background: radial-gradient(
+    circle at center top,
+    color-mix(in srgb, var(--color) 20%, transparent) 0%,
+    transparent 70%
+  );
+  animation: opt-glow-pulse 4s ease-in-out infinite;
+}
+
+/* 卡片容器 */
+.opt-card {
+  --shadow-default:
+    0 4px 20px rgba(0, 0, 0, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.1);
+  box-shadow: var(--shadow-default);
+}
+
+.opt-card[data-complete="true"] {
+  box-shadow:
+    0 0 30px color-mix(in srgb, var(--color) 40%, transparent),
+    0 0 60px color-mix(in srgb, var(--color) 20%, transparent),
+    inset 0 1px 1px rgba(255, 255, 255, 0.1);
+}
+
+/* 頂部光線 */
+.opt-top-glow {
+  background: linear-gradient(
+    to right,
+    transparent,
+    color-mix(in srgb, var(--color) 60%, transparent),
+    transparent
+  );
+  box-shadow: 0 0 8px color-mix(in srgb, var(--color) 40%, transparent);
+}
+
+/* 進度條發光 */
+.opt-progress-bar {
+  box-shadow:
+    0 0 10px color-mix(in srgb, var(--color) 60%, transparent),
+    0 0 20px color-mix(in srgb, var(--color) 40%, transparent);
+}
+
+/* 粒子尾巴 */
+.opt-particle {
+  box-shadow: 0 0 6px 2px rgba(255, 255, 255, 0.8);
+}
+
+/* 圖標發光 */
+.opt-icon-glow {
+  filter: drop-shadow(
+    0 0 2px color-mix(in srgb, var(--color) 50%, transparent)
+  );
+}
+
+.opt-icon-glow-strong {
+  filter: drop-shadow(
+    0 0 3px color-mix(in srgb, var(--color) 60%, transparent)
+  );
+}
+
+/* 文字發光 */
+.opt-text-glow {
+  text-shadow: 0 0 8px color-mix(in srgb, var(--color) 60%, transparent);
+}
+
+.opt-text-glow-strong {
+  text-shadow: 0 0 10px color-mix(in srgb, var(--color) 80%, transparent);
+}
+
+/* 完成邊框 */
+.opt-complete-border {
+  border-color: color-mix(in srgb, var(--color) 50%, transparent);
+}
