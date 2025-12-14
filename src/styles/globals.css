@@ -903,3 +903,75 @@ Underline that grows from left to right using scaleX transform
 .opt-complete-border {
   border-color: color-mix(in srgb, var(--color) 50%, transparent);
 }
+
+/* ==========================================================================
+14. Scan Card Skeleton Animations
+掃描卡片骨架載入動畫
+========================================================================== */
+
+/* 光源擴散動畫 - 快速 */
+@keyframes light-shoot {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  30% {
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1.5);
+    opacity: 0.3;
+  }
+}
+
+/* 光源擴散動畫 - 慢速 */
+@keyframes light-shoot-slow {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  40% {
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(1.8);
+    opacity: 0.2;
+  }
+}
+
+.animate-light-shoot {
+  animation: light-shoot 0.5s ease-out forwards;
+}
+
+.animate-light-shoot-slow {
+  animation: light-shoot-slow 1s ease-out forwards;
+}
+
+/* Canvas 浮現動畫 */
+@keyframes canvas-fade-in {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+.animate-canvas-fade-in {
+  animation: canvas-fade-in 0.6s ease-out forwards;
+}
+
+/* Skeleton 淡出動畫 - 延遲到 canvas 浮現完成後 */
+@keyframes skeleton-fade-out {
+  0% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    pointer-events: none;
+  }
+}
+
+.animate-skeleton-fade-out {
+  animation: skeleton-fade-out 0.5s ease-out 0s forwards;
+}
