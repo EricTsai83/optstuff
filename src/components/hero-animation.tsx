@@ -1,7 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import type { TransitionEvent } from "react";
+import { useCallback } from "react";
 
 import {
   OPTIMIZED_SIZE_RATIO,
@@ -12,16 +11,9 @@ import { FileInfoPanel } from "@/components/hero-animation-parts/file-info-panel
 import { OptimizationStatusLabel } from "@/components/hero-animation-parts/optimization-status-label";
 import { PixelDecodeGrid } from "@/components/hero-animation-parts/pixel-decode-grid";
 import { ProgressRingButton } from "@/components/hero-animation-parts/progress-ring-button";
-import { SkeletonOverlay } from "@/components/hero-animation-parts/skeleton-overlay";
 import { useFormatCycle } from "@/hooks/use-format-cycle";
 import { useHeroScanAnimation } from "@/hooks/use-hero-scan-animation";
 import { cn } from "@/lib/utils";
-
-/** Fallback timeout for grid first draw detection (ms) */
-const GRID_DRAW_FALLBACK_MS = 200;
-
-/** Fallback timeout for fade-in transition detection (ms) */
-const FADE_IN_FALLBACK_MS = 550;
 
 /**
  * Calculates current file size based on scan progress and optimization state.
@@ -56,53 +48,21 @@ function calculateSizeReductionPercent(currentSize: number): number {
  * - File size reduction display
  */
 export function HeroAnimation() {
-  const [hasGridDrawnOnce, setHasGridDrawnOnce] = useState(false);
-  const [isGridFadeInComplete, setIsGridFadeInComplete] = useState(false);
-
   const { scanProgress, isOptimized, shouldStartDecode, hasStarted, restart } =
-    useHeroScanAnimation(isGridFadeInComplete);
+    useHeroScanAnimation(true);
 
   const currentFormat = useFormatCycle(isOptimized);
 
-  // Event handlers
-  const handleGridFirstDraw = useCallback((): void => {
-    setHasGridDrawnOnce(true);
-  }, []);
-
-  const handleGridFadeInTransitionEnd = useCallback(
-    (event: TransitionEvent<HTMLDivElement>): void => {
-      if (event.propertyName !== "opacity") return;
-      if (!hasGridDrawnOnce) return;
-      setIsGridFadeInComplete(true);
-    },
-    [hasGridDrawnOnce],
-  );
-
   const handleRestart = useCallback((): void => {
-    // Keep the grid visible on restart (no skeleton flash)
     restart();
   }, [restart]);
-
-  // Fallback: reveal grid after timeout if first draw detection fails
-  useFallbackTimeout({
-    shouldSkip: hasGridDrawnOnce,
-    delayMs: GRID_DRAW_FALLBACK_MS,
-    onTimeout: () => setHasGridDrawnOnce(true),
-  });
-
-  // Fallback: complete fade-in after timeout if transitionend doesn't fire
-  useFallbackTimeout({
-    shouldSkip: !hasGridDrawnOnce || isGridFadeInComplete,
-    delayMs: FADE_IN_FALLBACK_MS,
-    onTimeout: () => setIsGridFadeInComplete(true),
-  });
 
   // Calculate derived values
   const currentSize = calculateCurrentSizeKb(scanProgress, isOptimized);
   const reductionPercent = calculateSizeReductionPercent(currentSize);
 
   return (
-    <div className="relative h-[400px] w-[400px]">
+    <div className="relative aspect-square w-full">
       {/* Status label (top right) */}
       <div className="absolute top-7 right-7">
         <OptimizationStatusLabel
@@ -120,19 +80,13 @@ export function HeroAnimation() {
       {/* Main card container */}
       <MainCard isOptimized={isOptimized}>
         {/* Image area with pixel decode effect */}
-        <ImageArea
-          hasGridDrawnOnce={hasGridDrawnOnce}
-          onTransitionEnd={handleGridFadeInTransitionEnd}
-          skeleton={<SkeletonOverlay isVisible={!hasGridDrawnOnce} />}
-          canvas={
-            <PixelDecodeGrid
-              scanProgress={scanProgress}
-              isOptimized={isOptimized}
-              hasStarted={hasStarted}
-              onFirstDraw={handleGridFirstDraw}
-            />
-          }
-        />
+        <ImageArea>
+          <PixelDecodeGrid
+            scanProgress={scanProgress}
+            isOptimized={isOptimized}
+            hasStarted={hasStarted}
+          />
+        </ImageArea>
 
         {/* Bottom info section */}
         <div className="absolute right-0 bottom-0 left-0 h-[72px] px-4 pb-2">
@@ -210,18 +164,10 @@ function MainCard({ isOptimized, children }: MainCardProps) {
 }
 
 type ImageAreaProps = {
-  readonly hasGridDrawnOnce: boolean;
-  readonly onTransitionEnd: (event: TransitionEvent<HTMLDivElement>) => void;
-  readonly skeleton: React.ReactNode;
-  readonly canvas: React.ReactNode;
+  readonly children: React.ReactNode;
 };
 
-function ImageArea({
-  hasGridDrawnOnce,
-  onTransitionEnd,
-  skeleton,
-  canvas,
-}: ImageAreaProps) {
+function ImageArea({ children }: ImageAreaProps) {
   return (
     <div
       className={cn(
@@ -230,54 +176,7 @@ function ImageArea({
       )}
       style={{ height: "calc(100% - 80px)" }}
     >
-      {/* Skeleton overlay */}
-      {skeleton}
-
-      {/* Canvas wrapper with fade-in transition */}
-      <div
-        className={cn(
-          "absolute inset-0 transition-opacity duration-500 will-change-[opacity]",
-          hasGridDrawnOnce ? "opacity-100" : "opacity-0",
-        )}
-        onTransitionEnd={onTransitionEnd}
-      >
-        {canvas}
-      </div>
+      {children}
     </div>
   );
-}
-
-// ============================================================================
-// Custom Hooks
-// ============================================================================
-
-type FallbackTimeoutOptions = {
-  readonly shouldSkip: boolean;
-  readonly delayMs: number;
-  readonly onTimeout: () => void;
-};
-
-/**
- * Executes a callback after a delay, unless the skip condition is met.
- * Used as a fallback for environment-specific edge cases where events don't fire.
- *
- * Note: Uses ref for onTimeout to avoid re-setting timer on callback changes.
- */
-function useFallbackTimeout({
-  shouldSkip,
-  delayMs,
-  onTimeout,
-}: FallbackTimeoutOptions): void {
-  const onTimeoutRef = useRef(onTimeout);
-  onTimeoutRef.current = onTimeout;
-
-  useEffect(() => {
-    if (shouldSkip) return;
-
-    const timer = setTimeout(() => {
-      onTimeoutRef.current();
-    }, delayMs);
-
-    return () => clearTimeout(timer);
-  }, [shouldSkip, delayMs]);
 }

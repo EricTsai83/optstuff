@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { DEMO_IMAGE } from "./constants";
 
 export function EffectsDemo() {
   const [blur, setBlur] = useState(0);
@@ -143,7 +144,7 @@ export function EffectsDemo() {
             }}
           >
             <img
-              src="/portrait-photography-person.jpg"
+              src={DEMO_IMAGE}
               alt="Effects demo"
               className="h-full w-full object-cover"
             />

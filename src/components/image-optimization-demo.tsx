@@ -7,6 +7,7 @@ import {
   useCallback,
   useEffect,
 } from "react";
+import { cn } from "@/lib/utils";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { ResizeDemo } from "@/components/demos/resize-demo";
 import { FormatDemo } from "@/components/demos/format-demo";
@@ -192,10 +193,7 @@ export function ImageOptimizationDemo() {
   const ActiveDemo = DEMOS[animation.displayedTab];
 
   return (
-    <div
-      className="animate-scale-in animation-delay-400 animate-on-scroll mx-auto max-w-5xl"
-      style={{ animationFillMode: "forwards" }}
-    >
+    <div className="animate-scale-in animation-delay-400 animate-on-scroll mx-auto max-w-5xl">
       <Tabs
         value={activeTab}
         onValueChange={handleTabChange}
@@ -208,15 +206,14 @@ export function ImageOptimizationDemo() {
           >
             {/* Sliding indicator with squash-and-stretch effect */}
             <div
-              className={`bg-background absolute top-1 h-9 rounded-full shadow-sm transition-[left,width,opacity] duration-300 ease-out ${
-                indicatorStyle.isSquashing
-                  ? "animate-indicator-squash-stretch"
-                  : ""
-              } ${indicatorStyle.width === 0 ? "opacity-0" : "opacity-100"}`}
-              style={{
-                left: indicatorStyle.left,
-                width: indicatorStyle.width,
-              }}
+              className={cn(
+                "bg-background absolute top-1 h-9 rounded-full shadow-sm",
+                "transition-[left,width,opacity] duration-300 ease-out",
+                indicatorStyle.isSquashing &&
+                  "animate-indicator-squash-stretch",
+                indicatorStyle.width === 0 ? "opacity-0" : "opacity-100",
+              )}
+              style={{ left: indicatorStyle.left, width: indicatorStyle.width }}
               aria-hidden="true"
             />
             {DEMO_KEYS.map((tab) => (
@@ -226,7 +223,14 @@ export function ImageOptimizationDemo() {
                 ref={(el) => {
                   tabRefs.current.set(tab, el);
                 }}
-                className="relative z-10 cursor-pointer rounded-full bg-transparent px-5 py-2 text-sm font-medium capitalize shadow-none transition-colors duration-300 data-[state=active]:bg-transparent data-[state=active]:shadow-none"
+                className={cn(
+                  "relative z-10 cursor-pointer rounded-full bg-transparent",
+                  "px-5 py-2 text-sm font-medium capitalize",
+                  "border-none shadow-none",
+                  "transition-colors duration-300",
+                  "data-[state=active]:bg-transparent data-[state=active]:shadow-none",
+                  "dark:data-[state=active]:bg-transparent dark:data-[state=active]:shadow-none",
+                )}
               >
                 {tab}
               </TabsTrigger>
