@@ -4,12 +4,13 @@ import { useState } from "react";
 import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { ORIGINAL_SIZE_KB, DEMO_IMAGE } from "./constants";
 
 export function QualityDemo() {
   const [quality, setQuality] = useState(80);
   const [progressive, setProgressive] = useState(true);
 
-  const baseSize = 512;
+  const baseSize = ORIGINAL_SIZE_KB;
   const estimatedSize = Math.round((quality / 100) * baseSize * 0.8);
 
   return (
@@ -82,7 +83,7 @@ export function QualityDemo() {
         <div className="bg-muted/50 flex min-h-[320px] flex-col items-center justify-center rounded-xl p-6">
           <div className="bg-muted ring-border relative mb-4 h-48 w-64 overflow-hidden rounded-lg ring-1">
             <img
-              src="/city-skyline-photography.jpg"
+              src={DEMO_IMAGE}
               alt="Quality demo"
               className="h-full w-full object-cover"
               style={{

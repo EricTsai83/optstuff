@@ -10,6 +10,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  ORIGINAL_WIDTH,
+  ORIGINAL_HEIGHT,
+  ORIGINAL_SIZE_KB,
+  PREVIEW_MAX_WIDTH,
+  PREVIEW_MAX_HEIGHT,
+  DEMO_IMAGE,
+} from "./constants";
 
 const FIT_MODES = {
   cover: "cover",
@@ -20,13 +28,6 @@ const FIT_MODES = {
 } as const;
 
 type FitMode = keyof typeof FIT_MODES;
-
-const IMAGE_URL = "/demo-image.png";
-const ORIGINAL_WIDTH = 800;
-const ORIGINAL_HEIGHT = 600;
-const ORIGINAL_SIZE_KB = 240;
-const PREVIEW_MAX_WIDTH = 320;
-const PREVIEW_MAX_HEIGHT = 240;
 
 function estimateFileSize(width: number, height: number): number {
   const ratio = (width * height) / (ORIGINAL_WIDTH * ORIGINAL_HEIGHT);
@@ -174,7 +175,7 @@ export function ResizeDemo() {
               style={getContainerStyle(fit)}
             >
               <img
-                src={IMAGE_URL}
+                src={DEMO_IMAGE}
                 alt="Sample resized image"
                 className="pointer-events-none h-full w-full transition-all duration-300 select-none"
                 style={{
