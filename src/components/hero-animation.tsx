@@ -104,7 +104,7 @@ export function HeroAnimation() {
   const reductionPercent = calculateSizeReductionPercent(currentSize);
 
   return (
-    <div className="relative h-[400px] w-[400px]">
+    <div className="relative aspect-square w-full">
       {/* Status label (top right) */}
       <div className="absolute top-7 right-7">
         <OptimizationStatusLabel

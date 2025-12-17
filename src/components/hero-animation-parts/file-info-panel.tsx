@@ -24,7 +24,7 @@ export function FileInfoPanel({
   isOptimized,
 }: FileInfoPanelProps) {
   return (
-    <div className="absolute right-4 bottom-3 flex flex-col items-end gap-1 font-mono text-xs">
+    <div className="absolute right-4 bottom-2.5 flex flex-col items-end gap-1 font-mono text-xs">
       <StatRow label="Format" isOptimized={isOptimized}>
         {currentFormat}
       </StatRow>
