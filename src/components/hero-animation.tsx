@@ -224,7 +224,20 @@ function ImageArea({
   skeleton,
   canvas,
 }: ImageAreaProps) {
-  const showCanvas = canvasState !== "loading";
+  // Delay showing canvas by one frame to ensure transition triggers
+  const [showCanvas, setShowCanvas] = useState(false);
+
+  useEffect(() => {
+    if (canvasState === "loading") {
+      setShowCanvas(false);
+      return;
+    }
+    // Wait for next frame to ensure opacity:0 is applied first
+    const frameId = requestAnimationFrame(() => {
+      setShowCanvas(true);
+    });
+    return () => cancelAnimationFrame(frameId);
+  }, [canvasState]);
 
   return (
     <div
