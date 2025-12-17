@@ -777,12 +777,12 @@ Quick flash up, smooth fade back
 
 /* Dark mode - stronger glow */
 .dark .text-glow-stay {
-  color: hsl(160 55% 55%);
+  color: hsl(160 70% 50%);
   text-shadow:
-    0 0 4px hsl(160 50% 55% / 0.6),
-    0 0 10px hsl(160 45% 50% / 0.35),
-    0 0 20px hsl(160 40% 45% / 0.15);
-  filter: brightness(1.08);
+    0 0 6px hsl(160 80% 50% / 0.9),
+    0 0 16px hsl(160 70% 45% / 0.6),
+    0 0 32px hsl(160 60% 40% / 0.35);
+  filter: brightness(1.15);
 }
 /* --------------------------------------------------------------------------
 12.3 Animated Underline Grow Effect
