@@ -21,7 +21,7 @@ const FIT_MODES = {
 
 type FitMode = keyof typeof FIT_MODES;
 
-const IMAGE_URL = "/demo-image-dark.jpeg";
+const IMAGE_URL = "/demo-image.png";
 const ORIGINAL_WIDTH = 800;
 const ORIGINAL_HEIGHT = 600;
 const ORIGINAL_SIZE_KB = 240;

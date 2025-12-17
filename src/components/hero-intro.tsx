@@ -7,7 +7,7 @@ import { HeroAnimation } from "@/components/hero-animation";
 export function HeroIntro() {
   return (
     <div className="mx-auto mb-12 max-w-6xl text-center md:mb-16">
-      <div className="bg-accent/10 text-accent animate-fade-in-up mb-6 inline-flex items-center gap-2 rounded-full px-3 py-1 text-sm font-medium">
+      <div className="bg-accent/10 text-accent animate-fade-in-up mb-8 inline-flex items-center gap-2 rounded-full px-3 py-1 text-sm font-medium md:mb-14">
         <span className="relative flex h-2 w-2">
           <span className="bg-accent absolute inline-flex h-full w-full animate-ping rounded-full opacity-75"></span>
           <span className="bg-accent relative inline-flex h-2 w-2 rounded-full"></span>
@@ -24,7 +24,7 @@ export function HeroIntro() {
       <div className="flex flex-col items-center gap-7 md:flex-row md:items-center md:justify-between">
         <div className="flex flex-col items-center text-left md:items-start md:justify-center">
           <h1
-            className="animate-fade-in-up animation-delay-100 animate-on-scroll mb-6 text-4xl leading-[1.1] font-bold tracking-tight text-balance md:text-5xl lg:text-6xl xl:text-7xl"
+            className="animate-fade-in-up animation-delay-100 animate-on-scroll mb-6 text-center text-4xl leading-[1.1] font-bold tracking-tight text-balance md:text-left md:text-5xl lg:text-6xl xl:text-7xl"
             style={{ animationFillMode: "forwards" }}
           >
             Image optimization <br />
