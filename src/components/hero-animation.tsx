@@ -1,7 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import type { TransitionEvent } from "react";
+import { useCallback } from "react";
 
 import {
   OPTIMIZED_SIZE_RATIO,
@@ -12,19 +11,9 @@ import { FileInfoPanel } from "@/components/hero-animation-parts/file-info-panel
 import { OptimizationStatusLabel } from "@/components/hero-animation-parts/optimization-status-label";
 import { PixelDecodeGrid } from "@/components/hero-animation-parts/pixel-decode-grid";
 import { ProgressRingButton } from "@/components/hero-animation-parts/progress-ring-button";
-import { SkeletonOverlay } from "@/components/hero-animation-parts/skeleton-overlay";
 import { useFormatCycle } from "@/hooks/use-format-cycle";
 import { useHeroScanAnimation } from "@/hooks/use-hero-scan-animation";
 import { cn } from "@/lib/utils";
-
-/** Canvas initialization state */
-type CanvasState = "loading" | "fading" | "ready";
-
-/** Fallback timeout for canvas first draw detection (ms) */
-const CANVAS_DRAW_FALLBACK_MS = 200;
-
-/** Fade-in transition duration (ms) */
-const FADE_IN_DURATION_MS = 500;
 
 /**
  * Calculates current file size based on scan progress and optimization state.
@@ -59,45 +48,14 @@ function calculateSizeReductionPercent(currentSize: number): number {
  * - File size reduction display
  */
 export function HeroAnimation() {
-  const [canvasState, setCanvasState] = useState<CanvasState>("loading");
-
-  const isCanvasReady = canvasState === "ready";
-
   const { scanProgress, isOptimized, shouldStartDecode, hasStarted, restart } =
-    useHeroScanAnimation(isCanvasReady);
+    useHeroScanAnimation(true);
 
   const currentFormat = useFormatCycle(isOptimized);
-
-  // Event handlers
-  const handleCanvasFirstDraw = useCallback((): void => {
-    setCanvasState((prev) => (prev === "loading" ? "fading" : prev));
-  }, []);
-
-  const handleCanvasFadeInEnd = useCallback(
-    (event: TransitionEvent<HTMLDivElement>): void => {
-      if (event.propertyName !== "opacity") return;
-      setCanvasState("ready");
-    },
-    [],
-  );
 
   const handleRestart = useCallback((): void => {
     restart();
   }, [restart]);
-
-  // Fallback: reveal canvas after timeout if first draw detection fails
-  useFallbackTimeout({
-    shouldSkip: canvasState !== "loading",
-    delayMs: CANVAS_DRAW_FALLBACK_MS,
-    onTimeout: () => setCanvasState("fading"),
-  });
-
-  // Fallback: complete fade-in after timeout if transitionend doesn't fire
-  useFallbackTimeout({
-    shouldSkip: canvasState !== "fading",
-    delayMs: FADE_IN_DURATION_MS + 50, // Extra buffer to ensure animation completes
-    onTimeout: () => setCanvasState("ready"),
-  });
 
   // Calculate derived values
   const currentSize = calculateCurrentSizeKb(scanProgress, isOptimized);
@@ -122,19 +80,13 @@ export function HeroAnimation() {
       {/* Main card container */}
       <MainCard isOptimized={isOptimized}>
         {/* Image area with pixel decode effect */}
-        <ImageArea
-          canvasState={canvasState}
-          onTransitionEnd={handleCanvasFadeInEnd}
-          skeleton={<SkeletonOverlay isVisible={canvasState === "loading"} />}
-          canvas={
-            <PixelDecodeGrid
-              scanProgress={scanProgress}
-              isOptimized={isOptimized}
-              hasStarted={hasStarted}
-              onFirstDraw={handleCanvasFirstDraw}
-            />
-          }
-        />
+        <ImageArea>
+          <PixelDecodeGrid
+            scanProgress={scanProgress}
+            isOptimized={isOptimized}
+            hasStarted={hasStarted}
+          />
+        </ImageArea>
 
         {/* Bottom info section */}
         <div className="absolute right-0 bottom-0 left-0 h-[72px] px-4 pb-2">
@@ -212,33 +164,10 @@ function MainCard({ isOptimized, children }: MainCardProps) {
 }
 
 type ImageAreaProps = {
-  readonly canvasState: CanvasState;
-  readonly onTransitionEnd: (event: TransitionEvent<HTMLDivElement>) => void;
-  readonly skeleton: React.ReactNode;
-  readonly canvas: React.ReactNode;
+  readonly children: React.ReactNode;
 };
 
-function ImageArea({
-  canvasState,
-  onTransitionEnd,
-  skeleton,
-  canvas,
-}: ImageAreaProps) {
-  // Delay showing canvas by one frame to ensure transition triggers
-  const [showCanvas, setShowCanvas] = useState(false);
-
-  useEffect(() => {
-    if (canvasState === "loading") {
-      setShowCanvas(false);
-      return;
-    }
-    // Wait for next frame to ensure opacity:0 is applied first
-    const frameId = requestAnimationFrame(() => {
-      setShowCanvas(true);
-    });
-    return () => cancelAnimationFrame(frameId);
-  }, [canvasState]);
-
+function ImageArea({ children }: ImageAreaProps) {
   return (
     <div
       className={cn(
@@ -247,57 +176,7 @@ function ImageArea({
       )}
       style={{ height: "calc(100% - 80px)" }}
     >
-      {/* Skeleton overlay */}
-      {skeleton}
-
-      {/* Canvas wrapper with fade-in transition */}
-      <div
-        className={cn(
-          "absolute inset-0 will-change-[opacity]",
-          showCanvas ? "opacity-100" : "opacity-0",
-        )}
-        style={{
-          transition: `opacity ${FADE_IN_DURATION_MS}ms ease-out`,
-        }}
-        onTransitionEnd={onTransitionEnd}
-      >
-        {canvas}
-      </div>
+      {children}
     </div>
   );
-}
-
-// ============================================================================
-// Custom Hooks
-// ============================================================================
-
-type FallbackTimeoutOptions = {
-  readonly shouldSkip: boolean;
-  readonly delayMs: number;
-  readonly onTimeout: () => void;
-};
-
-/**
- * Executes a callback after a delay, unless the skip condition is met.
- * Used as a fallback for environment-specific edge cases where events don't fire.
- *
- * Note: Uses ref for onTimeout to avoid re-setting timer on callback changes.
- */
-function useFallbackTimeout({
-  shouldSkip,
-  delayMs,
-  onTimeout,
-}: FallbackTimeoutOptions): void {
-  const onTimeoutRef = useRef(onTimeout);
-  onTimeoutRef.current = onTimeout;
-
-  useEffect(() => {
-    if (shouldSkip) return;
-
-    const timer = setTimeout(() => {
-      onTimeoutRef.current();
-    }, delayMs);
-
-    return () => clearTimeout(timer);
-  }, [shouldSkip, delayMs]);
 }

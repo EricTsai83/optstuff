@@ -2,17 +2,16 @@
 
 import { cn } from "@/lib/utils";
 
-type SkeletonOverlayProps = {
+type PlaceholderOverlayProps = {
   readonly isVisible: boolean;
 };
 
 /**
- * Skeleton loading overlay with soundwave ripple animation.
+ * Placeholder overlay with soundwave ripple animation.
  *
- * Displays while the canvas grid is initializing, then fades out
- * once the first draw is complete.
+ * Can be used as a loading state before content is ready.
  */
-export function SkeletonOverlay({ isVisible }: SkeletonOverlayProps) {
+export function PlaceholderOverlay({ isVisible }: PlaceholderOverlayProps) {
   return (
     <div
       aria-hidden="true"

@@ -31,7 +31,6 @@ type PixelDecodeGridProps = {
   readonly scanProgress: number;
   readonly isOptimized: boolean;
   readonly hasStarted: boolean;
-  readonly onFirstDraw: (() => void) | undefined;
 };
 
 type DrawState = {
@@ -263,11 +262,9 @@ export function PixelDecodeGrid({
   scanProgress,
   isOptimized,
   hasStarted,
-  onFirstDraw,
 }: PixelDecodeGridProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const hasNotifiedFirstDrawRef = useRef(false);
 
   // State refs for stable draw function access
   const stateRef = useRef<DrawState>({
@@ -321,12 +318,6 @@ export function PixelDecodeGrid({
       });
     }
 
-    // Notify first draw
-    if (!hasNotifiedFirstDrawRef.current) {
-      hasNotifiedFirstDrawRef.current = true;
-      if (onFirstDraw !== undefined) onFirstDraw();
-    }
-
     // Draw scan beam (continues past 100% to exit off-screen)
     if (!state.hasStarted) return;
 
@@ -343,7 +334,7 @@ export function PixelDecodeGrid({
       containerHeight,
       scanProgress: state.scanProgress,
     });
-  }, [onFirstDraw]);
+  }, []);
 
   // Flash animation handler
   const handleFlashFrame = useCallback(
