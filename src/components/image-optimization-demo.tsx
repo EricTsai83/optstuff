@@ -193,10 +193,7 @@ export function ImageOptimizationDemo() {
   const ActiveDemo = DEMOS[animation.displayedTab];
 
   return (
-    <div
-      className="animate-scale-in animation-delay-400 animate-on-scroll mx-auto max-w-5xl"
-      style={{ animationFillMode: "forwards" }}
-    >
+    <div className="animate-scale-in animation-delay-400 animate-on-scroll mx-auto max-w-5xl">
       <Tabs
         value={activeTab}
         onValueChange={handleTabChange}
