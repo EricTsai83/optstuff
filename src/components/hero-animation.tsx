@@ -17,11 +17,14 @@ import { useFormatCycle } from "@/hooks/use-format-cycle";
 import { useHeroScanAnimation } from "@/hooks/use-hero-scan-animation";
 import { cn } from "@/lib/utils";
 
-/** Fallback timeout for grid first draw detection (ms) */
-const GRID_DRAW_FALLBACK_MS = 200;
+/** Canvas initialization state */
+type CanvasState = "loading" | "fading" | "ready";
 
-/** Fallback timeout for fade-in transition detection (ms) */
-const FADE_IN_FALLBACK_MS = 550;
+/** Fallback timeout for canvas first draw detection (ms) */
+const CANVAS_DRAW_FALLBACK_MS = 200;
+
+/** Fade-in transition duration (ms) */
+const FADE_IN_DURATION_MS = 500;
 
 /**
  * Calculates current file size based on scan progress and optimization state.
@@ -56,45 +59,44 @@ function calculateSizeReductionPercent(currentSize: number): number {
  * - File size reduction display
  */
 export function HeroAnimation() {
-  const [hasGridDrawnOnce, setHasGridDrawnOnce] = useState(false);
-  const [isGridFadeInComplete, setIsGridFadeInComplete] = useState(false);
+  const [canvasState, setCanvasState] = useState<CanvasState>("loading");
+
+  const isCanvasReady = canvasState === "ready";
 
   const { scanProgress, isOptimized, shouldStartDecode, hasStarted, restart } =
-    useHeroScanAnimation(isGridFadeInComplete);
+    useHeroScanAnimation(isCanvasReady);
 
   const currentFormat = useFormatCycle(isOptimized);
 
   // Event handlers
-  const handleGridFirstDraw = useCallback((): void => {
-    setHasGridDrawnOnce(true);
+  const handleCanvasFirstDraw = useCallback((): void => {
+    setCanvasState((prev) => (prev === "loading" ? "fading" : prev));
   }, []);
 
-  const handleGridFadeInTransitionEnd = useCallback(
+  const handleCanvasFadeInEnd = useCallback(
     (event: TransitionEvent<HTMLDivElement>): void => {
       if (event.propertyName !== "opacity") return;
-      if (!hasGridDrawnOnce) return;
-      setIsGridFadeInComplete(true);
+      setCanvasState("ready");
     },
-    [hasGridDrawnOnce],
+    [],
   );
 
   const handleRestart = useCallback((): void => {
-    // Keep the grid visible on restart (no skeleton flash)
     restart();
   }, [restart]);
 
-  // Fallback: reveal grid after timeout if first draw detection fails
+  // Fallback: reveal canvas after timeout if first draw detection fails
   useFallbackTimeout({
-    shouldSkip: hasGridDrawnOnce,
-    delayMs: GRID_DRAW_FALLBACK_MS,
-    onTimeout: () => setHasGridDrawnOnce(true),
+    shouldSkip: canvasState !== "loading",
+    delayMs: CANVAS_DRAW_FALLBACK_MS,
+    onTimeout: () => setCanvasState("fading"),
   });
 
   // Fallback: complete fade-in after timeout if transitionend doesn't fire
   useFallbackTimeout({
-    shouldSkip: !hasGridDrawnOnce || isGridFadeInComplete,
-    delayMs: FADE_IN_FALLBACK_MS,
-    onTimeout: () => setIsGridFadeInComplete(true),
+    shouldSkip: canvasState !== "fading",
+    delayMs: FADE_IN_DURATION_MS + 50, // Extra buffer to ensure animation completes
+    onTimeout: () => setCanvasState("ready"),
   });
 
   // Calculate derived values
@@ -121,15 +123,15 @@ export function HeroAnimation() {
       <MainCard isOptimized={isOptimized}>
         {/* Image area with pixel decode effect */}
         <ImageArea
-          hasGridDrawnOnce={hasGridDrawnOnce}
-          onTransitionEnd={handleGridFadeInTransitionEnd}
-          skeleton={<SkeletonOverlay isVisible={!hasGridDrawnOnce} />}
+          canvasState={canvasState}
+          onTransitionEnd={handleCanvasFadeInEnd}
+          skeleton={<SkeletonOverlay isVisible={canvasState === "loading"} />}
           canvas={
             <PixelDecodeGrid
               scanProgress={scanProgress}
               isOptimized={isOptimized}
               hasStarted={hasStarted}
-              onFirstDraw={handleGridFirstDraw}
+              onFirstDraw={handleCanvasFirstDraw}
             />
           }
         />
@@ -210,18 +212,20 @@ function MainCard({ isOptimized, children }: MainCardProps) {
 }
 
 type ImageAreaProps = {
-  readonly hasGridDrawnOnce: boolean;
+  readonly canvasState: CanvasState;
   readonly onTransitionEnd: (event: TransitionEvent<HTMLDivElement>) => void;
   readonly skeleton: React.ReactNode;
   readonly canvas: React.ReactNode;
 };
 
 function ImageArea({
-  hasGridDrawnOnce,
+  canvasState,
   onTransitionEnd,
   skeleton,
   canvas,
 }: ImageAreaProps) {
+  const showCanvas = canvasState !== "loading";
+
   return (
     <div
       className={cn(
@@ -236,9 +240,12 @@ function ImageArea({
       {/* Canvas wrapper with fade-in transition */}
       <div
         className={cn(
-          "absolute inset-0 transition-opacity duration-500 will-change-[opacity]",
-          hasGridDrawnOnce ? "opacity-100" : "opacity-0",
+          "absolute inset-0 will-change-[opacity]",
+          showCanvas ? "opacity-100" : "opacity-0",
         )}
+        style={{
+          transition: `opacity ${FADE_IN_DURATION_MS}ms ease-out`,
+        }}
         onTransitionEnd={onTransitionEnd}
       >
         {canvas}
