@@ -3,7 +3,6 @@
 import { useMemo, useState, useRef, useCallback } from "react";
 import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { CodeBlock } from "@/components/code-block";
 import { ORIGINAL_SIZE_KB, QUALITY_DEMO_IMAGE } from "./constants";
@@ -173,7 +172,6 @@ function StatCard({ value, label, icon, highlight = false }: StatCardProps) {
 
 export function QualityDemo() {
   const [quality, setQuality] = useState(80);
-  const [progressive, setProgressive] = useState(true);
   const [isHovering, setIsHovering] = useState(false);
   const [imagePos, setImagePos] = useState({ x: 0.5, y: 0.5 });
   const originalImageRef = useRef<HTMLImageElement | null>(null);
@@ -185,20 +183,14 @@ export function QualityDemo() {
 
   const optimizedImageUrl = useMemo(() => {
     const operations = [`q_${quality}`, "f_webp"];
-    if (progressive) {
-      operations.push("progressive");
-    }
     return `/api/optimize/${operations.join(",")}${QUALITY_DEMO_IMAGE}`;
-  }, [quality, progressive]);
+  }, [quality]);
 
   const ipxSyntax = useMemo(() => {
     const operations = [`q_${quality}`, "f_webp"];
-    if (progressive) {
-      operations.push("progressive");
-    }
     // 只顯示 IPX 語法，不暴露實際的 endpoint
-    return `optstuff/${operations.join(",")}/your-image.jpg`;
-  }, [quality, progressive]);
+    return `optstuff/${operations.join(",")}/your-image.webp`;
+  }, [quality]);
 
   const originalImageUrl = useMemo(() => {
     return `/api/optimize/q_100,f_webp,w_800${QUALITY_DEMO_IMAGE}`;
@@ -345,27 +337,10 @@ export function QualityDemo() {
             </div>
           </div>
 
-          {/* Progressive Toggle */}
-          <div className="flex items-center justify-between rounded-2xl border border-gray-200 bg-linear-to-b from-gray-50 to-white p-5 dark:border-white/10 dark:from-white/5 dark:to-transparent">
-            <div className="space-y-1">
-              <Label htmlFor="progressive" className="text-sm font-medium">
-                Progressive Loading
-              </Label>
-              <p className="text-muted-foreground text-xs">
-                Improves perceived performance
-              </p>
-            </div>
-            <Switch
-              id="progressive"
-              checked={progressive}
-              onCheckedChange={setProgressive}
-            />
-          </div>
-
-          {/* IPX Syntax */}
+          {/* URL Example */}
           <div className="group rounded-2xl border border-gray-200 bg-linear-to-b from-gray-50 to-white p-5 dark:border-white/10 dark:from-white/5 dark:to-transparent">
             <p className="text-muted-foreground mb-2 text-xs font-medium tracking-wider uppercase">
-              IPX Syntax
+              URL Example
             </p>
             <CodeBlock code={ipxSyntax} />
           </div>
