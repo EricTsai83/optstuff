@@ -294,13 +294,6 @@ export function QualityDemo() {
             quality
           </p>
         </div>
-        <Badge
-          variant="outline"
-          className="border-emerald-600/30 bg-emerald-100 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-400"
-        >
-          <TrendingDown className="mr-1 h-3 w-3" />
-          {savedPercentage}% smaller
-        </Badge>
       </div>
 
       <div className="grid gap-8 lg:grid-cols-5">
