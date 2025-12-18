@@ -303,7 +303,7 @@ export function QualityDemo() {
           <div className="relative grid grid-cols-2 gap-4">
             <div className="bg-muted/50 flex flex-col items-center justify-center rounded-xl p-4">
               <p className="text-muted-foreground mb-2 text-xs">Original</p>
-              <div className="bg-muted ring-border relative h-64 w-full overflow-hidden rounded-lg ring-1">
+              <div className="bg-muted ring-border relative h-56 w-full overflow-hidden rounded-lg ring-1">
                 <ImageContainer
                   imageUrl={originalImageUrl}
                   label="Original"
@@ -318,7 +318,7 @@ export function QualityDemo() {
               <p className="text-muted-foreground mb-2 text-xs">
                 Quality {quality}%
               </p>
-              <div className="bg-muted ring-border relative h-64 w-full overflow-hidden rounded-lg ring-1">
+              <div className="bg-muted ring-border relative h-56 w-full overflow-hidden rounded-lg ring-1">
                 <ImageContainer
                   imageUrl={optimizedImageUrl}
                   label="Optimized"
@@ -327,9 +327,6 @@ export function QualityDemo() {
                   onMouseEnter={handleMouseEnter}
                   onMouseLeave={handleMouseLeave}
                 />
-                <div className="bg-background/90 absolute top-2 right-2 z-20 rounded-md px-2 py-1 font-mono text-xs backdrop-blur">
-                  {quality}%
-                </div>
               </div>
             </div>
 
