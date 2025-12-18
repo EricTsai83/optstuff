@@ -5,11 +5,19 @@ import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
+import { CodeBlock } from "@/components/code-block";
 import { ORIGINAL_SIZE_KB, QUALITY_DEMO_IMAGE } from "./constants";
+import { ImageIcon, Sparkles, TrendingDown } from "lucide-react";
 
-/**
- * Image container component (used to trigger comparison magnifier)
- */
+type ImageContainerProps = {
+  readonly imageUrl: string;
+  readonly label: string;
+  readonly imageRef: React.RefObject<HTMLImageElement | null>;
+  readonly onMouseMove: (e: React.MouseEvent<HTMLImageElement>) => void;
+  readonly onMouseEnter: () => void;
+  readonly onMouseLeave: () => void;
+};
+
 function ImageContainer({
   imageUrl,
   label,
@@ -17,21 +25,14 @@ function ImageContainer({
   onMouseMove,
   onMouseEnter,
   onMouseLeave,
-}: {
-  readonly imageUrl: string;
-  readonly label: string;
-  readonly imageRef: React.RefObject<HTMLImageElement | null>;
-  readonly onMouseMove: (e: React.MouseEvent<HTMLImageElement>) => void;
-  readonly onMouseEnter: () => void;
-  readonly onMouseLeave: () => void;
-}) {
+}: ImageContainerProps) {
   return (
     <div className="relative h-full w-full">
       <img
         ref={imageRef}
         src={imageUrl}
         alt={label}
-        className="h-full w-full cursor-crosshair object-contain"
+        className="h-full w-full cursor-crosshair object-contain transition-transform duration-300"
         draggable={false}
         loading="lazy"
         onMouseMove={onMouseMove}
@@ -42,78 +43,109 @@ function ImageContainer({
   );
 }
 
-/**
- * Comparison magnifier component
- * Displays a magnified comparison of the same area from both images in a horizontal bar shape floating below the images
- */
-function ComparisonMagnifier({
-  originalImageUrl,
-  optimizedImageUrl,
-  imagePos,
-  isVisible,
-  zoom = 5,
-  height = 80,
-}: {
+type ComparisonMagnifierProps = {
   readonly originalImageUrl: string;
   readonly optimizedImageUrl: string;
   readonly imagePos: { x: number; y: number };
   readonly isVisible: boolean;
   readonly zoom?: number;
   readonly height?: number;
-}) {
-  if (!isVisible) return null;
+};
+
+function ComparisonMagnifier({
+  originalImageUrl,
+  optimizedImageUrl,
+  imagePos,
+  isVisible,
+  zoom = 5,
+  height = 100,
+}: ComparisonMagnifierProps) {
+  const bgPosition = `${((0.5 - imagePos.x * zoom) / (1 - zoom)) * 100}% ${((0.5 - imagePos.y * zoom) / (1 - zoom)) * 100}%`;
 
   return (
     <div
-      className="border-border/50 bg-background/95 pointer-events-none absolute right-0 bottom-10 left-0 z-30 translate-y-full overflow-hidden rounded-lg border-2 shadow-[0_8px_32px_rgba(0,0,0,0.3),0_4px_16px_rgba(0,0,0,0.2),0_0_0_1px_rgba(255,255,255,0.1)_inset] backdrop-blur-md transition-all duration-200 ease-out"
+      className="pointer-events-none absolute right-0 bottom-0 left-0 z-30 translate-y-full overflow-hidden rounded-xl border border-gray-200 bg-white/95 shadow-2xl backdrop-blur-xl transition-all duration-300 ease-out dark:border-white/10 dark:bg-black/80"
       style={{
-        height: `${height}px`,
+        height: isVisible ? `${height}px` : "0px",
         marginTop: "16px",
+        opacity: isVisible ? 1 : 0,
       }}
     >
-      {/* Side-by-side comparison of both images */}
       <div className="grid h-full grid-cols-2">
-        {/* Original image */}
         <div
-          className="h-full w-full overflow-hidden"
+          className="h-full w-full"
           style={{
             backgroundImage: `url(${originalImageUrl})`,
             backgroundSize: `${zoom * 100}%`,
-            backgroundPosition: `${((0.5 - imagePos.x * zoom) / (1 - zoom)) * 100}% ${((0.5 - imagePos.y * zoom) / (1 - zoom)) * 100}%`,
+            backgroundPosition: bgPosition,
             backgroundRepeat: "no-repeat",
           }}
         />
-        {/* Optimized image */}
         <div
-          className="border-border h-full w-full overflow-hidden border-l-2"
+          className="h-full w-full border-l border-gray-300 dark:border-white/20"
           style={{
             backgroundImage: `url(${optimizedImageUrl})`,
             backgroundSize: `${zoom * 100}%`,
-            backgroundPosition: `${((0.5 - imagePos.x * zoom) / (1 - zoom)) * 100}% ${((0.5 - imagePos.y * zoom) / (1 - zoom)) * 100}%`,
+            backgroundPosition: bgPosition,
             backgroundRepeat: "no-repeat",
           }}
         />
       </div>
-      {/* Labels - placed at bottom to avoid blocking images */}
-      <Badge
-        variant="secondary"
-        className="pointer-events-none absolute bottom-2 left-2"
+
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 flex items-end justify-between p-3">
+        <span className="rounded-md bg-gray-900/80 px-2 py-1 text-[10px] font-medium text-white backdrop-blur-sm dark:bg-white/10 dark:text-white/70">
+          Original
+        </span>
+        <span className="absolute left-1/2 -translate-x-1/2 rounded-full bg-gray-900/80 px-2 py-0.5 text-[10px] font-semibold text-white dark:bg-white/20">
+          VS
+        </span>
+        <span className="rounded-md bg-emerald-600 px-2 py-1 text-[10px] font-medium text-white backdrop-blur-sm dark:bg-emerald-500/20 dark:text-emerald-400">
+          Optimized
+        </span>
+      </div>
+
+      {/* Center crosshair indicator */}
+      <div className="absolute top-1/2 left-1/2 h-4 w-4 -translate-x-1/2 -translate-y-1/2">
+        <div className="absolute top-0 left-1/2 h-full w-px -translate-x-1/2 bg-gray-600 dark:bg-white/40" />
+        <div className="absolute top-1/2 left-0 h-px w-full -translate-y-1/2 bg-gray-600 dark:bg-white/40" />
+      </div>
+    </div>
+  );
+}
+
+type StatCardProps = {
+  readonly value: string | number;
+  readonly label: string;
+  readonly icon: React.ReactNode;
+  readonly highlight?: boolean;
+};
+
+function StatCard({ value, label, icon, highlight = false }: StatCardProps) {
+  return (
+    <div
+      className={`flex flex-1 flex-col items-center gap-1 rounded-lg p-3 transition-colors ${
+        highlight
+          ? "bg-emerald-100 ring-1 ring-emerald-500/30 dark:bg-emerald-500/10 dark:ring-emerald-500/20"
+          : "bg-gray-100 dark:bg-white/5"
+      }`}
+    >
+      <div
+        className={`mb-1 ${highlight ? "text-emerald-600 dark:text-emerald-400" : "text-muted-foreground"}`}
       >
-        Original
-      </Badge>
-      <Badge
-        variant="secondary"
-        className="pointer-events-none absolute right-2 bottom-2"
+        {icon}
+      </div>
+      <p
+        className={`font-mono text-lg font-bold ${
+          highlight
+            ? "text-emerald-600 dark:text-emerald-400"
+            : "text-foreground"
+        }`}
       >
-        Optimized
-      </Badge>
-      {/* Divider label - placed at bottom center */}
-      <Badge
-        variant="default"
-        className="pointer-events-none absolute bottom-2 left-1/2 -translate-x-1/2 text-xs"
-      >
-        vs
-      </Badge>
+        {value}
+      </p>
+      <p className="text-muted-foreground text-[10px] tracking-wider uppercase">
+        {label}
+      </p>
     </div>
   );
 }
@@ -128,18 +160,25 @@ export function QualityDemo() {
 
   const baseSize = ORIGINAL_SIZE_KB;
   const estimatedSize = Math.round((quality / 100) * baseSize * 0.8);
+  const savedPercentage = Math.round((1 - estimatedSize / baseSize) * 100);
 
-  // Build optimized image URL: convert PNG to WebP and apply quality parameter
-  // Use larger size to see quality differences more clearly
   const optimizedImageUrl = useMemo(() => {
-    const operations = [`q_${quality}`, "f_webp", "w_800"];
+    const operations = [`q_${quality}`, "f_webp"];
     if (progressive) {
       operations.push("progressive");
     }
     return `/api/optimize/${operations.join(",")}${QUALITY_DEMO_IMAGE}`;
   }, [quality, progressive]);
 
-  // Original image URL (using highest quality for comparison)
+  const ipxSyntax = useMemo(() => {
+    const operations = [`q_${quality}`, "f_webp"];
+    if (progressive) {
+      operations.push("progressive");
+    }
+    // 只顯示 IPX 語法，不暴露實際的 endpoint
+    return `optstuff/${operations.join(",")}/your-image.jpg`;
+  }, [quality, progressive]);
+
   const originalImageUrl = useMemo(() => {
     return `/api/optimize/q_100,f_webp,w_800${QUALITY_DEMO_IMAGE}`;
   }, []);
@@ -156,7 +195,6 @@ export function QualityDemo() {
       const naturalWidth = img.naturalWidth;
       const naturalHeight = img.naturalHeight;
 
-      // If image hasn't loaded yet, use container dimensions
       if (naturalWidth === 0 || naturalHeight === 0) {
         const imgX = (e.clientX - imgRect.left) / imgRect.width;
         const imgY = (e.clientY - imgRect.top) / imgRect.height;
@@ -168,119 +206,132 @@ export function QualityDemo() {
         return;
       }
 
-      // Calculate aspect ratios of container and image
       const containerAspect = imgRect.width / imgRect.height;
       const imageAspect = naturalWidth / naturalHeight;
 
-      // Calculate actual displayed image dimensions (considering object-contain scaling)
       let displayedWidth: number;
       let displayedHeight: number;
       let offsetX: number;
       let offsetY: number;
 
       if (imageAspect > containerAspect) {
-        // Image is wider, fit to width
         displayedWidth = imgRect.width;
         displayedHeight = imgRect.width / imageAspect;
         offsetX = 0;
         offsetY = (imgRect.height - displayedHeight) / 2;
       } else {
-        // Image is taller, fit to height
         displayedWidth = imgRect.height * imageAspect;
         displayedHeight = imgRect.height;
         offsetX = (imgRect.width - displayedWidth) / 2;
         offsetY = 0;
       }
 
-      // Calculate mouse position relative to actual image display area (0-1)
       const mouseX = e.clientX - imgRect.left;
       const mouseY = e.clientY - imgRect.top;
 
-      // Check if mouse is within the actual image display area
       if (
         mouseX < offsetX ||
         mouseX > offsetX + displayedWidth ||
         mouseY < offsetY ||
         mouseY > offsetY + displayedHeight
       ) {
-        // Mouse is in blank area, hide magnifier
         setIsHovering(false);
         return;
       }
 
-      // Mouse is within actual image display area, show magnifier and update position
       setIsHovering(true);
 
       const imgX = (mouseX - offsetX) / displayedWidth;
       const imgY = (mouseY - offsetY) / displayedHeight;
 
-      // Clamp within image bounds
-      const clampedX = Math.max(0, Math.min(1, imgX));
-      const clampedY = Math.max(0, Math.min(1, imgY));
-
-      setImagePos({ x: clampedX, y: clampedY });
+      setImagePos({
+        x: Math.max(0, Math.min(1, imgX)),
+        y: Math.max(0, Math.min(1, imgY)),
+      });
     },
     [],
   );
 
-  const handleMouseEnter = useCallback(() => {
-    // Don't immediately set to true, let handleMouseMove determine if within image area
-  }, []);
+  const handleMouseEnter = useCallback(() => {}, []);
 
   const handleMouseLeave = useCallback(() => {
     setIsHovering(false);
     setImagePos({ x: 0.5, y: 0.5 });
   }, []);
 
+  function handleQualityChange(values: number[]) {
+    setQuality(values[0] ?? 80);
+  }
+
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h3 className="text-lg font-semibold">Quality Optimization</h3>
+    <div className="space-y-8">
+      {/* Header */}
+      <div className="flex items-start justify-between">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-linear-to-br from-violet-500 to-purple-600">
+              <Sparkles className="h-4 w-4 text-white" />
+            </div>
+            <h3 className="text-xl font-bold tracking-tight">
+              Quality Optimization
+            </h3>
+          </div>
           <p className="text-muted-foreground text-sm">
-            Fine-tune compression for the perfect balance
+            Fine-tune compression for the perfect balance between size and
+            quality
           </p>
         </div>
-        <div className="text-right">
-          <p className="text-muted-foreground mb-1 text-xs tracking-wide uppercase">
-            Estimated
-          </p>
-          <p className="text-accent font-mono text-sm font-semibold">
-            {estimatedSize} KB
-          </p>
-        </div>
+        <Badge
+          variant="outline"
+          className="border-emerald-600/30 bg-emerald-100 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-400"
+        >
+          <TrendingDown className="mr-1 h-3 w-3" />
+          {savedPercentage}% smaller
+        </Badge>
       </div>
 
-      <div className="grid gap-8 md:grid-cols-2">
-        <div className="space-y-6">
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <Label className="text-sm">Quality</Label>
-              <span className="text-muted-foreground font-mono text-sm">
-                {quality}%
-              </span>
+      <div className="grid gap-8 lg:grid-cols-5">
+        {/* Controls */}
+        <div className="space-y-6 lg:col-span-2">
+          {/* Quality Slider */}
+          <div className="rounded-2xl border border-gray-200 bg-linear-to-b from-gray-50 to-white p-5 dark:border-white/10 dark:from-white/5 dark:to-transparent">
+            <div className="mb-4 flex items-center justify-between">
+              <Label className="text-sm font-medium">Quality Level</Label>
+              <div className="rounded-lg bg-gray-100 px-3 py-1 dark:bg-white/10">
+                <span className="font-mono text-lg font-bold">{quality}</span>
+                <span className="text-muted-foreground ml-0.5 text-sm">%</span>
+              </div>
             </div>
+
             <Slider
               value={[quality]}
-              onValueChange={(v) => setQuality(v[0] ?? 80)}
+              onValueChange={handleQualityChange}
               min={10}
               max={100}
               step={5}
-              className="**:[[role=slider]]:h-4 **:[[role=slider]]:w-4"
+              className="***:[[role=slider]]:bg-linear-to-b **:[[role=slider]]:border-2 **:[[role=slider]]:border-gray-300 **:[[role=slider]]:from-white **:[[role=slider]]:to-gray-100 **:[[role=slider]]:shadow-lg dark:**:[[role=slider]]:border-white"
             />
-            <div className="text-muted-foreground flex justify-between text-xs">
-              <span>Smaller file</span>
-              <span>Higher quality</span>
+
+            <div className="text-muted-foreground mt-3 flex justify-between text-xs">
+              <span className="flex items-center gap-1">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                Smaller file
+              </span>
+              <span className="flex items-center gap-1">
+                Higher quality
+                <span className="h-1.5 w-1.5 rounded-full bg-violet-500" />
+              </span>
             </div>
           </div>
 
-          <div className="bg-muted/50 flex items-center justify-between rounded-xl p-4">
-            <div>
+          {/* Progressive Toggle */}
+          <div className="flex items-center justify-between rounded-2xl border border-gray-200 bg-linear-to-b from-gray-50 to-white p-5 dark:border-white/10 dark:from-white/5 dark:to-transparent">
+            <div className="space-y-1">
               <Label htmlFor="progressive" className="text-sm font-medium">
                 Progressive Loading
               </Label>
-              <p className="text-muted-foreground mt-0.5 text-xs">
-                Better perceived performance
+              <p className="text-muted-foreground text-xs">
+                Improves perceived performance
               </p>
             </div>
             <Switch
@@ -290,20 +341,29 @@ export function QualityDemo() {
             />
           </div>
 
-          <div className="rounded-xl bg-[#18181b] p-4">
-            <p className="mb-2 text-xs text-[#71717a]">API URL</p>
-            <code className="font-mono text-sm break-all text-[#a1a1aa]">
-              {optimizedImageUrl}
-            </code>
+          {/* IPX Syntax */}
+          <div className="group rounded-2xl border border-gray-200 bg-linear-to-b from-gray-50 to-white p-5 dark:border-white/10 dark:from-white/5 dark:to-transparent">
+            <p className="text-muted-foreground mb-2 text-xs font-medium tracking-wider uppercase">
+              IPX Syntax
+            </p>
+            <CodeBlock code={ipxSyntax} />
           </div>
         </div>
 
-        <div className="space-y-3">
-          {/* Side-by-side comparison */}
-          <div className="relative grid grid-cols-2 gap-4">
-            <div className="bg-muted/50 flex flex-col items-center justify-center rounded-xl p-4">
-              <p className="text-muted-foreground mb-2 text-xs">Original</p>
-              <div className="bg-muted ring-border relative h-56 w-full overflow-hidden rounded-lg ring-1">
+        {/* Preview */}
+        <div className="space-y-4 lg:col-span-3">
+          <div className="relative grid grid-cols-2 gap-3">
+            {/* Original */}
+            <div className="group relative overflow-hidden rounded-2xl border border-gray-200 bg-linear-to-b from-gray-50 to-white p-3 shadow-sm dark:border-white/10 dark:from-white/5 dark:to-transparent">
+              <div className="mb-2 flex items-center justify-between">
+                <span className="text-muted-foreground text-xs font-medium">
+                  Original
+                </span>
+                <Badge variant="secondary" className="text-[10px]">
+                  {baseSize} KB
+                </Badge>
+              </div>
+              <div className="relative aspect-4/3 overflow-hidden rounded-xl bg-gray-100 dark:bg-transparent">
                 <ImageContainer
                   imageUrl={originalImageUrl}
                   label="Original"
@@ -314,11 +374,21 @@ export function QualityDemo() {
                 />
               </div>
             </div>
-            <div className="bg-muted/50 flex flex-col items-center justify-center rounded-xl p-4">
-              <p className="text-muted-foreground mb-2 text-xs">
-                Quality {quality}%
-              </p>
-              <div className="bg-muted ring-border relative h-56 w-full overflow-hidden rounded-lg ring-1">
+
+            {/* Optimized */}
+            <div className="group relative overflow-hidden rounded-2xl border border-emerald-300 bg-linear-to-b from-emerald-50 to-white p-3 shadow-sm dark:border-emerald-500/20 dark:from-emerald-500/5 dark:to-transparent">
+              <div className="mb-2 flex items-center justify-between">
+                <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">
+                  Optimized
+                </span>
+                <Badge
+                  variant="secondary"
+                  className="border-emerald-300 bg-emerald-100 text-[10px] text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-400"
+                >
+                  {estimatedSize} KB
+                </Badge>
+              </div>
+              <div className="relative aspect-4/3 overflow-hidden rounded-xl bg-emerald-50 dark:bg-transparent">
                 <ImageContainer
                   imageUrl={optimizedImageUrl}
                   label="Optimized"
@@ -330,37 +400,41 @@ export function QualityDemo() {
               </div>
             </div>
 
-            {/* Unified comparison magnifier (horizontal bar, floating below images) */}
+            {/* Magnifier */}
             <ComparisonMagnifier
               originalImageUrl={originalImageUrl}
               optimizedImageUrl={optimizedImageUrl}
               imagePos={imagePos}
               isVisible={isHovering}
               zoom={5}
-              height={80}
+              height={100}
             />
           </div>
 
-          {/* Statistics */}
-          <div className="bg-muted/50 flex gap-6 rounded-xl p-4 text-center text-xs">
-            <div className="flex-1">
-              <p className="text-foreground font-mono font-medium">
-                {estimatedSize} KB
-              </p>
-              <p className="text-muted-foreground">Size</p>
-            </div>
-            <div className="flex-1">
-              <p className="text-foreground font-mono font-medium">
-                {quality}%
-              </p>
-              <p className="text-muted-foreground">Quality</p>
-            </div>
-            <div className="flex-1">
-              <p className="text-accent font-mono font-medium">
-                {Math.round((1 - estimatedSize / baseSize) * 100)}%
-              </p>
-              <p className="text-muted-foreground">Saved</p>
-            </div>
+          {/* Hover hint */}
+          <p className="text-muted-foreground text-center text-xs">
+            <span className="mr-1.5 inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" />
+            Hover over images to compare details
+          </p>
+
+          {/* Stats */}
+          <div className="flex gap-3">
+            <StatCard
+              value={`${estimatedSize} KB`}
+              label="File Size"
+              icon={<ImageIcon className="h-4 w-4" />}
+            />
+            <StatCard
+              value={`${quality}%`}
+              label="Quality"
+              icon={<Sparkles className="h-4 w-4" />}
+            />
+            <StatCard
+              value={`${savedPercentage}%`}
+              label="Saved"
+              icon={<TrendingDown className="h-4 w-4" />}
+              highlight
+            />
           </div>
         </div>
       </div>
