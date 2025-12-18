@@ -1,16 +1,25 @@
 import { cn } from "@/lib/utils";
+import { CopyButton } from "./copy-button";
 
 type CodeBlockProps = {
   readonly code: string;
+  readonly label?: string;
   readonly className?: string;
+  readonly variant?: "default" | "compact";
 };
 
 export function CodeBlock({ code, className }: CodeBlockProps) {
   return (
-    <div className={cn("overflow-hidden rounded-md bg-[#18181b]", className)}>
-      <pre className="overflow-x-auto p-4">
-        <code className="font-mono text-sm text-[#a1a1aa]">{code}</code>
-      </pre>
+    <div
+      className={cn(
+        "border-border flex items-center justify-between gap-4 rounded-xl border bg-[#18181b] px-4 py-1.5",
+        className,
+      )}
+    >
+      <code className="text-accent-foreground overflow-x-auto font-mono text-sm whitespace-pre-wrap">
+        {code}
+      </code>
+      <CopyButton text={code} />
     </div>
   );
 }
