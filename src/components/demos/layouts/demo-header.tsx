@@ -27,7 +27,7 @@ export function DemoHeader({
           <h3 className="text-xl leading-none font-semibold tracking-tight">
             {title}
           </h3>
-          <p className="text-muted-foreground mb-0.5 text-sm">{description}</p>
+          <p className="text-muted-foreground text-sm">{description}</p>
         </div>
       </div>
       {action && <div className="shrink-0">{action}</div>}
