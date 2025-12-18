@@ -546,10 +546,20 @@ function SavingsVisualizer({
   const totalOptimizedKB = optimizedSizeKB * imageCount;
   const totalSavedKB = savedKB * imageCount;
 
+  // 3G 2Mbps (平均速度)
+  const timeSaved3G =
+    calculateLoadTime(totalOriginalKB, 2) -
+    calculateLoadTime(totalOptimizedKB, 2);
+
   // 4G 10Mbps
   const timeSaved4G =
     calculateLoadTime(totalOriginalKB, 10) -
     calculateLoadTime(totalOptimizedKB, 10);
+
+  // 5G 100Mbps (平均速度)
+  const timeSaved5G =
+    calculateLoadTime(totalOriginalKB, 100) -
+    calculateLoadTime(totalOptimizedKB, 100);
 
   // Detect change direction
   useEffect(() => {
@@ -714,7 +724,7 @@ function SavingsVisualizer({
             </div>
 
             {/* Stats Row */}
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-5 gap-2">
               <div className="rounded-lg bg-gray-50 p-2.5 text-center dark:bg-white/5">
                 <div className="mb-1 flex items-center justify-center gap-1">
                   <ImageIcon className="text-muted-foreground h-3 w-3" />
@@ -755,7 +765,26 @@ function SavingsVisualizer({
 
               <div className="rounded-lg bg-gray-50 p-2.5 text-center dark:bg-white/5">
                 <div className="mb-1 flex items-center justify-center gap-1">
-                  <Clock className="text-muted-foreground h-3 w-3" />
+                  <Wifi className="text-muted-foreground h-3 w-3" />
+                  <span className="text-muted-foreground text-[9px] uppercase">
+                    3G Load
+                  </span>
+                </div>
+                <div className="flex items-center justify-center gap-1">
+                  <TrendIcon
+                    isRising={isRising}
+                    isShaking={isShaking}
+                    className={`h-3 w-3 transition-colors duration-300 ${iconColorClass}`}
+                  />
+                  <span className="font-mono text-sm font-bold tabular-nums">
+                    {formatTime(timeSaved3G)}
+                  </span>
+                </div>
+              </div>
+
+              <div className="rounded-lg bg-gray-50 p-2.5 text-center dark:bg-white/5">
+                <div className="mb-1 flex items-center justify-center gap-1">
+                  <Wifi className="text-muted-foreground h-3 w-3" />
                   <span className="text-muted-foreground text-[9px] uppercase">
                     4G Load
                   </span>
@@ -768,6 +797,25 @@ function SavingsVisualizer({
                   />
                   <span className="font-mono text-sm font-bold tabular-nums">
                     {formatTime(timeSaved4G)}
+                  </span>
+                </div>
+              </div>
+
+              <div className="rounded-lg bg-gray-50 p-2.5 text-center dark:bg-white/5">
+                <div className="mb-1 flex items-center justify-center gap-1">
+                  <Wifi className="text-muted-foreground h-3 w-3" />
+                  <span className="text-muted-foreground text-[9px] uppercase">
+                    5G Load
+                  </span>
+                </div>
+                <div className="flex items-center justify-center gap-1">
+                  <TrendIcon
+                    isRising={isRising}
+                    isShaking={isShaking}
+                    className={`h-3 w-3 transition-colors duration-300 ${iconColorClass}`}
+                  />
+                  <span className="font-mono text-sm font-bold tabular-nums">
+                    {formatTime(timeSaved5G)}
                   </span>
                 </div>
               </div>
