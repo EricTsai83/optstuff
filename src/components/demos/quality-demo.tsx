@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { ORIGINAL_SIZE_KB, QUALITY_DEMO_IMAGE } from "./constants";
 
 /**
- * 圖片容器組件（用於觸發對比放大鏡）
+ * Image container component (used to trigger comparison magnifier)
  */
 function ImageContainer({
   imageUrl,
@@ -21,32 +21,30 @@ function ImageContainer({
   readonly imageUrl: string;
   readonly label: string;
   readonly imageRef: React.RefObject<HTMLImageElement | null>;
-  readonly onMouseMove: (e: React.MouseEvent<HTMLDivElement>) => void;
+  readonly onMouseMove: (e: React.MouseEvent<HTMLImageElement>) => void;
   readonly onMouseEnter: () => void;
   readonly onMouseLeave: () => void;
 }) {
   return (
-    <div
-      className="relative h-full w-full cursor-crosshair"
-      onMouseMove={onMouseMove}
-      onMouseEnter={onMouseEnter}
-      onMouseLeave={onMouseLeave}
-    >
+    <div className="relative h-full w-full">
       <img
         ref={imageRef}
         src={imageUrl}
         alt={label}
-        className="h-full w-full object-contain"
+        className="h-full w-full cursor-crosshair object-contain"
         draggable={false}
         loading="lazy"
+        onMouseMove={onMouseMove}
+        onMouseEnter={onMouseEnter}
+        onMouseLeave={onMouseLeave}
       />
     </div>
   );
 }
 
 /**
- * 對比放大鏡組件
- * 以長條型形狀浮在圖片正下方顯示兩張圖片相同區域的放大對比
+ * Comparison magnifier component
+ * Displays a magnified comparison of the same area from both images in a horizontal bar shape floating below the images
  */
 function ComparisonMagnifier({
   originalImageUrl,
@@ -73,9 +71,9 @@ function ComparisonMagnifier({
         marginTop: "16px",
       }}
     >
-      {/* 並排對比兩張圖片 */}
+      {/* Side-by-side comparison of both images */}
       <div className="grid h-full grid-cols-2">
-        {/* 原圖 */}
+        {/* Original image */}
         <div
           className="h-full w-full overflow-hidden"
           style={{
@@ -85,7 +83,7 @@ function ComparisonMagnifier({
             backgroundRepeat: "no-repeat",
           }}
         />
-        {/* 優化後的圖片 */}
+        {/* Optimized image */}
         <div
           className="border-border h-full w-full overflow-hidden border-l-2"
           style={{
@@ -96,7 +94,7 @@ function ComparisonMagnifier({
           }}
         />
       </div>
-      {/* 標籤 - 放在底部避免遮擋圖片 */}
+      {/* Labels - placed at bottom to avoid blocking images */}
       <Badge
         variant="secondary"
         className="pointer-events-none absolute bottom-2 left-2"
@@ -109,7 +107,7 @@ function ComparisonMagnifier({
       >
         Optimized
       </Badge>
-      {/* 分隔線標籤 - 放在底部中間 */}
+      {/* Divider label - placed at bottom center */}
       <Badge
         variant="default"
         className="pointer-events-none absolute bottom-2 left-1/2 -translate-x-1/2 text-xs"
@@ -131,8 +129,8 @@ export function QualityDemo() {
   const baseSize = ORIGINAL_SIZE_KB;
   const estimatedSize = Math.round((quality / 100) * baseSize * 0.8);
 
-  // 構建優化後的圖片 URL：將 PNG 轉換為 WebP 並應用 quality 參數
-  // 使用較大的尺寸以便更清楚地看到畫質差異
+  // Build optimized image URL: convert PNG to WebP and apply quality parameter
+  // Use larger size to see quality differences more clearly
   const optimizedImageUrl = useMemo(() => {
     const operations = [`q_${quality}`, "f_webp", "w_800"];
     if (progressive) {
@@ -141,14 +139,14 @@ export function QualityDemo() {
     return `/api/optimize/${operations.join(",")}${QUALITY_DEMO_IMAGE}`;
   }, [quality, progressive]);
 
-  // 原圖 URL（使用最高質量以便對比）
+  // Original image URL (using highest quality for comparison)
   const originalImageUrl = useMemo(() => {
     return `/api/optimize/q_100,f_webp,w_800${QUALITY_DEMO_IMAGE}`;
   }, []);
 
   const handleMouseMove = useCallback(
     (
-      e: React.MouseEvent<HTMLDivElement>,
+      e: React.MouseEvent<HTMLImageElement>,
       imageRef: React.RefObject<HTMLImageElement | null>,
     ) => {
       if (!imageRef.current) return;
@@ -158,7 +156,7 @@ export function QualityDemo() {
       const naturalWidth = img.naturalWidth;
       const naturalHeight = img.naturalHeight;
 
-      // 如果圖片還沒載入完成，使用容器尺寸
+      // If image hasn't loaded yet, use container dimensions
       if (naturalWidth === 0 || naturalHeight === 0) {
         const imgX = (e.clientX - imgRect.left) / imgRect.width;
         const imgY = (e.clientY - imgRect.top) / imgRect.height;
@@ -166,41 +164,57 @@ export function QualityDemo() {
           x: Math.max(0, Math.min(1, imgX)),
           y: Math.max(0, Math.min(1, imgY)),
         });
+        setIsHovering(true);
         return;
       }
 
-      // 計算容器和圖片的寬高比
+      // Calculate aspect ratios of container and image
       const containerAspect = imgRect.width / imgRect.height;
       const imageAspect = naturalWidth / naturalHeight;
 
-      // 計算實際顯示的圖片尺寸（考慮 object-contain 縮放）
+      // Calculate actual displayed image dimensions (considering object-contain scaling)
       let displayedWidth: number;
       let displayedHeight: number;
       let offsetX: number;
       let offsetY: number;
 
       if (imageAspect > containerAspect) {
-        // 圖片較寬，以寬度為準
+        // Image is wider, fit to width
         displayedWidth = imgRect.width;
         displayedHeight = imgRect.width / imageAspect;
         offsetX = 0;
         offsetY = (imgRect.height - displayedHeight) / 2;
       } else {
-        // 圖片較高，以高度為準
+        // Image is taller, fit to height
         displayedWidth = imgRect.height * imageAspect;
         displayedHeight = imgRect.height;
         offsetX = (imgRect.width - displayedWidth) / 2;
         offsetY = 0;
       }
 
-      // 計算滑鼠在實際圖片顯示區域上的相對位置 (0-1)
+      // Calculate mouse position relative to actual image display area (0-1)
       const mouseX = e.clientX - imgRect.left;
       const mouseY = e.clientY - imgRect.top;
+
+      // Check if mouse is within the actual image display area
+      if (
+        mouseX < offsetX ||
+        mouseX > offsetX + displayedWidth ||
+        mouseY < offsetY ||
+        mouseY > offsetY + displayedHeight
+      ) {
+        // Mouse is in blank area, hide magnifier
+        setIsHovering(false);
+        return;
+      }
+
+      // Mouse is within actual image display area, show magnifier and update position
+      setIsHovering(true);
 
       const imgX = (mouseX - offsetX) / displayedWidth;
       const imgY = (mouseY - offsetY) / displayedHeight;
 
-      // 限制在圖片範圍內
+      // Clamp within image bounds
       const clampedX = Math.max(0, Math.min(1, imgX));
       const clampedY = Math.max(0, Math.min(1, imgY));
 
@@ -210,11 +224,12 @@ export function QualityDemo() {
   );
 
   const handleMouseEnter = useCallback(() => {
-    setIsHovering(true);
+    // Don't immediately set to true, let handleMouseMove determine if within image area
   }, []);
 
   const handleMouseLeave = useCallback(() => {
     setIsHovering(false);
+    setImagePos({ x: 0.5, y: 0.5 });
   }, []);
 
   return (
@@ -284,7 +299,7 @@ export function QualityDemo() {
         </div>
 
         <div className="space-y-3">
-          {/* 並排對比 */}
+          {/* Side-by-side comparison */}
           <div className="relative grid grid-cols-2 gap-4">
             <div className="bg-muted/50 flex flex-col items-center justify-center rounded-xl p-4">
               <p className="text-muted-foreground mb-2 text-xs">Original</p>
@@ -318,7 +333,7 @@ export function QualityDemo() {
               </div>
             </div>
 
-            {/* 統一的對比放大鏡（長條型，浮在圖片正下方） */}
+            {/* Unified comparison magnifier (horizontal bar, floating below images) */}
             <ComparisonMagnifier
               originalImageUrl={originalImageUrl}
               optimizedImageUrl={optimizedImageUrl}
@@ -329,7 +344,7 @@ export function QualityDemo() {
             />
           </div>
 
-          {/* 統計資訊 */}
+          {/* Statistics */}
           <div className="bg-muted/50 flex gap-6 rounded-xl p-4 text-center text-xs">
             <div className="flex-1">
               <p className="text-foreground font-mono font-medium">
