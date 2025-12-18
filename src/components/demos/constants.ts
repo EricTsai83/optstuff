@@ -27,3 +27,5 @@ export const FORMAT_SIZES = {
 
 /** Demo 使用的圖片路徑 */
 export const DEMO_IMAGE = "/demo-image.png";
+
+export const QUALITY_DEMO_IMAGE = "/demo-image.webp";

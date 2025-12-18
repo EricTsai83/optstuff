@@ -98,6 +98,7 @@ function parseOperationsString(
     if (underscoreIndex > 0) {
       const key = part.slice(0, underscoreIndex);
       const value = part.slice(underscoreIndex + 1);
+      // IPX 內部期望字符串格式的參數
       operations[key] = value;
     } else {
       // 處理無值的操作 (如 flip, flop, grayscale, embed)
