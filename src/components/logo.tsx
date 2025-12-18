@@ -18,7 +18,7 @@ const LogoIcon = () => {
         className="text-white"
         aria-hidden="true"
       >
-        {/* 外框 - 圖片邊框 */}
+        {/* Outer frame - image border */}
         <rect
           x="1"
           y="1"
@@ -29,7 +29,7 @@ const LogoIcon = () => {
           strokeWidth="2"
           fill="none"
         />
-        {/* 左上箭頭 */}
+        {/* Top-left arrow */}
         <path
           d="M6 10 L6 6 L10 6"
           stroke="currentColor"
@@ -37,7 +37,7 @@ const LogoIcon = () => {
           strokeLinecap="round"
           strokeLinejoin="round"
         />
-        {/* 右下箭頭 */}
+        {/* Bottom-right arrow */}
         <path
           d="M18 14 L18 18 L14 18"
           stroke="currentColor"
@@ -45,7 +45,7 @@ const LogoIcon = () => {
           strokeLinecap="round"
           strokeLinejoin="round"
         />
-        {/* 中心方塊 - 壓縮後的結果 */}
+        {/* Center square - compressed result */}
         <rect x="9" y="9" width="6" height="6" rx="2.5" fill="currentColor" />
       </svg>
     </div>
