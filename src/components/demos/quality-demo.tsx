@@ -6,7 +6,19 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { CodeBlock } from "@/components/code-block";
 import { ORIGINAL_SIZE_KB, QUALITY_DEMO_IMAGE } from "./constants";
-import { ImageIcon, Sparkles, TrendingDown } from "lucide-react";
+import {
+  ImageIcon,
+  Sparkles,
+  TrendingDown,
+  Zap,
+  HardDrive,
+  Wifi,
+  Clock,
+  ArrowDown,
+  Calculator,
+  ChevronDown,
+} from "lucide-react";
+import { useEffect } from "react";
 
 type ImageContainerProps = {
   readonly imageUrl: string;
@@ -172,16 +184,23 @@ function StatCard({ value, label, icon, highlight = false }: StatCardProps) {
 
 export function QualityDemo() {
   const [quality, setQuality] = useState(80);
+  const [imageCount, setImageCount] = useState(100);
   const [isHovering, setIsHovering] = useState(false);
   const [imagePos, setImagePos] = useState({ x: 0.5, y: 0.5 });
   const originalImageRef = useRef<HTMLImageElement | null>(null);
   const optimizedImageRef = useRef<HTMLImageElement | null>(null);
 
   const baseSize = ORIGINAL_SIZE_KB;
-  const estimatedSize = Math.round((quality / 100) * baseSize * 0.8);
+  // 當 quality 為 100 時，應該和原圖一樣大
+  const estimatedSize =
+    quality === 100 ? baseSize : Math.round((quality / 100) * baseSize * 0.8);
   const savedPercentage = Math.round((1 - estimatedSize / baseSize) * 100);
 
   const optimizedImageUrl = useMemo(() => {
+    // 當 quality 為 100 時，使用和原圖一樣的參數
+    if (quality === 100) {
+      return `/api/optimize/q_100,f_webp,w_800${QUALITY_DEMO_IMAGE}`;
+    }
     const operations = [`q_${quality}`, "f_webp"];
     return `/api/optimize/${operations.join(",")}${QUALITY_DEMO_IMAGE}`;
   }, [quality]);
@@ -276,6 +295,10 @@ export function QualityDemo() {
     setQuality(values[0] ?? 80);
   }
 
+  function handleImageCountChange(values: number[]) {
+    setImageCount(values[0] ?? 100);
+  }
+
   return (
     <div className="space-y-8">
       {/* Header */}
@@ -300,10 +323,10 @@ export function QualityDemo() {
         {/* Controls */}
         <div className="space-y-6 lg:col-span-2">
           {/* Quality Slider */}
-          <div className="rounded-2xl border border-gray-200 bg-linear-to-b from-gray-50 to-white p-5 dark:border-white/10 dark:from-white/5 dark:to-transparent">
-            <div className="mb-4 flex items-center justify-between">
+          <div className="rounded-2xl border border-gray-200 bg-linear-to-b from-gray-50 to-white px-5 py-4 dark:border-white/10 dark:from-white/5 dark:to-transparent">
+            <div className="mb-2 flex items-center justify-between">
               <Label className="text-sm font-medium">Quality Level</Label>
-              <div className="rounded-lg bg-gray-100 px-3 py-1 dark:bg-white/10">
+              <div className="rounded-lg bg-gray-100 px-3 py-0.5 dark:bg-white/10">
                 <span className="font-mono text-lg font-bold">{quality}</span>
                 <span className="text-muted-foreground ml-0.5 text-sm">%</span>
               </div>
@@ -330,11 +353,35 @@ export function QualityDemo() {
             </div>
           </div>
 
+          {/* Image Count Slider */}
+          <div className="rounded-2xl border border-gray-200 bg-linear-to-b from-gray-50 to-white px-5 py-4 dark:border-white/10 dark:from-white/5 dark:to-transparent">
+            <div className="mb-2 flex items-center justify-between">
+              <Label className="text-sm font-medium">Number of Images</Label>
+              <div className="rounded-lg bg-gray-100 px-3 py-0.5 dark:bg-white/10">
+                <span className="font-mono text-lg font-bold">
+                  {imageCount.toLocaleString()}
+                </span>
+              </div>
+            </div>
+
+            <Slider
+              value={[imageCount]}
+              onValueChange={handleImageCountChange}
+              min={1}
+              max={10000}
+              step={1}
+              className="***:[[role=slider]]:bg-linear-to-b **:[[role=slider]]:border-2 **:[[role=slider]]:border-gray-300 **:[[role=slider]]:from-white **:[[role=slider]]:to-gray-100 **:[[role=slider]]:shadow-lg dark:**:[[role=slider]]:border-white"
+            />
+
+            <div className="text-muted-foreground mt-3 flex justify-between text-xs">
+              <span>1 image</span>
+              <span>10,000 images</span>
+            </div>
+          </div>
+
           {/* API URL */}
-          <div className="group rounded-2xl border border-gray-200 bg-linear-to-b from-gray-50 to-white p-5 dark:border-white/10 dark:from-white/5 dark:to-transparent">
-            <p className="text-muted-foreground mb-2 text-xs font-medium tracking-wider uppercase">
-              API URL
-            </p>
+          <div className="group rounded-2xl border border-gray-200 bg-linear-to-b from-gray-50 to-white px-5 py-4 dark:border-white/10 dark:from-white/5 dark:to-transparent">
+            <Label className="mb-2 text-sm font-medium">API URL</Label>
             <CodeBlock code={ipxSyntax} />
           </div>
         </div>
@@ -424,6 +471,307 @@ export function QualityDemo() {
               icon={<TrendingDown className="h-4 w-4" />}
               highlight
             />
+          </div>
+        </div>
+      </div>
+      <SavingsVisualizer
+        savedPercentage={savedPercentage}
+        savedKB={baseSize - estimatedSize}
+        imageCount={imageCount}
+        originalSizeKB={baseSize}
+        optimizedSizeKB={estimatedSize}
+      />
+    </div>
+  );
+}
+
+type SavingsVisualizerProps = {
+  readonly savedPercentage: number;
+  readonly savedKB: number;
+  readonly imageCount: number;
+  readonly originalSizeKB: number;
+  readonly optimizedSizeKB: number;
+};
+
+function formatFileSize(kb: number): string {
+  if (kb < 1024) return `${Math.round(kb)} KB`;
+  if (kb < 1024 * 1024) return `${(kb / 1024).toFixed(1)} MB`;
+  return `${(kb / (1024 * 1024)).toFixed(2)} GB`;
+}
+
+function formatTime(seconds: number): string {
+  if (seconds < 0.1) return `${Math.round(seconds * 1000)}ms`;
+  if (seconds < 60) return `${seconds.toFixed(1)}s`;
+  return `${(seconds / 60).toFixed(1)}m`;
+}
+
+function calculateLoadTime(sizeKB: number, speedMbps: number): number {
+  return sizeKB / 1024 / (speedMbps / 8);
+}
+
+type TrendIconProps = {
+  readonly isRising: boolean;
+  readonly isShaking: boolean;
+  readonly className?: string;
+};
+
+function TrendIcon({ isRising, isShaking, className = "" }: TrendIconProps) {
+  return (
+    <span
+      className={`inline-flex transition-transform duration-300 ${
+        isRising ? "-scale-x-100 -rotate-180" : ""
+      }`}
+    >
+      <TrendingDown
+        className={`${className} ${isShaking ? "animate-shake" : ""}`}
+      />
+    </span>
+  );
+}
+
+function SavingsVisualizer({
+  savedPercentage,
+  savedKB,
+  imageCount,
+  originalSizeKB,
+  optimizedSizeKB,
+}: SavingsVisualizerProps) {
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [isShaking, setIsShaking] = useState(false);
+  const [isRising, setIsRising] = useState(false);
+  const prevPercentageRef = useRef(savedPercentage);
+  const shakeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const totalOriginalKB = originalSizeKB * imageCount;
+  const totalOptimizedKB = optimizedSizeKB * imageCount;
+  const totalSavedKB = savedKB * imageCount;
+
+  // 4G 10Mbps
+  const timeSaved4G =
+    calculateLoadTime(totalOriginalKB, 10) -
+    calculateLoadTime(totalOptimizedKB, 10);
+
+  // Detect change direction
+  useEffect(() => {
+    const prevValue = prevPercentageRef.current;
+    const currentValue = savedPercentage;
+
+    if (prevValue !== currentValue) {
+      // 節省量減少 = 成本上升
+      const isCostRising = currentValue < prevValue;
+
+      if (isCostRising) {
+        setIsRising(true);
+        setIsShaking(true);
+      }
+
+      prevPercentageRef.current = currentValue;
+
+      if (shakeTimeoutRef.current) {
+        clearTimeout(shakeTimeoutRef.current);
+      }
+
+      shakeTimeoutRef.current = setTimeout(() => {
+        setIsShaking(false);
+        setIsRising(false);
+      }, 600);
+    }
+
+    return () => {
+      if (shakeTimeoutRef.current) {
+        clearTimeout(shakeTimeoutRef.current);
+      }
+    };
+  }, [savedPercentage]);
+
+  function handleToggle() {
+    setIsExpanded((prev) => !prev);
+  }
+
+  function handleKeyDown(e: React.KeyboardEvent) {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      handleToggle();
+    }
+  }
+
+  const trendColorClass = isRising
+    ? "text-red-500 dark:text-red-400"
+    : "text-accent dark:text-accent";
+
+  const trendBgClass = isRising
+    ? "bg-red-100 dark:bg-red-500/20"
+    : "bg-accent/10 dark:bg-accent/20";
+
+  const iconColorClass = isRising ? "text-red-500" : "text-accent";
+
+  return (
+    <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/10 dark:bg-white/[0.02]">
+      {/* Collapsible Header */}
+      <div
+        role="button"
+        tabIndex={0}
+        aria-expanded={isExpanded}
+        aria-label="Toggle savings calculator details"
+        onClick={handleToggle}
+        onKeyDown={handleKeyDown}
+        className="flex cursor-pointer items-center justify-between px-4 py-3 transition-colors hover:bg-gray-50 dark:hover:bg-white/5"
+      >
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            <Calculator className="text-muted-foreground h-4 w-4" />
+            <span className="text-sm font-medium">Savings Calculator</span>
+          </div>
+          <span className="text-muted-foreground text-xs">
+            ({imageCount.toLocaleString()} images)
+          </span>
+        </div>
+
+        {/* Summary badge */}
+        <div className="flex items-center gap-2">
+          <div
+            className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 transition-colors duration-300 ${trendBgClass}`}
+          >
+            <TrendIcon
+              isRising={isRising}
+              isShaking={isShaking}
+              className={`h-3.5 w-3.5 transition-colors duration-300 ${trendColorClass}`}
+            />
+            <span
+              className={`font-mono text-sm font-bold transition-colors duration-300 ${trendColorClass}`}
+            >
+              {savedPercentage}%
+            </span>
+          </div>
+          <ChevronDown
+            className={`text-muted-foreground h-4 w-4 transition-transform duration-200 ${
+              isExpanded ? "rotate-180" : ""
+            }`}
+          />
+        </div>
+      </div>
+
+      {/* Expandable Content */}
+      <div
+        className={`grid transition-all duration-300 ease-out ${
+          isExpanded ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
+        }`}
+      >
+        <div className="overflow-hidden">
+          <div className="border-t border-gray-100 p-4 dark:border-white/5">
+            {/* Size Comparison */}
+            <div className="mb-4">
+              <p className="text-muted-foreground mb-2 text-center text-[10px] tracking-wider uppercase">
+                Total Size Comparison
+              </p>
+              <div className="flex items-center justify-center gap-4">
+                <div className="text-center">
+                  <p className="text-muted-foreground mb-0.5 text-[10px]">
+                    Before
+                  </p>
+                  <p className="font-mono text-lg font-semibold text-gray-400 tabular-nums line-through">
+                    {formatFileSize(totalOriginalKB)}
+                  </p>
+                </div>
+
+                <div className="text-muted-foreground">→</div>
+
+                <div className="text-center">
+                  <p
+                    className={`mb-0.5 text-[10px] transition-colors duration-300 ${trendColorClass}`}
+                  >
+                    After
+                  </p>
+                  <p
+                    className={`font-mono text-lg font-semibold tabular-nums transition-colors duration-300 ${trendColorClass}`}
+                  >
+                    {formatFileSize(totalOptimizedKB)}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Progress Bar */}
+            <div className="mb-4">
+              <div className="relative h-2 overflow-hidden rounded-full bg-gray-100 dark:bg-white/10">
+                <div
+                  className={`h-full rounded-full transition-all duration-500 ${
+                    isRising ? "bg-red-500" : "bg-accent"
+                  }`}
+                  style={{ width: `${100 - savedPercentage}%` }}
+                />
+              </div>
+              <div className="mt-1.5 flex justify-between text-[10px]">
+                <span
+                  className={`transition-colors duration-300 ${trendColorClass}`}
+                >
+                  Optimized
+                </span>
+                <span className="text-muted-foreground">
+                  {savedPercentage}% reduced
+                </span>
+              </div>
+            </div>
+
+            {/* Stats Row */}
+            <div className="grid grid-cols-3 gap-2">
+              <div className="rounded-lg bg-gray-50 p-2.5 text-center dark:bg-white/5">
+                <div className="mb-1 flex items-center justify-center gap-1">
+                  <ImageIcon className="text-muted-foreground h-3 w-3" />
+                  <span className="text-muted-foreground text-[9px] uppercase">
+                    Per Image
+                  </span>
+                </div>
+                <div className="flex items-center justify-center gap-1">
+                  <TrendIcon
+                    isRising={isRising}
+                    isShaking={isShaking}
+                    className={`h-3 w-3 transition-colors duration-300 ${iconColorClass}`}
+                  />
+                  <span className="font-mono text-sm font-bold tabular-nums">
+                    {formatFileSize(savedKB)}
+                  </span>
+                </div>
+              </div>
+
+              <div className="rounded-lg bg-gray-50 p-2.5 text-center dark:bg-white/5">
+                <div className="mb-1 flex items-center justify-center gap-1">
+                  <HardDrive className="text-muted-foreground h-3 w-3" />
+                  <span className="text-muted-foreground text-[9px] uppercase">
+                    Saved
+                  </span>
+                </div>
+                <div className="flex items-center justify-center gap-1">
+                  <TrendIcon
+                    isRising={isRising}
+                    isShaking={isShaking}
+                    className={`h-3 w-3 transition-colors duration-300 ${iconColorClass}`}
+                  />
+                  <span className="font-mono text-sm font-bold tabular-nums">
+                    {formatFileSize(totalSavedKB)}
+                  </span>
+                </div>
+              </div>
+
+              <div className="rounded-lg bg-gray-50 p-2.5 text-center dark:bg-white/5">
+                <div className="mb-1 flex items-center justify-center gap-1">
+                  <Clock className="text-muted-foreground h-3 w-3" />
+                  <span className="text-muted-foreground text-[9px] uppercase">
+                    4G Load
+                  </span>
+                </div>
+                <div className="flex items-center justify-center gap-1">
+                  <TrendIcon
+                    isRising={isRising}
+                    isShaking={isShaking}
+                    className={`h-3 w-3 transition-colors duration-300 ${iconColorClass}`}
+                  />
+                  <span className="font-mono text-sm font-bold tabular-nums">
+                    {formatTime(timeSaved4G)}
+                  </span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>

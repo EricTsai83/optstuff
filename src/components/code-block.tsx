@@ -12,7 +12,7 @@ export function CodeBlock({ code, className }: CodeBlockProps) {
   return (
     <div
       className={cn(
-        "border-border flex items-center justify-between gap-4 rounded-xl border bg-[#18181b] px-4 py-2.5",
+        "border-border flex items-center justify-between gap-4 rounded-xl border bg-[#18181b] px-4 py-1.5",
         className,
       )}
     >
