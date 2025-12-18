@@ -16,7 +16,7 @@ export function CodeBlock({ code, className }: CodeBlockProps) {
         className,
       )}
     >
-      <code className="text-accent-foreground font-mono text-sm break-all">
+      <code className="text-accent-foreground overflow-x-auto font-mono text-sm whitespace-pre-wrap">
         {code}
       </code>
       <CopyButton text={code} />

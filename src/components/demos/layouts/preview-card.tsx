@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 
 type PreviewCardProps = {
   readonly children: ReactNode;
@@ -35,7 +36,7 @@ export function PreviewCard({
     : "relative aspect-4/3 overflow-hidden rounded-xl bg-gray-100 dark:bg-transparent";
 
   return (
-    <div className={`${containerClasses} ${className}`}>
+    <div className={cn(containerClasses, className)}>
       <div className="mb-2 flex items-center justify-between">
         <span className={labelClasses}>{label}</span>
         {badge && (

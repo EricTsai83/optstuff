@@ -327,7 +327,7 @@ export function QualityDemo() {
               min={10}
               max={100}
               step={5}
-              className="***:[[role=slider]]:bg-linear-to-b **:[[role=slider]]:border-2 **:[[role=slider]]:border-gray-300 **:[[role=slider]]:from-white **:[[role=slider]]:to-gray-100 **:[[role=slider]]:shadow-lg dark:**:[[role=slider]]:border-white"
+              className="**:[[role=slider]]:border-2 **:[[role=slider]]:border-gray-300 **:[[role=slider]]:bg-linear-to-b **:[[role=slider]]:from-white **:[[role=slider]]:to-gray-100 **:[[role=slider]]:shadow-lg dark:**:[[role=slider]]:border-white"
             />
 
             <div className="text-muted-foreground mt-3 flex justify-between text-xs">
@@ -359,7 +359,7 @@ export function QualityDemo() {
               min={1}
               max={10000}
               step={1}
-              className="***:[[role=slider]]:bg-linear-to-b **:[[role=slider]]:border-2 **:[[role=slider]]:border-gray-300 **:[[role=slider]]:from-white **:[[role=slider]]:to-gray-100 **:[[role=slider]]:shadow-lg dark:**:[[role=slider]]:border-white"
+              className="**:[[role=slider]]:border-2 **:[[role=slider]]:border-gray-300 **:[[role=slider]]:bg-linear-to-b **:[[role=slider]]:from-white **:[[role=slider]]:to-gray-100 **:[[role=slider]]:shadow-lg dark:**:[[role=slider]]:border-white"
             />
 
             <div className="text-muted-foreground mt-3 flex justify-between text-xs">

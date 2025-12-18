@@ -1,3 +1,4 @@
+import { cn } from "@/lib/utils";
 import type { ReactNode } from "react";
 
 type DemoLayoutProps = {
@@ -14,14 +15,20 @@ export function DemoLayout({
   className = "",
 }: DemoLayoutProps) {
   const gridCols = controlsColSpan + previewColSpan;
-  const gridClass =
-    gridCols === 5
-      ? "lg:grid-cols-5"
-      : gridCols === 4
-        ? "lg:grid-cols-4"
-        : "lg:grid-cols-2";
+  const gridClass = (() => {
+    switch (gridCols) {
+      case 4:
+        return "lg:grid-cols-4";
+      case 5:
+        return "lg:grid-cols-5";
+      case 6:
+        return "lg:grid-cols-6";
+      default:
+        return "lg:grid-cols-2";
+    }
+  })();
 
   return (
-    <div className={`grid gap-8 ${gridClass} ${className}`}>{children}</div>
+    <div className={cn("grid gap-8", gridClass, className)}>{children}</div>
   );
 }
