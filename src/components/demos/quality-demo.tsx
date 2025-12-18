@@ -58,56 +58,77 @@ function ComparisonMagnifier({
   imagePos,
   isVisible,
   zoom = 5,
-  height = 100,
+  height = 120,
 }: ComparisonMagnifierProps) {
   const bgPosition = `${((0.5 - imagePos.x * zoom) / (1 - zoom)) * 100}% ${((0.5 - imagePos.y * zoom) / (1 - zoom)) * 100}%`;
 
   return (
     <div
-      className="pointer-events-none absolute right-0 bottom-0 left-0 z-30 translate-y-full overflow-hidden rounded-xl border border-gray-200 bg-white/95 shadow-2xl backdrop-blur-xl transition-all duration-300 ease-out dark:border-white/10 dark:bg-black/80"
+      className="pointer-events-none absolute right-0 bottom-0 left-0 z-30 col-span-2 translate-y-full overflow-hidden rounded-2xl border border-gray-200 bg-gray-50 shadow-xl transition-all duration-300 ease-out dark:border-white/10 dark:bg-gray-900"
       style={{
         height: isVisible ? `${height}px` : "0px",
-        marginTop: "16px",
+        marginTop: "12px",
         opacity: isVisible ? 1 : 0,
       }}
     >
-      <div className="grid h-full grid-cols-2">
-        <div
-          className="h-full w-full"
-          style={{
-            backgroundImage: `url(${originalImageUrl})`,
-            backgroundSize: `${zoom * 100}%`,
-            backgroundPosition: bgPosition,
-            backgroundRepeat: "no-repeat",
-          }}
-        />
-        <div
-          className="h-full w-full border-l border-gray-300 dark:border-white/20"
-          style={{
-            backgroundImage: `url(${optimizedImageUrl})`,
-            backgroundSize: `${zoom * 100}%`,
-            backgroundPosition: bgPosition,
-            backgroundRepeat: "no-repeat",
-          }}
-        />
+      {/* Image comparison area */}
+      <div className="relative grid h-full grid-cols-2">
+        {/* Original side */}
+        <div className="relative h-full w-full overflow-hidden">
+          <div
+            className="h-full w-full"
+            style={{
+              backgroundImage: `url(${originalImageUrl})`,
+              backgroundSize: `${zoom * 100}%`,
+              backgroundPosition: bgPosition,
+              backgroundRepeat: "no-repeat",
+            }}
+          />
+          {/* Label */}
+          <div className="absolute inset-x-0 bottom-0 bg-linear-to-t from-black/60 to-transparent px-3 pt-6 pb-2">
+            <Badge
+              variant="secondary"
+              className="border-white/20 bg-white/10 text-[10px] text-white/90 backdrop-blur-sm"
+            >
+              Original
+            </Badge>
+          </div>
+        </div>
+
+        {/* Center divider */}
+        <div className="absolute top-0 bottom-0 left-1/2 z-10 flex -translate-x-1/2 flex-col items-center">
+          <div className="h-full w-px bg-white shadow-sm" />
+          <div className="absolute top-1/2 -translate-y-1/2 rounded-full border-2 border-white bg-gray-900 px-2 py-0.5 text-[10px] font-bold text-white shadow-lg">
+            VS
+          </div>
+        </div>
+
+        {/* Optimized side */}
+        <div className="relative h-full w-full overflow-hidden">
+          <div
+            className="h-full w-full"
+            style={{
+              backgroundImage: `url(${optimizedImageUrl})`,
+              backgroundSize: `${zoom * 100}%`,
+              backgroundPosition: bgPosition,
+              backgroundRepeat: "no-repeat",
+            }}
+          />
+          {/* Label */}
+          <div className="absolute inset-x-0 bottom-0 flex justify-end bg-linear-to-t from-black/50 to-transparent px-3 pt-6 pb-2">
+            <Badge
+              variant="secondary"
+              className="border-white/20 bg-white/10 text-[10px] text-white/90 backdrop-blur-sm"
+            >
+              Optimized
+            </Badge>
+          </div>
+        </div>
       </div>
 
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 flex items-end justify-between p-3">
-        <span className="rounded-md bg-gray-900/80 px-2 py-1 text-[10px] font-medium text-white backdrop-blur-sm dark:bg-white/10 dark:text-white/70">
-          Original
-        </span>
-        <span className="absolute left-1/2 -translate-x-1/2 rounded-full bg-gray-900/80 px-2 py-0.5 text-[10px] font-semibold text-white dark:bg-white/20">
-          VS
-        </span>
-        <span className="rounded-md bg-emerald-600 px-2 py-1 text-[10px] font-medium text-white backdrop-blur-sm dark:bg-emerald-500/20 dark:text-emerald-400">
-          Optimized
-        </span>
-      </div>
-
-      {/* Center crosshair indicator */}
-      <div className="absolute top-1/2 left-1/2 h-4 w-4 -translate-x-1/2 -translate-y-1/2">
-        <div className="absolute top-0 left-1/2 h-full w-px -translate-x-1/2 bg-gray-600 dark:bg-white/40" />
-        <div className="absolute top-1/2 left-0 h-px w-full -translate-y-1/2 bg-gray-600 dark:bg-white/40" />
+      {/* Zoom indicator */}
+      <div className="absolute top-2 right-2 rounded-md bg-black/50 px-1.5 py-0.5 text-[10px] font-medium text-white/80 backdrop-blur-sm">
+        {zoom}x
       </div>
     </div>
   );
