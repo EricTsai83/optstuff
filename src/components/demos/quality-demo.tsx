@@ -573,6 +573,10 @@ function SavingsVisualizer({
       if (isCostRising) {
         setIsRising(true);
         setIsShaking(true);
+      } else {
+        // 節省量增加時，立即轉回綠色，讓過渡更順暢
+        setIsRising(false);
+        setIsShaking(false);
       }
 
       prevPercentageRef.current = currentValue;
@@ -581,10 +585,13 @@ function SavingsVisualizer({
         clearTimeout(shakeTimeoutRef.current);
       }
 
-      shakeTimeoutRef.current = setTimeout(() => {
-        setIsShaking(false);
-        setIsRising(false);
-      }, 600);
+      // 只在成本上升時才需要延遲關閉 shaking 和 isRising
+      if (isCostRising) {
+        shakeTimeoutRef.current = setTimeout(() => {
+          setIsShaking(false);
+          setIsRising(false);
+        }, 600);
+      }
     }
 
     return () => {
@@ -640,15 +647,15 @@ function SavingsVisualizer({
         {/* Summary badge */}
         <div className="flex items-center gap-2">
           <div
-            className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 transition-colors duration-300 ${trendBgClass}`}
+            className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 transition-colors duration-500 ease-in-out ${trendBgClass}`}
           >
             <TrendIcon
               isRising={isRising}
               isShaking={isShaking}
-              className={`h-3.5 w-3.5 transition-colors duration-300 ${trendColorClass}`}
+              className={`h-3.5 w-3.5 transition-colors duration-500 ease-in-out ${trendColorClass}`}
             />
             <span
-              className={`font-mono text-sm font-bold transition-colors duration-300 ${trendColorClass}`}
+              className={`font-mono text-sm font-bold transition-colors duration-500 ease-in-out ${trendColorClass}`}
             >
               {savedPercentage}%
             </span>
@@ -688,12 +695,12 @@ function SavingsVisualizer({
 
                 <div className="text-center">
                   <p
-                    className={`mb-0.5 text-[10px] transition-colors duration-300 ${trendColorClass}`}
+                    className={`mb-0.5 text-[10px] transition-colors duration-500 ease-in-out ${trendColorClass}`}
                   >
                     After
                   </p>
                   <p
-                    className={`font-mono text-lg font-semibold tabular-nums transition-colors duration-300 ${trendColorClass}`}
+                    className={`font-mono text-lg font-semibold tabular-nums transition-colors duration-500 ease-in-out ${trendColorClass}`}
                   >
                     {formatFileSize(totalOptimizedKB)}
                   </p>
@@ -705,7 +712,7 @@ function SavingsVisualizer({
             <div className="mb-4">
               <div className="relative h-2 overflow-hidden rounded-full bg-gray-100 dark:bg-white/10">
                 <div
-                  className={`h-full rounded-full transition-all duration-500 ${
+                  className={`h-full rounded-full transition-all duration-500 ease-in-out ${
                     isRising ? "bg-red-500" : "bg-accent"
                   }`}
                   style={{ width: `${100 - savedPercentage}%` }}
@@ -713,7 +720,7 @@ function SavingsVisualizer({
               </div>
               <div className="mt-1.5 flex justify-between text-[10px]">
                 <span
-                  className={`transition-colors duration-300 ${trendColorClass}`}
+                  className={`transition-colors duration-500 ease-in-out ${trendColorClass}`}
                 >
                   Optimized
                 </span>
@@ -736,7 +743,7 @@ function SavingsVisualizer({
                   <TrendIcon
                     isRising={isRising}
                     isShaking={isShaking}
-                    className={`h-3 w-3 transition-colors duration-300 ${iconColorClass}`}
+                    className={`h-3 w-3 transition-colors duration-500 ease-in-out ${iconColorClass}`}
                   />
                   <span className="font-mono text-sm font-bold tabular-nums">
                     {formatFileSize(savedKB)}
@@ -755,7 +762,7 @@ function SavingsVisualizer({
                   <TrendIcon
                     isRising={isRising}
                     isShaking={isShaking}
-                    className={`h-3 w-3 transition-colors duration-300 ${iconColorClass}`}
+                    className={`h-3 w-3 transition-colors duration-500 ease-in-out ${iconColorClass}`}
                   />
                   <span className="font-mono text-sm font-bold tabular-nums">
                     {formatFileSize(totalSavedKB)}
@@ -774,7 +781,7 @@ function SavingsVisualizer({
                   <TrendIcon
                     isRising={isRising}
                     isShaking={isShaking}
-                    className={`h-3 w-3 transition-colors duration-300 ${iconColorClass}`}
+                    className={`h-3 w-3 transition-colors duration-500 ease-in-out ${iconColorClass}`}
                   />
                   <span className="font-mono text-sm font-bold tabular-nums">
                     {formatTime(timeSaved3G)}
@@ -793,7 +800,7 @@ function SavingsVisualizer({
                   <TrendIcon
                     isRising={isRising}
                     isShaking={isShaking}
-                    className={`h-3 w-3 transition-colors duration-300 ${iconColorClass}`}
+                    className={`h-3 w-3 transition-colors duration-500 ease-in-out ${iconColorClass}`}
                   />
                   <span className="font-mono text-sm font-bold tabular-nums">
                     {formatTime(timeSaved4G)}
@@ -812,7 +819,7 @@ function SavingsVisualizer({
                   <TrendIcon
                     isRising={isRising}
                     isShaking={isShaking}
-                    className={`h-3 w-3 transition-colors duration-300 ${iconColorClass}`}
+                    className={`h-3 w-3 transition-colors duration-500 ease-in-out ${iconColorClass}`}
                   />
                   <span className="font-mono text-sm font-bold tabular-nums">
                     {formatTime(timeSaved5G)}
