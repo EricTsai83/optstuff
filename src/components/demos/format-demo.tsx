@@ -3,9 +3,10 @@
 import { useState } from "react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { Check } from "lucide-react";
+import { Check, FileImage } from "lucide-react";
 import { CodeBlock } from "@/components/code-block";
 import { ORIGINAL_SIZE_KB, FORMAT_SIZES, DEMO_IMAGE } from "./constants";
+import { DemoHeader, DemoLayout, ControlCard } from "./layouts";
 
 const formats = [
   { value: "webp", label: "WebP", ...FORMAT_SIZES.webp, supported: true },
@@ -20,25 +21,24 @@ export function FormatDemo() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h3 className="text-lg font-semibold">Format Conversion</h3>
-          <p className="text-muted-foreground text-sm">
-            Convert to modern formats like WebP and AVIF
-          </p>
-        </div>
-        <div className="text-right">
-          <p className="text-muted-foreground mb-1 text-xs tracking-wide uppercase">
-            Original: {ORIGINAL_SIZE_KB} KB
-          </p>
-          <p className="text-accent font-mono text-sm font-semibold">
-            {selectedFormat?.savings} smaller
-          </p>
-        </div>
-      </div>
+      <DemoHeader
+        icon={<FileImage className="h-5 w-5" />}
+        title="Format Conversion"
+        description="Convert to modern formats like WebP and AVIF"
+        action={
+          <div className="text-right">
+            <p className="text-muted-foreground mb-1 text-xs tracking-wide uppercase">
+              Original: {ORIGINAL_SIZE_KB} KB
+            </p>
+            <p className="text-accent font-mono text-sm font-semibold">
+              {selectedFormat?.savings} smaller
+            </p>
+          </div>
+        }
+      />
 
-      <div className="grid gap-8 md:grid-cols-2">
-        <div className="space-y-4">
+      <DemoLayout controlsColSpan={2} previewColSpan={2}>
+        <div className="space-y-4 lg:col-span-2">
           <Label className="text-sm">Output Format</Label>
           <RadioGroup
             value={format}
@@ -78,14 +78,13 @@ export function FormatDemo() {
             ))}
           </RadioGroup>
 
-          <CodeBlock
-            code={`/f_${format}/image.png`}
-            label="API URL"
-            variant="compact"
-          />
+          <ControlCard>
+            <Label className="mb-2 text-sm font-medium">API URL</Label>
+            <CodeBlock code={`/f_${format}/image.png`} />
+          </ControlCard>
         </div>
 
-        <div className="bg-muted/50 flex min-h-[320px] flex-col items-center justify-center rounded-xl p-6">
+        <div className="bg-muted/50 flex min-h-[320px] flex-col items-center justify-center rounded-xl p-6 lg:col-span-2">
           <div className="bg-muted ring-border mb-4 h-48 w-64 overflow-hidden rounded-lg ring-1">
             <img
               src={DEMO_IMAGE}
@@ -108,7 +107,7 @@ export function FormatDemo() {
             </span>
           </div>
         </div>
-      </div>
+      </DemoLayout>
     </div>
   );
 }

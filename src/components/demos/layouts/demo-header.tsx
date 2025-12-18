@@ -1,0 +1,36 @@
+import type { ReactNode } from "react";
+
+type DemoHeaderProps = {
+  readonly icon: ReactNode;
+  readonly title: string;
+  readonly description: string;
+  readonly action?: ReactNode;
+};
+
+export function DemoHeader({
+  icon,
+  title,
+  description,
+  action,
+}: DemoHeaderProps) {
+  return (
+    <div className="flex items-start justify-between gap-4">
+      <div className="flex items-end gap-3">
+        <div className="relative flex h-14 w-14 shrink-0 items-center justify-center">
+          <div className="bg-primary/20 absolute inset-0 hidden rounded-full dark:block" />
+          <div className="bg-background absolute inset-px rounded-full" />
+          <div className="border-border from-background to-muted relative flex h-12 w-12 items-center justify-center rounded-full border bg-linear-to-b shadow-md dark:h-10 dark:w-10">
+            <div className="text-foreground">{icon}</div>
+          </div>
+        </div>
+        <div className="space-y-1.5">
+          <h3 className="text-xl leading-none font-semibold tracking-tight">
+            {title}
+          </h3>
+          <p className="text-muted-foreground mb-0.5 text-sm">{description}</p>
+        </div>
+      </div>
+      {action && <div className="shrink-0">{action}</div>}
+    </div>
+  );
+}

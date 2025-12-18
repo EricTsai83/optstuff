@@ -4,9 +4,11 @@ import { useState } from "react";
 import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { RotateCcw } from "lucide-react";
+import { RotateCcw, Wand2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { CodeBlock } from "@/components/code-block";
 import { DEMO_IMAGE } from "./constants";
+import { DemoHeader, DemoLayout, ControlCard } from "./layouts";
 
 export function EffectsDemo() {
   const [blur, setBlur] = useState(0);
@@ -37,105 +39,110 @@ export function EffectsDemo() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h3 className="text-lg font-semibold">Image Effects</h3>
-          <p className="text-muted-foreground text-sm">
-            Apply transformations and filters on-the-fly
-          </p>
-        </div>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={reset}
-          className="text-muted-foreground hover:text-foreground"
-        >
-          <RotateCcw className="mr-2 h-4 w-4" />
-          Reset
-        </Button>
-      </div>
+      <DemoHeader
+        icon={<Wand2 className="h-5 w-5" />}
+        title="Image Effects"
+        description="Apply transformations and filters on-the-fly"
+        action={
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={reset}
+            className="text-muted-foreground hover:text-foreground"
+          >
+            <RotateCcw className="mr-2 h-4 w-4" />
+            Reset
+          </Button>
+        }
+      />
 
-      <div className="grid gap-8 md:grid-cols-2">
-        <div className="space-y-5">
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <Label className="text-sm">Blur</Label>
-              <span className="text-muted-foreground font-mono text-sm">
-                {blur}
-              </span>
-            </div>
-            <Slider
-              value={[blur]}
-              onValueChange={(v) => setBlur(v[0] ?? 0)}
-              min={0}
-              max={20}
-              step={1}
-              className="**:[[role=slider]]:h-4 **:[[role=slider]]:w-4"
-            />
-          </div>
-
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <Label className="text-sm">Sharpen</Label>
-              <span className="text-muted-foreground font-mono text-sm">
-                {sharpen}
-              </span>
-            </div>
-            <Slider
-              value={[sharpen]}
-              onValueChange={(v) => setSharpen(v[0] ?? 0)}
-              min={0}
-              max={10}
-              step={1}
-              className="**:[[role=slider]]:h-4 **:[[role=slider]]:w-4"
-            />
-          </div>
-
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <Label className="text-sm">Rotate</Label>
-              <span className="text-muted-foreground font-mono text-sm">
-                {rotate}°
-              </span>
-            </div>
-            <Slider
-              value={[rotate]}
-              onValueChange={(v) => setRotate(v[0] ?? 0)}
-              min={0}
-              max={360}
-              step={90}
-              className="**:[[role=slider]]:h-4 **:[[role=slider]]:w-4"
-            />
-          </div>
-
-          <div className="flex gap-3">
-            <div className="bg-muted/50 flex flex-1 items-center gap-3 rounded-xl p-3">
-              <Switch
-                id="grayscale"
-                checked={grayscale}
-                onCheckedChange={setGrayscale}
+      <DemoLayout controlsColSpan={2} previewColSpan={2}>
+        <div className="space-y-5 lg:col-span-2">
+          <ControlCard>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Label className="text-sm">Blur</Label>
+                <span className="text-muted-foreground font-mono text-sm">
+                  {blur}
+                </span>
+              </div>
+              <Slider
+                value={[blur]}
+                onValueChange={(v) => setBlur(v[0] ?? 0)}
+                min={0}
+                max={20}
+                step={1}
+                className="**:[[role=slider]]:h-4 **:[[role=slider]]:w-4"
               />
-              <Label htmlFor="grayscale" className="cursor-pointer text-sm">
-                Grayscale
-              </Label>
             </div>
-            <div className="bg-muted/50 flex flex-1 items-center gap-3 rounded-xl p-3">
-              <Switch id="flip" checked={flip} onCheckedChange={setFlip} />
-              <Label htmlFor="flip" className="cursor-pointer text-sm">
-                Flip
-              </Label>
-            </div>
-          </div>
+          </ControlCard>
 
-          <div className="rounded-xl bg-[#18181b] p-4">
-            <p className="mb-2 text-xs text-[#71717a]">API URL</p>
-            <code className="font-mono text-sm break-all text-[#a1a1aa]">
-              {buildUrl()}
-            </code>
-          </div>
+          <ControlCard>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Label className="text-sm">Sharpen</Label>
+                <span className="text-muted-foreground font-mono text-sm">
+                  {sharpen}
+                </span>
+              </div>
+              <Slider
+                value={[sharpen]}
+                onValueChange={(v) => setSharpen(v[0] ?? 0)}
+                min={0}
+                max={10}
+                step={1}
+                className="**:[[role=slider]]:h-4 **:[[role=slider]]:w-4"
+              />
+            </div>
+          </ControlCard>
+
+          <ControlCard>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Label className="text-sm">Rotate</Label>
+                <span className="text-muted-foreground font-mono text-sm">
+                  {rotate}°
+                </span>
+              </div>
+              <Slider
+                value={[rotate]}
+                onValueChange={(v) => setRotate(v[0] ?? 0)}
+                min={0}
+                max={360}
+                step={90}
+                className="**:[[role=slider]]:h-4 **:[[role=slider]]:w-4"
+              />
+            </div>
+          </ControlCard>
+
+          <ControlCard>
+            <div className="flex gap-3">
+              <div className="bg-muted/50 flex flex-1 items-center gap-3 rounded-xl p-3">
+                <Switch
+                  id="grayscale"
+                  checked={grayscale}
+                  onCheckedChange={setGrayscale}
+                />
+                <Label htmlFor="grayscale" className="cursor-pointer text-sm">
+                  Grayscale
+                </Label>
+              </div>
+              <div className="bg-muted/50 flex flex-1 items-center gap-3 rounded-xl p-3">
+                <Switch id="flip" checked={flip} onCheckedChange={setFlip} />
+                <Label htmlFor="flip" className="cursor-pointer text-sm">
+                  Flip
+                </Label>
+              </div>
+            </div>
+          </ControlCard>
+
+          <ControlCard>
+            <Label className="mb-2 text-sm font-medium">API URL</Label>
+            <CodeBlock code={buildUrl()} />
+          </ControlCard>
         </div>
 
-        <div className="bg-muted/50 flex min-h-[320px] items-center justify-center rounded-xl p-6">
+        <div className="bg-muted/50 flex min-h-[320px] items-center justify-center rounded-xl p-6 lg:col-span-2">
           <div
             className="bg-muted ring-border h-40 w-56 overflow-hidden rounded-lg ring-1 transition-all duration-300"
             style={{
@@ -150,7 +157,7 @@ export function EffectsDemo() {
             />
           </div>
         </div>
-      </div>
+      </DemoLayout>
     </div>
   );
 }

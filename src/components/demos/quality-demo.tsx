@@ -19,6 +19,7 @@ import {
   ChevronDown,
 } from "lucide-react";
 import { useEffect } from "react";
+import { DemoHeader, ControlCard, DemoLayout, PreviewCard } from "./layouts";
 
 type ImageContainerProps = {
   readonly imageUrl: string;
@@ -301,29 +302,17 @@ export function QualityDemo() {
 
   return (
     <div className="space-y-8">
-      {/* Header */}
-      <div className="flex items-start justify-between">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-linear-to-br from-violet-500 to-purple-600">
-              <Sparkles className="h-4 w-4 text-white" />
-            </div>
-            <h3 className="text-xl font-bold tracking-tight">
-              Quality Optimization
-            </h3>
-          </div>
-          <p className="text-muted-foreground text-sm">
-            Fine-tune compression for the perfect balance between size and
-            quality
-          </p>
-        </div>
-      </div>
+      <DemoHeader
+        icon={<Sparkles className="h-5 w-5" />}
+        title="Quality Optimization"
+        description="Fine-tune compression for the perfect balance between size and quality"
+      />
 
-      <div className="grid gap-8 lg:grid-cols-5">
+      <DemoLayout controlsColSpan={2} previewColSpan={3}>
         {/* Controls */}
         <div className="space-y-6 lg:col-span-2">
           {/* Quality Slider */}
-          <div className="rounded-2xl border border-gray-200 bg-linear-to-b from-gray-50 to-white px-5 py-4 dark:border-white/10 dark:from-white/5 dark:to-transparent">
+          <ControlCard>
             <div className="mb-2 flex items-center justify-between">
               <Label className="text-sm font-medium">Quality Level</Label>
               <div className="rounded-lg bg-gray-100 px-3 py-0.5 dark:bg-white/10">
@@ -351,10 +340,10 @@ export function QualityDemo() {
                 <span className="h-1.5 w-1.5 rounded-full bg-violet-500" />
               </span>
             </div>
-          </div>
+          </ControlCard>
 
           {/* Image Count Slider */}
-          <div className="rounded-2xl border border-gray-200 bg-linear-to-b from-gray-50 to-white px-5 py-4 dark:border-white/10 dark:from-white/5 dark:to-transparent">
+          <ControlCard>
             <div className="mb-2 flex items-center justify-between">
               <Label className="text-sm font-medium">Number of Images</Label>
               <div className="rounded-lg bg-gray-100 px-3 py-0.5 dark:bg-white/10">
@@ -377,64 +366,45 @@ export function QualityDemo() {
               <span>1 image</span>
               <span>10,000 images</span>
             </div>
-          </div>
+          </ControlCard>
 
           {/* API URL */}
-          <div className="group rounded-2xl border border-gray-200 bg-linear-to-b from-gray-50 to-white px-5 py-4 dark:border-white/10 dark:from-white/5 dark:to-transparent">
+          <ControlCard>
             <Label className="mb-2 text-sm font-medium">API URL</Label>
             <CodeBlock code={ipxSyntax} />
-          </div>
+          </ControlCard>
         </div>
 
         {/* Preview */}
         <div className="space-y-4 lg:col-span-3">
           <div className="relative grid grid-cols-2 gap-3">
             {/* Original */}
-            <div className="group relative overflow-hidden rounded-2xl border border-gray-200 bg-linear-to-b from-gray-50 to-white p-3 shadow-sm dark:border-white/10 dark:from-white/5 dark:to-transparent">
-              <div className="mb-2 flex items-center justify-between">
-                <span className="text-muted-foreground text-xs font-medium">
-                  Original
-                </span>
-                <Badge variant="secondary" className="text-[10px]">
-                  {baseSize} KB
-                </Badge>
-              </div>
-              <div className="relative aspect-4/3 overflow-hidden rounded-xl bg-gray-100 dark:bg-transparent">
-                <ImageContainer
-                  imageUrl={originalImageUrl}
-                  label="Original"
-                  imageRef={originalImageRef}
-                  onMouseMove={(e) => handleMouseMove(e, originalImageRef)}
-                  onMouseEnter={handleMouseEnter}
-                  onMouseLeave={handleMouseLeave}
-                />
-              </div>
-            </div>
+            <PreviewCard label="Original" badge={`${baseSize} KB`}>
+              <ImageContainer
+                imageUrl={originalImageUrl}
+                label="Original"
+                imageRef={originalImageRef}
+                onMouseMove={(e) => handleMouseMove(e, originalImageRef)}
+                onMouseEnter={handleMouseEnter}
+                onMouseLeave={handleMouseLeave}
+              />
+            </PreviewCard>
 
             {/* Optimized */}
-            <div className="group relative overflow-hidden rounded-2xl border border-emerald-300 bg-linear-to-b from-emerald-50 to-white p-3 shadow-sm dark:border-emerald-500/20 dark:from-emerald-500/5 dark:to-transparent">
-              <div className="mb-2 flex items-center justify-between">
-                <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">
-                  Optimized
-                </span>
-                <Badge
-                  variant="secondary"
-                  className="border-emerald-300 bg-emerald-100 text-[10px] text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-400"
-                >
-                  {estimatedSize} KB
-                </Badge>
-              </div>
-              <div className="relative aspect-4/3 overflow-hidden rounded-xl bg-emerald-50 dark:bg-transparent">
-                <ImageContainer
-                  imageUrl={optimizedImageUrl}
-                  label="Optimized"
-                  imageRef={optimizedImageRef}
-                  onMouseMove={(e) => handleMouseMove(e, optimizedImageRef)}
-                  onMouseEnter={handleMouseEnter}
-                  onMouseLeave={handleMouseLeave}
-                />
-              </div>
-            </div>
+            <PreviewCard
+              label="Optimized"
+              badge={`${estimatedSize} KB`}
+              variant="optimized"
+            >
+              <ImageContainer
+                imageUrl={optimizedImageUrl}
+                label="Optimized"
+                imageRef={optimizedImageRef}
+                onMouseMove={(e) => handleMouseMove(e, optimizedImageRef)}
+                onMouseEnter={handleMouseEnter}
+                onMouseLeave={handleMouseLeave}
+              />
+            </PreviewCard>
 
             {/* Magnifier */}
             <ComparisonMagnifier
@@ -473,7 +443,7 @@ export function QualityDemo() {
             />
           </div>
         </div>
-      </div>
+      </DemoLayout>
       <SavingsVisualizer
         savedPercentage={savedPercentage}
         savedKB={baseSize - estimatedSize}
@@ -623,7 +593,7 @@ function SavingsVisualizer({
   const iconColorClass = isRising ? "text-red-500" : "text-accent";
 
   return (
-    <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/10 dark:bg-white/[0.02]">
+    <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/10 dark:bg-white/2">
       {/* Collapsible Header */}
       <div
         role="button"
