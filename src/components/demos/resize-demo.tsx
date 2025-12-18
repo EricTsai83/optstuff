@@ -10,6 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { CodeBlock } from "@/components/code-block";
 import {
   ORIGINAL_WIDTH,
   ORIGINAL_HEIGHT,
@@ -160,12 +161,11 @@ export function ResizeDemo() {
             </Select>
           </div>
 
-          <div className="rounded-xl bg-[#18181b] p-4">
-            <p className="mb-2 text-xs text-[#71717a]">API URL</p>
-            <code className="font-mono text-sm break-all text-[#a1a1aa]">
-              /s_{width}x{height},fit_{fit}/image.jpg
-            </code>
-          </div>
+          <CodeBlock
+            code={`/s_${width}x${height},fit_${fit}/image.jpg`}
+            label="API URL"
+            variant="compact"
+          />
         </div>
 
         <div className="bg-muted/50 flex min-h-[320px] items-center justify-center rounded-xl p-6">

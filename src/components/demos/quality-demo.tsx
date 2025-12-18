@@ -187,9 +187,9 @@ export function QualityDemo() {
   }, [quality]);
 
   const ipxSyntax = useMemo(() => {
-    const operations = [`q_${quality}`, "f_webp"];
+    const operations = [`q_${quality}`];
     // 只顯示 IPX 語法，不暴露實際的 endpoint
-    return `optstuff/${operations.join(",")}/your-image.webp`;
+    return `/${operations.join(",")}${QUALITY_DEMO_IMAGE}`;
   }, [quality]);
 
   const originalImageUrl = useMemo(() => {
@@ -337,10 +337,10 @@ export function QualityDemo() {
             </div>
           </div>
 
-          {/* URL Example */}
+          {/* API URL */}
           <div className="group rounded-2xl border border-gray-200 bg-linear-to-b from-gray-50 to-white p-5 dark:border-white/10 dark:from-white/5 dark:to-transparent">
             <p className="text-muted-foreground mb-2 text-xs font-medium tracking-wider uppercase">
-              URL Example
+              API URL
             </p>
             <CodeBlock code={ipxSyntax} />
           </div>

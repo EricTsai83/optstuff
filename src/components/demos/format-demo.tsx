@@ -4,6 +4,7 @@ import { useState } from "react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Check } from "lucide-react";
+import { CodeBlock } from "@/components/code-block";
 import { ORIGINAL_SIZE_KB, FORMAT_SIZES, DEMO_IMAGE } from "./constants";
 
 const formats = [
@@ -77,12 +78,11 @@ export function FormatDemo() {
             ))}
           </RadioGroup>
 
-          <div className="rounded-xl bg-[#18181b] p-4">
-            <p className="mb-2 text-xs text-[#71717a]">API URL</p>
-            <code className="font-mono text-sm break-all text-[#a1a1aa]">
-              /f_{format}/image.png
-            </code>
-          </div>
+          <CodeBlock
+            code={`/f_${format}/image.png`}
+            label="API URL"
+            variant="compact"
+          />
         </div>
 
         <div className="bg-muted/50 flex min-h-[320px] flex-col items-center justify-center rounded-xl p-6">
