@@ -57,7 +57,7 @@ function ProjectSelector() {
       <DropdownMenuTrigger asChild>
         <Button
           variant="ghost"
-          className="flex h-8 items-center gap-2 px-2 transition-colors duration-200"
+          className="group flex h-8 items-center gap-2 px-2 transition-colors duration-200"
         >
           <div className={`h-5 w-5 rounded-full ${TEAM_COLOR}`} />
           <span className="font-medium">{TEAM_NAME}</span>

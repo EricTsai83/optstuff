@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useState } from "react";
+import { Separator } from "@/components/ui/separator";
 
 const usageData = [
   {
@@ -26,6 +27,42 @@ const usageData = [
     icon: "green",
   },
   { name: "Fluid Active CPU", used: "5m 57s", total: "4h", icon: "green" },
+  {
+    name: "Edge Function Invocations",
+    used: "1.2K",
+    total: "50K",
+    icon: "green",
+  },
+  {
+    name: "Bandwidth",
+    used: "45GB",
+    total: "500GB",
+    icon: "green",
+  },
+  {
+    name: "Serverless Function Execution Time",
+    used: "2h 15m",
+    total: "24h",
+    icon: "green",
+  },
+  {
+    name: "Database Queries",
+    used: "8.5K",
+    total: "100K",
+    icon: "green",
+  },
+  {
+    name: "API Requests",
+    used: "12.3K",
+    total: "200K",
+    icon: "green",
+  },
+  {
+    name: "Storage Operations",
+    used: "3.1K",
+    total: "50K",
+    icon: "green",
+  },
 ];
 
 const recentPreviews = [
@@ -53,7 +90,7 @@ const recentPreviews = [
 ];
 
 export function UsageSidebar() {
-  const [isExpanded, setIsExpanded] = useState(true);
+  const [isExpanded, setIsExpanded] = useState(false);
 
   return (
     <div className="hidden w-80 shrink-0 space-y-6 md:block">
@@ -75,33 +112,53 @@ export function UsageSidebar() {
               </Button>
             </div>
           </CardHeader>
-          <CardContent className="space-y-3">
-            {usageData.map((item, index) => (
+          <CardContent className="flex flex-col gap-3">
+            <div className="overflow-hidden">
               <div
-                key={index}
-                className="flex items-center justify-between text-sm"
+                className="space-y-3 transition-[max-height] duration-300 ease-in-out"
+                style={{
+                  maxHeight: isExpanded ? "1000px" : "120px",
+                }}
               >
-                <div className="flex items-center gap-2">
-                  <div className="h-2 w-2 rounded-full bg-green-500" />
-                  <span className="text-foreground">{item.name}</span>
-                </div>
-                <span className="text-muted-foreground">
-                  {item.used} / {item.total}
-                </span>
+                {usageData.map((item, index) => (
+                  <div
+                    key={index}
+                    className="flex items-center justify-between text-sm"
+                  >
+                    <div className="flex items-center gap-2">
+                      <div className="h-2 w-2 rounded-full bg-green-500" />
+                      <span className="text-foreground">{item.name}</span>
+                    </div>
+                    <span className="text-muted-foreground">
+                      {item.used} / {item.total}
+                    </span>
+                  </div>
+                ))}
               </div>
-            ))}
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-muted-foreground w-full justify-center"
-              onClick={() => setIsExpanded(!isExpanded)}
-            >
-              {isExpanded ? (
-                <ChevronUp className="h-4 w-4" />
-              ) : (
-                <ChevronDown className="h-4 w-4" />
-              )}
-            </Button>
+            </div>
+            {usageData.length > 3 && (
+              <div className="relative flex justify-center">
+                <Separator className="absolute top-3 left-0 w-full" />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="text-muted-foreground z-10 h-6 w-6 justify-center rounded-full transition-colors"
+                  onClick={() => setIsExpanded(!isExpanded)}
+                  aria-expanded={isExpanded}
+                  aria-label={
+                    isExpanded
+                      ? "Collapse usage details"
+                      : "Expand usage details"
+                  }
+                >
+                  {isExpanded ? (
+                    <ChevronUp className="h-4 w-4" />
+                  ) : (
+                    <ChevronDown className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

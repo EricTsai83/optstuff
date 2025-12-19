@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 
 const projects = [
   {
+    id: "erictsai-dev",
     name: "erictsai-dev",
     url: "erictsai-dev.vercel.app",
     commit:
@@ -25,6 +26,7 @@ const projects = [
     hasWarning: false,
   },
   {
+    id: "document",
     name: "document",
     url: "eric-document.vercel.app",
     commit: "update next.js version to 15.0.7 and update bun.lockb",
@@ -36,6 +38,7 @@ const projects = [
     hasWarning: false,
   },
   {
+    id: "blog",
     name: "blog",
     url: "ericts.com",
     commit: "update next.js version to 15.0.7 in package.json",
@@ -48,6 +51,7 @@ const projects = [
     hasWarning: false,
   },
   {
+    id: "google-drive-clone",
     name: "google-drive-clone",
     url: "google-drive-clone-amber.vercel...",
     commit: "Update dependencies and add .pnpm-store to .git...",
@@ -59,6 +63,7 @@ const projects = [
     hasWarning: false,
   },
   {
+    id: "drawstuff",
     name: "drawstuff",
     url: "drawstuff-ericts.vercel.app",
     commit: "Update Next.js dependency from 16.0.7 to 16.0.10 in ...",
@@ -70,6 +75,7 @@ const projects = [
     hasWarning: true,
   },
   {
+    id: "optimize-stuff",
     name: "optimize-stuff",
     url: "optstuff.vercel.app",
     commit: "Merge pull request #12 from EricTsai83/feat/copy-bu...",
@@ -81,6 +87,7 @@ const projects = [
     hasWarning: false,
   },
   {
+    id: "v0-generate-api-keys",
     name: "v0-generate-api-keys",
     url: "v0-generate-api-keys.vercel.app",
     commit: "",
@@ -92,6 +99,7 @@ const projects = [
     hasWarning: false,
   },
   {
+    id: "viz-maker",
     name: "viz-maker",
     url: "viz-maker.vercel.app",
     commit: "Update Next.js to version 15.2.8 and add .pnpm-stor...",
@@ -103,6 +111,7 @@ const projects = [
     hasWarning: false,
   },
   {
+    id: "registry-template-v4",
     name: "registry-template-v4",
     url: "registry-template-v4-roan.vercel...",
     commit: "update next.js to version 15.3.8 and add .pnpm-st...",
@@ -153,7 +162,7 @@ export function ProjectList() {
           <div className="space-y-1">
             {visibleProjects.map((project, index) => (
               <div
-                key={index}
+                key={project.id}
                 className="hover:bg-secondary/50 group animate-in fade-in slide-in-from-bottom-2 flex cursor-pointer flex-col gap-2 rounded-lg p-3 transition-all duration-200 md:flex-row md:items-center md:gap-4"
                 style={{
                   animationDelay: `${index * 50}ms`,

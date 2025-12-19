@@ -31,7 +31,7 @@ export function AnimatedLogo() {
     <div
       className={cn(
         "relative md:fixed",
-        "left-10 z-(--header-zindex) -translate-x-1/2",
+        "left-10 z-9999 -translate-x-1/2",
         "md:-translate-y-1/2",
       )}
       style={{ top: `${top}px` }}
