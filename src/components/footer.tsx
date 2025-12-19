@@ -7,7 +7,7 @@ export function Footer() {
       <div className="container mx-auto px-4 md:px-6">
         <div className="flex flex-col items-center justify-between gap-6 md:flex-row">
           <Link href="/" className="group flex items-center gap-2.5">
-            <Logo />
+            <Logo size={32} />
           </Link>
 
           <nav className="text-muted-foreground flex items-center gap-6 text-sm">

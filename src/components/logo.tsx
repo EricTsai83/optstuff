@@ -1,18 +1,30 @@
-export function Logo() {
+export function Logo({ size }: { size: number }) {
   return (
-    <div className="flex items-center gap-2">
-      <LogoIcon />
+    <div className="flex items-center gap-2.5">
+      <LogoIcon size={size} />
       <OptStuff />
     </div>
   );
 }
 
-const LogoIcon = () => {
+type LogoIconProps = {
+  readonly size?: number;
+};
+
+export const LogoIcon = ({ size = 32 }: LogoIconProps) => {
+  const iconSize = size * 0.625;
+
   return (
-    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[conic-gradient(from_225deg,#84cc16,#22c55e,#10b981,#0d9488,#10b981,#22c55e,#84cc16)]">
+    <div
+      className="flex items-center justify-center rounded-lg bg-[conic-gradient(from_225deg,#84cc16,#22c55e,#10b981,#0d9488,#10b981,#22c55e,#84cc16)]"
+      style={{
+        height: `${size}px`,
+        width: `${size}px`,
+      }}
+    >
       <svg
-        width="20"
-        height="20"
+        width={iconSize}
+        height={iconSize}
         viewBox="0 0 24 24"
         fill="none"
         className="text-white"

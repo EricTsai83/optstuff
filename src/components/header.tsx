@@ -8,7 +8,7 @@ export function Header() {
     <header className="bg-background/80 animate-fade-in-down sticky top-0 z-50 w-full backdrop-blur-xl">
       <div className="container mx-auto flex h-16 items-center justify-between px-4 md:px-6">
         <Link href="/" className="group flex items-center gap-2.5">
-          <Logo />
+          <Logo size={32} />
         </Link>
 
         <nav className="hidden items-center gap-8 md:flex">

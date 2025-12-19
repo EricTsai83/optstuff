@@ -77,6 +77,9 @@ Global Styles
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
+
+  /* Header z-index */
+  --header-zindex: 9999;
 }
 
 /* --------------------------------------------------------------------------
@@ -1020,4 +1023,14 @@ Underline that grows from left to right using scaleX transform
 
 .animate-shake {
   animation: shake 0.6s ease-in-out;
+}
+
+/* Hide scrollbar for navigation tabs */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
 }
