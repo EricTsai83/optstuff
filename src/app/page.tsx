@@ -5,12 +5,14 @@ import { IntegrationSteps } from "@/components/integration-steps";
 import { Features } from "@/components/features";
 import { CodeExample } from "@/components/code-example";
 import { Footer } from "@/components/footer";
+import { HeroBackground } from "@/components/hero-background";
 
 export default function Home() {
   return (
     <div className="bg-background min-h-screen">
+      <HeroBackground />
       <Header />
-      <main className="pt-16 pb-24 md:pt-24 md:pb-32">
+      <main className="pt-16 pb-24 md:pt-40 md:pb-32">
         <HeroIntro />
         <section
           id="demo"

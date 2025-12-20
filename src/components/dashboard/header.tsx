@@ -31,7 +31,7 @@ export function Header() {
       {/* Desktop: Display Logo and Project Selector */}
       <div className="hidden items-center gap-2 md:flex">
         <AnimatedLogo />
-        <div className="ml-14 flex items-center gap-2">
+        <div className="ml-15 flex items-center gap-2">
           <span className="text-muted-foreground text-lg">/</span>
           <ProjectSelector />
         </div>
