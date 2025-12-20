@@ -5,6 +5,7 @@ import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { CodeBlock } from "@/components/code-block";
+import { cn } from "@/lib/utils";
 import { ORIGINAL_SIZE_KB, QUALITY_DEMO_IMAGE } from "./constants";
 import {
   ImageIcon,
@@ -156,28 +157,38 @@ type StatCardProps = {
 function StatCard({ value, label, icon, highlight = false }: StatCardProps) {
   return (
     <div
-      className={`flex flex-1 flex-col items-center gap-1 rounded-lg p-3 transition-colors ${
+      className={cn(
+        "flex flex-1 flex-col items-center gap-1 rounded-lg p-2 transition-colors",
         highlight
           ? "bg-emerald-100 ring-1 ring-emerald-500/30 dark:bg-emerald-500/10 dark:ring-emerald-500/20"
-          : "bg-gray-100 dark:bg-white/5"
-      }`}
+          : "bg-gray-100 dark:bg-white/5",
+      )}
     >
       <div
-        className={`mb-1 ${highlight ? "text-emerald-600 dark:text-emerald-400" : "text-muted-foreground"}`}
-      >
-        {icon}
-      </div>
-      <p
-        className={`font-mono text-lg font-bold ${
+        className={cn(
+          "flex items-center gap-2",
           highlight
             ? "text-emerald-600 dark:text-emerald-400"
-            : "text-foreground"
-        }`}
+            : "text-muted-foreground",
+        )}
+      >
+        {icon}
+        <p
+          className={cn(
+            "text-muted-foreground text-[9px] tracking-wider uppercase",
+            highlight && "text-emerald-600 dark:text-emerald-400",
+          )}
+        >
+          {label}
+        </p>
+      </div>
+      <p
+        className={cn(
+          "text-foreground font-mono text-lg font-bold",
+          highlight && "text-emerald-600 dark:text-emerald-400",
+        )}
       >
         {value}
-      </p>
-      <p className="text-muted-foreground text-[10px] tracking-wider uppercase">
-        {label}
       </p>
     </div>
   );
@@ -192,13 +203,13 @@ export function QualityDemo() {
   const optimizedImageRef = useRef<HTMLImageElement | null>(null);
 
   const baseSize = ORIGINAL_SIZE_KB;
-  // 當 quality 為 100 時，應該和原圖一樣大
+  // When quality is 100, should be the same size as original
   const estimatedSize =
     quality === 100 ? baseSize : Math.round((quality / 100) * baseSize * 0.8);
   const savedPercentage = Math.round((1 - estimatedSize / baseSize) * 100);
 
   const optimizedImageUrl = useMemo(() => {
-    // 當 quality 為 100 時，使用和原圖一樣的參數
+    // When quality is 100, use the same parameters as original
     if (quality === 100) {
       return `/api/optimize/q_100,f_webp,w_800${QUALITY_DEMO_IMAGE}`;
     }
@@ -208,7 +219,7 @@ export function QualityDemo() {
 
   const ipxSyntax = useMemo(() => {
     const operations = [`q_${quality}`];
-    // 只顯示 IPX 語法，不暴露實際的 endpoint
+    // Only show IPX syntax, don't expose the actual endpoint
     return `/${operations.join(",")}${QUALITY_DEMO_IMAGE}`;
   }, [quality]);
 
@@ -301,7 +312,7 @@ export function QualityDemo() {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-4">
       <DemoHeader
         icon={<Sparkles className="h-5 w-5" />}
         title="Quality Optimization"
@@ -310,7 +321,7 @@ export function QualityDemo() {
 
       <DemoLayout controlsColSpan={2} previewColSpan={3}>
         {/* Controls */}
-        <div className="space-y-6 lg:col-span-2">
+        <div className="space-y-4.5 lg:col-span-2">
           {/* Quality Slider */}
           <ControlCard>
             <div className="mb-2 flex items-center justify-between">
@@ -376,8 +387,8 @@ export function QualityDemo() {
         </div>
 
         {/* Preview */}
-        <div className="space-y-4 lg:col-span-3">
-          <div className="relative grid grid-cols-2 gap-3">
+        <div className="space-y-3 lg:col-span-3">
+          <div className="relative grid grid-cols-2 gap-2.5">
             {/* Original */}
             <PreviewCard label="Original" badge={`${baseSize} KB`}>
               <ImageContainer
@@ -424,7 +435,7 @@ export function QualityDemo() {
           </p>
 
           {/* Stats */}
-          <div className="flex gap-3">
+          <div className="flex gap-2.5">
             <StatCard
               value={`${estimatedSize} KB`}
               label="File Size"
@@ -488,13 +499,12 @@ type TrendIconProps = {
 function TrendIcon({ isRising, isShaking, className = "" }: TrendIconProps) {
   return (
     <span
-      className={`inline-flex transition-transform duration-300 ${
-        isRising ? "-scale-x-100 -rotate-180" : ""
-      }`}
+      className={cn(
+        "inline-flex transition-transform duration-300",
+        isRising && "-scale-x-100 -rotate-180",
+      )}
     >
-      <TrendingDown
-        className={`${className} ${isShaking ? "animate-shake" : ""}`}
-      />
+      <TrendingDown className={cn(className, isShaking && "animate-shake")} />
     </span>
   );
 }
@@ -516,7 +526,7 @@ function SavingsVisualizer({
   const totalOptimizedKB = optimizedSizeKB * imageCount;
   const totalSavedKB = savedKB * imageCount;
 
-  // 3G 2Mbps (平均速度)
+  // 3G 2Mbps (average speed)
   const timeSaved3G =
     calculateLoadTime(totalOriginalKB, 2) -
     calculateLoadTime(totalOptimizedKB, 2);
@@ -526,7 +536,7 @@ function SavingsVisualizer({
     calculateLoadTime(totalOriginalKB, 10) -
     calculateLoadTime(totalOptimizedKB, 10);
 
-  // 5G 100Mbps (平均速度)
+  // 5G 100Mbps (average speed)
   const timeSaved5G =
     calculateLoadTime(totalOriginalKB, 100) -
     calculateLoadTime(totalOptimizedKB, 100);
@@ -537,14 +547,14 @@ function SavingsVisualizer({
     const currentValue = savedPercentage;
 
     if (prevValue !== currentValue) {
-      // 節省量減少 = 成本上升
+      // Savings decrease = cost rising
       const isCostRising = currentValue < prevValue;
 
       if (isCostRising) {
         setIsRising(true);
         setIsShaking(true);
       } else {
-        // 節省量增加時，立即轉回綠色，讓過渡更順暢
+        // When savings increase, immediately switch back to green for smoother transition
         setIsRising(false);
         setIsShaking(false);
       }
@@ -555,7 +565,7 @@ function SavingsVisualizer({
         clearTimeout(shakeTimeoutRef.current);
       }
 
-      // 只在成本上升時才需要延遲關閉 shaking 和 isRising
+      // Only delay closing shaking and isRising when cost is rising
       if (isCostRising) {
         shakeTimeoutRef.current = setTimeout(() => {
           setIsShaking(false);
@@ -602,7 +612,7 @@ function SavingsVisualizer({
         aria-label="Toggle savings calculator details"
         onClick={handleToggle}
         onKeyDown={handleKeyDown}
-        className="flex cursor-pointer items-center justify-between px-4 py-3 transition-colors hover:bg-gray-50 dark:hover:bg-white/5"
+        className="flex cursor-pointer items-center justify-between px-4 py-2.5 transition-colors hover:bg-gray-50 dark:hover:bg-white/5"
       >
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2">
@@ -617,37 +627,48 @@ function SavingsVisualizer({
         {/* Summary badge */}
         <div className="flex items-center gap-2">
           <div
-            className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 transition-colors duration-500 ease-in-out ${trendBgClass}`}
+            className={cn(
+              "flex items-center gap-1.5 rounded-full px-2.5 py-1 transition-colors duration-500 ease-in-out",
+              trendBgClass,
+            )}
           >
             <TrendIcon
               isRising={isRising}
               isShaking={isShaking}
-              className={`h-3.5 w-3.5 transition-colors duration-500 ease-in-out ${trendColorClass}`}
+              className={cn(
+                "h-3.5 w-3.5 transition-colors duration-500 ease-in-out",
+                trendColorClass,
+              )}
             />
             <span
-              className={`font-mono text-sm font-bold transition-colors duration-500 ease-in-out ${trendColorClass}`}
+              className={cn(
+                "font-mono text-sm font-bold transition-colors duration-500 ease-in-out",
+                trendColorClass,
+              )}
             >
               {savedPercentage}%
             </span>
           </div>
           <ChevronDown
-            className={`text-muted-foreground h-4 w-4 transition-transform duration-200 ${
-              isExpanded ? "rotate-180" : ""
-            }`}
+            className={cn(
+              "text-muted-foreground h-4 w-4 transition-transform duration-200",
+              isExpanded && "rotate-180",
+            )}
           />
         </div>
       </div>
 
       {/* Expandable Content */}
       <div
-        className={`grid transition-all duration-300 ease-out ${
-          isExpanded ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
-        }`}
+        className={cn(
+          "grid transition-all duration-300 ease-out",
+          isExpanded ? "grid-rows-[1fr]" : "grid-rows-[0fr]",
+        )}
       >
         <div className="overflow-hidden">
-          <div className="border-t border-gray-100 p-4 dark:border-white/5">
+          <div className="border-t border-gray-100 p-3 dark:border-white/5">
             {/* Size Comparison */}
-            <div className="mb-4">
+            <div className="mb-3">
               <p className="text-muted-foreground mb-2 text-center text-[10px] tracking-wider uppercase">
                 Total Size Comparison
               </p>
@@ -665,12 +686,18 @@ function SavingsVisualizer({
 
                 <div className="text-center">
                   <p
-                    className={`mb-0.5 text-[10px] transition-colors duration-500 ease-in-out ${trendColorClass}`}
+                    className={cn(
+                      "mb-0.5 text-[10px] transition-colors duration-500 ease-in-out",
+                      trendColorClass,
+                    )}
                   >
                     After
                   </p>
                   <p
-                    className={`font-mono text-lg font-semibold tabular-nums transition-colors duration-500 ease-in-out ${trendColorClass}`}
+                    className={cn(
+                      "font-mono text-lg font-semibold tabular-nums transition-colors duration-500 ease-in-out",
+                      trendColorClass,
+                    )}
                   >
                     {formatFileSize(totalOptimizedKB)}
                   </p>
@@ -679,18 +706,22 @@ function SavingsVisualizer({
             </div>
 
             {/* Progress Bar */}
-            <div className="mb-4">
+            <div className="mb-3">
               <div className="relative h-2 overflow-hidden rounded-full bg-gray-100 dark:bg-white/10">
                 <div
-                  className={`h-full rounded-full transition-all duration-500 ease-in-out ${
-                    isRising ? "bg-red-500" : "bg-accent"
-                  }`}
+                  className={cn(
+                    "h-full rounded-full transition-all duration-500 ease-in-out",
+                    isRising ? "bg-red-500" : "bg-accent",
+                  )}
                   style={{ width: `${100 - savedPercentage}%` }}
                 />
               </div>
               <div className="mt-1.5 flex justify-between text-[10px]">
                 <span
-                  className={`transition-colors duration-500 ease-in-out ${trendColorClass}`}
+                  className={cn(
+                    "transition-colors duration-500 ease-in-out",
+                    trendColorClass,
+                  )}
                 >
                   Optimized
                 </span>
@@ -713,7 +744,10 @@ function SavingsVisualizer({
                   <TrendIcon
                     isRising={isRising}
                     isShaking={isShaking}
-                    className={`h-3 w-3 transition-colors duration-500 ease-in-out ${iconColorClass}`}
+                    className={cn(
+                      "h-3 w-3 transition-colors duration-500 ease-in-out",
+                      iconColorClass,
+                    )}
                   />
                   <span className="font-mono text-sm font-bold tabular-nums">
                     {formatFileSize(savedKB)}
@@ -732,7 +766,10 @@ function SavingsVisualizer({
                   <TrendIcon
                     isRising={isRising}
                     isShaking={isShaking}
-                    className={`h-3 w-3 transition-colors duration-500 ease-in-out ${iconColorClass}`}
+                    className={cn(
+                      "h-3 w-3 transition-colors duration-500 ease-in-out",
+                      iconColorClass,
+                    )}
                   />
                   <span className="font-mono text-sm font-bold tabular-nums">
                     {formatFileSize(totalSavedKB)}
@@ -751,7 +788,10 @@ function SavingsVisualizer({
                   <TrendIcon
                     isRising={isRising}
                     isShaking={isShaking}
-                    className={`h-3 w-3 transition-colors duration-500 ease-in-out ${iconColorClass}`}
+                    className={cn(
+                      "h-3 w-3 transition-colors duration-500 ease-in-out",
+                      iconColorClass,
+                    )}
                   />
                   <span className="font-mono text-sm font-bold tabular-nums">
                     {formatTime(timeSaved3G)}
@@ -770,7 +810,10 @@ function SavingsVisualizer({
                   <TrendIcon
                     isRising={isRising}
                     isShaking={isShaking}
-                    className={`h-3 w-3 transition-colors duration-500 ease-in-out ${iconColorClass}`}
+                    className={cn(
+                      "h-3 w-3 transition-colors duration-500 ease-in-out",
+                      iconColorClass,
+                    )}
                   />
                   <span className="font-mono text-sm font-bold tabular-nums">
                     {formatTime(timeSaved4G)}
@@ -789,7 +832,10 @@ function SavingsVisualizer({
                   <TrendIcon
                     isRising={isRising}
                     isShaking={isShaking}
-                    className={`h-3 w-3 transition-colors duration-500 ease-in-out ${iconColorClass}`}
+                    className={cn(
+                      "h-3 w-3 transition-colors duration-500 ease-in-out",
+                      iconColorClass,
+                    )}
                   />
                   <span className="font-mono text-sm font-bold tabular-nums">
                     {formatTime(timeSaved5G)}

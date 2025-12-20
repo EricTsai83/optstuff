@@ -8,7 +8,7 @@ import { RotateCcw, Wand2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CodeBlock } from "@/components/code-block";
 import { DEMO_IMAGE } from "./constants";
-import { DemoHeader, DemoLayout, ControlCard } from "./layouts";
+import { DemoHeader, DemoLayout, ControlCard, ImagePreview } from "./layouts";
 
 export function EffectsDemo() {
   const [blur, setBlur] = useState(0);
@@ -38,7 +38,7 @@ export function EffectsDemo() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <DemoHeader
         icon={<Wand2 className="h-5 w-5" />}
         title="Image Effects"
@@ -57,9 +57,9 @@ export function EffectsDemo() {
       />
 
       <DemoLayout controlsColSpan={2} previewColSpan={2}>
-        <div className="space-y-5 lg:col-span-2">
+        <div className="space-y-4 lg:col-span-2">
           <ControlCard>
-            <div className="space-y-3">
+            <div className="space-y-2.5">
               <div className="flex items-center justify-between">
                 <Label className="text-sm">Blur</Label>
                 <span className="text-muted-foreground font-mono text-sm">
@@ -142,21 +142,17 @@ export function EffectsDemo() {
           </ControlCard>
         </div>
 
-        <div className="bg-muted/50 flex min-h-[320px] items-center justify-center rounded-xl p-6 lg:col-span-2">
-          <div
-            className="bg-muted ring-border h-40 w-56 overflow-hidden rounded-lg ring-1 transition-all duration-300"
-            style={{
-              transform: `rotate(${rotate}deg) ${flip ? "scaleX(-1)" : ""}`,
-              filter: `blur(${blur}px) ${grayscale ? "grayscale(100%)" : ""} ${sharpen > 0 ? `contrast(${1 + sharpen * 0.1})` : ""}`,
-            }}
-          >
-            <img
-              src={DEMO_IMAGE}
-              alt="Effects demo"
-              className="h-full w-full object-cover"
-            />
-          </div>
-        </div>
+        <ImagePreview
+          imageUrl={DEMO_IMAGE}
+          imageAlt="Effects demo"
+          imageContainerClassName="bg-muted"
+          aspectRatio={4 / 3}
+          imageContainerStyle={{
+            transform: `rotate(${rotate}deg) ${flip ? "scaleX(-1)" : ""}`,
+            filter: `blur(${blur}px) ${grayscale ? "grayscale(100%)" : ""} ${sharpen > 0 ? `contrast(${1 + sharpen * 0.1})` : ""}`,
+          }}
+          imageStyle={{ objectFit: "cover" }}
+        />
       </DemoLayout>
     </div>
   );

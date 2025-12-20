@@ -20,8 +20,8 @@ export function PreviewCard({
   const isOptimized = variant === "optimized";
 
   const containerClasses = isOptimized
-    ? "group relative overflow-hidden rounded-2xl border border-emerald-300 bg-linear-to-b from-emerald-50 to-white p-3 shadow-sm dark:border-emerald-500/20 dark:from-emerald-500/5 dark:to-transparent"
-    : "group relative overflow-hidden rounded-2xl border border-gray-200 bg-linear-to-b from-gray-50 to-white p-3 shadow-sm dark:border-white/10 dark:from-white/5 dark:to-transparent";
+    ? "group relative overflow-hidden rounded-2xl border border-emerald-300 bg-linear-to-b from-emerald-50 to-white p-2.5 shadow-sm dark:border-emerald-500/20 dark:from-emerald-500/5 dark:to-transparent"
+    : "group relative overflow-hidden rounded-2xl border border-gray-200 bg-linear-to-b from-gray-50 to-white p-2.5 shadow-sm dark:border-white/10 dark:from-white/5 dark:to-transparent";
 
   const labelClasses = isOptimized
     ? "text-xs font-medium text-emerald-600 dark:text-emerald-400"
@@ -37,7 +37,7 @@ export function PreviewCard({
 
   return (
     <div className={cn(containerClasses, className)}>
-      <div className="mb-2 flex items-center justify-between">
+      <div className="mb-1.5 flex items-center justify-between">
         <span className={labelClasses}>{label}</span>
         {badge && (
           <Badge variant="secondary" className={badgeClasses}>
