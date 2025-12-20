@@ -127,24 +127,24 @@ export function Header() {
     HEADER_CONFIG.scroll.divisor,
   );
 
-  const backgroundColor = `rgba(0, 0, 0, ${calculateBackgroundOpacity(
+  const backgroundOpacity = calculateBackgroundOpacity(
     scrollPercent,
     HEADER_CONFIG.style.backgroundColorOpacity,
-  )})`;
+  );
 
-  const borderColor = `rgba(255, 255, 255, ${calculateBorderOpacity(
+  const borderOpacity = calculateBorderOpacity(
     scrollPercent,
     HEADER_CONFIG.style.borderColorDivisor,
     HEADER_CONFIG.style.borderColorMaxOpacity,
-  )})`;
+  );
 
   return (
     <header
       style={{
-        backgroundColor,
-        borderColor,
+        backgroundColor: `color-mix(in srgb, var(--background) ${backgroundOpacity * 100}%, transparent)`,
+        borderColor: `color-mix(in srgb, white ${borderOpacity * 100}%, transparent)`,
       }}
-      className="fixed top-0 z-100 w-full py-1"
+      className="animate-fade-in-down fixed top-0 z-100 w-full py-1"
     >
       <div className="container mx-auto flex h-16 items-center justify-between px-4 md:px-6">
         <Link href="/" className="group flex items-center gap-2.5">

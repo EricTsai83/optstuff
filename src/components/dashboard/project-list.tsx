@@ -24,6 +24,7 @@ const projects = [
     icon: "E",
     iconBg: "bg-foreground text-background",
     hasWarning: false,
+    isFavorite: true,
   },
   {
     id: "document",
@@ -36,6 +37,7 @@ const projects = [
     icon: "📄",
     iconBg: "bg-secondary",
     hasWarning: false,
+    isFavorite: true,
   },
   {
     id: "blog",
@@ -49,6 +51,7 @@ const projects = [
     iconBg: "",
     iconImage: "/diverse-user-avatars.png",
     hasWarning: false,
+    isFavorite: false,
   },
   {
     id: "google-drive-clone",
@@ -61,6 +64,7 @@ const projects = [
     icon: "🔷",
     iconBg: "bg-green-500",
     hasWarning: false,
+    isFavorite: false,
   },
   {
     id: "drawstuff",
@@ -73,6 +77,7 @@ const projects = [
     icon: "✖",
     iconBg: "bg-pink-500",
     hasWarning: true,
+    isFavorite: false,
   },
   {
     id: "optimize-stuff",
@@ -85,6 +90,7 @@ const projects = [
     icon: "🟢",
     iconBg: "bg-green-500",
     hasWarning: false,
+    isFavorite: false,
   },
   {
     id: "v0-generate-api-keys",
@@ -97,6 +103,7 @@ const projects = [
     icon: "▲",
     iconBg: "bg-secondary",
     hasWarning: false,
+    isFavorite: false,
   },
   {
     id: "viz-maker",
@@ -109,6 +116,7 @@ const projects = [
     icon: "▲",
     iconBg: "bg-foreground text-background",
     hasWarning: false,
+    isFavorite: false,
   },
   {
     id: "registry-template-v4",
@@ -121,12 +129,194 @@ const projects = [
     icon: "▲",
     iconBg: "bg-foreground text-background",
     hasWarning: false,
+    isFavorite: false,
   },
 ];
 
-export function ProjectList() {
-  const [isExpanded, setIsExpanded] = useState(true);
-  const [visibleCount, setVisibleCount] = useState(6);
+type Project = (typeof projects)[number];
+
+type ProjectItemProps = {
+  readonly project: Project;
+  readonly index: number;
+};
+
+const ProjectItem = ({ project, index }: ProjectItemProps) => {
+  return (
+    <div
+      key={project.id}
+      className="hover:bg-secondary/50 group animate-in fade-in slide-in-from-bottom-2 flex cursor-pointer flex-col gap-2 rounded-lg p-3 transition-all duration-200 md:flex-row md:items-center md:gap-4"
+      style={{
+        animationDelay: `${index * 50}ms`,
+        animationFillMode: "both",
+      }}
+    >
+      {/* Project icon and basic info row */}
+      <div className="flex min-w-0 flex-1 items-center gap-3">
+        {/* Project icon */}
+        {project.iconImage ? (
+          <img
+            src={project.iconImage || "/placeholder.svg"}
+            alt={project.name}
+            className="h-10 w-10 rounded-lg object-cover transition-transform duration-200 group-hover:scale-105"
+          />
+        ) : (
+          <div
+            className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-sm font-medium transition-transform duration-200 group-hover:scale-105 ${project.iconBg}`}
+          >
+            {project.icon}
+          </div>
+        )}
+
+        {/* Project info */}
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <span className="font-medium">{project.name}</span>
+          </div>
+          <span className="text-muted-foreground block truncate text-sm">
+            {project.url}
+          </span>
+        </div>
+
+        {/* Actions - visible on mobile at end of row */}
+        <div className="flex items-center gap-1 md:hidden">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 transition-colors duration-200"
+          >
+            <svg
+              className="h-4 w-4"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
+            </svg>
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 transition-colors duration-200"
+          >
+            <MoreHorizontal className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+
+      <div className="space-y-2 pl-13 md:hidden">
+        {project.repo && (
+          <Badge
+            variant="outline"
+            className="inline-flex items-center gap-1 text-xs font-normal"
+          >
+            <svg className="h-3 w-3" viewBox="0 0 16 16" fill="currentColor">
+              <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z" />
+            </svg>
+            {project.repo}
+          </Badge>
+        )}
+        {project.commit && (
+          <div className="space-y-1">
+            <p className="text-muted-foreground text-sm">{project.commit}</p>
+            <p className="text-muted-foreground flex items-center gap-1 text-xs">
+              {project.date} on <GitBranch className="h-3 w-3" />{" "}
+              {project.branch}
+            </p>
+          </div>
+        )}
+        {!project.commit && project.date && (
+          <span className="text-muted-foreground text-sm">{project.date}</span>
+        )}
+      </div>
+
+      {/* Desktop: Commit info */}
+      <div className="hidden max-w-xs min-w-0 flex-1 flex-col items-start md:flex">
+        {project.commit && (
+          <>
+            <span className="text-muted-foreground w-full truncate text-sm">
+              {project.commit}
+            </span>
+            <span className="text-muted-foreground flex items-center gap-1 text-xs">
+              {project.date} on <GitBranch className="h-3 w-3" />{" "}
+              {project.branch}
+            </span>
+          </>
+        )}
+        {!project.commit && project.date && (
+          <span className="text-muted-foreground text-sm">{project.date}</span>
+        )}
+      </div>
+
+      {/* Desktop: GitHub repo badge */}
+      {project.repo && (
+        <Badge
+          variant="outline"
+          className="hover:bg-secondary hidden items-center gap-1 text-xs font-normal transition-colors duration-200 lg:flex"
+        >
+          <svg className="h-3 w-3" viewBox="0 0 16 16" fill="currentColor">
+            <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z" />
+          </svg>
+          {project.repo}
+        </Badge>
+      )}
+
+      {/* Desktop: Actions */}
+      <div className="hidden items-center gap-1 opacity-0 transition-opacity duration-200 group-hover:opacity-100 md:flex">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8 transition-colors duration-200"
+        >
+          <svg
+            className="h-4 w-4"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+          >
+            <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
+          </svg>
+        </Button>
+        {project.hasWarning && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 text-yellow-500"
+          >
+            <AlertTriangle className="h-4 w-4" />
+          </Button>
+        )}
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8 transition-colors duration-200"
+        >
+          <MoreHorizontal className="h-4 w-4" />
+        </Button>
+      </div>
+    </div>
+  );
+};
+
+type ProjectSectionProps = {
+  readonly title: string;
+  readonly projects: readonly Project[];
+  readonly isExpanded?: boolean;
+  readonly onToggleExpanded?: () => void;
+  readonly initialVisibleCount?: number;
+  readonly collapsible?: boolean;
+};
+
+const ProjectSection = ({
+  title,
+  projects,
+  isExpanded = true,
+  onToggleExpanded,
+  initialVisibleCount = 6,
+  collapsible = true,
+}: ProjectSectionProps) => {
+  const [visibleCount, setVisibleCount] = useState(initialVisibleCount);
 
   const visibleProjects = projects.slice(0, visibleCount);
   const hasMore = visibleCount < projects.length;
@@ -135,25 +325,35 @@ export function ProjectList() {
     setVisibleCount((prev) => Math.min(prev + 3, projects.length));
   };
 
+  if (projects.length === 0) {
+    return null;
+  }
+
+  const shouldShowContent = collapsible ? isExpanded : true;
+
   return (
-    <div className="min-w-0 flex-1">
-      <button
-        onClick={() => setIsExpanded(!isExpanded)}
-        className="hover:bg-secondary/50 mb-4 -ml-2 flex items-center gap-2 rounded-md px-2 py-1 transition-all duration-200 active:scale-95"
-      >
-        <span className="transition-transform duration-200">
-          {isExpanded ? (
-            <ChevronDown className="h-4 w-4" />
-          ) : (
-            <ChevronRight className="h-4 w-4" />
-          )}
-        </span>
-        <h2 className="text-sm font-medium">Your Favorites</h2>
-      </button>
+    <div className="mb-8">
+      {collapsible ? (
+        <button
+          onClick={onToggleExpanded}
+          className="hover:bg-secondary/50 mb-4 -ml-2 flex items-center gap-2 rounded-md px-2 py-1 transition-all duration-200 active:scale-95"
+        >
+          <span className="transition-transform duration-200">
+            {isExpanded ? (
+              <ChevronDown className="h-4 w-4" />
+            ) : (
+              <ChevronRight className="h-4 w-4" />
+            )}
+          </span>
+          <h2 className="text-sm font-medium">{title}</h2>
+        </button>
+      ) : (
+        <h2 className="mb-4 text-sm font-medium">{title}</h2>
+      )}
 
       <div
         className={`grid transition-all duration-300 ease-in-out ${
-          isExpanded
+          shouldShowContent
             ? "grid-rows-[1fr] opacity-100"
             : "grid-rows-[0fr] opacity-0"
         }`}
@@ -161,174 +361,7 @@ export function ProjectList() {
         <div className="overflow-hidden">
           <div className="space-y-1">
             {visibleProjects.map((project, index) => (
-              <div
-                key={project.id}
-                className="hover:bg-secondary/50 group animate-in fade-in slide-in-from-bottom-2 flex cursor-pointer flex-col gap-2 rounded-lg p-3 transition-all duration-200 md:flex-row md:items-center md:gap-4"
-                style={{
-                  animationDelay: `${index * 50}ms`,
-                  animationFillMode: "both",
-                }}
-              >
-                {/* Project icon and basic info row */}
-                <div className="flex min-w-0 flex-1 items-center gap-3">
-                  {/* Project icon */}
-                  {project.iconImage ? (
-                    <img
-                      src={project.iconImage || "/placeholder.svg"}
-                      alt={project.name}
-                      className="h-10 w-10 rounded-lg object-cover transition-transform duration-200 group-hover:scale-105"
-                    />
-                  ) : (
-                    <div
-                      className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-sm font-medium transition-transform duration-200 group-hover:scale-105 ${project.iconBg}`}
-                    >
-                      {project.icon}
-                    </div>
-                  )}
-
-                  {/* Project info */}
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium">{project.name}</span>
-                    </div>
-                    <span className="text-muted-foreground block truncate text-sm">
-                      {project.url}
-                    </span>
-                  </div>
-
-                  {/* Actions - visible on mobile at end of row */}
-                  <div className="flex items-center gap-1 md:hidden">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 transition-colors duration-200"
-                    >
-                      <svg
-                        className="h-4 w-4"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                      >
-                        <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
-                      </svg>
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 transition-colors duration-200"
-                    >
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-
-                <div className="space-y-2 pl-13 md:hidden">
-                  {project.repo && (
-                    <Badge
-                      variant="outline"
-                      className="inline-flex items-center gap-1 text-xs font-normal"
-                    >
-                      <svg
-                        className="h-3 w-3"
-                        viewBox="0 0 16 16"
-                        fill="currentColor"
-                      >
-                        <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z" />
-                      </svg>
-                      {project.repo}
-                    </Badge>
-                  )}
-                  {project.commit && (
-                    <div className="space-y-1">
-                      <p className="text-muted-foreground text-sm">
-                        {project.commit}
-                      </p>
-                      <p className="text-muted-foreground flex items-center gap-1 text-xs">
-                        {project.date} on <GitBranch className="h-3 w-3" />{" "}
-                        {project.branch}
-                      </p>
-                    </div>
-                  )}
-                  {!project.commit && project.date && (
-                    <span className="text-muted-foreground text-sm">
-                      {project.date}
-                    </span>
-                  )}
-                </div>
-
-                {/* Desktop: Commit info */}
-                <div className="hidden max-w-xs min-w-0 flex-1 flex-col items-start md:flex">
-                  {project.commit && (
-                    <>
-                      <span className="text-muted-foreground w-full truncate text-sm">
-                        {project.commit}
-                      </span>
-                      <span className="text-muted-foreground flex items-center gap-1 text-xs">
-                        {project.date} on <GitBranch className="h-3 w-3" />{" "}
-                        {project.branch}
-                      </span>
-                    </>
-                  )}
-                  {!project.commit && project.date && (
-                    <span className="text-muted-foreground text-sm">
-                      {project.date}
-                    </span>
-                  )}
-                </div>
-
-                {/* Desktop: GitHub repo badge */}
-                {project.repo && (
-                  <Badge
-                    variant="outline"
-                    className="hover:bg-secondary hidden items-center gap-1 text-xs font-normal transition-colors duration-200 lg:flex"
-                  >
-                    <svg
-                      className="h-3 w-3"
-                      viewBox="0 0 16 16"
-                      fill="currentColor"
-                    >
-                      <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z" />
-                    </svg>
-                    {project.repo}
-                  </Badge>
-                )}
-
-                {/* Desktop: Actions */}
-                <div className="hidden items-center gap-1 opacity-0 transition-opacity duration-200 group-hover:opacity-100 md:flex">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 transition-colors duration-200"
-                  >
-                    <svg
-                      className="h-4 w-4"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                    >
-                      <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
-                    </svg>
-                  </Button>
-                  {project.hasWarning && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-yellow-500"
-                    >
-                      <AlertTriangle className="h-4 w-4" />
-                    </Button>
-                  )}
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 transition-colors duration-200"
-                  >
-                    <MoreHorizontal className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
+              <ProjectItem key={project.id} project={project} index={index} />
             ))}
           </div>
 
@@ -343,6 +376,31 @@ export function ProjectList() {
           )}
         </div>
       </div>
+    </div>
+  );
+};
+
+export function ProjectList() {
+  const [isFavoritesExpanded, setIsFavoritesExpanded] = useState(true);
+
+  const favoriteProjects = projects.filter((project) => project.isFavorite);
+  const allProjects = projects.filter((project) => !project.isFavorite);
+
+  return (
+    <div className="min-w-0 flex-1">
+      <ProjectSection
+        title="Your Favorites"
+        projects={favoriteProjects}
+        isExpanded={isFavoritesExpanded}
+        onToggleExpanded={() => setIsFavoritesExpanded(!isFavoritesExpanded)}
+        collapsible={true}
+      />
+
+      <ProjectSection
+        title="All Projects"
+        projects={allProjects}
+        collapsible={false}
+      />
     </div>
   );
 }
