@@ -1,4 +1,7 @@
+"use client";
+
 import { AspectRatio } from "@/components/ui/aspect-ratio";
+import { useFlashOnChange } from "@/hooks/use-flash-on-change";
 
 type ImagePreviewProps = {
   readonly imageUrl: string;
@@ -28,10 +31,20 @@ export function ImagePreview({
   imageContainerClassName = "",
   aspectRatio = 4 / 3,
 }: ImagePreviewProps) {
+  // Handle flash animation on props change using hook, returns style object
+  const flashStyle = useFlashOnChange({
+    values: {
+      imageUrl,
+      imageContainerStyle,
+      imageStyle,
+      aspectRatio,
+    },
+  });
+
   return (
     <div
       className={`bg-muted/50 flex min-h-[280px] items-center justify-center rounded-xl p-4 lg:col-span-2 ${containerClassName}`}
-      style={wrapperStyle}
+      style={{ ...wrapperStyle, ...flashStyle }}
     >
       <div className="flex w-full max-w-md flex-col items-center gap-2.5">
         <AspectRatio ratio={aspectRatio} className="w-full">
