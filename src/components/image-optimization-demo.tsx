@@ -14,10 +14,6 @@ import { FormatDemo } from "@/components/demos/format-demo";
 import { QualityDemo } from "@/components/demos/quality-demo";
 import { EffectsDemo } from "@/components/demos/effects-demo";
 
-// ============================================================================
-// Main Component
-// ============================================================================
-
 export function ImageOptimizationDemo() {
   const tabsListRef = useRef<HTMLDivElement>(null);
   const tabRefs = useRef<Map<DemoKey, HTMLButtonElement | null>>(new Map());
