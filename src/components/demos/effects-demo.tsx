@@ -409,11 +409,11 @@ export function EffectsDemo() {
           imageAlt="Effects demo"
           imageContainerClassName="bg-muted"
           aspectRatio={4 / 3}
-          imageContainerStyle={{
+          imageStyle={{
+            objectFit: "cover",
             transform: buildTransformStyle(),
             filter: buildFilterStyle(),
           }}
-          imageStyle={{ objectFit: "cover" }}
         />
       </DemoLayout>
     </div>
