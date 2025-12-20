@@ -43,7 +43,7 @@ export function ImagePreview({
 
   return (
     <div
-      className={`bg-muted/50 flex min-h-[280px] items-center justify-center rounded-xl p-4 lg:col-span-2 ${containerClassName}`}
+      className={`bg-muted/50 flex min-h-[280px] w-full items-center justify-center rounded-xl p-4 lg:col-span-2 ${containerClassName}`}
       style={{ ...wrapperStyle, ...flashStyle }}
     >
       <div className="flex w-full max-w-md flex-col items-center gap-2.5">

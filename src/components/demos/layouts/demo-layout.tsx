@@ -29,6 +29,8 @@ export function DemoLayout({
   })();
 
   return (
-    <div className={cn("grid gap-4", gridClass, className)}>{children}</div>
+    <div className={cn("grid grid-cols-1 gap-4", gridClass, className)}>
+      {children}
+    </div>
   );
 }

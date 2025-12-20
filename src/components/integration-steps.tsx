@@ -52,7 +52,7 @@ export function IntegrationSteps() {
   }, []);
 
   return (
-    <section className="bg-muted/30 px-4 py-24">
+    <section className="bg-muted/30 px-6 py-24 md:px-8">
       <div className="mx-auto max-w-4xl">
         <div className="mb-16 text-center">
           <p className="text-accent animate-fade-in mb-3 font-medium">

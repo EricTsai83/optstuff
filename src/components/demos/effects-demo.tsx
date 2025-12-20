@@ -244,7 +244,7 @@ export function EffectsDemo() {
       />
 
       <DemoLayout controlsColSpan={2} previewColSpan={2}>
-        <div className="space-y-3 lg:col-span-2">
+        <div className="w-full space-y-3 lg:col-span-2">
           {/* Transform Controls */}
           <ControlCard>
             <SectionHeader
@@ -254,7 +254,7 @@ export function EffectsDemo() {
             />
             <div
               className={cn(
-                "grid grid-cols-2 gap-x-4 gap-y-3",
+                "grid grid-cols-1 gap-x-4 gap-y-3 sm:grid-cols-2",
                 !transformEnabled && "pointer-events-none",
               )}
             >
@@ -288,7 +288,7 @@ export function EffectsDemo() {
               />
               <div
                 className={cn(
-                  "flex items-end gap-4 pb-1",
+                  "flex items-end justify-center gap-3 pb-1 sm:gap-4",
                   !transformEnabled && "opacity-50",
                 )}
               >
@@ -319,7 +319,7 @@ export function EffectsDemo() {
             />
             <div
               className={cn(
-                "grid grid-cols-2 gap-x-4 gap-y-3",
+                "grid grid-cols-1 gap-x-4 gap-y-3 sm:grid-cols-2",
                 !colorEnabled && "pointer-events-none",
               )}
             >
@@ -375,7 +375,7 @@ export function EffectsDemo() {
               />
               <div
                 className={cn(
-                  "flex items-end gap-4 pb-1",
+                  "flex items-end justify-center gap-3 pb-1 sm:gap-4",
                   !colorEnabled && "opacity-50",
                 )}
               >

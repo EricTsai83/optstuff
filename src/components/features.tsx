@@ -178,6 +178,7 @@ function FeatureCard({
   const cardClassName = cn(
     "group rounded-2xl border border-transparent p-6",
     "hover:border-border hover:bg-muted/30",
+    "active:border-border active:bg-muted/30",
     isAnimated
       ? "feature-card-hover opacity-100"
       : isVisible
@@ -197,13 +198,13 @@ function FeatureCard({
     >
       <div
         className={cn(
-          "bg-muted group-hover:bg-accent/10 mb-4 flex h-10 w-10 items-center justify-center rounded-xl transition-all duration-500",
+          "bg-muted group-hover:bg-accent/10 group-active:bg-accent/10 mb-4 flex h-10 w-10 items-center justify-center rounded-xl transition-all duration-500",
           `icon-container-${feature.animation}`,
         )}
       >
         <Icon
           className={cn(
-            "text-muted-foreground group-hover:text-accent h-5 w-5 transition-colors duration-300",
+            "text-muted-foreground group-hover:text-accent group-active:text-accent h-5 w-5 transition-colors duration-300",
             feature.animation,
           )}
         />

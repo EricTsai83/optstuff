@@ -14,7 +14,7 @@ export function DemoHeader({
   action,
 }: DemoHeaderProps) {
   return (
-    <div className="flex items-start justify-between gap-4">
+    <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
       <div className="flex items-end gap-3">
         <div className="relative flex h-12 w-12 shrink-0 items-center justify-center">
           <div className="bg-primary/20 absolute inset-0 hidden rounded-full dark:block" />
@@ -23,7 +23,7 @@ export function DemoHeader({
             <div className="text-foreground">{icon}</div>
           </div>
         </div>
-        <div className="space-y-1">
+        <div className="min-w-0 space-y-1">
           <h3 className="text-lg leading-none font-semibold tracking-tight">
             {title}
           </h3>
