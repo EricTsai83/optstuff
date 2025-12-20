@@ -3,13 +3,7 @@
 import { useState, useMemo } from "react";
 import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { SlidingToggleGroup } from "@/components/ui/sliding-toggle-group";
 import { CodeBlock } from "@/components/code-block";
 import { Maximize2 } from "lucide-react";
 import {
@@ -39,6 +33,14 @@ function formatSize(kb: number): string {
   if (kb >= 1000) return `${(kb / 1000).toFixed(1)} MB`;
   return `${kb} KB`;
 }
+
+const FIT_MODE_OPTIONS = [
+  { value: "cover" as const, label: "Cover" },
+  { value: "contain" as const, label: "Contain" },
+  { value: "fill" as const, label: "Fill" },
+  { value: "inside" as const, label: "Inside" },
+  { value: "outside" as const, label: "Outside" },
+] as const;
 
 export function ResizeDemo() {
   const [width, setWidth] = useState(400);
@@ -138,18 +140,12 @@ export function ResizeDemo() {
           <ControlCard>
             <div className="space-y-3">
               <Label className="text-sm">Fit Mode</Label>
-              <Select value={fit} onValueChange={(v) => setFit(v as FitMode)}>
-                <SelectTrigger className="h-10">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="cover">Cover</SelectItem>
-                  <SelectItem value="contain">Contain</SelectItem>
-                  <SelectItem value="fill">Fill</SelectItem>
-                  <SelectItem value="inside">Inside</SelectItem>
-                  <SelectItem value="outside">Outside</SelectItem>
-                </SelectContent>
-              </Select>
+              <SlidingToggleGroup
+                value={fit}
+                onValueChange={setFit}
+                options={FIT_MODE_OPTIONS}
+                transitionDuration={200}
+              />
             </div>
           </ControlCard>
 
