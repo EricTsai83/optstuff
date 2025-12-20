@@ -92,7 +92,7 @@ export function FormatDemo() {
           aspectRatio={4 / 3}
           imageStyle={{ objectFit: "cover" }}
           footer={
-            <div className="flex items-center gap-2 text-sm">
+            <div className="flex items-center gap-2 pt-1 text-sm">
               <div className="bg-accent flex h-5 w-5 items-center justify-center rounded-full">
                 <Check className="text-accent-foreground h-3 w-3" />
               </div>
