@@ -380,11 +380,22 @@ Smooth lift effect with shadow on hover
     background-color 200ms ease;
 }
 
-.feature-card-hover:hover {
-  transform: translateY(-8px);
+/* Hover effect only on devices that support hover */
+@media (hover: hover) {
+  .feature-card-hover:hover {
+    transform: translateY(-8px);
+    box-shadow:
+      0 10px 25px -5px rgb(0 0 0 / 0.1),
+      0 8px 10px -6px rgb(0 0 0 / 0.1);
+  }
+}
+
+/* Active state for touch devices */
+.feature-card-hover:active {
+  transform: translateY(-4px);
   box-shadow:
-    0 10px 25px -5px rgb(0 0 0 / 0.1),
-    0 8px 10px -6px rgb(0 0 0 / 0.1);
+    0 6px 15px -5px rgb(0 0 0 / 0.1),
+    0 4px 6px -4px rgb(0 0 0 / 0.1);
 }
 
 /* ==========================================================================
@@ -510,7 +521,8 @@ Electric vibration effect - rotate, shake, then rotate back
   }
 }
 
-.group:hover .icon-zap {
+.group:hover .icon-zap,
+.group:active .icon-zap {
   animation: icon-zap-animate 0.6s ease-in-out;
 }
 
@@ -536,7 +548,8 @@ Forward block effect - like deflecting an incoming attack
   }
 }
 
-.group:hover .icon-shield {
+.group:hover .icon-shield,
+.group:active .icon-shield {
   animation: icon-shield-animate 0.5s ease-in-out;
 }
 
@@ -553,7 +566,8 @@ Rotation animation
   }
 }
 
-.group:hover .icon-globe {
+.group:hover .icon-globe,
+.group:active .icon-globe {
   animation: icon-globe-animate 0.8s ease-in-out;
 }
 
@@ -602,7 +616,8 @@ Squash and stretch bounce effect
   }
 }
 
-.group:hover .icon-code {
+.group:hover .icon-code,
+.group:active .icon-code {
   animation: icon-code-animate 0.95s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
@@ -625,7 +640,8 @@ Stacking animation
   }
 }
 
-.group:hover .icon-layers {
+.group:hover .icon-layers,
+.group:active .icon-layers {
   animation: icon-layers-animate 0.6s ease-in-out;
 }
 
@@ -656,7 +672,8 @@ Camera flash effect - like auto-focus capturing
   }
 }
 
-.group:hover .icon-image {
+.group:hover .icon-image,
+.group:active .icon-image {
   animation: icon-image-animate 0.5s ease-in-out;
 }
 
