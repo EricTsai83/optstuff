@@ -14,6 +14,75 @@ import { FormatDemo } from "@/components/demos/format-demo";
 import { QualityDemo } from "@/components/demos/quality-demo";
 import { EffectsDemo } from "@/components/demos/effects-demo";
 
+export function ImageOptimizationDemo() {
+  const tabsListRef = useRef<HTMLDivElement>(null);
+  const tabRefs = useRef<Map<DemoKey, HTMLButtonElement | null>>(new Map());
+  const { activeTab, animation, handleTabChange } =
+    useTabAnimation(DEFAULT_TAB);
+  const indicatorStyle = useIndicatorPosition(tabRefs, tabsListRef, activeTab);
+
+  const ActiveDemo = DEMOS[animation.displayedTab];
+
+  return (
+    <div className="animate-scale-in animation-delay-400 animate-on-scroll mx-auto max-w-5xl">
+      <Tabs
+        value={activeTab}
+        onValueChange={handleTabChange}
+        className="w-full"
+      >
+        <div className="mb-8 flex justify-center">
+          <TabsList
+            ref={tabsListRef}
+            className="bg-muted text-muted-foreground relative h-11 rounded-full p-1"
+          >
+            {/* Sliding indicator with squash-and-stretch effect */}
+            <div
+              className={cn(
+                "bg-background absolute top-1 h-9 rounded-full shadow-sm",
+                "transition-[left,width,opacity] duration-300 ease-out",
+                indicatorStyle.isSquashing &&
+                  "animate-indicator-squash-stretch",
+                indicatorStyle.width === 0 ? "opacity-0" : "opacity-100",
+              )}
+              style={{ left: indicatorStyle.left, width: indicatorStyle.width }}
+              aria-hidden="true"
+            />
+            {DEMO_KEYS.map((tab) => (
+              <TabsTrigger
+                key={tab}
+                value={tab}
+                ref={(el) => {
+                  tabRefs.current.set(tab, el);
+                }}
+                className={cn(
+                  "relative z-10 cursor-pointer rounded-full bg-transparent",
+                  "px-5 py-2 text-sm font-medium capitalize",
+                  "border-none shadow-none",
+                  "transition-colors duration-300",
+                  "data-[state=active]:bg-transparent data-[state=active]:shadow-none",
+                  "dark:data-[state=active]:bg-transparent dark:data-[state=active]:shadow-none",
+                )}
+              >
+                {tab}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </div>
+
+        <div className="bg-card border-border overflow-hidden rounded-2xl border p-6 shadow-sm transition-shadow duration-500 hover:shadow-lg md:p-8">
+          {/* Hidden TabsContent to maintain Radix accessibility */}
+          {DEMO_KEYS.map((tab) => (
+            <TabsContent key={tab} value={tab} className="hidden" />
+          ))}
+          <div className={getAnimationClass(animation)}>
+            <ActiveDemo />
+          </div>
+        </div>
+      </Tabs>
+    </div>
+  );
+}
+
 // ============================================================================
 // Constants & Types
 // ============================================================================
@@ -177,77 +246,4 @@ function useTabAnimation(initialTab: DemoKey): {
   );
 
   return { activeTab, animation, handleTabChange };
-}
-
-// ============================================================================
-// Main Component
-// ============================================================================
-
-export function ImageOptimizationDemo() {
-  const tabsListRef = useRef<HTMLDivElement>(null);
-  const tabRefs = useRef<Map<DemoKey, HTMLButtonElement | null>>(new Map());
-  const { activeTab, animation, handleTabChange } =
-    useTabAnimation(DEFAULT_TAB);
-  const indicatorStyle = useIndicatorPosition(tabRefs, tabsListRef, activeTab);
-
-  const ActiveDemo = DEMOS[animation.displayedTab];
-
-  return (
-    <div className="animate-scale-in animation-delay-400 animate-on-scroll mx-auto max-w-5xl">
-      <Tabs
-        value={activeTab}
-        onValueChange={handleTabChange}
-        className="w-full"
-      >
-        <div className="mb-8 flex justify-center">
-          <TabsList
-            ref={tabsListRef}
-            className="bg-muted text-muted-foreground relative h-11 rounded-full p-1"
-          >
-            {/* Sliding indicator with squash-and-stretch effect */}
-            <div
-              className={cn(
-                "bg-background absolute top-1 h-9 rounded-full shadow-sm",
-                "transition-[left,width,opacity] duration-300 ease-out",
-                indicatorStyle.isSquashing &&
-                  "animate-indicator-squash-stretch",
-                indicatorStyle.width === 0 ? "opacity-0" : "opacity-100",
-              )}
-              style={{ left: indicatorStyle.left, width: indicatorStyle.width }}
-              aria-hidden="true"
-            />
-            {DEMO_KEYS.map((tab) => (
-              <TabsTrigger
-                key={tab}
-                value={tab}
-                ref={(el) => {
-                  tabRefs.current.set(tab, el);
-                }}
-                className={cn(
-                  "relative z-10 cursor-pointer rounded-full bg-transparent",
-                  "px-5 py-2 text-sm font-medium capitalize",
-                  "border-none shadow-none",
-                  "transition-colors duration-300",
-                  "data-[state=active]:bg-transparent data-[state=active]:shadow-none",
-                  "dark:data-[state=active]:bg-transparent dark:data-[state=active]:shadow-none",
-                )}
-              >
-                {tab}
-              </TabsTrigger>
-            ))}
-          </TabsList>
-        </div>
-
-        <div className="bg-card border-border overflow-hidden rounded-2xl border p-6 shadow-sm transition-shadow duration-500 hover:shadow-lg md:p-8">
-          {/* Hidden TabsContent to maintain Radix accessibility */}
-          {DEMO_KEYS.map((tab) => (
-            <TabsContent key={tab} value={tab} className="hidden" />
-          ))}
-          <div className={getAnimationClass(animation)}>
-            <ActiveDemo />
-          </div>
-        </div>
-      </Tabs>
-    </div>
-  );
 }

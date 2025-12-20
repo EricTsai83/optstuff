@@ -3,24 +3,16 @@
 import { useState, useMemo } from "react";
 import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { SlidingToggleGroup } from "@/components/ui/sliding-toggle-group";
 import { CodeBlock } from "@/components/code-block";
 import { Maximize2 } from "lucide-react";
 import {
   ORIGINAL_WIDTH,
   ORIGINAL_HEIGHT,
   ORIGINAL_SIZE_KB,
-  PREVIEW_MAX_WIDTH,
-  PREVIEW_MAX_HEIGHT,
   DEMO_IMAGE,
 } from "./constants";
-import { DemoHeader, DemoLayout, ControlCard } from "./layouts";
+import { DemoHeader, DemoLayout, ControlCard, ImagePreview } from "./layouts";
 
 const FIT_MODES = {
   cover: "cover",
@@ -42,6 +34,14 @@ function formatSize(kb: number): string {
   return `${kb} KB`;
 }
 
+const FIT_MODE_OPTIONS = [
+  { value: "cover" as const, label: "Cover" },
+  { value: "contain" as const, label: "Contain" },
+  { value: "fill" as const, label: "Fill" },
+  { value: "inside" as const, label: "Inside" },
+  { value: "outside" as const, label: "Outside" },
+] as const;
+
 export function ResizeDemo() {
   const [width, setWidth] = useState(400);
   const [height, setHeight] = useState(300);
@@ -52,44 +52,31 @@ export function ResizeDemo() {
     [width, height],
   );
 
-  const previewDimensions = useMemo(() => {
-    const aspectRatio = width / height;
-    let previewWidth: number;
-    let previewHeight: number;
+  // Calculate aspect ratio from width and height
+  const aspectRatio = useMemo(() => width / height, [width, height]);
 
-    if (aspectRatio > PREVIEW_MAX_WIDTH / PREVIEW_MAX_HEIGHT) {
-      previewWidth = PREVIEW_MAX_WIDTH;
-      previewHeight = PREVIEW_MAX_WIDTH / aspectRatio;
-    } else {
-      previewHeight = PREVIEW_MAX_HEIGHT;
-      previewWidth = PREVIEW_MAX_HEIGHT * aspectRatio;
-    }
-
-    return { width: previewWidth, height: previewHeight };
-  }, [width, height]);
+  // Build image URL with resize parameters
+  const resizedImageUrl = useMemo(() => {
+    const operations = [`s_${width}x${height}`, `fit_${fit}`];
+    return `/api/optimize/${operations.join(",")}${DEMO_IMAGE}`;
+  }, [width, height, fit]);
 
   const getObjectFit = (mode: FitMode): string => {
     return FIT_MODES[mode];
   };
 
   const getContainerStyle = (mode: FitMode): React.CSSProperties => {
-    const baseStyle: React.CSSProperties = {
-      width: previewDimensions.width,
-      height: previewDimensions.height,
-    };
-
     if (mode === "contain" || mode === "inside") {
       return {
-        ...baseStyle,
         backgroundColor: "rgba(0,0,0,0.3)",
       };
     }
 
-    return baseStyle;
+    return {};
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <DemoHeader
         icon={<Maximize2 className="h-5 w-5" />}
         title="Resize Images"
@@ -111,9 +98,9 @@ export function ResizeDemo() {
       />
 
       <DemoLayout controlsColSpan={2} previewColSpan={2}>
-        <div className="space-y-6 lg:col-span-2">
+        <div className="space-y-4 lg:col-span-2">
           <ControlCard>
-            <div className="space-y-3">
+            <div className="space-y-2.5">
               <div className="flex items-center justify-between">
                 <Label className="text-sm">Width</Label>
                 <span className="text-muted-foreground font-mono text-sm">
@@ -153,18 +140,12 @@ export function ResizeDemo() {
           <ControlCard>
             <div className="space-y-3">
               <Label className="text-sm">Fit Mode</Label>
-              <Select value={fit} onValueChange={(v) => setFit(v as FitMode)}>
-                <SelectTrigger className="h-10">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="cover">Cover</SelectItem>
-                  <SelectItem value="contain">Contain</SelectItem>
-                  <SelectItem value="fill">Fill</SelectItem>
-                  <SelectItem value="inside">Inside</SelectItem>
-                  <SelectItem value="outside">Outside</SelectItem>
-                </SelectContent>
-              </Select>
+              <SlidingToggleGroup
+                value={fit}
+                onValueChange={setFit}
+                options={FIT_MODE_OPTIONS}
+                transitionDuration={200}
+              />
             </div>
           </ControlCard>
 
@@ -174,30 +155,21 @@ export function ResizeDemo() {
           </ControlCard>
         </div>
 
-        <div className="bg-muted/50 flex min-h-[320px] items-center justify-center rounded-xl p-6 lg:col-span-2">
-          <div className="flex flex-col items-center gap-3">
-            <div
-              className="ring-border overflow-hidden rounded-lg ring-1 transition-all duration-300"
-              style={getContainerStyle(fit)}
-            >
-              <img
-                src={DEMO_IMAGE}
-                alt="Sample resized image"
-                className="pointer-events-none h-full w-full transition-all duration-300 select-none"
-                style={{
-                  objectFit: getObjectFit(
-                    fit,
-                  ) as React.CSSProperties["objectFit"],
-                }}
-                draggable={false}
-                onContextMenu={(e) => e.preventDefault()}
-              />
-            </div>
+        <ImagePreview
+          imageUrl={resizedImageUrl}
+          imageAlt="Sample resized image"
+          imageContainerClassName="pointer-events-none select-none"
+          imageContainerStyle={getContainerStyle(fit)}
+          imageStyle={{
+            objectFit: getObjectFit(fit) as React.CSSProperties["objectFit"],
+          }}
+          aspectRatio={aspectRatio}
+          footer={
             <p className="text-muted-foreground text-xs">
               {width} x {height}px
             </p>
-          </div>
-        </div>
+          }
+        />
       </DemoLayout>
     </div>
   );

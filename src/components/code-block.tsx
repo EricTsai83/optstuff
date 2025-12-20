@@ -12,11 +12,11 @@ export function CodeBlock({ code, className }: CodeBlockProps) {
   return (
     <div
       className={cn(
-        "border-border flex items-center justify-between gap-4 rounded-xl border bg-[#18181b] px-4 py-1.5",
+        "border-border flex items-center justify-between gap-4 rounded-xl border bg-[#18181b] px-4 py-1",
         className,
       )}
     >
-      <code className="text-accent-foreground overflow-x-auto font-mono text-sm whitespace-pre-wrap">
+      <code className="text-accent-foreground scrollbar-hide overflow-x-auto font-mono text-sm text-nowrap">
         {code}
       </code>
       <CopyButton text={code} />
