@@ -186,8 +186,8 @@ export function EffectsDemo() {
     }
 
     return modifiers.length > 0
-      ? `/${modifiers.join(",")}${DEMO_IMAGE}`
-      : DEMO_IMAGE;
+      ? `/${modifiers.join(",")}/image.png`
+      : "/image.png";
   }
 
   // Build CSS filter string for preview

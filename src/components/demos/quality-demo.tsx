@@ -11,188 +11,13 @@ import {
   ImageIcon,
   Sparkles,
   TrendingDown,
-  Zap,
   HardDrive,
   Wifi,
-  Clock,
-  ArrowDown,
   Calculator,
   ChevronDown,
 } from "lucide-react";
 import { useEffect } from "react";
 import { DemoHeader, ControlCard, DemoLayout, PreviewCard } from "./layouts";
-
-type ImageContainerProps = {
-  readonly imageUrl: string;
-  readonly label: string;
-  readonly imageRef: React.RefObject<HTMLImageElement | null>;
-  readonly onMouseMove: (e: React.MouseEvent<HTMLImageElement>) => void;
-  readonly onMouseEnter: () => void;
-  readonly onMouseLeave: () => void;
-};
-
-function ImageContainer({
-  imageUrl,
-  label,
-  imageRef,
-  onMouseMove,
-  onMouseEnter,
-  onMouseLeave,
-}: ImageContainerProps) {
-  return (
-    <div className="relative h-full w-full">
-      <img
-        ref={imageRef}
-        src={imageUrl}
-        alt={label}
-        className="h-full w-full cursor-crosshair object-contain transition-transform duration-300"
-        draggable={false}
-        loading="lazy"
-        onMouseMove={onMouseMove}
-        onMouseEnter={onMouseEnter}
-        onMouseLeave={onMouseLeave}
-      />
-    </div>
-  );
-}
-
-type ComparisonMagnifierProps = {
-  readonly originalImageUrl: string;
-  readonly optimizedImageUrl: string;
-  readonly imagePos: { x: number; y: number };
-  readonly isVisible: boolean;
-  readonly zoom?: number;
-  readonly height?: number;
-};
-
-function ComparisonMagnifier({
-  originalImageUrl,
-  optimizedImageUrl,
-  imagePos,
-  isVisible,
-  zoom = 5,
-  height = 120,
-}: ComparisonMagnifierProps) {
-  const bgPosition = `${((0.5 - imagePos.x * zoom) / (1 - zoom)) * 100}% ${((0.5 - imagePos.y * zoom) / (1 - zoom)) * 100}%`;
-
-  return (
-    <div
-      className="pointer-events-none absolute right-0 bottom-0 left-0 z-30 col-span-2 translate-y-full overflow-hidden rounded-2xl border border-gray-200 bg-gray-50 shadow-xl transition-all duration-300 ease-out dark:border-white/10 dark:bg-gray-900"
-      style={{
-        height: isVisible ? `${height}px` : "0px",
-        marginTop: "12px",
-        opacity: isVisible ? 1 : 0,
-      }}
-    >
-      {/* Image comparison area */}
-      <div className="relative grid h-full grid-cols-2">
-        {/* Original side */}
-        <div className="relative h-full w-full overflow-hidden">
-          <div
-            className="h-full w-full"
-            style={{
-              backgroundImage: `url(${originalImageUrl})`,
-              backgroundSize: `${zoom * 100}%`,
-              backgroundPosition: bgPosition,
-              backgroundRepeat: "no-repeat",
-            }}
-          />
-          {/* Label */}
-          <div className="absolute inset-x-0 bottom-0 bg-linear-to-t from-black/60 to-transparent px-3 pt-6 pb-2">
-            <Badge
-              variant="secondary"
-              className="border-white/20 bg-white/10 text-[10px] text-white/90 backdrop-blur-sm"
-            >
-              Original
-            </Badge>
-          </div>
-        </div>
-
-        {/* Center divider */}
-        <div className="absolute top-0 bottom-0 left-1/2 z-10 flex -translate-x-1/2 flex-col items-center">
-          <div className="h-full w-px bg-white shadow-sm" />
-          <div className="absolute top-1/2 -translate-y-1/2 rounded-full border-2 border-white bg-gray-900 px-2 py-0.5 text-[10px] font-bold text-white shadow-lg">
-            VS
-          </div>
-        </div>
-
-        {/* Optimized side */}
-        <div className="relative h-full w-full overflow-hidden">
-          <div
-            className="h-full w-full"
-            style={{
-              backgroundImage: `url(${optimizedImageUrl})`,
-              backgroundSize: `${zoom * 100}%`,
-              backgroundPosition: bgPosition,
-              backgroundRepeat: "no-repeat",
-            }}
-          />
-          {/* Label */}
-          <div className="absolute inset-x-0 bottom-0 flex justify-end bg-linear-to-t from-black/50 to-transparent px-3 pt-6 pb-2">
-            <Badge
-              variant="secondary"
-              className="border-white/20 bg-white/10 text-[10px] text-white/90 backdrop-blur-sm"
-            >
-              Optimized
-            </Badge>
-          </div>
-        </div>
-      </div>
-
-      {/* Zoom indicator */}
-      <div className="absolute top-2 right-2 rounded-md bg-black/50 px-1.5 py-0.5 text-[10px] font-medium text-white/80 backdrop-blur-sm">
-        {zoom}x
-      </div>
-    </div>
-  );
-}
-
-type StatCardProps = {
-  readonly value: string | number;
-  readonly label: string;
-  readonly icon: React.ReactNode;
-  readonly highlight?: boolean;
-};
-
-function StatCard({ value, label, icon, highlight = false }: StatCardProps) {
-  return (
-    <div
-      className={cn(
-        "flex flex-1 flex-col items-center gap-1 rounded-lg p-2 transition-colors",
-        highlight
-          ? "bg-emerald-100 ring-1 ring-emerald-500/30 dark:bg-emerald-500/10 dark:ring-emerald-500/20"
-          : "bg-gray-100 dark:bg-white/5",
-      )}
-    >
-      <div
-        className={cn(
-          "flex items-center gap-2",
-          highlight
-            ? "text-emerald-600 dark:text-emerald-400"
-            : "text-muted-foreground",
-        )}
-      >
-        {icon}
-        <p
-          className={cn(
-            "text-muted-foreground text-[9px] tracking-wider uppercase",
-            highlight && "text-emerald-600 dark:text-emerald-400",
-          )}
-        >
-          {label}
-        </p>
-      </div>
-      <p
-        className={cn(
-          "text-foreground font-mono text-lg font-bold",
-          highlight && "text-emerald-600 dark:text-emerald-400",
-        )}
-      >
-        {value}
-      </p>
-    </div>
-  );
-}
 
 export function QualityDemo() {
   const [quality, setQuality] = useState(80);
@@ -220,7 +45,7 @@ export function QualityDemo() {
   const ipxSyntax = useMemo(() => {
     const operations = [`q_${quality}`];
     // Only show IPX syntax, don't expose the actual endpoint
-    return `/${operations.join(",")}${QUALITY_DEMO_IMAGE}`;
+    return `/${operations.join(",")}/image.webp`;
   }, [quality]);
 
   const originalImageUrl = useMemo(() => {
@@ -462,6 +287,178 @@ export function QualityDemo() {
         originalSizeKB={baseSize}
         optimizedSizeKB={estimatedSize}
       />
+    </div>
+  );
+}
+
+type ImageContainerProps = {
+  readonly imageUrl: string;
+  readonly label: string;
+  readonly imageRef: React.RefObject<HTMLImageElement | null>;
+  readonly onMouseMove: (e: React.MouseEvent<HTMLImageElement>) => void;
+  readonly onMouseEnter: () => void;
+  readonly onMouseLeave: () => void;
+};
+
+function ImageContainer({
+  imageUrl,
+  label,
+  imageRef,
+  onMouseMove,
+  onMouseEnter,
+  onMouseLeave,
+}: ImageContainerProps) {
+  return (
+    <div className="relative h-full w-full">
+      <img
+        ref={imageRef}
+        src={imageUrl}
+        alt={label}
+        className="h-full w-full cursor-crosshair object-contain transition-transform duration-300"
+        draggable={false}
+        loading="lazy"
+        onMouseMove={onMouseMove}
+        onMouseEnter={onMouseEnter}
+        onMouseLeave={onMouseLeave}
+      />
+    </div>
+  );
+}
+
+type ComparisonMagnifierProps = {
+  readonly originalImageUrl: string;
+  readonly optimizedImageUrl: string;
+  readonly imagePos: { x: number; y: number };
+  readonly isVisible: boolean;
+  readonly zoom?: number;
+  readonly height?: number;
+};
+
+function ComparisonMagnifier({
+  originalImageUrl,
+  optimizedImageUrl,
+  imagePos,
+  isVisible,
+  zoom = 5,
+  height = 120,
+}: ComparisonMagnifierProps) {
+  const bgPosition = `${((0.5 - imagePos.x * zoom) / (1 - zoom)) * 100}% ${((0.5 - imagePos.y * zoom) / (1 - zoom)) * 100}%`;
+
+  return (
+    <div
+      className="pointer-events-none absolute right-0 bottom-0 left-0 z-30 col-span-2 translate-y-full overflow-hidden rounded-2xl border border-gray-200 bg-gray-50 shadow-xl transition-all duration-300 ease-out dark:border-white/10 dark:bg-gray-900"
+      style={{
+        height: isVisible ? `${height}px` : "0px",
+        marginTop: "12px",
+        opacity: isVisible ? 1 : 0,
+      }}
+    >
+      {/* Image comparison area */}
+      <div className="relative grid h-full grid-cols-2">
+        {/* Original side */}
+        <div className="relative h-full w-full overflow-hidden">
+          <div
+            className="h-full w-full"
+            style={{
+              backgroundImage: `url(${originalImageUrl})`,
+              backgroundSize: `${zoom * 100}%`,
+              backgroundPosition: bgPosition,
+              backgroundRepeat: "no-repeat",
+            }}
+          />
+          {/* Label */}
+          <div className="absolute inset-x-0 bottom-0 bg-linear-to-t from-black/60 to-transparent px-3 pt-6 pb-2">
+            <Badge
+              variant="secondary"
+              className="border-white/20 bg-white/10 text-[10px] text-white/90 backdrop-blur-sm"
+            >
+              Original
+            </Badge>
+          </div>
+        </div>
+
+        {/* Center divider */}
+        <div className="absolute top-0 bottom-0 left-1/2 z-10 flex -translate-x-1/2 flex-col items-center">
+          <div className="h-full w-px bg-white shadow-sm" />
+          <div className="absolute top-1/2 -translate-y-1/2 rounded-full border-2 border-white bg-gray-900 px-2 py-0.5 text-[10px] font-bold text-white shadow-lg">
+            VS
+          </div>
+        </div>
+
+        {/* Optimized side */}
+        <div className="relative h-full w-full overflow-hidden">
+          <div
+            className="h-full w-full"
+            style={{
+              backgroundImage: `url(${optimizedImageUrl})`,
+              backgroundSize: `${zoom * 100}%`,
+              backgroundPosition: bgPosition,
+              backgroundRepeat: "no-repeat",
+            }}
+          />
+          {/* Label */}
+          <div className="absolute inset-x-0 bottom-0 flex justify-end bg-linear-to-t from-black/50 to-transparent px-3 pt-6 pb-2">
+            <Badge
+              variant="secondary"
+              className="border-white/20 bg-white/10 text-[10px] text-white/90 backdrop-blur-sm"
+            >
+              Optimized
+            </Badge>
+          </div>
+        </div>
+      </div>
+
+      {/* Zoom indicator */}
+      <div className="absolute top-2 right-2 rounded-md bg-black/50 px-1.5 py-0.5 text-[10px] font-medium text-white/80 backdrop-blur-sm">
+        {zoom}x
+      </div>
+    </div>
+  );
+}
+
+type StatCardProps = {
+  readonly value: string | number;
+  readonly label: string;
+  readonly icon: React.ReactNode;
+  readonly highlight?: boolean;
+};
+
+function StatCard({ value, label, icon, highlight = false }: StatCardProps) {
+  return (
+    <div
+      className={cn(
+        "flex flex-1 flex-col items-center gap-1 rounded-lg p-2 transition-colors",
+        highlight
+          ? "bg-emerald-100 ring-1 ring-emerald-500/30 dark:bg-emerald-500/10 dark:ring-emerald-500/20"
+          : "bg-gray-100 dark:bg-white/5",
+      )}
+    >
+      <div
+        className={cn(
+          "flex items-center gap-2",
+          highlight
+            ? "text-emerald-600 dark:text-emerald-400"
+            : "text-muted-foreground",
+        )}
+      >
+        {icon}
+        <p
+          className={cn(
+            "text-muted-foreground text-[9px] tracking-wider uppercase",
+            highlight && "text-emerald-600 dark:text-emerald-400",
+          )}
+        >
+          {label}
+        </p>
+      </div>
+      <p
+        className={cn(
+          "text-foreground font-mono text-lg font-bold",
+          highlight && "text-emerald-600 dark:text-emerald-400",
+        )}
+      >
+        {value}
+      </p>
     </div>
   );
 }
