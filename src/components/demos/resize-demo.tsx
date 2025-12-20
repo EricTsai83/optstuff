@@ -3,7 +3,7 @@
 import { useState, useMemo } from "react";
 import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
-import { SlidingToggleGroup } from "@/components/ui/sliding-toggle-group";
+import { SlidingToggleGroup } from "@/components/sliding-toggle-group";
 import { CodeBlock } from "@/components/code-block";
 import { Maximize2 } from "lucide-react";
 import {
@@ -98,7 +98,7 @@ export function ResizeDemo() {
       />
 
       <DemoLayout controlsColSpan={2} previewColSpan={2}>
-        <div className="space-y-4 lg:col-span-2">
+        <div className="w-full space-y-4 lg:col-span-2">
           <ControlCard>
             <div className="space-y-2.5">
               <div className="flex items-center justify-between">

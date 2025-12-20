@@ -16,7 +16,7 @@ export function CodeBlock({ code, className }: CodeBlockProps) {
         className,
       )}
     >
-      <code className="text-accent-foreground scrollbar-hide overflow-x-auto font-mono text-sm text-nowrap">
+      <code className="text-accent-foreground scrollbar-hide min-w-0 flex-1 overflow-x-auto font-mono text-sm text-nowrap">
         {code}
       </code>
       <CopyButton text={code} />

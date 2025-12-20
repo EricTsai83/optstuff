@@ -99,7 +99,7 @@ export function SlidingToggleGroup<TValue extends string>({
               itemRefs.current.set(option.value, el);
             }}
             className={cn(
-              "text-foreground hover:text-foreground relative z-10 flex-1 cursor-pointer bg-transparent hover:bg-transparent data-[state=on]:bg-transparent",
+              "text-foreground hover:text-foreground relative z-10 flex-1 cursor-pointer bg-transparent text-xs hover:bg-transparent data-[state=on]:bg-transparent sm:text-sm",
               isFirst(index) && "rounded-l-md! border-r-0 border-l!",
               !isFirst(index) && !isLast(index) && "border-r-0",
               isLast(index) && "rounded-r-md",
