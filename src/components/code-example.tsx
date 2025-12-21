@@ -2,8 +2,7 @@
 
 import { useState } from "react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Button } from "@/components/ui/button";
-import { Copy, Check } from "lucide-react";
+import { CodeContentLayout } from "@/components/code-content-layout";
 
 const codeExamples = {
   url: `// Simple URL-based API
@@ -39,21 +38,7 @@ export default function optixLoader({ src, width, quality }) {
 };
 
 export function CodeExample() {
-  const [copied, setCopied] = useState(false);
   const [activeTab, setActiveTab] = useState("url");
-
-  const copyCode = async () => {
-    try {
-      await navigator.clipboard.writeText(
-        codeExamples[activeTab as keyof typeof codeExamples],
-      );
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      // Optionally show error feedback to user
-      console.error("Failed to copy to clipboard");
-    }
-  };
 
   return (
     <section id="docs" className="bg-muted/30 py-24">
@@ -70,7 +55,7 @@ export function CodeExample() {
 
         <div className="mx-auto max-w-3xl">
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <div className="mb-4 flex items-center justify-between">
+            <div className="mb-4">
               <TabsList className="bg-muted h-10 rounded-full p-1">
                 <TabsTrigger
                   value="url"
@@ -91,44 +76,23 @@ export function CodeExample() {
                   Next.js
                 </TabsTrigger>
               </TabsList>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={copyCode}
-                className="text-muted-foreground hover:text-foreground"
-              >
-                {copied ? (
-                  <Check className="mr-2 h-4 w-4" />
-                ) : (
-                  <Copy className="mr-2 h-4 w-4" />
-                )}
-                {copied ? "Copied" : "Copy"}
-              </Button>
             </div>
 
-            <div className="overflow-hidden rounded-2xl bg-[#18181b]">
-              <TabsContent value="url" className="mt-0">
-                <pre className="overflow-x-auto p-6">
-                  <code className="font-mono text-sm text-[#a1a1aa]">
-                    {codeExamples.url}
-                  </code>
-                </pre>
-              </TabsContent>
-              <TabsContent value="express" className="mt-0">
-                <pre className="overflow-x-auto p-6">
-                  <code className="font-mono text-sm text-[#a1a1aa]">
-                    {codeExamples.express}
-                  </code>
-                </pre>
-              </TabsContent>
-              <TabsContent value="next" className="mt-0">
-                <pre className="overflow-x-auto p-6">
-                  <code className="font-mono text-sm text-[#a1a1aa]">
-                    {codeExamples.next}
-                  </code>
-                </pre>
-              </TabsContent>
-            </div>
+            <TabsContent value="url" className="mt-0">
+              <CodeContentLayout copyText={codeExamples.url}>
+                {codeExamples.url}
+              </CodeContentLayout>
+            </TabsContent>
+            <TabsContent value="express" className="mt-0">
+              <CodeContentLayout copyText={codeExamples.express}>
+                {codeExamples.express}
+              </CodeContentLayout>
+            </TabsContent>
+            <TabsContent value="next" className="mt-0">
+              <CodeContentLayout copyText={codeExamples.next}>
+                {codeExamples.next}
+              </CodeContentLayout>
+            </TabsContent>
           </Tabs>
         </div>
       </div>
