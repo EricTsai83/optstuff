@@ -151,11 +151,11 @@ function MainCard({ isOptimized, children }: MainCardProps) {
         "before:ring-accent/40 before:pointer-events-none before:absolute before:inset-0 before:rounded-lg before:opacity-0 before:ring-2 before:content-[''] before:ring-inset",
         isOptimized
           ? [
-              "border-accent/30 ring-accent/20 bg-white/[0.024] ring-1 ring-inset",
+              "border-accent/30 ring-accent/20 bg-popover/78 ring-1 ring-inset",
               "[transition-delay:500ms] duration-200",
               "before:animate-hero-card-border-flash",
             ]
-          : "border-accent/10 bg-white/[0.018] [transition-delay:0ms] duration-500",
+          : "border-accent/10 bg-popover/78 [transition-delay:0ms] duration-500",
       )}
     >
       {children}
