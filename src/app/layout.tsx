@@ -32,7 +32,7 @@ export default function RootLayout({
           attribute="class"
           defaultTheme="system"
           enableSystem
-          // disableTransitionOnChange
+          disableTransitionOnChange
         >
           <TRPCReactProvider>{children}</TRPCReactProvider>
         </ThemeProvider>

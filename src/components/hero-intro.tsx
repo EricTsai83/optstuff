@@ -9,7 +9,7 @@ export function HeroIntro() {
   return (
     <section
       id="hero"
-      className="mx-auto max-w-6xl px-6 pb-10 text-center md:px-8 md:pb-36"
+      className="mx-auto max-w-6xl px-6 pb-10 text-center md:pb-46"
     >
       <HeroBackground />
       <div className="bg-accent/10 text-accent animate-fade-in-up mb-8 inline-flex items-center gap-2 rounded-full px-3 py-1 text-sm font-medium md:mb-14">
@@ -26,10 +26,10 @@ export function HeroIntro() {
           🖼️ IPX
         </AnimatedLink>
       </div>
-      <div className="flex flex-col items-center gap-7 md:flex-row md:items-center md:justify-between">
+      <div className="flex flex-col items-center gap-12 md:flex-row md:items-center md:justify-between">
         <div className="flex flex-col items-center text-left md:items-start md:justify-center">
           <h1
-            className="animate-fade-in-up animation-delay-100 animate-on-scroll mb-6 text-center text-4xl leading-[1.1] font-bold tracking-tight text-balance md:text-left md:text-5xl lg:text-6xl xl:text-7xl"
+            className="animate-fade-in-up animation-delay-100 animate-on-scroll mb-6 text-center text-4xl leading-[1.1] font-bold tracking-tight text-balance md:text-left md:text-5xl lg:text-6xl lg:text-nowrap xl:text-7xl"
             style={{ animationFillMode: "forwards" }}
           >
             Image optimization <br />

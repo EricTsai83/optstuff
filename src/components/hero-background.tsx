@@ -6,7 +6,7 @@ export function HeroBackground() {
       preserveAspectRatio="xMidYMid slice"
     >
       <defs>
-        {/* 主要網格 */}
+        {/* 主要網格 - light mode 用更低透明度 */}
         <pattern
           id="smallGrid"
           width="20"
@@ -16,7 +16,7 @@ export function HeroBackground() {
           <rect
             width="1"
             height="1"
-            className="fill-emerald-500/10 dark:fill-emerald-400/20"
+            className="fill-emerald-600/5 dark:fill-emerald-400/20"
           />
         </pattern>
 
@@ -30,13 +30,14 @@ export function HeroBackground() {
           <rect
             width="2"
             height="2"
-            className="fill-emerald-500/20 dark:fill-emerald-400/30"
+            className="fill-emerald-600/10 dark:fill-emerald-400/30"
           />
         </pattern>
 
-        {/* 漸層遮罩 */}
-        <radialGradient id="fadeGradient" cx="50%" cy="0%" r="70%">
+        {/* 漸層遮罩 - light mode 範圍更小更集中 */}
+        <radialGradient id="fadeGradient" cx="50%" cy="0%" r="60%">
           <stop offset="0%" stopColor="white" stopOpacity="1" />
+          <stop offset="70%" stopColor="white" stopOpacity="0.3" />
           <stop offset="100%" stopColor="white" stopOpacity="0" />
         </radialGradient>
 
@@ -44,13 +45,16 @@ export function HeroBackground() {
           <rect width="100%" height="100%" fill="url(#fadeGradient)" />
         </mask>
 
-        {/* 發光效果 */}
-        <radialGradient id="glowGradient" cx="50%" cy="17%" r="50%">
+        {/* 發光效果 - light mode 大幅降低 */}
+        <radialGradient id="glowGradient" cx="50%" cy="10%" r="40%">
           <stop
             offset="0%"
-            className="[stop-color:var(--color-emerald-500)]/15 dark:[stop-color:var(--color-emerald-400)]/10"
+            className="[stop-color:theme(colors.emerald.400)] [stop-opacity:0.08] dark:[stop-color:theme(colors.emerald.400)] dark:[stop-opacity:0.15]"
           />
-          <stop offset="100%" stopColor="transparent" />
+          <stop
+            offset="100%"
+            className="[stop-color:transparent] [stop-opacity:0]"
+          />
         </radialGradient>
       </defs>
 
@@ -65,7 +69,7 @@ export function HeroBackground() {
         mask="url(#fadeMask)"
       />
 
-      {/* 細微的掃描線效果 */}
+      {/* 細微的掃描線效果 - light mode 幾乎不可見 */}
       <pattern
         id="scanlines"
         width="4"
@@ -77,7 +81,7 @@ export function HeroBackground() {
           y1="0"
           x2="4"
           y2="0"
-          className="stroke-emerald-500/3 dark:stroke-emerald-400/5"
+          className="stroke-emerald-600/[0.02] dark:stroke-emerald-400/5"
           strokeWidth="1"
         />
       </pattern>
