@@ -64,7 +64,7 @@ export function HeroAnimation() {
   return (
     <div className="relative aspect-square w-full">
       {/* Status label (top right) */}
-      <div className="absolute top-7 right-7">
+      <div className="absolute top-7 right-7 z-10">
         <OptimizationStatusLabel
           shouldStartDecode={shouldStartDecode}
           isOptimized={isOptimized}
