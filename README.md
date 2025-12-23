@@ -1,77 +1,58 @@
-# Image Optimizer
+# Turborepo Tailwind CSS starter
 
-A high-performance image optimization API built with [Next.js](https://nextjs.org) and [IPX](https://github.com/unjs/ipx).
+This Turborepo starter is maintained by the Turborepo core team.
 
-## Getting Started
+## Using this example
 
-```bash
-# Install dependencies
-bun install
+Run the following command:
 
-# Start development server
-bun run dev
+```sh
+npx create-turbo@latest -e with-tailwind
 ```
 
-## Image Optimization API
+## What's inside?
 
-### URL Format
+This Turborepo includes the following packages/apps:
 
-```
-/api/optimize/{operations}/{image_url}
-```
+### Apps and Packages
 
-### Quick Examples
+- `docs`: a [Next.js](https://nextjs.org/) app with [Tailwind CSS](https://tailwindcss.com/)
+- `web`: another [Next.js](https://nextjs.org/) app with [Tailwind CSS](https://tailwindcss.com/)
+- `ui`: a stub React component library with [Tailwind CSS](https://tailwindcss.com/) shared by both `web` and `docs` applications
+- `@repo/eslint-config`: `eslint` configurations (includes `eslint-config-next` and `eslint-config-prettier`)
+- `@repo/typescript-config`: `tsconfig.json`s used throughout the monorepo
 
-```bash
-# Set width to 800px
-/api/optimize/w_800/https://images.unsplash.com/photo-1506905925346-21bda4d32df4
+Each package/app is 100% [TypeScript](https://www.typescriptlang.org/).
 
-# WebP format + quality 80
-/api/optimize/f_webp,q_80/https://images.unsplash.com/photo-1506905925346-21bda4d32df4
+### Building packages/ui
 
-# Resize + crop
-/api/optimize/s_400x300,fit_cover/https://images.unsplash.com/photo-1506905925346-21bda4d32df4
+This example is set up to produce compiled styles for `ui` components into the `dist` directory. The component `.tsx` files are consumed by the Next.js apps directly using `transpilePackages` in `next.config.ts`. This was chosen for several reasons:
 
-# No operation (original image)
-/api/optimize/_/https://images.unsplash.com/photo-1506905925346-21bda4d32df4
-```
+- Make sharing one `tailwind.config.ts` to apps and packages as easy as possible.
+- Make package compilation simple by only depending on the Next.js Compiler and `tailwindcss`.
+- Ensure Tailwind classes do not overwrite each other. The `ui` package uses a `ui-` prefix for it's classes.
+- Maintain clear package export boundaries.
 
-### Common Operations
+Another option is to consume `packages/ui` directly from source without building. If using this option, you will need to update the `tailwind.config.ts` in your apps to be aware of your package locations, so it can find all usages of the `tailwindcss` class names for CSS compilation.
 
-| Operation | Description | Example |
-|-----------|-------------|---------|
-| `w_{n}` | Width | `w_800` |
-| `h_{n}` | Height | `h_600` |
-| `s_{w}x{h}` | Resize | `s_800x600` |
-| `q_{n}` | Quality | `q_80` |
-| `f_{format}` | Format | `f_webp`, `f_avif` |
-| `fit_{mode}` | Fit mode | `fit_cover` |
-| `_` | No operation | `_` |
+For example, in [tailwind.config.ts](packages/tailwind-config/tailwind.config.ts):
 
-### Full Documentation
-
-For all available operations, see the IPX documentation:
-
-👉 **[https://github.com/unjs/ipx](https://github.com/unjs/ipx)**
-
-### React Example
-
-```tsx
-const OptimizedImage = ({ src }: { readonly src: string }) => {
-  return (
-    <img
-      src={`/api/optimize/w_800,f_webp,q_80/${src}`}
-      alt="Optimized"
-      loading="lazy"
-    />
-  );
-};
+```js
+  content: [
+    // app content
+    `src/**/*.{js,ts,jsx,tsx}`,
+    // include packages if not transpiling
+    "../../packages/ui/*.{js,ts,jsx,tsx}",
+  ],
 ```
 
-## Tech Stack
+If you choose this strategy, you can remove the `tailwindcss` and `autoprefixer` dependencies from the `ui` package.
 
-- [Next.js](https://nextjs.org) - React framework
-- [IPX](https://github.com/unjs/ipx) - Image optimizer powered by sharp
-- [tRPC](https://trpc.io) - End-to-end typesafe APIs
-- [Drizzle](https://orm.drizzle.team) - TypeScript ORM
-- [Tailwind CSS](https://tailwindcss.com) - Utility-first CSS
+### Utilities
+
+This Turborepo has some additional tools already setup for you:
+
+- [Tailwind CSS](https://tailwindcss.com/) for styles
+- [TypeScript](https://www.typescriptlang.org/) for static type checking
+- [ESLint](https://eslint.org/) for code linting
+- [Prettier](https://prettier.io) for code formatting
