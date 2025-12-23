@@ -6,20 +6,25 @@ import "./src/env.ts";
 
 import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
-  assetPrefix: "/blog-static",
+  assetPrefix: "/marketing-static",
+  serverExternalPackages: ["sharp", "ipx"],
   async rewrites() {
     return [
       {
+        source: "/home",
+        destination: `${process.env.MARKETING_DOMAIN}/home`,
+      },
+      {
         source: "/blog",
-        destination: `${process.env.BLOG_DOMAIN}/blog`,
+        destination: `${process.env.MARKETING_DOMAIN}/blog`,
       },
       {
         source: "/blog/:path+",
-        destination: `${process.env.BLOG_DOMAIN}/blog/:path+`,
+        destination: `${process.env.MARKETING_DOMAIN}/blog/:path+`,
       },
       {
-        source: "/blog-static/:path+",
-        destination: `${process.env.BLOG_DOMAIN}/blog-static/:path+`,
+        source: "/marketing-static/:path+",
+        destination: `${process.env.MARKETING_DOMAIN}/marketing-static/:path+`,
       },
     ];
   },
