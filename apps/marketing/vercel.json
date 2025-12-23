@@ -1,6 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "bunVersion": "1.x",
-  "buildCommand": "bun turbo run build --filter=optstuff-dashboard",
+  "buildCommand": "bun turbo run build --filter=optstuff-marketing",
   "installCommand": "bun install"
 }
