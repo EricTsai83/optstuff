@@ -142,6 +142,7 @@ export async function GET(
 ): Promise<Response> {
   const resolvedParams = await params;
   let imagePath: string | undefined;
+  let finalImagePath: string | undefined;
 
   try {
     const parsed = parseIpxPath(resolvedParams.path);
@@ -164,8 +165,31 @@ export async function GET(
     imagePath = parsed.imagePath;
     const operations = parseOperationsString(parsed.operations);
 
+    // 處理本地文件路徑：在 Vercel 上，public 目錄的文件需要通過 HTTP 獲取
+    // 如果路徑以 / 開頭且不是完整的 URL，則轉換為完整的 URL
+    finalImagePath = imagePath;
+    if (
+      imagePath.startsWith("/") &&
+      !imagePath.startsWith("http://") &&
+      !imagePath.startsWith("https://")
+    ) {
+      // 從請求 URL 提取 origin（支持本地開發和 Vercel 部署）
+      const requestUrl = new URL(request.url);
+      const protocol =
+        request.headers.get("x-forwarded-proto") ||
+        requestUrl.protocol.slice(0, -1) || // 移除尾部的 ':'
+        "https";
+      const host =
+        request.headers.get("x-forwarded-host") ||
+        request.headers.get("host") ||
+        requestUrl.host ||
+        "localhost:3000";
+
+      finalImagePath = `${protocol}://${host}${imagePath}`;
+    }
+
     // 使用 IPX 處理圖片
-    const processedImage = await ipx(imagePath, operations).process();
+    const processedImage = await ipx(finalImagePath, operations).process();
     const imageData = ensureUint8Array(processedImage.data);
     const contentType = resolveContentType(processedImage.format ?? "webp");
 
@@ -178,6 +202,10 @@ export async function GET(
     });
   } catch (error) {
     console.error("Image processing error:", error);
+    console.error("Image path:", imagePath);
+    if (imagePath && finalImagePath !== imagePath) {
+      console.error("Resolved image path:", finalImagePath);
+    }
 
     const errorMessage = error instanceof Error ? error.message : String(error);
 
@@ -186,6 +214,10 @@ export async function GET(
         error: "Image processing failed",
         details: errorMessage,
         imagePath,
+        resolvedPath:
+          imagePath && finalImagePath !== imagePath
+            ? finalImagePath
+            : undefined,
       },
       { status: 500 },
     );
