@@ -6,8 +6,8 @@ import "./src/env.js";
 
 import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
-  assetPrefix: "/marketing-static",
-  serverExternalPackages: ["sharp", "ipx"],
+  // assetPrefix: "/marketing-static",
+  // serverExternalPackages: ["sharp", "ipx"],
   // async rewrites() {
   //   return [
   //     {
