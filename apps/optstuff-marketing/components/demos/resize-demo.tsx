@@ -11,7 +11,7 @@ import {
   ORIGINAL_HEIGHT,
   ORIGINAL_SIZE_KB,
   DEMO_IMAGE,
-} from "./constants.js";
+} from "./constants";
 import {
   DemoHeader,
   DemoLayout,

@@ -8,7 +8,7 @@ import {
 import { Label } from "@workspace/ui/components/label";
 import { Check, FileImage } from "lucide-react";
 import { CodeBlock } from "@/components/code-block";
-import { ORIGINAL_SIZE_KB, FORMAT_SIZES, DEMO_IMAGE } from "./constants.js";
+import { ORIGINAL_SIZE_KB, FORMAT_SIZES, DEMO_IMAGE } from "./constants";
 import {
   DemoHeader,
   DemoLayout,

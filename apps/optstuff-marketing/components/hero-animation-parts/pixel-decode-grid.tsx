@@ -18,7 +18,7 @@ import {
   GRID_ROWS,
   OPTIMIZATION_HIGHLIGHT_DELAY_MS,
   SCRAMBLE_RANGE,
-} from "./constants.js";
+} from "./constants";
 import type { PixelBlock } from "./pixel-blocks.js";
 import { PIXEL_BLOCKS } from "./pixel-blocks.js";
 
