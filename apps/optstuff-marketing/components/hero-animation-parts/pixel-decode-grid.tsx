@@ -9,8 +9,8 @@ import {
   drawWebpGlow,
   getCanvasLayout,
   syncCanvasToContainer,
-} from "./canvas-utils.js";
-import type { CanvasLayout, TextRowBounds } from "./canvas-utils.js";
+} from "./canvas-utils";
+import type { CanvasLayout, TextRowBounds } from "./canvas-utils";
 import {
   accentRgba,
   DECODE_END_EARLY_ROWS,
