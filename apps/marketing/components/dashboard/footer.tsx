@@ -1,13 +1,13 @@
 "use client";
 
 import { ChevronDown, Monitor, Sun, Settings } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@workspace/ui/components/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from "@workspace/ui/components/dropdown-menu";
 import { LogoIcon } from "@/components/logo";
 
 const footerLinks = [
