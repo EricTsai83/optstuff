@@ -3,7 +3,7 @@
 import { useScroll } from "@/hooks/use-scroll";
 import { LogoIcon } from "@/components/logo";
 import { SCROLL_CONFIG } from "./scroll-config";
-import { cn } from "@/lib/utils";
+import { cn } from "@workspace/ui/lib/utils";
 
 export function AnimatedLogo() {
   const scrollY = useScroll();
