@@ -39,7 +39,7 @@
     "**/*.cjs",
     "**/*.js",
     ".next/types/**/*.ts",
-    "../dashboard/dev/types/**/*.ts"
+    "dev/types/**/*.ts"
   ],
   "exclude": ["node_modules", "generated"]
 }

@@ -6,7 +6,7 @@ import {
   drawLandscape,
   drawStatusBadge,
   drawFileSizeDisplay,
-} from "./canvas-utils";
+} from "./canvas-utils.js";
 import { useScanAnimation } from "@/components/scan-card/use-scan-animation";
 
 type AnimationState = {

@@ -9,8 +9,8 @@ import {
   drawWebpGlow,
   getCanvasLayout,
   syncCanvasToContainer,
-} from "./canvas-utils";
-import type { CanvasLayout, TextRowBounds } from "./canvas-utils";
+} from "./canvas-utils.js";
+import type { CanvasLayout, TextRowBounds } from "./canvas-utils.js";
 import {
   accentRgba,
   DECODE_END_EARLY_ROWS,
@@ -18,9 +18,9 @@ import {
   GRID_ROWS,
   OPTIMIZATION_HIGHLIGHT_DELAY_MS,
   SCRAMBLE_RANGE,
-} from "./constants";
-import type { PixelBlock } from "./pixel-blocks";
-import { PIXEL_BLOCKS } from "./pixel-blocks";
+} from "./constants.js";
+import type { PixelBlock } from "./pixel-blocks.js";
+import { PIXEL_BLOCKS } from "./pixel-blocks.js";
 
 // ============================================================================
 // Types

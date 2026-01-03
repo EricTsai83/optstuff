@@ -2,8 +2,8 @@
 
 import { useState, useCallback } from "react";
 import { cn } from "@workspace/ui/lib/utils";
-import { ScanCanvas } from "./scan-card/scan-canvas";
-import { ScanSkeleton } from "./scan-card/scan-skeleton";
+import { ScanCanvas } from "./scan-card/scan-canvas.js";
+import { ScanSkeleton } from "./scan-card/scan-skeleton.js";
 
 type ScanCardProps = {
   readonly originalSize: number;

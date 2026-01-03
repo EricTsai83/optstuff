@@ -11,8 +11,13 @@ import {
   ORIGINAL_HEIGHT,
   ORIGINAL_SIZE_KB,
   DEMO_IMAGE,
-} from "./constants";
-import { DemoHeader, DemoLayout, ControlCard, ImagePreview } from "./layouts";
+} from "./constants.js";
+import {
+  DemoHeader,
+  DemoLayout,
+  ControlCard,
+  ImagePreview,
+} from "./layouts/index.js";
 
 const FIT_MODES = {
   cover: "cover",

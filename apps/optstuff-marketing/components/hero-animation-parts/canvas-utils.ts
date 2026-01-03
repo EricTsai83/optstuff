@@ -1,4 +1,4 @@
-import { accentRgba, GRID_COLS, GRID_ROWS } from "./constants";
+import { accentRgba, GRID_COLS, GRID_ROWS } from "./constants.js";
 
 // ============================================================================
 // Types

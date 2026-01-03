@@ -6,7 +6,7 @@ import { Label } from "@workspace/ui/components/label";
 import { Badge } from "@workspace/ui/components/badge";
 import { CodeBlock } from "@/components/code-block";
 import { cn } from "@workspace/ui/lib/utils";
-import { ORIGINAL_SIZE_KB, QUALITY_DEMO_IMAGE } from "./constants";
+import { ORIGINAL_SIZE_KB, QUALITY_DEMO_IMAGE } from "./constants.js";
 import {
   ImageIcon,
   Sparkles,
@@ -17,7 +17,12 @@ import {
   ChevronDown,
 } from "lucide-react";
 import { useEffect } from "react";
-import { DemoHeader, ControlCard, DemoLayout, PreviewCard } from "./layouts";
+import {
+  DemoHeader,
+  ControlCard,
+  DemoLayout,
+  PreviewCard,
+} from "./layouts/index.js";
 
 export function QualityDemo() {
   const [quality, setQuality] = useState(80);
