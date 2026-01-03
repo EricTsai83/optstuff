@@ -1,0 +1,17 @@
+{
+  "$schema": "https://openapi.vercel.sh/microfrontends.json",
+  "applications": {
+    "optstuff-marketing": {
+      "development": {
+        "fallback": "optstuff.vercel.app"
+      }
+    },
+    "optstuff-dashboard": {
+      "routing": [
+        {
+          "paths": ["/:path*"]
+        }
+      ]
+    }
+  }
+}
