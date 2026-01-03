@@ -14,7 +14,7 @@
     "optstuff-dashboard": {
       "routing": [
         {
-          "paths": ["/*"]
+          "paths": ["/:path+"]
         }
       ]
     }
