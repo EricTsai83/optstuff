@@ -9,7 +9,7 @@
     "optstuff-dashboard": {
       "routing": [
         {
-          "paths": ["/dashboard/:path*"]
+          "paths": ["/:path*"]
         }
       ]
     }
