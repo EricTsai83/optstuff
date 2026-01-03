@@ -4,12 +4,7 @@
     "optstuff-marketing": {
       "development": {
         "fallback": "optstuff.vercel.app"
-      },
-      "routing": [
-        {
-          "paths": ["/"]
-        }
-      ]
+      }
     },
     "optstuff-dashboard": {
       "routing": [
