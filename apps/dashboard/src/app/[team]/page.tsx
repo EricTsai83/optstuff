@@ -1,10 +1,10 @@
-import { Header } from "@/components/dashboard/header";
-import { NavigationTabs } from "@/components/dashboard/navigation-tabs";
-import { SearchToolbar } from "@/components/dashboard/search-toolbar";
-import { UsageSidebar } from "@/components/dashboard/usage-sidebar";
-import { ProjectList } from "@/components/dashboard/project-list";
-import { MobileTabs } from "@/components/dashboard/mobile-tabs";
-import { Footer } from "@/components/dashboard/footer";
+import { Header } from "@/components/header";
+import { NavigationTabs } from "@/components/navigation-tabs";
+import { SearchToolbar } from "@/components/search-toolbar";
+import { UsageSidebar } from "@/components/usage-sidebar";
+import { ProjectList } from "@/components/project-list";
+import { MobileTabs } from "@/components/mobile-tabs";
+import { Footer } from "@/components/footer";
 
 export default function Page() {
   return (

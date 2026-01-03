@@ -3,8 +3,8 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Button } from "@workspace/ui/components/button";
-import { Logo } from "@/components/logo";
-import { ModeToggleButton } from "@/components/mode-toggle";
+import { Logo } from "@workspace/ui/components/logo";
+import { ModeToggleButton } from "@workspace/ui/components/mode-toggle";
 
 type NavigationItem = {
   readonly href: string;

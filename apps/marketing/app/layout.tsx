@@ -2,7 +2,7 @@
 import "@/styles/globals.css";
 import { type Metadata } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
-import { ThemeProvider } from "@/components/theme-provider";
+import { ThemeProvider } from "@workspace/ui/components/theme-provider";
 
 export const metadata: Metadata = {
   title: "OptStuff - High Performance Image Optimization",
