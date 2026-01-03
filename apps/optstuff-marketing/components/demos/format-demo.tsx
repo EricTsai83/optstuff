@@ -9,12 +9,7 @@ import { Label } from "@workspace/ui/components/label";
 import { Check, FileImage } from "lucide-react";
 import { CodeBlock } from "@/components/code-block";
 import { ORIGINAL_SIZE_KB, FORMAT_SIZES, DEMO_IMAGE } from "./constants";
-import {
-  DemoHeader,
-  DemoLayout,
-  ControlCard,
-  ImagePreview,
-} from "./layouts/index.js";
+import { DemoHeader, DemoLayout, ControlCard, ImagePreview } from "./layouts";
 
 const formats = [
   { value: "webp", label: "WebP", ...FORMAT_SIZES.webp, supported: true },

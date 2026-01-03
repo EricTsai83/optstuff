@@ -1,10 +1,10 @@
-import { GRID_COLS, GRID_ROWS } from "./constants.js";
+import { GRID_COLS, GRID_ROWS } from "./constants";
 import {
   isPatternFilled,
   JPEG_PATTERN,
   SCRAMBLE_PATTERN,
   WEBP_PATTERN,
-} from "./pixel-patterns.js";
+} from "./pixel-patterns";
 
 // ============================================================================
 // Types

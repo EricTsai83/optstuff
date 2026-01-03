@@ -1,5 +1,5 @@
 import { cn } from "@workspace/ui/lib/utils";
-import { CopyButton } from "./copy-button.js";
+import { CopyButton } from "./copy-button";
 
 type CodeBlockProps = {
   readonly code: string;

@@ -17,12 +17,7 @@ import {
   ChevronDown,
 } from "lucide-react";
 import { useEffect } from "react";
-import {
-  DemoHeader,
-  ControlCard,
-  DemoLayout,
-  PreviewCard,
-} from "./layouts/index.js";
+import { DemoHeader, ControlCard, DemoLayout, PreviewCard } from "./layouts";
 
 export function QualityDemo() {
   const [quality, setQuality] = useState(80);

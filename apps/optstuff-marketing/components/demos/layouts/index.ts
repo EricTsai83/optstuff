@@ -1,5 +1,5 @@
-export { DemoHeader } from "./demo-header.js";
-export { ControlCard } from "./control-card.js";
-export { DemoLayout } from "./demo-layout.js";
-export { PreviewCard } from "./preview-card.js";
-export { ImagePreview } from "./image-preview.js";
+export { DemoHeader } from "./demo-header";
+export { ControlCard } from "./control-card";
+export { DemoLayout } from "./demo-layout";
+export { PreviewCard } from "./preview-card";
+export { ImagePreview } from "./image-preview";

@@ -8,12 +8,7 @@ import { RotateCcw, Wand2 } from "lucide-react";
 import { Button } from "@workspace/ui/components/button";
 import { CodeBlock } from "@/components/code-block";
 import { DEMO_IMAGE } from "./constants";
-import {
-  DemoHeader,
-  DemoLayout,
-  ControlCard,
-  ImagePreview,
-} from "./layouts/index.js";
+import { DemoHeader, DemoLayout, ControlCard, ImagePreview } from "./layouts";
 import { cn } from "@workspace/ui/lib/utils";
 
 type SliderControlProps = {
