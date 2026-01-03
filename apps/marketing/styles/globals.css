@@ -1,6 +1,8 @@
 @import "@workspace/ui/globals.css";
 
-/* Marketing 專屬動畫定義 */
+/* ==========================================================================
+1. Marketing-Specific Animation Definitions
+========================================================================== */
 @theme inline {
   /* Custom animation definitions */
   --animate-fade-in: fade-in 0.6s ease-in-out both;
@@ -31,7 +33,7 @@
 }
 
 /* ==========================================================================
-6. Basic Animations (Fade, Scale, Slide)
+2. Basic Animations (Fade, Scale, Slide)
 ========================================================================== */
 
 /* --- Fade In --- */
@@ -80,32 +82,8 @@
   }
 }
 
-/* --- Slide In Left --- */
-@keyframes slide-in-left {
-  from {
-    opacity: 0;
-    transform: translateX(-20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-/* --- Slide In Right --- */
-@keyframes slide-in-right {
-  from {
-    opacity: 0;
-    transform: translateX(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
 /* ==========================================================================
-7. Continuous Animations (Infinite Loop)
+3. Continuous Animations (Infinite Loop)
 ========================================================================== */
 
 /* --- Pulse Soft --- */
@@ -120,7 +98,7 @@
 }
 
 /* ==========================================================================
-8. Animation Delay Utilities
+4. Animation Delay Utilities
 ========================================================================== */
 .animation-delay-100 {
   animation-delay: 100ms;
@@ -139,7 +117,7 @@
 }
 
 /* ==========================================================================
-9.1 Feature Card Entrance Animation
+5.1 Feature Card Entrance Animation
 Staggered fade-in-up animation for feature cards
 ========================================================================== */
 @keyframes feature-card-enter {
@@ -159,7 +137,7 @@ Staggered fade-in-up animation for feature cards
 }
 
 /* ==========================================================================
-9.2 Feature Card Hover Effect
+5.2 Feature Card Hover Effect
 Smooth lift effect with shadow on hover
 ========================================================================== */
 .feature-card-hover {
@@ -172,7 +150,6 @@ Smooth lift effect with shadow on hover
 }
 
 /* Hover effect only on devices that support hover */
-
 .feature-card-hover:hover {
   transform: translateY(-8px);
   box-shadow:
@@ -181,7 +158,7 @@ Smooth lift effect with shadow on hover
 }
 
 /* ==========================================================================
-10. Tab Content Transition Animations
+6. Tab Content Transition Animations
 Uses percentage-based translate values (30%) for smooth, responsive animations
 ========================================================================== */
 
@@ -253,12 +230,12 @@ Uses percentage-based translate values (30%) for smooth, responsive animations
 }
 
 /* ==========================================================================
-11. Feature Card Icon Animations
+7. Feature Card Icon Animations
 Unique animations for each icon type to add visual interest on hover
 ========================================================================== */
 
 /* --------------------------------------------------------------------------
-11.1 Zap Icon Animation
+7.1 Zap Icon Animation
 Electric vibration effect - rotate, shake, then rotate back
 -------------------------------------------------------------------------- */
 @keyframes icon-zap-animate {
@@ -308,7 +285,7 @@ Electric vibration effect - rotate, shake, then rotate back
 }
 
 /* --------------------------------------------------------------------------
-11.2 Shield Icon Animation
+7.2 Shield Icon Animation
 Forward block effect - like deflecting an incoming attack
 -------------------------------------------------------------------------- */
 @keyframes icon-shield-animate {
@@ -334,7 +311,7 @@ Forward block effect - like deflecting an incoming attack
 }
 
 /* --------------------------------------------------------------------------
-11.3 Globe Icon Animation
+7.3 Globe Icon Animation
 Rotation animation
 -------------------------------------------------------------------------- */
 @keyframes icon-globe-animate {
@@ -351,42 +328,42 @@ Rotation animation
 }
 
 /* --------------------------------------------------------------------------
-11.4 Code Icon Animation
+7.4 Code Icon Animation
 Squash and stretch bounce effect
 -------------------------------------------------------------------------- */
 @keyframes icon-code-animate {
   0% {
     transform: scale(1, 1);
   }
-  /* Squash - 壓扁 */
+  /* Squash phase */
   10% {
     transform: scale(1.4, 0.6);
   }
-  /* Stretch - 彈起拉長 */
+  /* Stretch and bounce phase */
   20% {
     transform: scale(0.8, 1.25);
   }
-  /* Bounce 1 - 第一次回彈 */
+  /* First bounce */
   30% {
     transform: scale(1.15, 0.88);
   }
-  /* Bounce 2 - 第二次回彈 */
+  /* Second bounce */
   40% {
     transform: scale(0.92, 1.1);
   }
-  /* Bounce 3 - 第三次回彈 */
+  /* Third bounce */
   50% {
     transform: scale(1.08, 0.94);
   }
-  /* Bounce 4 - 第四次回彈 */
+  /* Fourth bounce */
   60% {
     transform: scale(0.95, 1.06);
   }
-  /* Bounce 5 - 第五次回彈 */
+  /* Fifth bounce */
   72% {
     transform: scale(1.03, 0.97);
   }
-  /* Settle - 穩定 */
+  /* Settle phase */
   85% {
     transform: scale(0.99, 1.01);
   }
@@ -400,7 +377,7 @@ Squash and stretch bounce effect
 }
 
 /* --------------------------------------------------------------------------
-11.5 Layers Icon Animation
+7.5 Layers Icon Animation
 Stacking animation
 -------------------------------------------------------------------------- */
 @keyframes icon-layers-animate {
@@ -423,7 +400,7 @@ Stacking animation
 }
 
 /* --------------------------------------------------------------------------
-11.6 Image Icon Animation
+7.6 Image Icon Animation
 Camera flash effect - like auto-focus capturing
 -------------------------------------------------------------------------- */
 @keyframes icon-image-animate {
@@ -454,12 +431,12 @@ Camera flash effect - like auto-focus capturing
 }
 
 /* ==========================================================================
-12. Text Decode Animation Effects
+8. Text Decode Animation Effects
 Cyber-style text decoding animations
 ========================================================================== */
 
 /* --------------------------------------------------------------------------
-12.1 Scan Line Animation
+8.1 Scan Line Animation
 Horizontal scanning line effect for text decode
 -------------------------------------------------------------------------- */
 @keyframes scan-line {
@@ -477,7 +454,7 @@ Horizontal scanning line effect for text decode
 }
 
 /* --------------------------------------------------------------------------
-12.x Hero Skeleton Soundwave
+8.2 Hero Skeleton Soundwave
 Center-out expanding rings like audio waves emanating from center
 -------------------------------------------------------------------------- */
 @keyframes hero-soundwave {
@@ -498,7 +475,7 @@ Center-out expanding rings like audio waves emanating from center
 }
 
 /* --------------------------------------------------------------------------
-12.1 Hero Card Border Flash
+8.3 Hero Card Border Flash
 Border highlight pulse used on "optimized" transition
 -------------------------------------------------------------------------- */
 @keyframes hero-card-border-flash {
@@ -534,7 +511,7 @@ Border highlight pulse used on "optimized" transition
 }
 
 /* --------------------------------------------------------------------------
-12.2 Text Sweep Glow Effect
+8.4 Text Sweep Glow Effect
 Quick flash up, smooth fade back
 -------------------------------------------------------------------------- */
 @keyframes text-sweep-glow {
@@ -577,8 +554,9 @@ Quick flash up, smooth fade back
     0 0 32px hsl(160 60% 40% / 0.35);
   filter: brightness(1.15);
 }
+
 /* --------------------------------------------------------------------------
-12.3 Animated Underline Grow Effect
+8.5 Animated Underline Grow Effect
 Underline that grows from left to right using scaleX transform
 -------------------------------------------------------------------------- */
 .animate-underline-grow {
@@ -610,10 +588,10 @@ Underline that grows from left to right using scaleX transform
 }
 
 /* ==========================================================================
-13. Image Optimization Card Styles
+9. Image Optimization Card Styles
 ========================================================================== */
 
-/* 背景光暈 - 簡潔柔和 */
+/* Background glow - clean and soft */
 @keyframes opt-glow-pulse {
   0%,
   100% {
@@ -633,7 +611,7 @@ Underline that grows from left to right using scaleX transform
   animation: opt-glow-pulse 4s ease-in-out infinite;
 }
 
-/* 卡片容器 */
+/* Card container */
 .opt-card {
   --shadow-default:
     0 4px 20px rgba(0, 0, 0, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.1);
@@ -647,7 +625,7 @@ Underline that grows from left to right using scaleX transform
     inset 0 1px 1px rgba(255, 255, 255, 0.1);
 }
 
-/* 頂部光線 */
+/* Top glow */
 .opt-top-glow {
   background: linear-gradient(
     to right,
@@ -658,19 +636,19 @@ Underline that grows from left to right using scaleX transform
   box-shadow: 0 0 8px color-mix(in srgb, var(--color) 40%, transparent);
 }
 
-/* 進度條發光 */
+/* Progress bar glow */
 .opt-progress-bar {
   box-shadow:
     0 0 10px color-mix(in srgb, var(--color) 60%, transparent),
     0 0 20px color-mix(in srgb, var(--color) 40%, transparent);
 }
 
-/* 粒子尾巴 */
+/* Particle trail */
 .opt-particle {
   box-shadow: 0 0 6px 2px rgba(255, 255, 255, 0.8);
 }
 
-/* 圖標發光 */
+/* Icon glow */
 .opt-icon-glow {
   filter: drop-shadow(
     0 0 2px color-mix(in srgb, var(--color) 50%, transparent)
@@ -683,7 +661,7 @@ Underline that grows from left to right using scaleX transform
   );
 }
 
-/* 文字發光 */
+/* Text glow */
 .opt-text-glow {
   text-shadow: 0 0 8px color-mix(in srgb, var(--color) 60%, transparent);
 }
@@ -692,17 +670,17 @@ Underline that grows from left to right using scaleX transform
   text-shadow: 0 0 10px color-mix(in srgb, var(--color) 80%, transparent);
 }
 
-/* 完成邊框 */
+/* Complete border */
 .opt-complete-border {
   border-color: color-mix(in srgb, var(--color) 50%, transparent);
 }
 
 /* ==========================================================================
-14. Scan Card Skeleton Animations
-掃描卡片骨架載入動畫
+10. Scan Card Skeleton Animations
+Loading animations for scan card skeleton
 ========================================================================== */
 
-/* 光源擴散動畫 - 快速 */
+/* Light source expansion animation - fast */
 @keyframes light-shoot {
   0% {
     transform: scale(0);
@@ -717,7 +695,7 @@ Underline that grows from left to right using scaleX transform
   }
 }
 
-/* 光源擴散動畫 - 慢速 */
+/* Light source expansion animation - slow */
 @keyframes light-shoot-slow {
   0% {
     transform: scale(0);
@@ -740,7 +718,7 @@ Underline that grows from left to right using scaleX transform
   animation: light-shoot-slow 1s ease-out forwards;
 }
 
-/* Canvas 浮現動畫 */
+/* Canvas fade-in animation */
 @keyframes canvas-fade-in {
   0% {
     opacity: 0;
@@ -754,7 +732,7 @@ Underline that grows from left to right using scaleX transform
   animation: canvas-fade-in 0.6s ease-out forwards;
 }
 
-/* Skeleton 淡出動畫 - 延遲到 canvas 浮現完成後 */
+/* Skeleton fade-out animation - delayed until canvas fade-in completes */
 @keyframes skeleton-fade-out {
   0% {
     opacity: 1;
@@ -769,6 +747,10 @@ Underline that grows from left to right using scaleX transform
   animation: skeleton-fade-out 0.5s ease-out 0s forwards;
 }
 
+/* ==========================================================================
+11. Shake Animation
+Rotation and shake effect for interactive elements
+========================================================================== */
 @keyframes shake {
   /* Phase 1: Rotate to upper right (24deg clockwise) */
   0% {
@@ -809,18 +791,4 @@ Underline that grows from left to right using scaleX transform
   100% {
     transform: rotate(0deg);
   }
-}
-
-.animate-shake {
-  animation: shake 0.6s ease-in-out;
-}
-
-/* Hide scrollbar for navigation tabs */
-.scrollbar-hide {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
-
-.scrollbar-hide::-webkit-scrollbar {
-  display: none;
 }

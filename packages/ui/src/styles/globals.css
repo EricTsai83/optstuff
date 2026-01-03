@@ -178,3 +178,13 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Hide scrollbar for navigation tabs */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
