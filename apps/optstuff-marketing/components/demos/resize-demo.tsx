@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import Image from "next/image";
 import { Slider } from "@workspace/ui/components/slider";
 import { Label } from "@workspace/ui/components/label";
 import { SlidingToggleGroup } from "@/components/sliding-toggle-group";
@@ -12,7 +13,7 @@ import {
   ORIGINAL_SIZE_KB,
   DEMO_IMAGE,
 } from "./constants";
-import { DemoHeader, DemoLayout, ControlCard, ImagePreview } from "./layouts";
+import { DemoHeader, DemoLayout, ControlCard } from "./layouts";
 
 const FIT_MODES = {
   cover: "cover",
@@ -24,6 +25,10 @@ const FIT_MODES = {
 
 type FitMode = keyof typeof FIT_MODES;
 
+/** Fixed dimensions for preview container */
+const PREVIEW_CONTAINER_WIDTH = 320;
+const PREVIEW_CONTAINER_HEIGHT = 240;
+
 function estimateFileSize(width: number, height: number): number {
   const ratio = (width * height) / (ORIGINAL_WIDTH * ORIGINAL_HEIGHT);
   return Math.round(Math.pow(ratio, 0.85) * ORIGINAL_SIZE_KB);
@@ -32,6 +37,25 @@ function estimateFileSize(width: number, height: number): number {
 function formatSize(kb: number): string {
   if (kb >= 1000) return `${(kb / 1000).toFixed(1)} MB`;
   return `${kb} KB`;
+}
+
+/**
+ * Calculates scaled preview size to fit within fixed container
+ */
+function calculateScaledSize(
+  targetWidth: number,
+  targetHeight: number,
+  containerWidth: number,
+  containerHeight: number,
+): { readonly width: number; readonly height: number } {
+  const scaleX = containerWidth / targetWidth;
+  const scaleY = containerHeight / targetHeight;
+  const scale = Math.min(scaleX, scaleY, 1); // Scale down only, never up
+
+  return {
+    width: Math.round(targetWidth * scale),
+    height: Math.round(targetHeight * scale),
+  };
 }
 
 const FIT_MODE_OPTIONS = [
@@ -52,13 +76,22 @@ export function ResizeDemo() {
     [width, height],
   );
 
-  // Calculate aspect ratio from width and height
-  const aspectRatio = useMemo(() => width / height, [width, height]);
+  // Calculate scaled size within fixed container
+  const scaledSize = useMemo(
+    () =>
+      calculateScaledSize(
+        width,
+        height,
+        PREVIEW_CONTAINER_WIDTH,
+        PREVIEW_CONTAINER_HEIGHT,
+      ),
+    [width, height],
+  );
 
   // Build image URL with resize parameters
   const resizedImageUrl = useMemo(() => {
     const operations = [`s_${width}x${height}`, `fit_${fit}`];
-    return `/api/optimize/${operations.join(",")}${DEMO_IMAGE}`;
+    return `/dashboard/api/optimize/${operations.join(",")}/${DEMO_IMAGE}`;
   }, [width, height, fit]);
 
   const getObjectFit = (mode: FitMode): string => {
@@ -155,21 +188,47 @@ export function ResizeDemo() {
           </ControlCard>
         </div>
 
-        <ImagePreview
-          imageUrl={resizedImageUrl}
-          imageAlt="Sample resized image"
-          imageContainerClassName="pointer-events-none select-none"
-          imageContainerStyle={getContainerStyle(fit)}
-          imageStyle={{
-            objectFit: getObjectFit(fit) as React.CSSProperties["objectFit"],
-          }}
-          aspectRatio={aspectRatio}
-          footer={
+        {/* Fixed-size preview container */}
+        <div className="bg-muted/50 flex min-h-[280px] w-full items-center justify-center rounded-xl p-4 lg:col-span-2">
+          <div className="flex flex-col items-center gap-2.5">
+            {/* Fixed outer frame with dynamically scaled image inside */}
+            <div
+              className="bg-background/50 flex items-center justify-center rounded-lg border border-dashed border-zinc-600"
+              style={{
+                width: PREVIEW_CONTAINER_WIDTH,
+                height: PREVIEW_CONTAINER_HEIGHT,
+              }}
+            >
+              {/* Dynamically sized image frame */}
+              <div
+                className="ring-border relative overflow-hidden rounded-lg ring-1 transition-all duration-300"
+                style={{
+                  width: scaledSize.width,
+                  height: scaledSize.height,
+                  ...getContainerStyle(fit),
+                }}
+              >
+                <Image
+                  src={resizedImageUrl}
+                  alt="Sample resized image"
+                  fill
+                  unoptimized
+                  className="pointer-events-none select-none transition-all duration-300"
+                  style={{
+                    objectFit: getObjectFit(
+                      fit,
+                    ) as React.CSSProperties["objectFit"],
+                  }}
+                  draggable={false}
+                  onContextMenu={(e) => e.preventDefault()}
+                />
+              </div>
+            </div>
             <p className="text-muted-foreground text-xs">
               {width} x {height}px
             </p>
-          }
-        />
+          </div>
+        </div>
       </DemoLayout>
     </div>
   );

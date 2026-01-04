@@ -12,9 +12,9 @@ type UseFlashOnChangeOptions<T> = {
 };
 
 type AnimationRefs = {
-  animation: React.MutableRefObject<number | null>;
-  fadeStartTime: React.MutableRefObject<number | null>;
-  debounceTimer: React.MutableRefObject<ReturnType<typeof setTimeout> | null>;
+  readonly animation: React.RefObject<number | null>;
+  readonly fadeStartTime: React.RefObject<number | null>;
+  readonly debounceTimer: React.RefObject<ReturnType<typeof setTimeout> | null>;
 };
 
 /**
@@ -75,11 +75,18 @@ export function useFlashOnChange<T>({
 }: UseFlashOnChangeOptions<T>): React.CSSProperties {
   const [flashIntensity, setFlashIntensity] = useState(0);
 
-  const refs: AnimationRefs = {
-    animation: useRef<number | null>(null),
-    fadeStartTime: useRef<number | null>(null),
-    debounceTimer: useRef<ReturnType<typeof setTimeout> | null>(null),
-  };
+  const animationRef = useRef<number | null>(null);
+  const fadeStartTimeRef = useRef<number | null>(null);
+  const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const refs: AnimationRefs = useMemo(
+    () => ({
+      animation: animationRef,
+      fadeStartTime: fadeStartTimeRef,
+      debounceTimer: debounceTimerRef,
+    }),
+    [],
+  );
 
   // Serialize values for deep comparison
   const serializedValues = useMemo(() => JSON.stringify(values), [values]);
@@ -88,7 +95,7 @@ export function useFlashOnChange<T>({
   // Cleanup on unmount
   useEffect(() => {
     return () => clearAnimations(refs);
-  }, []);
+  }, [refs]);
 
   // Trigger flash on value change
   useEffect(() => {
@@ -115,7 +122,7 @@ export function useFlashOnChange<T>({
       );
       refs.animation.current = requestAnimationFrame(animate);
     }, debounceMs);
-  }, [serializedValues, fadeDurationMs, debounceMs]);
+  }, [serializedValues, fadeDurationMs, debounceMs, refs]);
 
   // Compute flash styles based on current intensity
   const flashStyle = useMemo<React.CSSProperties>(() => {

@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { useEffect } from "react";
 import { DemoHeader, ControlCard, DemoLayout, PreviewCard } from "./layouts";
+import Image from "next/image";
 
 export function QualityDemo() {
   const [quality, setQuality] = useState(80);
@@ -36,10 +37,10 @@ export function QualityDemo() {
   const optimizedImageUrl = useMemo(() => {
     // When quality is 100, use the same parameters as original
     if (quality === 100) {
-      return `/api/optimize/q_100,f_webp,w_800${QUALITY_DEMO_IMAGE}`;
+      return `/dashboard/api/optimize/q_100,f_webp,w_800/${QUALITY_DEMO_IMAGE}`;
     }
     const operations = [`q_${quality}`, "f_webp"];
-    return `/api/optimize/${operations.join(",")}${QUALITY_DEMO_IMAGE}`;
+    return `/dashboard/api/optimize/${operations.join(",")}/${QUALITY_DEMO_IMAGE}`;
   }, [quality]);
 
   const ipxSyntax = useMemo(() => {
@@ -49,7 +50,7 @@ export function QualityDemo() {
   }, [quality]);
 
   const originalImageUrl = useMemo(() => {
-    return `/api/optimize/q_100,f_webp,w_800${QUALITY_DEMO_IMAGE}`;
+    return `/dashboard/api/optimize/q_100,f_webp,w_800/${QUALITY_DEMO_IMAGE}`;
   }, []);
 
   const handleMouseMove = useCallback(
@@ -310,10 +311,12 @@ function ImageContainer({
 }: ImageContainerProps) {
   return (
     <div className="relative h-full w-full">
-      <img
+      <Image
         ref={imageRef}
         src={imageUrl}
         alt={label}
+        fill
+        unoptimized
         className="h-full w-full cursor-crosshair object-contain transition-transform duration-300"
         draggable={false}
         loading="lazy"

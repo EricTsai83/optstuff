@@ -1,7 +1,9 @@
 "use client";
 
+import Image from "next/image";
 import { AspectRatio } from "@workspace/ui/components/aspect-ratio";
 import { useFlashOnChange } from "@/hooks/use-flash-on-change";
+import { cn } from "@workspace/ui/lib/utils";
 
 type ImagePreviewProps = {
   readonly imageUrl: string;
@@ -49,13 +51,18 @@ export function ImagePreview({
       <div className="flex w-full max-w-md flex-col items-center gap-2.5">
         <AspectRatio ratio={aspectRatio} className="w-full">
           <div
-            className={`ring-border h-full w-full overflow-hidden rounded-lg ring-1 transition-all duration-300 ${imageContainerClassName}`}
+            className={`ring-border relative h-full w-full overflow-hidden rounded-lg ring-1 transition-all duration-300 ${imageContainerClassName}`}
             style={imageContainerStyle}
           >
-            <img
+            <Image
               src={imageUrl}
               alt={imageAlt}
-              className={`h-full w-full object-cover transition-all duration-300 ${imageClassName}`}
+              fill
+              unoptimized
+              className={cn(
+                "object-cover transition-all duration-300",
+                imageClassName,
+              )}
               style={imageStyle}
               draggable={false}
               onContextMenu={(e) => e.preventDefault()}

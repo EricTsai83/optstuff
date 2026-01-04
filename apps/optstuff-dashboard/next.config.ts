@@ -6,31 +6,14 @@ import "./src/env.js";
 
 import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
-  // assetPrefix: "/marketing-static",
-  // serverExternalPackages: ["sharp", "ipx"],
-  // async rewrites() {
-  //   return [
-  //     {
-  //       source: "/home",
-  //       destination: `${process.env.MARKETING_DOMAIN}/home`,
-  //     },
-  //     {
-  //       source: "/blog",
-  //       destination: `${process.env.MARKETING_DOMAIN}/blog`,
-  //     },
-  //     {
-  //       source: "/blog/:path+",
-  //       destination: `${process.env.MARKETING_DOMAIN}/blog/:path+`,
-  //     },
-  //     {
-  //       source: "/marketing-static/:path+",
-  //       destination: `${process.env.MARKETING_DOMAIN}/marketing-static/:path+`,
-  //     },
-  //   ];
-  // },
+  // A zone is a normal Next.js application where you also configure an assetPrefix to avoid conflicts with pages and static files in other zones. The default application handling all paths not routed to another more specific zone does not need an `assetPrefix`.
+  assetPrefix: "/dashboard-static",
   typescript: {
     ignoreBuildErrors: true,
   },
+  // https://nextjs.org/docs/app/api-reference/config/next-config-js/transpilePackages
+  transpilePackages: ["@workspace/ui"],
+  basePath: "/dashboard",
 };
 
 export default nextConfig;

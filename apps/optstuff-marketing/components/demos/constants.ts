@@ -25,7 +25,19 @@ export const FORMAT_SIZES = {
   avif: { size: "98 KB", savings: "81%" },
 } as const;
 
-/** Image path used in demos */
-export const DEMO_IMAGE = "/demo-image.png";
+/**
+ * Get the base URL for image assets based on environment
+ */
+function getImageBaseUrl(): string {
+  // In production, use the production URL
+  if (process.env.NODE_ENV === "production") {
+    return "https://optstuff.vercel.app";
+  }
 
-export const QUALITY_DEMO_IMAGE = "/demo-image.webp";
+  return "http://localhost:3024";
+}
+
+/** Image path used in demos */
+export const DEMO_IMAGE = `${getImageBaseUrl()}/demo-image.png`;
+
+export const QUALITY_DEMO_IMAGE = `${getImageBaseUrl()}/demo-image.webp`;

@@ -3,15 +3,26 @@
   "applications": {
     "optstuff-marketing": {
       "development": {
-        "fallback": "optstuff.vercel.app"
+        "fallback": "optstuff.vercel.app",
+        "local": {
+          "port": 3000
+        }
       }
     },
     "optstuff-dashboard": {
+      "development": {
+        "local": {
+          "port": 3001
+        }
+      },
       "routing": [
         {
           "paths": ["/dashboard/:path*"]
         }
       ]
     }
+  },
+  "options": {
+    "localProxyPort": 3024
   }
 }

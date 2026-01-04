@@ -183,7 +183,7 @@ export async function GET(
         request.headers.get("x-forwarded-host") ||
         request.headers.get("host") ||
         requestUrl.host ||
-        "localhost:3000";
+        "localhost:3024";
 
       finalImagePath = `${protocol}://${host}${imagePath}`;
     }

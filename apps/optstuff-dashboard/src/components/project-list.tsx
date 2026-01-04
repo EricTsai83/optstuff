@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { Button } from "@workspace/ui/components/button";
 import { Badge } from "@workspace/ui/components/badge";
+import Image from "next/image";
 
 const projects = [
   {
@@ -154,8 +155,8 @@ const ProjectItem = ({ project, index }: ProjectItemProps) => {
       <div className="flex min-w-0 flex-1 items-center gap-3">
         {/* Project icon */}
         {project.iconImage ? (
-          <img
-            src={project.iconImage || "/placeholder.svg"}
+          <Image
+            src={project.iconImage}
             alt={project.name}
             className="h-10 w-10 rounded-lg object-cover transition-transform duration-200 group-hover:scale-105"
           />
