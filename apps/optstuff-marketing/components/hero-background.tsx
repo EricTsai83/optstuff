@@ -14,7 +14,7 @@ export function HeroBackground() {
             height="20"
             patternUnits="userSpaceOnUse"
           >
-            <rect width="1" height="1" className="fill-emerald-400/20" />
+            <rect width="1" height="1" className="fill-emerald-300/40" />
           </pattern>
 
           <pattern
@@ -24,7 +24,7 @@ export function HeroBackground() {
             patternUnits="userSpaceOnUse"
           >
             <rect width="80" height="80" fill="url(#smallGrid-dark)" />
-            <rect width="2" height="2" className="fill-emerald-400/30" />
+            <rect width="2" height="2" className="fill-emerald-300/55" />
           </pattern>
 
           <radialGradient id="fadeGradient-dark" cx="50%" cy="0%" r="70%">
@@ -37,7 +37,7 @@ export function HeroBackground() {
           </mask>
 
           <radialGradient id="glowGradient-dark" cx="50%" cy="17%" r="50%">
-            <stop offset="0%" stopColor="#34d399" stopOpacity="0.1" />
+            <stop offset="0%" stopColor="#6ee7b7" stopOpacity="0.2" />
             <stop offset="100%" stopColor="transparent" />
           </radialGradient>
         </defs>
@@ -61,8 +61,8 @@ export function HeroBackground() {
             y1="0"
             x2="4"
             y2="0"
-            stroke="#34d399"
-            strokeOpacity="0.05"
+            stroke="#6ee7b7"
+            strokeOpacity="0.1"
             strokeWidth="1"
           />
         </pattern>
@@ -82,7 +82,7 @@ export function HeroBackground() {
       >
         <defs>
           <radialGradient id="glow-light" cx="50%" cy="0%" r="60%">
-            <stop offset="0%" stopColor="#10b981" stopOpacity="0.06" />
+            <stop offset="0%" stopColor="#059669" stopOpacity="0.12" />
             <stop offset="100%" stopColor="transparent" />
           </radialGradient>
         </defs>
@@ -94,8 +94,8 @@ export function HeroBackground() {
         <path
           d="M 32 56 L 32 32 L 56 32"
           fill="none"
-          stroke="#10b981"
-          strokeOpacity="0.25"
+          stroke="#059669"
+          strokeOpacity="0.45"
           strokeWidth="2"
           strokeLinecap="round"
         />
@@ -104,8 +104,8 @@ export function HeroBackground() {
         <path
           d="M calc(100% - 32px) calc(100% - 56px) L calc(100% - 32px) calc(100% - 32px) L calc(100% - 56px) calc(100% - 32px)"
           fill="none"
-          stroke="#10b981"
-          strokeOpacity="0.15"
+          stroke="#059669"
+          strokeOpacity="0.3"
           strokeWidth="2"
           strokeLinecap="round"
         />
