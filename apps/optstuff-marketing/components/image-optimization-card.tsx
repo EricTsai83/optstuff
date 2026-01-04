@@ -106,7 +106,7 @@ function CompressionIcon({
 }) {
   return (
     <div className="relative size-3.5">
-      {/* 圖片圖標 - 壓縮動畫 */}
+      {/* Image icon - compression animation */}
       <svg
         viewBox="0 0 24 24"
         fill="none"
@@ -134,7 +134,7 @@ function CompressionIcon({
           opacity="0.5"
         />
       </svg>
-      {/* 完成勾勾 */}
+      {/* Completion checkmark */}
       <svg
         viewBox="0 0 24 24"
         fill="none"
@@ -223,7 +223,7 @@ function FileSizeDisplay({
 
   return (
     <div className="z-10 flex items-center gap-1">
-      {/* 原始大小 + 刪除線 */}
+      {/* Original size + strikethrough */}
       <span className="relative font-mono text-[8px] text-white/50">
         {originalSize}KB
         <span
@@ -233,7 +233,7 @@ function FileSizeDisplay({
           )}
         />
       </span>
-      {/* 箭頭 */}
+      {/* Arrow */}
       <svg
         viewBox="0 0 24 24"
         fill="none"
@@ -251,7 +251,7 @@ function FileSizeDisplay({
           strokeLinejoin="round"
         />
       </svg>
-      {/* 壓縮後大小 */}
+      {/* Optimized size */}
       <span
         className={cn(
           "font-mono text-[10px] font-bold transition-all duration-300",

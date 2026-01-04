@@ -202,6 +202,7 @@ export function TextDecode({
   useEffect(() => {
     if (animationKey === 0 || chars.length === 0) return;
 
+    const intervals = intervalRefs.current;
     const totalChars = maxLength;
     const timers: ReturnType<typeof setTimeout>[] = [];
 
@@ -230,12 +231,12 @@ export function TextDecode({
           );
         }, 30);
 
-        intervalRefs.current.set(i, scrambleInterval);
+        intervals.set(i, scrambleInterval);
 
         // After scrambleDuration, transition to "decoded" state
         const decodeCompleteTimer = setTimeout(() => {
           clearInterval(scrambleInterval);
-          intervalRefs.current.delete(i);
+          intervals.delete(i);
 
           setChars((prev) =>
             prev.map((char, idx) =>
@@ -266,8 +267,8 @@ export function TextDecode({
 
     return () => {
       timers.forEach(clearTimeout);
-      intervalRefs.current.forEach((interval) => clearInterval(interval));
-      intervalRefs.current.clear();
+      intervals.forEach((interval) => clearInterval(interval));
+      intervals.clear();
     };
   }, [
     animationKey,

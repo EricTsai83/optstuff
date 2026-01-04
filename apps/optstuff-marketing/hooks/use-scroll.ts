@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 
 /**
- * 追蹤頁面滾動位置的 hook
- * @returns 當前滾動位置（px）
+ * Hook to track page scroll position
+ * @returns Current scroll position in pixels
  */
 export function useScroll(): number {
   const [scrollY, setScrollY] = useState(0);

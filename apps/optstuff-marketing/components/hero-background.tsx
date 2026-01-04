@@ -1,7 +1,7 @@
 export function HeroBackground() {
   return (
     <>
-      {/* Dark Mode - 原本的綠色網格 */}
+      {/* Dark Mode - Green grid pattern */}
       <svg
         xmlns="http://www.w3.org/2000/svg"
         className="pointer-events-none absolute inset-0 hidden h-full w-full dark:block"
@@ -74,7 +74,7 @@ export function HeroBackground() {
         />
       </svg>
 
-      {/* Light Mode - 極簡圖片主題 */}
+      {/* Light Mode - Minimalist image theme */}
       <svg
         xmlns="http://www.w3.org/2000/svg"
         className="pointer-events-none absolute inset-0 block h-full w-full dark:hidden"
@@ -87,10 +87,10 @@ export function HeroBackground() {
           </radialGradient>
         </defs>
 
-        {/* 柔和光暈 */}
+        {/* Soft glow */}
         <rect width="100%" height="100%" fill="url(#glow-light)" />
 
-        {/* 裁切框 - 左上 */}
+        {/* Crop frame - top left */}
         <path
           d="M 32 56 L 32 32 L 56 32"
           fill="none"
@@ -100,7 +100,7 @@ export function HeroBackground() {
           strokeLinecap="round"
         />
 
-        {/* 裁切框 - 右下 */}
+        {/* Crop frame - bottom right */}
         <path
           d="M calc(100% - 32px) calc(100% - 56px) L calc(100% - 32px) calc(100% - 32px) L calc(100% - 56px) calc(100% - 32px)"
           fill="none"

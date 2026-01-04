@@ -325,8 +325,7 @@ export function ScanCanvas({
       cardRadius,
       originalSize,
       savingsPercent,
-      scanDuration,
-      pauseDuration,
+      onReady,
     ],
   );
 

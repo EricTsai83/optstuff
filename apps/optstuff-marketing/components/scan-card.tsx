@@ -9,19 +9,19 @@ type ScanCardProps = {
   readonly originalSize: number;
   readonly width?: number;
   readonly height?: number;
-  /** 是否自動播放掃描動畫（循環） */
+  /** Whether to auto-play scan animation (loop) */
   readonly autoPlay?: boolean;
   readonly savingsPercent?: number;
-  /** 掃描持續時間（毫秒） */
+  /** Scan duration in milliseconds */
   readonly scanDuration?: number;
-  /** 掃描完成後等待時間（毫秒） */
+  /** Pause duration after scan completes in milliseconds */
   readonly pauseDuration?: number;
   readonly className?: string;
 };
 
 /**
- * 圖片優化掃描卡片組件
- * 清晰圖片 → 模糊效果
+ * Image optimization scan card component
+ * Clear image → Blur effect
  */
 export function ScanCard({
   originalSize,
@@ -50,7 +50,7 @@ export function ScanCard({
         height: `${height}px`,
       }}
     >
-      {/* Skeleton - 等 canvas 浮現動畫完成後再消失 */}
+      {/* Skeleton - fades out after canvas fade-in animation completes */}
       <div
         className={cn(
           "absolute inset-0",
@@ -60,7 +60,7 @@ export function ScanCard({
         <ScanSkeleton />
       </div>
 
-      {/* Canvas - 浮現動畫 */}
+      {/* Canvas - fade-in animation */}
       <div
         className={cn(
           "absolute inset-0",
