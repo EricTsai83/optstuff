@@ -10,7 +10,6 @@ import {
 } from "lucide-react";
 import { Button } from "@workspace/ui/components/button";
 import { Badge } from "@workspace/ui/components/badge";
-import Image from "next/image";
 
 const projects = [
   {
@@ -48,9 +47,8 @@ const projects = [
     date: "Dec 12",
     branch: "main",
     repo: "EricTsai83/blog",
-    icon: "",
-    iconBg: "",
-    iconImage: "/diverse-user-avatars.png",
+    icon: "📝",
+    iconBg: "bg-amber-500",
     hasWarning: false,
     isFavorite: false,
   },
@@ -154,19 +152,11 @@ const ProjectItem = ({ project, index }: ProjectItemProps) => {
       {/* Project icon and basic info row */}
       <div className="flex min-w-0 flex-1 items-center gap-3">
         {/* Project icon */}
-        {project.iconImage ? (
-          <Image
-            src={project.iconImage}
-            alt={project.name}
-            className="h-10 w-10 rounded-lg object-cover transition-transform duration-200 group-hover:scale-105"
-          />
-        ) : (
-          <div
-            className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-sm font-medium transition-transform duration-200 group-hover:scale-105 ${project.iconBg}`}
-          >
-            {project.icon}
-          </div>
-        )}
+        <div
+          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-sm font-medium transition-transform duration-200 group-hover:scale-105 ${project.iconBg}`}
+        >
+          {project.icon}
+        </div>
 
         {/* Project info */}
         <div className="min-w-0 flex-1">

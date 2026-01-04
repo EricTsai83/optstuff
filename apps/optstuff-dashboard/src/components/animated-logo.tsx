@@ -1,6 +1,6 @@
 "use client";
 
-import { useScroll } from "@/hooks/use-scroll";
+import { useScroll } from "@workspace/hooks/use-scroll";
 import { LogoIcon } from "@workspace/ui/components/logo";
 import { SCROLL_CONFIG } from "@/components/scroll-config";
 import { cn } from "@workspace/ui/lib/utils";

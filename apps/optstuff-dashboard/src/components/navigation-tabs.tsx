@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { useScroll } from "@/hooks/use-scroll";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useScroll } from "@workspace/hooks/use-scroll";
+import { useIsMobile } from "@workspace/hooks/use-mobile";
 import { SCROLL_CONFIG } from "./scroll-config";
 
 const navTabs = [

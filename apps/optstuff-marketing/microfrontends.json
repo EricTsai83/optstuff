@@ -17,7 +17,7 @@
       },
       "routing": [
         {
-          "paths": ["/dashboard/:path*"]
+          "paths": ["/dashboard/:path*", "/dashboard-static/:path*"]
         }
       ]
     }

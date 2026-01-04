@@ -11,6 +11,7 @@ export default function Home() {
   return (
     <div className="bg-background min-h-screen">
       <HeroBackground />
+
       <Header />
       <main className="pt-16 pb-24 md:pt-40 md:pb-32">
         <HeroIntro />

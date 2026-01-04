@@ -3,7 +3,6 @@ import { Button } from "@workspace/ui/components/button";
 import { AnimatedLink } from "@/components/ui/animated-link";
 import Link from "next/link";
 import { HeroAnimation } from "@/components/hero-animation";
-import { HeroBackground } from "@/components/hero-background";
 
 export function HeroIntro() {
   return (
@@ -11,7 +10,6 @@ export function HeroIntro() {
       id="hero"
       className="mx-auto max-w-6xl px-6 pb-10 text-center md:pb-46"
     >
-      <HeroBackground />
       <div className="bg-accent/10 text-accent animate-fade-in-up mb-8 inline-flex items-center gap-2 rounded-full px-3 py-1 text-sm font-medium md:mb-14">
         <span className="relative flex h-2 w-2">
           <span className="bg-accent absolute inline-flex h-full w-full animate-ping rounded-full opacity-75"></span>
