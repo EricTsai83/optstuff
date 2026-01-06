@@ -89,26 +89,6 @@ export function HeroBackground() {
 
         {/* Soft glow */}
         <rect width="100%" height="100%" fill="url(#glow-light)" />
-
-        {/* Crop frame - top left */}
-        <path
-          d="M 32 56 L 32 32 L 56 32"
-          fill="none"
-          stroke="#059669"
-          strokeOpacity="0.45"
-          strokeWidth="2"
-          strokeLinecap="round"
-        />
-
-        {/* Crop frame - bottom right */}
-        <path
-          d="M calc(100% - 32px) calc(100% - 56px) L calc(100% - 32px) calc(100% - 32px) L calc(100% - 56px) calc(100% - 32px)"
-          fill="none"
-          stroke="#059669"
-          strokeOpacity="0.3"
-          strokeWidth="2"
-          strokeLinecap="round"
-        />
       </svg>
     </>
   );
