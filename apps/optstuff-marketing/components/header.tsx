@@ -5,7 +5,14 @@ import Link from "next/link";
 import { Button } from "@workspace/ui/components/button";
 import { Logo } from "@workspace/ui/components/logo";
 import { ThemeToggleButton } from "@workspace/ui/components/theme-toggle-button";
-import { SignInButton, SignedIn, SignedOut, UserButton } from "@clerk/nextjs";
+import {
+  ClerkLoaded,
+  ClerkLoading,
+  SignInButton,
+  SignedIn,
+  SignedOut,
+  UserButton,
+} from "@clerk/nextjs";
 
 type NavigationItem = {
   readonly href: string;
@@ -166,19 +173,23 @@ export function Header() {
 
         <div className="flex items-center gap-2">
           <ThemeToggleButton />
-          <SignedOut>
-            <SignInButton>
-              <Button
-                size="sm"
-                className="bg-accent text-accent-foreground hover:bg-accent/90 rounded-full px-4 cursor-pointer"
-              >
-                Log in
-              </Button>
-            </SignInButton>
-          </SignedOut>
-          <SignedIn>
-            <UserButton />
-          </SignedIn>
+          <ClerkLoading>
+            <div className="relative bg-muted h-9 w-18 animate-pulse rounded-md">
+              <span className="bg-muted-foreground/20 h-4 w-12 animate-pulse rounded-full absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+            </div>
+          </ClerkLoading>
+          <ClerkLoaded>
+            <SignedOut>
+              <SignInButton>
+                <Button className="w-18 cursor-pointer bg-accent text-accent-foreground hover:bg-accent/95">
+                  Log in
+                </Button>
+              </SignInButton>
+            </SignedOut>
+            <SignedIn>
+              <UserButton />
+            </SignedIn>
+          </ClerkLoaded>
         </div>
       </div>
     </header>

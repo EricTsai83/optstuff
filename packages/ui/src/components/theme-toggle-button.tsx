@@ -8,6 +8,7 @@ import { useEffect, useState } from "react";
 export function ThemeToggleButton() {
   const { setTheme, resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
+  const [hasToggled, setHasToggled] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -16,6 +17,7 @@ export function ThemeToggleButton() {
   const isDark = resolvedTheme === "dark";
 
   function handleClick(): void {
+    setHasToggled(true);
     setTheme(isDark ? "light" : "dark");
   }
 
@@ -47,18 +49,22 @@ export function ThemeToggleButton() {
     >
       <Sun
         className={cn(
-          "absolute h-4 w-4 transition-all duration-300",
-          isDark
-            ? "scale-0 rotate-180 opacity-0"
-            : "scale-100 rotate-0 opacity-100",
+          "absolute h-4 w-4",
+          hasToggled &&
+            (isDark
+              ? "animate-theme-toggle-icon-out"
+              : "animate-theme-toggle-icon-in"),
+          !hasToggled && isDark && "opacity-0 scale-0",
         )}
       />
       <Moon
         className={cn(
-          "absolute h-4 w-4 transition-all duration-300",
-          isDark
-            ? "scale-100 rotate-0 opacity-100"
-            : "scale-0 rotate-180 opacity-0",
+          "absolute h-4 w-4",
+          hasToggled &&
+            (isDark
+              ? "animate-theme-toggle-icon-in"
+              : "animate-theme-toggle-icon-out"),
+          !hasToggled && !isDark && "opacity-0 scale-0",
         )}
       />
     </button>
