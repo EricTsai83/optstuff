@@ -4,7 +4,8 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Button } from "@workspace/ui/components/button";
 import { Logo } from "@workspace/ui/components/logo";
-import { ModeToggleButton } from "@workspace/ui/components/mode-toggle";
+import { ThemeToggleButton } from "@workspace/ui/components/theme-toggle-button";
+import { SignInButton, SignedIn, SignedOut, UserButton } from "@clerk/nextjs";
 
 type NavigationItem = {
   readonly href: string;
@@ -164,20 +165,20 @@ export function Header() {
         </nav>
 
         <div className="flex items-center gap-2">
-          <ModeToggleButton />
-          <Button
-            variant="ghost"
-            size="sm"
-            className="text-muted-foreground dark:text-accent-foreground hidden transition-transform hover:scale-105 md:inline-flex"
-          >
-            Log in
-          </Button>
-          <Button
-            size="sm"
-            className="bg-accent text-accent-foreground hover:bg-accent/90 hover:shadow-accent/25 rounded-full px-4 transition-all duration-300 hover:scale-105 hover:shadow-lg"
-          >
-            Get Started
-          </Button>
+          <ThemeToggleButton />
+          <SignedOut>
+            <SignInButton>
+              <Button
+                size="sm"
+                className="bg-accent text-accent-foreground hover:bg-accent/90 rounded-full px-4 cursor-pointer"
+              >
+                Log in
+              </Button>
+            </SignInButton>
+          </SignedOut>
+          <SignedIn>
+            <UserButton />
+          </SignedIn>
         </div>
       </div>
     </header>

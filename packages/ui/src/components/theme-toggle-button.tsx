@@ -5,7 +5,7 @@ import { Moon, Sun } from "lucide-react";
 import { cn } from "@workspace/ui/lib/utils";
 import { useEffect, useState } from "react";
 
-export function ModeToggleButton() {
+export function ThemeToggleButton() {
   const { setTheme, resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
@@ -38,7 +38,7 @@ export function ModeToggleButton() {
       type="button"
       aria-label={isDark ? "toggle to light mode" : "toggle to dark mode"}
       className={cn(
-        "border-border bg-secondary hover:border-accent hover:bg-accent/10 hover:text-accent focus-visible:ring-ring focus-visible:ring-offset-background relative flex h-8 w-8 cursor-pointer items-center justify-center overflow-hidden rounded-full border transition-all duration-300 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none",
+        "border-border bg-secondary hover:border-accent hover:bg-accent/10 hover:text-accent focus-visible:ring-ring focus-visible:ring-offset-background relative flex h-8 w-8 cursor-pointer items-center justify-center overflow-hidden rounded-full border  focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none",
         isDark
           ? "text-accent-foreground"
           : "text-muted-foreground dark:text-accent-foreground",
