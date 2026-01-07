@@ -12,7 +12,7 @@ import {
   SignedIn,
   SignedOut,
   UserButton,
-} from "@clerk/nextjs";
+} from "@workspace/auth/client";
 
 type NavigationItem = {
   readonly href: string;
