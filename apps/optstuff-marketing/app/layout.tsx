@@ -1,9 +1,8 @@
-/* Marketing globals.css 已包含 @workspace/ui/styles/globals.css */
 import "@/styles/globals.css";
 import { type Metadata } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import { ThemeProvider } from "@workspace/ui/components/theme-provider";
-import { ClerkProvider } from "@clerk/nextjs";
+import { AuthProvider } from "@workspace/auth/provider";
 
 export const metadata: Metadata = {
   title: "OptStuff - High Performance Image Optimization",
@@ -24,21 +23,19 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <ClerkProvider>
-      <html lang="en" suppressHydrationWarning>
-        <body
-          className={`${inter.variable} ${jetbrainsMono.variable} font-sans antialiased`}
+    <html lang="en" suppressHydrationWarning>
+      <body
+        className={`${inter.variable} ${jetbrainsMono.variable} font-sans antialiased`}
+      >
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
         >
-          <ThemeProvider
-            attribute="class"
-            defaultTheme="system"
-            enableSystem
-            disableTransitionOnChange
-          >
-            {children}
-          </ThemeProvider>
-        </body>
-      </html>
-    </ClerkProvider>
+          <AuthProvider>{children}</AuthProvider>
+        </ThemeProvider>
+      </body>
+    </html>
   );
 }

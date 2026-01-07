@@ -1,3 +1,5 @@
+// import { redirect } from "next/navigation";
+// import { auth } from "@clerk/nextjs/server";
 import { Header } from "@/components/header";
 import { HeroIntro } from "@/components/hero-intro";
 import { ImageOptimizationDemo } from "@/components/image-optimization-demo";
@@ -7,7 +9,13 @@ import { CodeExample } from "@/components/code-example";
 import { Footer } from "@/components/footer";
 import { HeroBackground } from "@/components/hero-background";
 
-export default function Home() {
+export default async function Home() {
+  // const { userId } = await auth();
+
+  // if (userId) {
+  //   redirect("/dashboard/test");
+  // }
+
   return (
     <div className="bg-background min-h-screen">
       <HeroBackground />
