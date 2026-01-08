@@ -38,6 +38,71 @@ const CIRCLE_SIZE_PX = 48;
 const LINE_TRANSITION_DURATION_MS = 500;
 const LINE_CALCULATION_DELAY_MS = 300;
 
+export function IntegrationSteps() {
+  const { visibleSteps, stepRefs, setStepRef } = useStepVisibility(
+    STEPS.length,
+  );
+  const { lineHeight, containerRef } = useConnectingLineHeight(
+    stepRefs,
+    visibleSteps,
+  );
+
+  return (
+    <section className="bg-muted/30 px-6 py-24 md:px-8">
+      <div className="mx-auto max-w-4xl">
+        <div className="mb-16 text-center">
+          <p className="text-accent animate-fade-in mb-3 font-medium">
+            Quick Start
+          </p>
+          <h2 className="text-foreground animate-fade-in-up animation-delay-100 mb-4 text-3xl font-bold tracking-tight md:text-4xl">
+            Three steps to faster images
+          </h2>
+          <p className="text-muted-foreground animate-fade-in-up animation-delay-200 mx-auto max-w-lg">
+            No complex configuration. Just install, mount, and go.
+          </p>
+        </div>
+
+        <div ref={containerRef} className="relative">
+          {/* 連接線 - 跟隨動畫逐步延長 */}
+          <div
+            className="bg-border/60 absolute left-6 hidden w-0.5 md:block"
+            style={{
+              top: CIRCLE_SIZE_PX / 2,
+              height: lineHeight,
+              opacity: visibleSteps.size > 0 ? 1 : 0,
+              transitionProperty: "height, opacity",
+              transitionDuration: `${LINE_TRANSITION_DURATION_MS}ms`,
+              transitionTimingFunction: "linear",
+            }}
+            aria-hidden="true"
+          />
+
+          <div className="space-y-8">
+            {STEPS.map((step, index) => {
+              const isVisible = visibleSteps.has(index);
+
+              return (
+                <div
+                  key={step.number}
+                  ref={setStepRef(index)}
+                  className={`relative flex flex-col gap-6 transition-all duration-600 md:flex-row ${
+                    isVisible
+                      ? "translate-x-0 opacity-100"
+                      : "translate-x-[-20px] opacity-0"
+                  }`}
+                  style={{ transitionDelay: `${index * ANIMATION_DELAY_MS}ms` }}
+                >
+                  <StepCard step={step} index={index} isVisible={isVisible} />
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 type StepCardProps = {
   readonly step: Step;
   readonly index: number;
@@ -65,7 +130,6 @@ function StepCard({ step, index, isVisible }: StepCardProps) {
           {step.title}
         </h3>
         <p className="text-muted-foreground mb-4 text-sm">{step.description}</p>
-
         <CodeBlock code={step.code} variant="block" />
       </div>
     </>
@@ -159,69 +223,4 @@ function useConnectingLineHeight(
   }, [visibleSteps, stepRefs]);
 
   return { lineHeight, containerRef };
-}
-
-export function IntegrationSteps() {
-  const { visibleSteps, stepRefs, setStepRef } = useStepVisibility(
-    STEPS.length,
-  );
-  const { lineHeight, containerRef } = useConnectingLineHeight(
-    stepRefs,
-    visibleSteps,
-  );
-
-  return (
-    <section className="bg-muted/30 px-6 py-24 md:px-8">
-      <div className="mx-auto max-w-4xl">
-        <div className="mb-16 text-center">
-          <p className="text-accent animate-fade-in mb-3 font-medium">
-            Quick Start
-          </p>
-          <h2 className="text-foreground animate-fade-in-up animation-delay-100 mb-4 text-3xl font-bold tracking-tight md:text-4xl">
-            Three steps to faster images
-          </h2>
-          <p className="text-muted-foreground animate-fade-in-up animation-delay-200 mx-auto max-w-lg">
-            No complex configuration. Just install, mount, and go.
-          </p>
-        </div>
-
-        <div ref={containerRef} className="relative">
-          {/* 連接線 - 跟隨動畫逐步延長 */}
-          <div
-            className="bg-border/60 absolute left-6 hidden w-0.5 md:block"
-            style={{
-              top: CIRCLE_SIZE_PX / 2,
-              height: lineHeight,
-              opacity: visibleSteps.size > 0 ? 1 : 0,
-              transitionProperty: "height, opacity",
-              transitionDuration: `${LINE_TRANSITION_DURATION_MS}ms`,
-              transitionTimingFunction: "linear",
-            }}
-            aria-hidden="true"
-          />
-
-          <div className="space-y-8">
-            {STEPS.map((step, index) => {
-              const isVisible = visibleSteps.has(index);
-
-              return (
-                <div
-                  key={step.number}
-                  ref={setStepRef(index)}
-                  className={`relative flex flex-col gap-6 transition-all duration-600 md:flex-row ${
-                    isVisible
-                      ? "translate-x-0 opacity-100"
-                      : "translate-x-[-20px] opacity-0"
-                  }`}
-                  style={{ transitionDelay: `${index * ANIMATION_DELAY_MS}ms` }}
-                >
-                  <StepCard step={step} index={index} isVisible={isVisible} />
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </div>
-    </section>
-  );
 }

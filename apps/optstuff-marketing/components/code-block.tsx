@@ -26,8 +26,9 @@ export function CodeBlock({
     >
       <code
         className={cn(
-          "text-accent-foreground scrollbar-hide min-w-0 flex-1 overflow-x-auto font-mono text-sm text-nowrap",
-          { "py-4 px-3": variant === "block" },
+          "text-accent-foreground scrollbar-hide min-w-0 flex-1 overflow-x-auto font-mono text-sm",
+          variant === "inline" && "text-nowrap",
+          variant === "block" && "whitespace-pre-wrap py-4 px-3",
         )}
       >
         {code}
