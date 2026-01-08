@@ -5,14 +5,14 @@ import { Check, Copy } from "lucide-react";
 import { cn } from "@workspace/ui/lib/utils";
 
 type CopyButtonProps = {
-  text: string;
-  className?: string;
+  readonly text: string;
+  readonly className?: string;
 };
 
 export function CopyButton({ text, className }: CopyButtonProps) {
   const [copied, setCopied] = useState(false);
 
-  const handleCopy = async () => {
+  const handleCopy = async (): Promise<void> => {
     try {
       await navigator.clipboard.writeText(text);
       setCopied(true);

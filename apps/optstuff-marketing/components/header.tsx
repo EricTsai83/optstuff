@@ -52,7 +52,6 @@ const HEADER_CONFIG: HeaderConfig = {
     { href: "#demo", label: "Demo" },
     { href: "#features", label: "Features" },
     { href: "#docs", label: "Docs" },
-    { href: "#pricing", label: "Pricing" },
   ],
 } as const;
 

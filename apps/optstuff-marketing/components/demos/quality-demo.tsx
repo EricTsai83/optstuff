@@ -4,7 +4,7 @@ import { useMemo, useState, useRef, useCallback } from "react";
 import { Slider } from "@workspace/ui/components/slider";
 import { Label } from "@workspace/ui/components/label";
 import { Badge } from "@workspace/ui/components/badge";
-import { CodeBlock } from "@/components/code-block";
+import { CodeBlock } from "@workspace/ui/components/code-block";
 import { cn } from "@workspace/ui/lib/utils";
 import { ORIGINAL_SIZE_KB, QUALITY_DEMO_IMAGE } from "./constants";
 import {

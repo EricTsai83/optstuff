@@ -5,7 +5,7 @@ import Image from "next/image";
 import { Slider } from "@workspace/ui/components/slider";
 import { Label } from "@workspace/ui/components/label";
 import { SlidingToggleGroup } from "@/components/sliding-toggle-group";
-import { CodeBlock } from "@/components/code-block";
+import { CodeBlock } from "@workspace/ui/components/code-block";
 import { Maximize2 } from "lucide-react";
 import {
   ORIGINAL_WIDTH,

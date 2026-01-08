@@ -7,7 +7,7 @@ import {
   TabsTrigger,
   TabsContent,
 } from "@workspace/ui/components/tabs";
-import { CodeBlock } from "@/components/code-block";
+import { CodeBlock } from "@workspace/ui/components/code-block";
 
 const codeExamples = {
   url: `// Simple URL-based API

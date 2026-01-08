@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
-import { CodeBlock } from "@/components/code-block";
+import { CodeBlock } from "@workspace/ui/components/code-block";
 
 type Step = {
   readonly number: string;
