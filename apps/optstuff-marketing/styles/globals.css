@@ -792,3 +792,57 @@ Rotation and shake effect for interactive elements
     transform: rotate(0deg);
   }
 }
+
+/* ==========================================================================
+12. Data Flow Arrow Animations
+Moving dot animations for request/response arrows
+========================================================================== */
+
+/* Request arrow dot - moves from left to right */
+@keyframes flow-dot-right {
+  0% {
+    left: 0;
+    opacity: 1;
+  }
+  100% {
+    left: 80%;
+    opacity: 0;
+  }
+}
+
+/* Response arrow dot - moves from right to left */
+@keyframes flow-dot-left {
+  0% {
+    right: 0;
+    opacity: 1;
+  }
+  100% {
+    right: 80%;
+    opacity: 0;
+  }
+}
+
+.animate-flow-dot-right {
+  animation: flow-dot-right 0.8s ease-in-out infinite;
+}
+
+.animate-flow-dot-left {
+  animation: flow-dot-left 0.8s ease-in-out infinite;
+}
+
+/* Soft pulse effect - gentler than ping */
+@keyframes soft-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.5;
+  }
+  50% {
+    transform: scale(1.2);
+    opacity: 0.25;
+  }
+}
+
+.animate-soft-pulse {
+  animation: soft-pulse 1.5s ease-in-out infinite;
+}
