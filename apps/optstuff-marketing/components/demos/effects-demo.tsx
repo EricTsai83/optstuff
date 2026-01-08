@@ -400,7 +400,7 @@ export function EffectsDemo() {
           {/* API URL */}
           <ControlCard>
             <Label className="mb-1.5 text-xs font-medium">API URL</Label>
-            <CodeBlock code={buildUrl()} />
+            <CodeBlock content={buildUrl()} />
           </ControlCard>
         </div>
 

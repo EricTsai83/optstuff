@@ -184,7 +184,7 @@ export function ResizeDemo() {
 
           <ControlCard>
             <Label className="mb-2 text-sm font-medium">API URL</Label>
-            <CodeBlock code={`/s_${width}x${height},fit_${fit}/image.jpg`} />
+            <CodeBlock content={`/s_${width}x${height},fit_${fit}/image.jpg`} />
           </ControlCard>
         </div>
 

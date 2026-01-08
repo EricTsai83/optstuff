@@ -1,35 +1,33 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
+import { Users, FolderPlus, Key, Zap, ChevronRight, LogIn } from "lucide-react";
 import { CodeBlock } from "@workspace/ui/components/code-block";
+import { cn } from "@workspace/ui/lib/utils";
+import { Button } from "@workspace/ui/components/button";
+import { SignInButton, SignedIn, SignedOut } from "@workspace/auth/client";
 
 type Step = {
   readonly number: string;
   readonly title: string;
   readonly description: string;
-  readonly code: string;
 };
 
 const STEPS: readonly Step[] = [
   {
     number: "1",
-    title: "Install the package",
-    description: "Add Optix to your project with a single command.",
-    code: `npm install optix`,
+    title: "Create your Team",
+    description: "Sign up and create a team in your dashboard to get started.",
   },
   {
     number: "2",
-    title: "Add the middleware",
-    description: "Import and mount the middleware in your server.",
-    code: `import { createOptix } from "optix"
-
-app.use("/img", createOptix())`,
+    title: "Set up a Project",
+    description: "Create a project within your team and generate an API key.",
   },
   {
     number: "3",
-    title: "Update your image URLs",
-    description: "Prefix your image paths with modifiers.",
-    code: `<img src="/img/w_800,f_webp/photos/hero.png" />`,
+    title: "Start Optimizing",
+    description: "Use your API key to optimize images on the fly.",
   },
 ] as const;
 
@@ -58,7 +56,8 @@ export function IntegrationSteps() {
             Three steps to faster images
           </h2>
           <p className="text-muted-foreground animate-fade-in-up animation-delay-200 mx-auto max-w-lg">
-            No complex configuration. Just install, mount, and go.
+            Create a team, set up a project, and start optimizing images with a
+            simple API call.
           </p>
         </div>
 
@@ -130,9 +129,166 @@ function StepCard({ step, index, isVisible }: StepCardProps) {
           {step.title}
         </h3>
         <p className="text-muted-foreground mb-4 text-sm">{step.description}</p>
-        <CodeBlock code={step.code} variant="block" />
+
+        {index === 0 && <CreateTeamVisual />}
+        {index === 1 && <SetupProjectVisual />}
+        {index === 2 && <ApiCallVisual />}
       </div>
     </>
+  );
+}
+
+/** Step 1: 視覺化的 Dashboard 導航流程 */
+function CreateTeamVisual() {
+  return (
+    <div className="border-border/50 bg-background/50 flex flex-wrap items-center gap-2 rounded-xl border p-4 backdrop-blur-sm">
+      <BreadcrumbItem icon={<Users className="h-4 w-4" />} label="Dashboard" />
+      <ChevronRight className="text-muted-foreground h-4 w-4" />
+      <BreadcrumbItem label="New Team" isActive />
+      <ChevronRight className="text-muted-foreground h-4 w-4" />
+      <span className="bg-accent/20 text-accent rounded-md px-3 py-1.5 text-sm font-medium">
+        &ldquo;My Awesome Team&rdquo;
+      </span>
+    </div>
+  );
+}
+
+type BreadcrumbItemProps = {
+  readonly icon?: React.ReactNode;
+  readonly label: string;
+  readonly isActive?: boolean;
+};
+
+function BreadcrumbItem({ icon, label, isActive }: BreadcrumbItemProps) {
+  return (
+    <span
+      className={cn(
+        "flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm",
+        isActive
+          ? "bg-foreground/10 text-foreground font-medium"
+          : "text-muted-foreground",
+      )}
+    >
+      {icon}
+      {label}
+    </span>
+  );
+}
+
+/** Step 2: 展示 Project + API Key 卡片 */
+function SetupProjectVisual() {
+  const [currentUrl, setCurrentUrl] = useState<string | undefined>(undefined);
+
+  useEffect(() => {
+    setCurrentUrl(window.location.href);
+  }, []);
+  console.log("currentUrl", currentUrl);
+
+  return (
+    <div className="border-border/50 bg-background/50 space-y-3 rounded-xl border p-4 backdrop-blur-sm">
+      {/* Project 卡片 */}
+      <div className="bg-muted/30 flex items-center gap-3 rounded-lg p-3">
+        <div className="bg-accent/20 flex h-10 w-10 items-center justify-center rounded-lg">
+          <FolderPlus className="text-accent h-5 w-5" />
+        </div>
+        <div className="flex-1">
+          <p className="text-foreground text-sm font-medium">my-website</p>
+          <p className="text-muted-foreground text-xs">Production</p>
+        </div>
+        <span className="bg-green-500/20 rounded-full px-2 py-0.5 text-xs text-green-400">
+          Active
+        </span>
+      </div>
+
+      {/* API Key 卡片 - 根據登入狀態顯示不同內容 */}
+      <div className="bg-muted/30 rounded-lg p-3">
+        <div className="mb-2 flex items-center gap-2">
+          <Key className="text-accent h-4 w-4" />
+          <span className="text-muted-foreground text-xs font-medium uppercase tracking-wider">
+            API Key
+          </span>
+        </div>
+
+        <SignedIn>
+          <ApiKeyDisplay />
+        </SignedIn>
+
+        <SignedOut>
+          <div className="flex items-center gap-3">
+            <code className="text-muted-foreground flex-1 truncate font-mono text-sm">
+              Sign in to view your API key
+            </code>
+            <SignInButton mode="modal">
+              <Button
+                size="sm"
+                className="bg-accent text-accent-foreground hover:bg-accent/90 shrink-0 cursor-pointer gap-1.5"
+              >
+                <LogIn className="h-3.5 w-3.5" />
+                Sign in
+              </Button>
+            </SignInButton>
+          </div>
+        </SignedOut>
+      </div>
+    </div>
+  );
+}
+
+const API_KEY_PREFIX = "sk_live_";
+const API_KEY = `${API_KEY_PREFIX}a1b2c3d4e5f6g7h8i9j0`;
+
+/** API Key 顯示區塊（登入後可見） */
+function ApiKeyDisplay() {
+  return (
+    <CodeBlock
+      content={API_KEY}
+      revealable
+      maskPrefix={API_KEY_PREFIX}
+      className="border-0"
+    />
+  );
+}
+
+const API_REQUEST_CODE = `https://api.optstuff.dev/v1/optimize
+  ?url=https://example.com/hero.png
+  &width=800
+  &format=webp`;
+
+const HEADERS_CODE = `Authorization: Bearer sk_live_xxx...`;
+
+/** Step 3: API 呼叫範例 */
+function ApiCallVisual() {
+  return (
+    <div className="border-border/50 overflow-hidden rounded-xl border">
+      {/* Header */}
+      <div className="bg-muted/50 border-border/50 flex items-center gap-2 border-b px-4 py-2">
+        <Zap className="text-accent h-4 w-4" />
+        <span className="text-muted-foreground text-xs font-medium uppercase tracking-wider">
+          API Request
+        </span>
+        <span className="bg-green-500/20 ml-auto rounded-full px-2 py-0.5 text-xs text-green-400">
+          GET
+        </span>
+      </div>
+
+      {/* Content */}
+      <div className="space-y-4 p-4">
+        <CodeBlock
+          content={API_REQUEST_CODE}
+          variant="block"
+          className="border-0"
+        />
+
+        <div className="border-border/50 border-t pt-4">
+          <p className="text-muted-foreground mb-2 text-xs">Headers</p>
+          <CodeBlock
+            content={HEADERS_CODE}
+            variant="inline"
+            className="border-0"
+          />
+        </div>
+      </div>
+    </div>
   );
 }
 

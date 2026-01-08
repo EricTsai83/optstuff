@@ -84,13 +84,13 @@ export function CodeExample() {
             </div>
 
             <TabsContent value="url" className="mt-0">
-              <CodeBlock code={codeExamples.url} variant="block" />
+              <CodeBlock content={codeExamples.url} variant="block" />
             </TabsContent>
             <TabsContent value="express" className="mt-0">
-              <CodeBlock code={codeExamples.express} variant="block" />
+              <CodeBlock content={codeExamples.express} variant="block" />
             </TabsContent>
             <TabsContent value="next" className="mt-0">
-              <CodeBlock code={codeExamples.next} variant="block" />
+              <CodeBlock content={codeExamples.next} variant="block" />
             </TabsContent>
           </Tabs>
         </div>

@@ -208,7 +208,7 @@ export function QualityDemo() {
           {/* API URL */}
           <ControlCard>
             <Label className="mb-2 text-sm font-medium">API URL</Label>
-            <CodeBlock code={ipxSyntax} />
+            <CodeBlock content={ipxSyntax} />
           </ControlCard>
         </div>
 

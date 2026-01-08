@@ -83,7 +83,7 @@ export function FormatDemo() {
 
           <ControlCard>
             <Label className="mb-2 text-sm font-medium">API URL</Label>
-            <CodeBlock code={`/f_${format}/image.png`} />
+            <CodeBlock content={`/f_${format}/image.png`} />
           </ControlCard>
         </div>
 
