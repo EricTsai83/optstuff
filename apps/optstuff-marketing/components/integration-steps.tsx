@@ -636,9 +636,13 @@ function ApiDemoSection() {
   };
 
   const handleCopy = async (): Promise<void> => {
-    await navigator.clipboard.writeText(codeExamples[activeTab]);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    try {
+      await navigator.clipboard.writeText(codeExamples[activeTab]);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (error) {
+      console.error("Failed to copy to clipboard:", error);
+    }
   };
 
   const handleTabChange = (tab: "curl" | "js" | "response"): void => {
