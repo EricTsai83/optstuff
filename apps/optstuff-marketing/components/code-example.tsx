@@ -7,7 +7,7 @@ import {
   TabsTrigger,
   TabsContent,
 } from "@workspace/ui/components/tabs";
-import { CodeContentLayout } from "@/components/code-content-layout";
+import { CodeBlock } from "@workspace/ui/components/code-block";
 
 const codeExamples = {
   url: `// Simple URL-based API
@@ -84,19 +84,13 @@ export function CodeExample() {
             </div>
 
             <TabsContent value="url" className="mt-0">
-              <CodeContentLayout copyText={codeExamples.url}>
-                {codeExamples.url}
-              </CodeContentLayout>
+              <CodeBlock content={codeExamples.url} variant="block" />
             </TabsContent>
             <TabsContent value="express" className="mt-0">
-              <CodeContentLayout copyText={codeExamples.express}>
-                {codeExamples.express}
-              </CodeContentLayout>
+              <CodeBlock content={codeExamples.express} variant="block" />
             </TabsContent>
             <TabsContent value="next" className="mt-0">
-              <CodeContentLayout copyText={codeExamples.next}>
-                {codeExamples.next}
-              </CodeContentLayout>
+              <CodeBlock content={codeExamples.next} variant="block" />
             </TabsContent>
           </Tabs>
         </div>

@@ -7,7 +7,7 @@ import {
 } from "@workspace/ui/components/radio-group";
 import { Label } from "@workspace/ui/components/label";
 import { Check, FileImage } from "lucide-react";
-import { CodeBlock } from "@/components/code-block";
+import { CodeBlock } from "@workspace/ui/components/code-block";
 import { ORIGINAL_SIZE_KB, FORMAT_SIZES, DEMO_IMAGE } from "./constants";
 import { DemoHeader, DemoLayout, ControlCard, ImagePreview } from "./layouts";
 
@@ -83,7 +83,7 @@ export function FormatDemo() {
 
           <ControlCard>
             <Label className="mb-2 text-sm font-medium">API URL</Label>
-            <CodeBlock code={`/f_${format}/image.png`} />
+            <CodeBlock content={`/f_${format}/image.png`} />
           </ControlCard>
         </div>
 

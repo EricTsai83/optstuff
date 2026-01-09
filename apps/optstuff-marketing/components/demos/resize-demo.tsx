@@ -5,7 +5,7 @@ import Image from "next/image";
 import { Slider } from "@workspace/ui/components/slider";
 import { Label } from "@workspace/ui/components/label";
 import { SlidingToggleGroup } from "@/components/sliding-toggle-group";
-import { CodeBlock } from "@/components/code-block";
+import { CodeBlock } from "@workspace/ui/components/code-block";
 import { Maximize2 } from "lucide-react";
 import {
   ORIGINAL_WIDTH,
@@ -184,7 +184,7 @@ export function ResizeDemo() {
 
           <ControlCard>
             <Label className="mb-2 text-sm font-medium">API URL</Label>
-            <CodeBlock code={`/s_${width}x${height},fit_${fit}/image.jpg`} />
+            <CodeBlock content={`/s_${width}x${height},fit_${fit}/image.jpg`} />
           </ControlCard>
         </div>
 

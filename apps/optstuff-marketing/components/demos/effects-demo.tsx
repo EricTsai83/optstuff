@@ -6,7 +6,7 @@ import { Label } from "@workspace/ui/components/label";
 import { Switch } from "@workspace/ui/components/switch";
 import { RotateCcw, Wand2 } from "lucide-react";
 import { Button } from "@workspace/ui/components/button";
-import { CodeBlock } from "@/components/code-block";
+import { CodeBlock } from "@workspace/ui/components/code-block";
 import { DEMO_IMAGE } from "./constants";
 import { DemoHeader, DemoLayout, ControlCard, ImagePreview } from "./layouts";
 import { cn } from "@workspace/ui/lib/utils";
@@ -400,7 +400,7 @@ export function EffectsDemo() {
           {/* API URL */}
           <ControlCard>
             <Label className="mb-1.5 text-xs font-medium">API URL</Label>
-            <CodeBlock code={buildUrl()} />
+            <CodeBlock content={buildUrl()} />
           </ControlCard>
         </div>
 

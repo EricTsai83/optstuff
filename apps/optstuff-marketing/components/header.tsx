@@ -52,7 +52,6 @@ const HEADER_CONFIG: HeaderConfig = {
     { href: "#demo", label: "Demo" },
     { href: "#features", label: "Features" },
     { href: "#docs", label: "Docs" },
-    { href: "#pricing", label: "Pricing" },
   ],
 } as const;
 
@@ -182,7 +181,7 @@ export function Header() {
             <SignedOut>
               <SignInButton>
                 <Button className="w-18 cursor-pointer bg-accent text-accent-foreground hover:bg-accent/95">
-                  Log in
+                  Sign in
                 </Button>
               </SignInButton>
             </SignedOut>
