@@ -152,11 +152,16 @@ export function Header() {
       }}
       className="animate-fade-in-down fixed top-0 z-100 w-full py-1"
     >
-      <div className="container mx-auto flex h-16 items-center justify-between px-4 md:px-6">
-        <Link href="/" className="group flex items-center gap-2.5">
+      <div className="container mx-auto grid h-16 grid-cols-[1fr_auto_1fr] items-center px-4 md:px-6">
+        {/* Left: Logo */}
+        <Link
+          href="/"
+          className="group flex items-center gap-2.5 justify-self-start"
+        >
           <Logo size={HEADER_CONFIG.logo.size} />
         </Link>
 
+        {/* Center: Navigation - 真正置中，不受左右區塊影響 */}
         <nav className="hidden items-center gap-8 md:flex">
           {HEADER_CONFIG.navigation.map((item) => (
             <Link
@@ -169,32 +174,31 @@ export function Header() {
           ))}
         </nav>
 
-        <div className="flex items-center gap-2">
+        {/* Right: Auth buttons - 使用 flex-row-reverse 讓 ThemeToggle 永遠在最右邊 */}
+        <div className="flex flex-row-reverse items-center gap-4 justify-self-end">
+          <ThemeToggleButton />
           <ClerkLoading>
             <AuthButtonsSkeleton />
+            <SignOutButtonSkeleton />
           </ClerkLoading>
           <ClerkLoaded>
             <SignedOut>
-              <Button
-                asChild
-                className="w-18 cursor-pointer bg-accent text-accent-foreground hover:bg-accent/95"
-              >
+              <Button asChild variant="outline" className="w-25 cursor-pointer">
                 <a href="/dashboard/sign-in">Sign in</a>
               </Button>
             </SignedOut>
             <SignedIn>
-              <div className="flex items-center gap-4">
-                <ThemeToggleButton />
-                <SignOutButton>
-                  <Button variant="outline" className="cursor-pointer w-20 ">
-                    Sign out
-                  </Button>
-                </SignOutButton>
-
-                <Button className="w-25 cursor-pointer bg-accent text-accent-foreground hover:bg-accent/95">
-                  <a href="/dashboard">Dashboard</a>
+              <Button
+                asChild
+                className="w-25 cursor-pointer bg-accent text-accent-foreground hover:bg-accent/95"
+              >
+                <a href="/dashboard">Dashboard</a>
+              </Button>
+              <SignOutButton>
+                <Button variant="outline" className="w-20 cursor-pointer">
+                  Sign out
                 </Button>
-              </div>
+              </SignOutButton>
             </SignedIn>
           </ClerkLoaded>
         </div>
@@ -204,25 +208,21 @@ export function Header() {
 }
 
 /**
- * Skeleton for auth buttons while Clerk is loading
+ * Skeleton for auth button while Clerk is loading
+ * 對應 Dashboard / Sign in 按鈕大小 (w-25)
  */
 function AuthButtonsSkeleton() {
   return (
-    <div className="flex items-center gap-4">
-      {/* ThemeToggleButton skeleton */}
-      <div className="flex h-8 w-8 items-center justify-center rounded-full border border-border bg-secondary">
-        <div className="h-4 w-4 animate-pulse rounded-full bg-muted-foreground/20" />
-      </div>
+    <div className="flex h-9 w-25 items-center justify-center rounded-md border border-border bg-background">
+      <div className="h-3 w-14 animate-pulse rounded-sm bg-muted-foreground/20" />
+    </div>
+  );
+}
 
-      {/* Sign out 按鈕 skeleton */}
-      <div className="flex h-9 w-20 items-center justify-center rounded-md border border-border bg-background">
-        <div className="h-3 w-12 animate-pulse rounded-sm bg-muted-foreground/20" />
-      </div>
-
-      {/* Dashboard 按鈕 skeleton */}
-      <div className="flex h-9 w-25 items-center justify-center rounded-md bg-accent/20">
-        <div className="h-3 w-14 animate-pulse rounded-sm bg-accent/30" />
-      </div>
+function SignOutButtonSkeleton() {
+  return (
+    <div className="flex h-9 w-20 items-center justify-center rounded-md border border-border bg-background">
+      <div className="h-3 w-12 animate-pulse rounded-sm bg-muted-foreground/20" />
     </div>
   );
 }
