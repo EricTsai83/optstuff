@@ -8,10 +8,9 @@ import { ThemeToggleButton } from "@workspace/ui/components/theme-toggle-button"
 import {
   ClerkLoaded,
   ClerkLoading,
-  SignInButton,
   SignedIn,
   SignedOut,
-  UserButton,
+  SignOutButton,
 } from "@workspace/auth/client";
 
 type NavigationItem = {
@@ -171,26 +170,59 @@ export function Header() {
         </nav>
 
         <div className="flex items-center gap-2">
-          <ThemeToggleButton />
           <ClerkLoading>
-            <div className="relative bg-muted h-9 w-18 animate-pulse rounded-md">
-              <span className="bg-muted-foreground/20 h-4 w-12 animate-pulse rounded-full absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
-            </div>
+            <AuthButtonsSkeleton />
           </ClerkLoading>
           <ClerkLoaded>
             <SignedOut>
-              <SignInButton>
-                <Button className="w-18 cursor-pointer bg-accent text-accent-foreground hover:bg-accent/95">
-                  Sign in
-                </Button>
-              </SignInButton>
+              <Button
+                asChild
+                className="w-18 cursor-pointer bg-accent text-accent-foreground hover:bg-accent/95"
+              >
+                <a href="/dashboard/sign-in">Sign in</a>
+              </Button>
             </SignedOut>
             <SignedIn>
-              <UserButton />
+              <div className="flex items-center gap-4">
+                <ThemeToggleButton />
+                <SignOutButton>
+                  <Button variant="outline" className="cursor-pointer w-20 ">
+                    Sign out
+                  </Button>
+                </SignOutButton>
+
+                <Button className="w-25 cursor-pointer bg-accent text-accent-foreground hover:bg-accent/95">
+                  <a href="/dashboard">Dashboard</a>
+                </Button>
+              </div>
             </SignedIn>
           </ClerkLoaded>
         </div>
       </div>
     </header>
+  );
+}
+
+/**
+ * Skeleton for auth buttons while Clerk is loading
+ */
+function AuthButtonsSkeleton() {
+  return (
+    <div className="flex items-center gap-4">
+      {/* ThemeToggleButton skeleton */}
+      <div className="flex h-8 w-8 items-center justify-center rounded-full border border-border bg-secondary">
+        <div className="h-4 w-4 animate-pulse rounded-full bg-muted-foreground/20" />
+      </div>
+
+      {/* Sign out 按鈕 skeleton */}
+      <div className="flex h-9 w-20 items-center justify-center rounded-md border border-border bg-background">
+        <div className="h-3 w-12 animate-pulse rounded-sm bg-muted-foreground/20" />
+      </div>
+
+      {/* Dashboard 按鈕 skeleton */}
+      <div className="flex h-9 w-25 items-center justify-center rounded-md bg-accent/20">
+        <div className="h-3 w-14 animate-pulse rounded-sm bg-accent/30" />
+      </div>
+    </div>
   );
 }

@@ -3,6 +3,7 @@ import { type Metadata } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import { TRPCReactProvider } from "@/trpc/react";
 import { ThemeProvider } from "@workspace/ui/components/theme-provider";
+import { AuthProvider } from "@workspace/auth/provider";
 
 export const metadata: Metadata = {
   title: "OptStuff - High Performance Image Optimization",
@@ -34,7 +35,9 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <TRPCReactProvider>{children}</TRPCReactProvider>
+          <AuthProvider>
+            <TRPCReactProvider>{children}</TRPCReactProvider>
+          </AuthProvider>
         </ThemeProvider>
       </body>
     </html>

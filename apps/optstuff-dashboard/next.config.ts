@@ -12,7 +12,7 @@ const nextConfig: NextConfig = {
     ignoreBuildErrors: true,
   },
   // https://nextjs.org/docs/app/api-reference/config/next-config-js/transpilePackages
-  transpilePackages: ["@workspace/ui"],
+  transpilePackages: ["@workspace/ui", "@workspace/auth", "@workspace/hooks"],
   basePath: "/dashboard",
   experimental: {
     // Allow Server Actions from the microfrontends local proxy
