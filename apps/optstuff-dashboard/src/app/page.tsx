@@ -1,3 +1,10 @@
-export default function Page() {
+import { currentUser, auth } from "@workspace/auth/server";
+import { redirect } from "next/navigation";
+
+export default async function Page() {
+  const { isAuthenticated, redirectToSignIn, userId } = await auth();
+
+  // if (!isAuthenticated) return redirectToSignIn();
+
   return <div>Dashboard Home Page</div>;
 }

@@ -17,11 +17,7 @@
       },
       "routing": [
         {
-          "paths": [
-            "/dashboard/:path*",
-            "/dashboard-static/:path*",
-            "/sign-in/:path*"
-          ]
+          "paths": ["/dashboard/:path*", "/dashboard-static/:path*"]
         }
       ]
     }
