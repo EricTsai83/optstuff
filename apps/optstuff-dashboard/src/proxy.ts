@@ -1,12 +1,7 @@
 import { authMiddleware, createRouteMatcher } from "@workspace/auth/proxy";
 import { NextResponse } from "next/server";
 
-const APP_BASE_PATH = "/dashboard";
-
-const isPublicRoute = createRouteMatcher([
-  `${APP_BASE_PATH}/sign-in(.*)`,
-  `${APP_BASE_PATH}/sign-up(.*)`,
-]);
+const isPublicRoute = createRouteMatcher(["/sign-in(.*)", "/sign-up(.*)"]);
 
 export default authMiddleware(async (auth, req) => {
   if (!isPublicRoute(req)) {
