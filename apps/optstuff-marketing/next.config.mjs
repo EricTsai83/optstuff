@@ -9,6 +9,9 @@ const nextConfig = {
       allowedOrigins: ["localhost:3024"],
     },
   },
+  // A zone is a normal Next.js application where you also configure an assetPrefix to avoid conflicts with pages and static files in other zones. The default application handling all paths not routed to another more specific zone does not need an `assetPrefix`.
+  assetPrefix: "/home-static",
+  basePath: "/home",
 };
 
 export default nextConfig;

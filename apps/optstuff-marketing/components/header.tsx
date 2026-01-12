@@ -184,7 +184,7 @@ export function Header() {
           <ClerkLoaded>
             <SignedOut>
               <Button asChild variant="outline" className="w-25 cursor-pointer">
-                <a href="/dashboard/sign-in">Sign in</a>
+                <a href="/sign-in">Sign in</a>
               </Button>
             </SignedOut>
             <SignedIn>
@@ -192,7 +192,7 @@ export function Header() {
                 asChild
                 className="w-25 cursor-pointer bg-accent text-accent-foreground hover:bg-accent/95"
               >
-                <a href="/dashboard">Dashboard</a>
+                <a href="/">Dashboard</a>
               </Button>
               <SignOutButton>
                 <Button variant="outline" className="w-20 cursor-pointer">
