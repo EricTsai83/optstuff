@@ -8,10 +8,9 @@ import { ThemeToggleButton } from "@workspace/ui/components/theme-toggle-button"
 import {
   ClerkLoaded,
   ClerkLoading,
-  SignInButton,
   SignedIn,
   SignedOut,
-  UserButton,
+  SignOutButton,
 } from "@workspace/auth/client";
 
 type NavigationItem = {
@@ -153,11 +152,16 @@ export function Header() {
       }}
       className="animate-fade-in-down fixed top-0 z-100 w-full py-1"
     >
-      <div className="container mx-auto flex h-16 items-center justify-between px-4 md:px-6">
-        <Link href="/" className="group flex items-center gap-2.5">
+      <div className="container mx-auto grid h-16 grid-cols-[1fr_auto_1fr] items-center px-4 md:px-6">
+        {/* Left: Logo */}
+        <Link
+          href="/"
+          className="group flex items-center gap-2.5 justify-self-start"
+        >
           <Logo size={HEADER_CONFIG.logo.size} />
         </Link>
 
+        {/* Center: Navigation - 真正置中，不受左右區塊影響 */}
         <nav className="hidden items-center gap-8 md:flex">
           {HEADER_CONFIG.navigation.map((item) => (
             <Link
@@ -170,27 +174,55 @@ export function Header() {
           ))}
         </nav>
 
-        <div className="flex items-center gap-2">
+        {/* Right: Auth buttons - 使用 flex-row-reverse 讓 ThemeToggle 永遠在最右邊 */}
+        <div className="flex flex-row-reverse items-center gap-4 justify-self-end">
           <ThemeToggleButton />
           <ClerkLoading>
-            <div className="relative bg-muted h-9 w-18 animate-pulse rounded-md">
-              <span className="bg-muted-foreground/20 h-4 w-12 animate-pulse rounded-full absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
-            </div>
+            <AuthButtonsSkeleton />
+            <SignOutButtonSkeleton />
           </ClerkLoading>
           <ClerkLoaded>
             <SignedOut>
-              <SignInButton>
-                <Button className="w-18 cursor-pointer bg-accent text-accent-foreground hover:bg-accent/95">
-                  Sign in
-                </Button>
-              </SignInButton>
+              <Button asChild variant="outline" className="w-25 cursor-pointer">
+                <a href="/sign-in">Sign in</a>
+              </Button>
             </SignedOut>
             <SignedIn>
-              <UserButton />
+              <Button
+                asChild
+                className="w-25 cursor-pointer bg-accent text-accent-foreground hover:bg-accent/95"
+              >
+                <a href="/dashboard">Dashboard</a>
+              </Button>
+              <SignOutButton>
+                <Button variant="outline" className="w-20 cursor-pointer">
+                  Sign out
+                </Button>
+              </SignOutButton>
             </SignedIn>
           </ClerkLoaded>
         </div>
       </div>
     </header>
+  );
+}
+
+/**
+ * Skeleton for auth button while Clerk is loading
+ * 對應 Dashboard / Sign in 按鈕大小 (w-25)
+ */
+function AuthButtonsSkeleton() {
+  return (
+    <div className="flex h-9 w-25 items-center justify-center rounded-md border border-border bg-background">
+      <div className="h-3 w-14 animate-pulse rounded-sm bg-muted-foreground/20" />
+    </div>
+  );
+}
+
+function SignOutButtonSkeleton() {
+  return (
+    <div className="flex h-9 w-20 items-center justify-center rounded-md border border-border bg-background">
+      <div className="h-3 w-12 animate-pulse rounded-sm bg-muted-foreground/20" />
+    </div>
   );
 }

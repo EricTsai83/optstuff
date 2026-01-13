@@ -1,0 +1,25 @@
+{
+  "$schema": "https://openapi.vercel.sh/microfrontends.json",
+  "version": "1",
+  "applications": {
+    "optstuff-dashboard": {
+      "development": {
+        "fallback": "https://optstuff.vercel.app",
+        "local": 3000
+      }
+    },
+    "optstuff-marketing": {
+      "development": {
+        "local": 3001
+      },
+      "routing": [
+        {
+          "paths": ["/"]
+        }
+      ]
+    }
+  },
+  "options": {
+    "localProxyPort": 3024
+  }
+}
