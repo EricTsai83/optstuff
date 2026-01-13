@@ -192,7 +192,7 @@ export function Header() {
                 asChild
                 className="w-25 cursor-pointer bg-accent text-accent-foreground hover:bg-accent/95"
               >
-                <a href="/">Dashboard</a>
+                <a href="/dashboard">Dashboard</a>
               </Button>
               <SignOutButton>
                 <Button variant="outline" className="w-20 cursor-pointer">

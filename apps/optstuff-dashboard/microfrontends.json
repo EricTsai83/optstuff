@@ -1,23 +1,20 @@
 {
   "$schema": "https://openapi.vercel.sh/microfrontends.json",
+  "version": "1",
   "applications": {
     "optstuff-dashboard": {
       "development": {
-        "fallback": "optstuff.vercel.app",
-        "local": {
-          "port": 3000
-        }
+        "fallback": "https://optstuff.vercel.app",
+        "local": 3000
       }
     },
     "optstuff-marketing": {
       "development": {
-        "local": {
-          "port": 3001
-        }
+        "local": 3001
       },
       "routing": [
         {
-          "paths": ["/home/:path*", "/home-static/:path*"]
+          "paths": ["/"]
         }
       ]
     }
