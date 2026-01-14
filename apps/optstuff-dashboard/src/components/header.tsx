@@ -10,7 +10,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@workspace/ui/components/dropdown-menu";
-import { UserButton } from "@workspace/auth/client";
+import { ClerkLoaded, ClerkLoading, UserButton } from "@workspace/auth/client";
+import { UserButtonSkeleton } from "@workspace/auth/components/user-button-skeleton";
 import { AnimatedLogo } from "@/components/animated-logo";
 
 const TEAM_NAME = "Personal Team";
@@ -154,14 +155,21 @@ function DocsButton({ isMobile = false }: { readonly isMobile?: boolean }) {
  */
 function UserAvatar() {
   return (
-    <UserButton
-      appearance={{
-        elements: {
-          avatarBox: "h-8 w-8",
-          userButtonPopoverCard: "shadow-lg",
-        },
-      }}
-    />
+    <div className="flex h-8 w-8 items-center justify-center">
+      <ClerkLoading>
+        <UserButtonSkeleton />
+      </ClerkLoading>
+      <ClerkLoaded>
+        <UserButton
+          appearance={{
+            elements: {
+              avatarBox: "h-8 w-8",
+              userButtonPopoverCard: "shadow-lg",
+            },
+          }}
+        />
+      </ClerkLoaded>
+    </div>
   );
 }
 
