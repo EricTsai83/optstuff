@@ -35,7 +35,7 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <AuthProvider>
+          <AuthProvider afterSignOutUrl="/sign-in">
             <TRPCReactProvider>{children}</TRPCReactProvider>
           </AuthProvider>
         </ThemeProvider>
