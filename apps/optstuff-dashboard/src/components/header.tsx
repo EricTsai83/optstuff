@@ -3,11 +3,6 @@
 import { Search, Bell, ChevronDown, Menu } from "lucide-react";
 import { Button } from "@workspace/ui/components/button";
 import { Input } from "@workspace/ui/components/input";
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from "@workspace/ui/components/avatar";
 import { Badge } from "@workspace/ui/components/badge";
 import {
   DropdownMenu,
@@ -15,15 +10,13 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@workspace/ui/components/dropdown-menu";
+import { UserButton } from "@workspace/auth/client";
 import { AnimatedLogo } from "@/components/animated-logo";
 
 const TEAM_NAME = "Personal Team";
 const TEAM_BADGE = "Hobby";
 const TEAM_COLOR = "bg-orange-500";
 const PROJECTS = ["erictsai83's projects", "Other projects"] as const;
-
-const USER_AVATAR_SRC = "/diverse-user-avatars.png";
-const USER_AVATAR_FALLBACK = "ET";
 
 /**
  * Header component
@@ -157,14 +150,18 @@ function DocsButton({ isMobile = false }: { readonly isMobile?: boolean }) {
 }
 
 /**
- * User avatar component
+ * User avatar component using Clerk
  */
 function UserAvatar() {
   return (
-    <Avatar className="h-8 w-8 transition-transform duration-200 hover:scale-105">
-      <AvatarImage src={USER_AVATAR_SRC} />
-      <AvatarFallback>{USER_AVATAR_FALLBACK}</AvatarFallback>
-    </Avatar>
+    <UserButton
+      appearance={{
+        elements: {
+          avatarBox: "h-8 w-8",
+          userButtonPopoverCard: "shadow-lg",
+        },
+      }}
+    />
   );
 }
 

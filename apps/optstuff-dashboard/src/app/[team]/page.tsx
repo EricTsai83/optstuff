@@ -1,3 +1,5 @@
+import { redirect } from "next/navigation";
+import { auth } from "@workspace/auth/server";
 import { Header } from "@/components/header";
 import { NavigationTabs } from "@/components/navigation-tabs";
 import { SearchToolbar } from "@/components/search-toolbar";
@@ -6,7 +8,12 @@ import { ProjectList } from "@/components/project-list";
 import { MobileTabs } from "@/components/mobile-tabs";
 import { Footer } from "@/components/footer";
 
-export default function Page() {
+export default async function Page() {
+  const { userId } = await auth();
+
+  if (!userId) {
+    redirect("/sign-in");
+  }
   return (
     <div className="bg-background flex min-h-screen flex-col">
       <Header />
