@@ -21,10 +21,65 @@ function ensureUint8Array(data: unknown): Uint8Array {
 
 /**
  * 恢復 URL 中被折疊的協議雙斜線
- * (例如: "https:/example.com" -> "https://example.com")
+ *
+ * 在 URL 編碼/解碼過程中，協議的雙斜線可能會被折疊成單斜線。
+ * 此函數用於恢復正確的協議格式。
+ *
+ * @example
+ * - "https:/example.com" -> "https://example.com"
+ * - "http:/localhost" -> "http://localhost"
+ * - "http://localhost" -> "http://localhost" (不變)
+ *
+ * 注意：此函數僅處理協議格式，不驗證路徑是否有效。
+ * 路徑驗證應在調用此函數之前完成。
  */
 function restoreProtocolSlashes(path: string): string {
-  return path.replace(/^(https?:\/)([^/])/, "$1/$2");
+  // 匹配 http:/ 或 https:/ 後面跟著非斜線字符的情況
+  return path.replace(/^(https?:\/)(?!\/)/, "$1/");
+}
+
+/**
+ * 自動補全協議和路徑
+ * - 如果路徑以 https:// 或 http:// 開頭，拋出錯誤
+ * - 如果路徑以 / 開頭，拋出錯誤
+ * - localhost 開頭：添加 http://
+ * - 其他域名開頭：添加 https://
+ * - 假設所有路徑都來自遠程
+ *
+ * @example
+ * - "localhost:3024/demo-image.png" -> "http://localhost:3024/demo-image.png"
+ * - "example.com/image.jpg" -> "https://example.com/image.jpg"
+ * @throws {Error} 如果路徑以 https://、http:// 或 / 開頭
+ */
+function ensureProtocol(path: string): string {
+  // 如果路徑以 https:// 或 http:// 開頭，拋出錯誤
+  if (path.startsWith("https://") || path.startsWith("http://")) {
+    throw new Error(
+      "路徑不能以 https:// 或 http:// 開頭，請提供不包含協議的路徑",
+    );
+  }
+
+  // 如果路徑以 / 開頭，拋出錯誤
+  if (path.startsWith("/")) {
+    throw new Error("路徑不能以 / 開頭，請提供完整的域名路徑");
+  }
+
+  // 檢查是否包含其他協議（如 ftp://, file:// 等），明確拒絕
+  const protocolMatch = path.match(/^([a-zA-Z][a-zA-Z0-9+.-]*):\/\//);
+  if (protocolMatch) {
+    const protocol = protocolMatch[1]!.toLowerCase();
+    throw new Error(
+      `不支援的協議：${protocol}://。只允許 http:// 或 https:// 協議`,
+    );
+  }
+
+  // 如果以 localhost 開頭，添加 http://
+  if (path.startsWith("localhost")) {
+    return `http://${path}`;
+  }
+
+  // 其他情況，統一添加 https://
+  return `https://${path}`;
 }
 
 /**
@@ -39,15 +94,20 @@ function resolveContentType(format: string): string {
  *
  * 格式: /api/optimize/{operations}/{image_path}
  *
+ * 注意：image_path 不應包含協議（http:// 或 https://），也不應以 / 開頭
+ *
  * @example
- * - /api/optimize/w_200/https://example.com/image.jpg
- *   => { operations: "w_200", imagePath: "https://example.com/image.jpg" }
+ * - /api/optimize/w_200/example.com/image.jpg
+ *   => { operations: "w_200", imagePath: "example.com/image.jpg" }
  *
- * - /api/optimize/embed,f_webp,s_200x200/https://example.com/image.jpg
- *   => { operations: "embed,f_webp,s_200x200", imagePath: "https://example.com/image.jpg" }
+ * - /api/optimize/embed,f_webp,s_200x200/example.com/image.jpg
+ *   => { operations: "embed,f_webp,s_200x200", imagePath: "example.com/image.jpg" }
  *
- * - /api/optimize/_/https://example.com/image.jpg
- *   => { operations: "_", imagePath: "https://example.com/image.jpg" }
+ * - /api/optimize/_/example.com/image.jpg
+ *   => { operations: "_", imagePath: "example.com/image.jpg" }
+ *
+ * - /api/optimize/w_200/localhost:3024/demo-image.png
+ *   => { operations: "w_200", imagePath: "localhost:3024/demo-image.png" }
  */
 function parseIpxPath(pathSegments: string[]): {
   readonly operations: string;
@@ -115,27 +175,44 @@ function parseOperationsString(
  * 使用 IPX 原生 URL 格式：
  * /api/optimize/{operations}/{image_path}
  *
+ * 圖片路徑支持多種格式（會自動統一處理協議）：
+ * - localhost 格式（統一為 http://）：localhost:3024/demo-image.png
+ * - 其他域名（統一為 https://）：example.com/image.jpg
+ *
+ * 注意：
+ * - 路徑不能以 http:// 或 https:// 開頭，否則會報錯
+ * - 路徑不能以 / 開頭，否則會報錯
+ * - localhost 開頭 → 統一為 http://localhost:...
+ * - 其他域名 → 統一為 https://...
+ *
  * @example
- * // 設定寬度 200px
- * /api/optimize/w_200/https://example.com/image.jpg
+ * // localhost 格式（統一為 http://localhost:3024/demo-image.png）
+ * /api/optimize/w_200/localhost:3024/demo-image.png
+ *
+ * // 其他域名（統一為 https://example.com/image.jpg）
+ * /api/optimize/w_200/example.com/image.jpg
  *
  * // 轉換為 WebP 格式
- * /api/optimize/f_webp/https://example.com/image.jpg
+ * /api/optimize/f_webp/example.com/image.jpg
  *
  * // 自動格式（根據瀏覽器支援）
- * /api/optimize/f_auto/https://example.com/image.jpg
+ * /api/optimize/f_auto/example.com/image.jpg
  *
  * // 組合操作：embed fit、WebP 格式、200x200 尺寸
- * /api/optimize/embed,f_webp,s_200x200/https://example.com/image.jpg
+ * /api/optimize/embed,f_webp,s_200x200/example.com/image.jpg
  *
  * // 無操作，直接取得原圖
- * /api/optimize/_/https://example.com/image.jpg
+ * /api/optimize/_/example.com/image.jpg
  *
  * // 更多操作組合
- * /api/optimize/w_800,q_80,f_webp/https://example.com/image.jpg
- * /api/optimize/s_400x300,fit_cover,f_avif/https://example.com/image.jpg
- * /api/optimize/blur_5,grayscale/https://example.com/image.jpg
+ * /api/optimize/w_800,q_80,f_webp/example.com/image.jpg
+ * /api/optimize/s_400x300,fit_cover/localhost:3024/demo-image.png
+ * /api/optimize/blur_5,grayscale/example.com/image.jpg
  */
+
+// 強制動態渲染，確保路由在生產環境正常工作
+export const dynamic = "force-dynamic";
+
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ path: string[] }> },
@@ -153,9 +230,10 @@ export async function GET(
           error: "Invalid path format",
           usage: "/api/optimize/{operations}/{image_url}",
           examples: [
-            "/api/optimize/w_200/https://example.com/image.jpg",
-            "/api/optimize/f_webp,q_80/https://example.com/image.jpg",
-            "/api/optimize/_/https://example.com/image.jpg",
+            "/api/optimize/w_200/example.com/image.jpg",
+            "/api/optimize/f_webp,q_80/example.com/image.jpg",
+            "/api/optimize/_/example.com/image.jpg",
+            "/api/optimize/w_200/localhost:3024/demo-image.png",
           ],
         },
         { status: 400 },
@@ -165,28 +243,11 @@ export async function GET(
     imagePath = parsed.imagePath;
     const operations = parseOperationsString(parsed.operations);
 
-    // 處理本地文件路徑：在 Vercel 上，public 目錄的文件需要通過 HTTP 獲取
-    // 如果路徑以 / 開頭且不是完整的 URL，則轉換為完整的 URL
-    finalImagePath = imagePath;
-    if (
-      imagePath.startsWith("/") &&
-      !imagePath.startsWith("http://") &&
-      !imagePath.startsWith("https://")
-    ) {
-      // 從請求 URL 提取 origin（支持本地開發和 Vercel 部署）
-      const requestUrl = new URL(request.url);
-      const protocol =
-        request.headers.get("x-forwarded-proto") ||
-        requestUrl.protocol.slice(0, -1) || // 移除尾部的 ':'
-        "https";
-      const host =
-        request.headers.get("x-forwarded-host") ||
-        request.headers.get("host") ||
-        requestUrl.host ||
-        "localhost:3024";
-
-      finalImagePath = `${protocol}://${host}${imagePath}`;
-    }
+    // 自動補全協議並驗證路徑格式
+    // - 驗證：路徑不能以 https://、http:// 或 / 開頭
+    // - 處理：localhost 開頭 → http://，其他域名 → https://
+    // 如果驗證失敗會拋出錯誤
+    finalImagePath = ensureProtocol(imagePath);
 
     // 使用 IPX 處理圖片
     const processedImage = await ipx(finalImagePath, operations).process();
