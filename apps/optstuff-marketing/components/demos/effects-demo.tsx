@@ -7,7 +7,7 @@ import { Switch } from "@workspace/ui/components/switch";
 import { RotateCcw, Wand2 } from "lucide-react";
 import { Button } from "@workspace/ui/components/button";
 import { CodeBlock } from "@workspace/ui/components/code-block";
-import { DEMO_IMAGE } from "./constants";
+import { DEMO_IMAGE_URL } from "./constants";
 import { DemoHeader, DemoLayout, ControlCard, ImagePreview } from "./layouts";
 import { cn } from "@workspace/ui/lib/utils";
 
@@ -405,7 +405,7 @@ export function EffectsDemo() {
         </div>
 
         <ImagePreview
-          imageUrl={DEMO_IMAGE}
+          imageUrl={DEMO_IMAGE_URL}
           imageAlt="Effects demo"
           imageContainerClassName="bg-muted"
           aspectRatio={4 / 3}

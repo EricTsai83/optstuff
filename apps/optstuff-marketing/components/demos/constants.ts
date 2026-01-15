@@ -27,17 +27,31 @@ export const FORMAT_SIZES = {
 
 /**
  * Get the base URL for image assets based on environment
+ *
+ * @param includeProtocol - Whether to include the protocol (http:// or https://)
+ * @returns The domain with or without protocol
  */
-function getImageBaseUrl(): string {
-  // In production, use the production URL
-  if (process.env.NODE_ENV === "production") {
-    return "https://optstuff.vercel.app";
+function getDomain(includeProtocol = false): string {
+  const domain =
+    process.env.NODE_ENV === "production"
+      ? "optstuff.vercel.app"
+      : "localhost:3024";
+
+  if (!includeProtocol) {
+    return domain;
   }
 
-  return "http://localhost:3024";
+  // localhost 使用 http://，其他域名使用 https://
+  if (domain.startsWith("localhost")) {
+    return `http://${domain}`;
+  }
+
+  return `https://${domain}`;
 }
 
 /** Image path used in demos */
-export const DEMO_IMAGE = `${getImageBaseUrl()}/demo-image.png`;
+export const DEMO_IMAGE = `${getDomain()}/demo-image.png`;
 
-export const QUALITY_DEMO_IMAGE = `${getImageBaseUrl()}/demo-image.webp`;
+export const DEMO_IMAGE_URL = `${getDomain(true)}/demo-image.png`;
+
+export const QUALITY_DEMO_IMAGE = `${getDomain()}/demo-image.webp`;

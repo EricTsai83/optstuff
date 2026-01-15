@@ -22,9 +22,48 @@ function ensureUint8Array(data: unknown): Uint8Array {
 /**
  * 恢復 URL 中被折疊的協議雙斜線
  * (例如: "https:/example.com" -> "https://example.com")
+ * 處理多種情況：
+ * - "http:/localhost" -> "http://localhost"
+ * - "https:/example.com" -> "https://example.com"
+ * - "http://localhost" -> "http://localhost" (不變)
  */
 function restoreProtocolSlashes(path: string): string {
-  return path.replace(/^(https?:\/)([^/])/, "$1/$2");
+  // 匹配 http:/ 或 https:/ 後面跟著非斜線字符的情況
+  return path.replace(/^(https?:\/)(?!\/)/, "$1/");
+}
+
+/**
+ * 自動補全協議和路徑
+ * - 先移除所有現有的 http:// 或 https://
+ * - localhost 開頭：添加 http://
+ * - 其他域名開頭：添加 https://
+ * - 假設所有路徑都來自遠程
+ *
+ * @example
+ * - "localhost:3024/demo-image.png" -> "http://localhost:3024/demo-image.png"
+ * - "http://localhost:3024/demo-image.png" -> "http://localhost:3024/demo-image.png"
+ * - "https://localhost:3024/demo-image.png" -> "http://localhost:3024/demo-image.png"
+ * - "example.com/image.jpg" -> "https://example.com/image.jpg"
+ * - "http://example.com/image.jpg" -> "https://example.com/image.jpg"
+ * - "https://example.com/image.jpg" -> "https://example.com/image.jpg"
+ * - "/demo-image.png" -> "https:///demo-image.png" (作為遠程路徑處理)
+ */
+function ensureProtocol(path: string): string {
+  // 移除所有現有的 http:// 或 https://
+  let cleanPath = path.replace(/^https?:\/\//, "");
+
+  // 如果路徑包含其他協議的 ://，不處理
+  if (cleanPath.includes("://")) {
+    return path;
+  }
+
+  // 如果以 localhost 開頭，添加 http://
+  if (cleanPath.startsWith("localhost")) {
+    return `http://${cleanPath}`;
+  }
+
+  // 其他情況（包括以 / 開頭的），統一添加 https://
+  return `https://${cleanPath}`;
 }
 
 /**
@@ -115,8 +154,24 @@ function parseOperationsString(
  * 使用 IPX 原生 URL 格式：
  * /api/optimize/{operations}/{image_path}
  *
+ * 圖片路徑支持多種格式（會自動統一處理協議）：
+ * - localhost 格式（統一為 http://）：localhost:3024/demo-image.png
+ * - 其他域名（統一為 https://）：example.com/image.jpg
+ * - 本地路徑：/demo-image.png
+ *
+ * 注意：無論輸入時是否包含 http:// 或 https://，系統都會統一處理：
+ * - localhost 開頭 → 統一為 http://localhost:...
+ * - 其他域名 → 統一為 https://...
+ *
  * @example
- * // 設定寬度 200px
+ * // localhost 格式（統一為 http://localhost:3024/demo-image.png）
+ * /api/optimize/w_200/localhost:3024/demo-image.png
+ * /api/optimize/w_200/http://localhost:3024/demo-image.png
+ * /api/optimize/w_200/https://localhost:3024/demo-image.png
+ *
+ * // 其他域名（統一為 https://example.com/image.jpg）
+ * /api/optimize/w_200/example.com/image.jpg
+ * /api/optimize/w_200/http://example.com/image.jpg
  * /api/optimize/w_200/https://example.com/image.jpg
  *
  * // 轉換為 WebP 格式
@@ -133,9 +188,13 @@ function parseOperationsString(
  *
  * // 更多操作組合
  * /api/optimize/w_800,q_80,f_webp/https://example.com/image.jpg
- * /api/optimize/s_400x300,fit_cover,f_avif/https://example.com/image.jpg
+ * /api/optimize/s_400x300,fit_cover/localhost:3024/demo-image.png
  * /api/optimize/blur_5,grayscale/https://example.com/image.jpg
  */
+
+// 強制動態渲染，確保路由在生產環境正常工作
+export const dynamic = "force-dynamic";
+
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ path: string[] }> },
@@ -165,28 +224,9 @@ export async function GET(
     imagePath = parsed.imagePath;
     const operations = parseOperationsString(parsed.operations);
 
-    // 處理本地文件路徑：在 Vercel 上，public 目錄的文件需要通過 HTTP 獲取
-    // 如果路徑以 / 開頭且不是完整的 URL，則轉換為完整的 URL
-    finalImagePath = imagePath;
-    if (
-      imagePath.startsWith("/") &&
-      !imagePath.startsWith("http://") &&
-      !imagePath.startsWith("https://")
-    ) {
-      // 從請求 URL 提取 origin（支持本地開發和 Vercel 部署）
-      const requestUrl = new URL(request.url);
-      const protocol =
-        request.headers.get("x-forwarded-proto") ||
-        requestUrl.protocol.slice(0, -1) || // 移除尾部的 ':'
-        "https";
-      const host =
-        request.headers.get("x-forwarded-host") ||
-        request.headers.get("host") ||
-        requestUrl.host ||
-        "localhost:3024";
-
-      finalImagePath = `${protocol}://${host}${imagePath}`;
-    }
+    // 自動補全協議（假設所有路徑都來自遠程）
+    // localhost 開頭 → http://，其他 → https://
+    finalImagePath = ensureProtocol(imagePath);
 
     // 使用 IPX 處理圖片
     const processedImage = await ipx(finalImagePath, operations).process();

@@ -37,10 +37,10 @@ export function QualityDemo() {
   const optimizedImageUrl = useMemo(() => {
     // When quality is 100, use the same parameters as original
     if (quality === 100) {
-      return `/dashboard/api/optimize/q_100,f_webp,w_800/${QUALITY_DEMO_IMAGE}`;
+      return `/api/optimize/q_100,f_webp,w_800/${QUALITY_DEMO_IMAGE}`;
     }
     const operations = [`q_${quality}`, "f_webp"];
-    return `/dashboard/api/optimize/${operations.join(",")}/${QUALITY_DEMO_IMAGE}`;
+    return `/api/optimize/${operations.join(",")}/${QUALITY_DEMO_IMAGE}`;
   }, [quality]);
 
   const ipxSyntax = useMemo(() => {
@@ -50,7 +50,7 @@ export function QualityDemo() {
   }, [quality]);
 
   const originalImageUrl = useMemo(() => {
-    return `/dashboard/api/optimize/q_100,f_webp,w_800/${QUALITY_DEMO_IMAGE}`;
+    return `/api/optimize/q_100,f_webp,w_800/${QUALITY_DEMO_IMAGE}`;
   }, []);
 
   const handleMouseMove = useCallback(

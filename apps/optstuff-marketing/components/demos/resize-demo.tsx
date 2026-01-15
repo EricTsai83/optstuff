@@ -91,7 +91,7 @@ export function ResizeDemo() {
   // Build image URL with resize parameters
   const resizedImageUrl = useMemo(() => {
     const operations = [`s_${width}x${height}`, `fit_${fit}`];
-    return `/dashboard/api/optimize/${operations.join(",")}/${DEMO_IMAGE}`;
+    return `/api/optimize/${operations.join(",")}/${DEMO_IMAGE}`;
   }, [width, height, fit]);
 
   const getObjectFit = (mode: FitMode): string => {
