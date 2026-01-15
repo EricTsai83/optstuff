@@ -64,9 +64,18 @@ function ensureProtocol(path: string): string {
     throw new Error("路徑不能以 / 開頭，請提供完整的域名路徑");
   }
 
-  // 如果路徑包含其他協議的 ://，不處理
-  if (path.includes("://")) {
+  // 嚴格檢查：只接受開頭的 HTTP/HTTPS 協議
+  if (path.startsWith("http://") || path.startsWith("https://")) {
     return path;
+  }
+
+  // 檢查是否包含其他協議（如 ftp://, file:// 等），明確拒絕
+  const protocolMatch = path.match(/^([a-zA-Z][a-zA-Z0-9+.-]*):\/\//);
+  if (protocolMatch) {
+    const protocol = protocolMatch[1]!.toLowerCase();
+    throw new Error(
+      `不支援的協議：${protocol}://。只允許 http:// 或 https:// 協議`,
+    );
   }
 
   // 如果以 localhost 開頭，添加 http://

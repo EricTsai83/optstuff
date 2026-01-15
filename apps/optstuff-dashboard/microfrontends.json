@@ -14,7 +14,13 @@
       },
       "routing": [
         {
-          "paths": ["/", "/demo-image.png", "/demo-image.webp", "/favicon.ico"]
+          "paths": [
+            "/",
+            "/demo-image.png",
+            "/demo-image.webp",
+            "/favicon.ico",
+            "/api/optimize/:path*"
+          ]
         }
       ]
     }
