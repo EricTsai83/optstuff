@@ -21,11 +21,17 @@ function ensureUint8Array(data: unknown): Uint8Array {
 
 /**
  * 恢復 URL 中被折疊的協議雙斜線
- * (例如: "https:/example.com" -> "https://example.com")
- * 處理多種情況：
- * - "http:/localhost" -> "http://localhost"
+ *
+ * 在 URL 編碼/解碼過程中，協議的雙斜線可能會被折疊成單斜線。
+ * 此函數用於恢復正確的協議格式。
+ *
+ * @example
  * - "https:/example.com" -> "https://example.com"
+ * - "http:/localhost" -> "http://localhost"
  * - "http://localhost" -> "http://localhost" (不變)
+ *
+ * 注意：此函數僅處理協議格式，不驗證路徑是否有效。
+ * 路徑驗證應在調用此函數之前完成。
  */
 function restoreProtocolSlashes(path: string): string {
   // 匹配 http:/ 或 https:/ 後面跟著非斜線字符的情況
@@ -84,15 +90,20 @@ function resolveContentType(format: string): string {
  *
  * 格式: /api/optimize/{operations}/{image_path}
  *
+ * 注意：image_path 不應包含協議（http:// 或 https://），也不應以 / 開頭
+ *
  * @example
- * - /api/optimize/w_200/https://example.com/image.jpg
- *   => { operations: "w_200", imagePath: "https://example.com/image.jpg" }
+ * - /api/optimize/w_200/example.com/image.jpg
+ *   => { operations: "w_200", imagePath: "example.com/image.jpg" }
  *
- * - /api/optimize/embed,f_webp,s_200x200/https://example.com/image.jpg
- *   => { operations: "embed,f_webp,s_200x200", imagePath: "https://example.com/image.jpg" }
+ * - /api/optimize/embed,f_webp,s_200x200/example.com/image.jpg
+ *   => { operations: "embed,f_webp,s_200x200", imagePath: "example.com/image.jpg" }
  *
- * - /api/optimize/_/https://example.com/image.jpg
- *   => { operations: "_", imagePath: "https://example.com/image.jpg" }
+ * - /api/optimize/_/example.com/image.jpg
+ *   => { operations: "_", imagePath: "example.com/image.jpg" }
+ *
+ * - /api/optimize/w_200/localhost:3024/demo-image.png
+ *   => { operations: "w_200", imagePath: "localhost:3024/demo-image.png" }
  */
 function parseIpxPath(pathSegments: string[]): {
   readonly operations: string;
@@ -228,8 +239,10 @@ export async function GET(
     imagePath = parsed.imagePath;
     const operations = parseOperationsString(parsed.operations);
 
-    // 自動補全協議（假設所有路徑都來自遠程）
-    // localhost 開頭 → http://，其他 → https://
+    // 自動補全協議並驗證路徑格式
+    // - 驗證：路徑不能以 https://、http:// 或 / 開頭
+    // - 處理：localhost 開頭 → http://，其他域名 → https://
+    // 如果驗證失敗會拋出錯誤
     finalImagePath = ensureProtocol(imagePath);
 
     // 使用 IPX 處理圖片
