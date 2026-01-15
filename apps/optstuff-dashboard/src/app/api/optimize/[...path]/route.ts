@@ -34,36 +34,42 @@ function restoreProtocolSlashes(path: string): string {
 
 /**
  * 自動補全協議和路徑
- * - 先移除所有現有的 http:// 或 https://
+ * - 如果路徑以 https:// 或 http:// 開頭，拋出錯誤
+ * - 如果路徑以 / 開頭，拋出錯誤
  * - localhost 開頭：添加 http://
  * - 其他域名開頭：添加 https://
  * - 假設所有路徑都來自遠程
  *
  * @example
  * - "localhost:3024/demo-image.png" -> "http://localhost:3024/demo-image.png"
- * - "http://localhost:3024/demo-image.png" -> "http://localhost:3024/demo-image.png"
- * - "https://localhost:3024/demo-image.png" -> "http://localhost:3024/demo-image.png"
  * - "example.com/image.jpg" -> "https://example.com/image.jpg"
- * - "http://example.com/image.jpg" -> "https://example.com/image.jpg"
- * - "https://example.com/image.jpg" -> "https://example.com/image.jpg"
- * - "/demo-image.png" -> "https:///demo-image.png" (作為遠程路徑處理)
+ * @throws {Error} 如果路徑以 https://、http:// 或 / 開頭
  */
 function ensureProtocol(path: string): string {
-  // 移除所有現有的 http:// 或 https://
-  let cleanPath = path.replace(/^https?:\/\//, "");
+  // 如果路徑以 https:// 或 http:// 開頭，拋出錯誤
+  if (path.startsWith("https://") || path.startsWith("http://")) {
+    throw new Error(
+      "路徑不能以 https:// 或 http:// 開頭，請提供不包含協議的路徑",
+    );
+  }
+
+  // 如果路徑以 / 開頭，拋出錯誤
+  if (path.startsWith("/")) {
+    throw new Error("路徑不能以 / 開頭，請提供完整的域名路徑");
+  }
 
   // 如果路徑包含其他協議的 ://，不處理
-  if (cleanPath.includes("://")) {
+  if (path.includes("://")) {
     return path;
   }
 
   // 如果以 localhost 開頭，添加 http://
-  if (cleanPath.startsWith("localhost")) {
-    return `http://${cleanPath}`;
+  if (path.startsWith("localhost")) {
+    return `http://${path}`;
   }
 
-  // 其他情況（包括以 / 開頭的），統一添加 https://
-  return `https://${cleanPath}`;
+  // 其他情況，統一添加 https://
+  return `https://${path}`;
 }
 
 /**
@@ -157,39 +163,36 @@ function parseOperationsString(
  * 圖片路徑支持多種格式（會自動統一處理協議）：
  * - localhost 格式（統一為 http://）：localhost:3024/demo-image.png
  * - 其他域名（統一為 https://）：example.com/image.jpg
- * - 本地路徑：/demo-image.png
  *
- * 注意：無論輸入時是否包含 http:// 或 https://，系統都會統一處理：
+ * 注意：
+ * - 路徑不能以 http:// 或 https:// 開頭，否則會報錯
+ * - 路徑不能以 / 開頭，否則會報錯
  * - localhost 開頭 → 統一為 http://localhost:...
  * - 其他域名 → 統一為 https://...
  *
  * @example
  * // localhost 格式（統一為 http://localhost:3024/demo-image.png）
  * /api/optimize/w_200/localhost:3024/demo-image.png
- * /api/optimize/w_200/http://localhost:3024/demo-image.png
- * /api/optimize/w_200/https://localhost:3024/demo-image.png
  *
  * // 其他域名（統一為 https://example.com/image.jpg）
  * /api/optimize/w_200/example.com/image.jpg
- * /api/optimize/w_200/http://example.com/image.jpg
- * /api/optimize/w_200/https://example.com/image.jpg
  *
  * // 轉換為 WebP 格式
- * /api/optimize/f_webp/https://example.com/image.jpg
+ * /api/optimize/f_webp/example.com/image.jpg
  *
  * // 自動格式（根據瀏覽器支援）
- * /api/optimize/f_auto/https://example.com/image.jpg
+ * /api/optimize/f_auto/example.com/image.jpg
  *
  * // 組合操作：embed fit、WebP 格式、200x200 尺寸
- * /api/optimize/embed,f_webp,s_200x200/https://example.com/image.jpg
+ * /api/optimize/embed,f_webp,s_200x200/example.com/image.jpg
  *
  * // 無操作，直接取得原圖
- * /api/optimize/_/https://example.com/image.jpg
+ * /api/optimize/_/example.com/image.jpg
  *
  * // 更多操作組合
- * /api/optimize/w_800,q_80,f_webp/https://example.com/image.jpg
+ * /api/optimize/w_800,q_80,f_webp/example.com/image.jpg
  * /api/optimize/s_400x300,fit_cover/localhost:3024/demo-image.png
- * /api/optimize/blur_5,grayscale/https://example.com/image.jpg
+ * /api/optimize/blur_5,grayscale/example.com/image.jpg
  */
 
 // 強制動態渲染，確保路由在生產環境正常工作
@@ -212,9 +215,10 @@ export async function GET(
           error: "Invalid path format",
           usage: "/api/optimize/{operations}/{image_url}",
           examples: [
-            "/api/optimize/w_200/https://example.com/image.jpg",
-            "/api/optimize/f_webp,q_80/https://example.com/image.jpg",
-            "/api/optimize/_/https://example.com/image.jpg",
+            "/api/optimize/w_200/example.com/image.jpg",
+            "/api/optimize/f_webp,q_80/example.com/image.jpg",
+            "/api/optimize/_/example.com/image.jpg",
+            "/api/optimize/w_200/localhost:3024/demo-image.png",
           ],
         },
         { status: 400 },
