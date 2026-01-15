@@ -64,11 +64,6 @@ function ensureProtocol(path: string): string {
     throw new Error("路徑不能以 / 開頭，請提供完整的域名路徑");
   }
 
-  // 嚴格檢查：只接受開頭的 HTTP/HTTPS 協議
-  if (path.startsWith("http://") || path.startsWith("https://")) {
-    return path;
-  }
-
   // 檢查是否包含其他協議（如 ftp://, file:// 等），明確拒絕
   const protocolMatch = path.match(/^([a-zA-Z][a-zA-Z0-9+.-]*):\/\//);
   if (protocolMatch) {
