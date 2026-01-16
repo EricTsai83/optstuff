@@ -822,14 +822,6 @@ Moving dot animations for request/response arrows
   }
 }
 
-.animate-flow-dot-right {
-  animation: flow-dot-right 0.8s ease-in-out infinite;
-}
-
-.animate-flow-dot-left {
-  animation: flow-dot-left 0.8s ease-in-out infinite;
-}
-
 /* Soft pulse effect - gentler than ping */
 @keyframes soft-pulse {
   0%,

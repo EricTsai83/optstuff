@@ -1,8 +1,166 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Check, ArrowRight } from "lucide-react";
+import { Check } from "lucide-react";
 import { cn } from "@workspace/ui/lib/utils";
+
+/** Simple arrow SVG pointing right */
+function ArrowRight({ active, color }: { active: boolean; color: string }) {
+  return (
+    <svg
+      width="32"
+      height="12"
+      viewBox="0 0 32 12"
+      fill="none"
+      className="h-3 w-8 sm:h-4 sm:w-10"
+    >
+      <line
+        x1="0"
+        y1="6"
+        x2="24"
+        y2="6"
+        stroke={active ? color : "#666"}
+        strokeWidth="2"
+        strokeOpacity={active ? 1 : 0.3}
+      />
+      <path
+        d="M22 2L28 6L22 10"
+        stroke={active ? color : "#666"}
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeOpacity={active ? 1 : 0.3}
+        fill="none"
+      />
+      {/* Animated glowing dot */}
+      {active && (
+        <>
+          {/* Glow effect */}
+          <circle r="5" fill={color} opacity="0.4">
+            <animate
+              attributeName="cx"
+              values="0;24"
+              dur="0.8s"
+              repeatCount="indefinite"
+            />
+            <animate
+              attributeName="cy"
+              values="6;6"
+              dur="0.8s"
+              repeatCount="indefinite"
+            />
+            <animate
+              attributeName="opacity"
+              values="0;0.4;0.4;0"
+              dur="0.8s"
+              repeatCount="indefinite"
+            />
+          </circle>
+          {/* Core dot */}
+          <circle r="3" fill={color}>
+            <animate
+              attributeName="cx"
+              values="0;24"
+              dur="0.8s"
+              repeatCount="indefinite"
+            />
+            <animate
+              attributeName="cy"
+              values="6;6"
+              dur="0.8s"
+              repeatCount="indefinite"
+            />
+            <animate
+              attributeName="opacity"
+              values="0;1;1;0"
+              dur="0.8s"
+              repeatCount="indefinite"
+            />
+          </circle>
+        </>
+      )}
+    </svg>
+  );
+}
+
+/** Simple arrow SVG pointing left */
+function ArrowLeft({ active, color }: { active: boolean; color: string }) {
+  return (
+    <svg
+      width="32"
+      height="12"
+      viewBox="0 0 32 12"
+      fill="none"
+      className="h-3 w-8 sm:h-4 sm:w-10"
+    >
+      <line
+        x1="8"
+        y1="6"
+        x2="32"
+        y2="6"
+        stroke={active ? color : "#666"}
+        strokeWidth="2"
+        strokeOpacity={active ? 1 : 0.3}
+      />
+      <path
+        d="M10 2L4 6L10 10"
+        stroke={active ? color : "#666"}
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeOpacity={active ? 1 : 0.3}
+        fill="none"
+      />
+      {/* Animated glowing dot */}
+      {active && (
+        <>
+          {/* Glow effect */}
+          <circle r="5" fill={color} opacity="0.4">
+            <animate
+              attributeName="cx"
+              values="32;8"
+              dur="0.8s"
+              repeatCount="indefinite"
+            />
+            <animate
+              attributeName="cy"
+              values="6;6"
+              dur="0.8s"
+              repeatCount="indefinite"
+            />
+            <animate
+              attributeName="opacity"
+              values="0;0.4;0.4;0"
+              dur="0.8s"
+              repeatCount="indefinite"
+            />
+          </circle>
+          {/* Core dot */}
+          <circle r="3" fill={color}>
+            <animate
+              attributeName="cx"
+              values="32;8"
+              dur="0.8s"
+              repeatCount="indefinite"
+            />
+            <animate
+              attributeName="cy"
+              values="6;6"
+              dur="0.8s"
+              repeatCount="indefinite"
+            />
+            <animate
+              attributeName="opacity"
+              values="0;1;1;0"
+              dur="0.8s"
+              repeatCount="indefinite"
+            />
+          </circle>
+        </>
+      )}
+    </svg>
+  );
+}
 
 /** Step 3: Realtime optimization flow visualization */
 export function OptimizeVisual() {
@@ -23,24 +181,24 @@ export function OptimizeVisual() {
   const isWebsiteShowingResult = step === 4;
 
   return (
-    <div className="flex h-full flex-row items-stretch gap-1.5 sm:gap-3">
+    <div className="flex h-full flex-row items-stretch gap-2 sm:gap-3">
       {/* Left: Website */}
       <div className="flex flex-[1.2] flex-col overflow-hidden rounded-lg border border-border/50 bg-card sm:flex-[1.5] sm:rounded-xl">
         {/* Mac window header */}
-        <div className="flex items-center gap-1 border-b border-border/50 bg-muted/50 px-2 py-1 sm:gap-1.5 sm:px-4 sm:py-2">
-          <div className="h-1.5 w-1.5 rounded-full bg-[#ff5f57] sm:h-2.5 sm:w-2.5" />
-          <div className="h-1.5 w-1.5 rounded-full bg-[#febc2e] sm:h-2.5 sm:w-2.5" />
-          <div className="h-1.5 w-1.5 rounded-full bg-[#28c840] sm:h-2.5 sm:w-2.5" />
-          <span className="text-muted-foreground ml-1 text-[8px] sm:ml-2 sm:text-xs">
+        <div className="flex items-center justify-center gap-1 border-b border-border/50 bg-muted/50 px-2 py-1.5 sm:justify-start sm:gap-1.5 sm:px-4 sm:py-2">
+          <div className="hidden h-2.5 w-2.5 rounded-full bg-[#ff5f57] sm:block" />
+          <div className="hidden h-2.5 w-2.5 rounded-full bg-[#febc2e] sm:block" />
+          <div className="hidden h-2.5 w-2.5 rounded-full bg-[#28c840] sm:block" />
+          <span className="text-muted-foreground text-xs font-medium sm:ml-2">
             yoursite.com
           </span>
         </div>
 
         {/* Code view */}
-        <div className="flex-1 p-1.5 sm:p-3">
+        <div className="flex-1 p-2 sm:p-3">
           <div
             className={cn(
-              "flex h-full flex-col justify-center overflow-hidden rounded-md border px-1.5 py-1 font-mono transition-all duration-300 sm:rounded-lg sm:px-4 sm:py-3",
+              "flex h-full flex-col items-center justify-center overflow-hidden rounded-md border px-2 py-1.5 font-mono transition-all duration-300 sm:items-start sm:rounded-lg sm:px-4 sm:py-3",
               isWebsiteActive
                 ? "border-accent/40 bg-accent/5"
                 : isWebsiteShowingResult
@@ -49,7 +207,7 @@ export function OptimizeVisual() {
             )}
           >
             {!isWebsiteShowingResult && (
-              <div className="flex flex-wrap items-center text-[8px] leading-relaxed sm:text-xs">
+              <div className="flex flex-wrap items-center justify-center text-xs leading-relaxed sm:justify-start sm:text-sm">
                 <span className="text-purple-500 dark:text-purple-400">
                   &lt;img
                 </span>
@@ -71,15 +229,15 @@ export function OptimizeVisual() {
             )}
 
             {isWebsiteShowingResult && (
-              <div className="flex items-center gap-1.5 sm:gap-3">
-                <div className="flex h-6 w-7 items-center justify-center rounded bg-green-500/20 sm:h-10 sm:w-12 sm:rounded-lg">
-                  <span className="text-xs sm:text-lg">🖼️</span>
+              <div className="flex flex-col items-center gap-1.5 sm:flex-row sm:gap-3">
+                <div className="flex h-10 w-11 items-center justify-center rounded-lg bg-green-500/20 sm:h-10 sm:w-12">
+                  <span className="text-lg sm:text-lg">🖼️</span>
                 </div>
-                <div>
-                  <div className="text-[8px] font-medium text-emerald-600 dark:text-green-400 sm:text-sm">
+                <div className="text-center sm:text-left">
+                  <div className="text-sm font-medium text-emerald-600 dark:text-green-400">
                     hero.webp
                   </div>
-                  <div className="text-muted-foreground text-[7px] sm:text-xs">
+                  <div className="text-muted-foreground text-xs">
                     92% smaller
                   </div>
                 </div>
@@ -90,48 +248,18 @@ export function OptimizeVisual() {
       </div>
 
       {/* Middle: Arrows - always horizontal */}
-      <div className="relative flex flex-col items-center justify-center gap-1 px-0.5 sm:gap-3 sm:px-3">
-        {/* Request arrow */}
-        <div className="relative flex items-center">
-          <div
-            className={cn(
-              "h-0.5 w-2 transition-all duration-300 sm:w-4",
-              isRequestArrowActive ? "bg-accent" : "bg-muted-foreground/30",
-            )}
-          />
-          <ArrowRight
-            className={cn(
-              "-ml-0.5 h-3 w-3 transition-all duration-300 sm:h-4 sm:w-4",
-              isRequestArrowActive ? "text-accent" : "text-muted-foreground/30",
-            )}
-          />
-        </div>
+      <div className="flex flex-col items-center justify-center gap-2 px-1 sm:gap-3 sm:px-2">
+        {/* Request arrow (Website → OptStuff) - uses accent color */}
+        <ArrowRight active={isRequestArrowActive} color="hsl(160, 84%, 39%)" />
 
-        {/* Response arrow */}
-        <div className="relative flex items-center">
-          <ArrowRight
-            className={cn(
-              "-mr-0.5 h-3 w-3 rotate-180 transition-all duration-300 sm:h-4 sm:w-4",
-              isResponseArrowActive
-                ? "text-emerald-600 dark:text-green-400"
-                : "text-muted-foreground/30",
-            )}
-          />
-          <div
-            className={cn(
-              "h-0.5 w-2 transition-all duration-300 sm:w-4",
-              isResponseArrowActive
-                ? "bg-emerald-500"
-                : "bg-muted-foreground/30",
-            )}
-          />
-        </div>
+        {/* Response arrow (OptStuff → Website) - uses green */}
+        <ArrowLeft active={isResponseArrowActive} color="rgb(16, 185, 129)" />
       </div>
 
       {/* Right: OptStuff Server */}
       <div
         className={cn(
-          "bg-card relative flex flex-1 flex-col items-center justify-center gap-1 overflow-hidden rounded-lg border p-2 transition-all duration-300 sm:gap-3 sm:rounded-xl sm:p-4",
+          "bg-card relative flex flex-1 flex-col items-center justify-center gap-1.5 overflow-hidden rounded-lg border p-2 transition-all duration-300 sm:gap-3 sm:rounded-xl sm:p-4",
           isOptStuffActive
             ? "border-accent/50"
             : step >= 3
@@ -139,10 +267,10 @@ export function OptimizeVisual() {
               : "border-border/50",
         )}
       >
-        <div className="relative flex flex-col items-center gap-0.5 sm:gap-2">
+        <div className="relative flex flex-col items-center gap-1 sm:gap-2">
           <div
             className={cn(
-              "relative flex h-8 w-8 items-center justify-center rounded-lg transition-all duration-300 sm:h-14 sm:w-14 sm:rounded-2xl",
+              "relative flex h-10 w-10 items-center justify-center rounded-xl transition-all duration-300 sm:h-14 sm:w-14 sm:rounded-2xl",
               isOptStuffActive
                 ? "bg-accent/20"
                 : step >= 3
@@ -151,23 +279,23 @@ export function OptimizeVisual() {
             )}
           >
             {isOptStuffActive && (
-              <div className="animate-soft-pulse absolute inset-0 rounded-lg bg-accent/40 sm:rounded-2xl" />
+              <div className="animate-soft-pulse absolute inset-0 rounded-xl bg-accent/40 sm:rounded-2xl" />
             )}
 
             <div className="relative">
               {isOptStuffActive ? (
-                <span className="text-base sm:text-2xl">⚡</span>
+                <span className="text-lg sm:text-2xl">⚡</span>
               ) : step >= 3 ? (
-                <Check className="h-4 w-4 text-emerald-600 dark:text-green-400 sm:h-7 sm:w-7" />
+                <Check className="h-5 w-5 text-emerald-600 dark:text-green-400 sm:h-7 sm:w-7" />
               ) : (
-                <span className="text-base sm:text-2xl">📦</span>
+                <span className="text-lg sm:text-2xl">📦</span>
               )}
             </div>
           </div>
 
           <div
             className={cn(
-              "text-[9px] font-bold transition-colors duration-300 sm:text-sm",
+              "text-xs font-bold transition-colors duration-300 sm:text-sm",
               isOptStuffActive
                 ? "text-accent"
                 : step >= 3
