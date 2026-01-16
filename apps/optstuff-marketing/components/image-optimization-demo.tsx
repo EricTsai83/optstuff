@@ -7,6 +7,7 @@ import {
   useCallback,
   useEffect,
 } from "react";
+import { TvMinimal } from "lucide-react";
 import { cn } from "@workspace/ui/lib/utils";
 import {
   Tabs,
@@ -18,6 +19,7 @@ import { ResizeDemo } from "@/components/demos/resize-demo";
 import { FormatDemo } from "@/components/demos/format-demo";
 import { QualityDemo } from "@/components/demos/quality-demo";
 import { EffectsDemo } from "@/components/demos/effects-demo";
+import { SectionWrapper, SectionHeader } from "@/components/ui/section";
 
 export function ImageOptimizationDemo() {
   const tabsListRef = useRef<HTMLDivElement>(null);
@@ -29,64 +31,83 @@ export function ImageOptimizationDemo() {
   const ActiveDemo = DEMOS[animation.displayedTab];
 
   return (
-    <div className="animate-scale-in animation-delay-400 mx-auto max-w-5xl">
-      <Tabs
-        value={activeTab}
-        onValueChange={handleTabChange}
-        className="w-full"
-      >
-        {/* Tabs navigation - scrollable on mobile */}
-        <div className="mb-6 flex justify-center md:mb-8">
-          <TabsList
-            ref={tabsListRef}
-            className="bg-muted text-muted-foreground relative h-10 w-full max-w-[calc(100vw-2rem)] overflow-x-auto rounded-full p-1 scrollbar-hide sm:h-11 sm:w-auto"
-          >
-            {/* Sliding indicator with squash-and-stretch effect */}
-            <div
-              className={cn(
-                "bg-background absolute top-1 h-8 rounded-full shadow-sm sm:h-9",
-                "transition-[left,width,opacity] duration-300 ease-out",
-                indicatorStyle.isSquashing &&
-                  "animate-indicator-squash-stretch",
-                indicatorStyle.width === 0 ? "opacity-0" : "opacity-100",
-              )}
-              style={{ left: indicatorStyle.left, width: indicatorStyle.width }}
-              aria-hidden="true"
-            />
-            {DEMO_KEYS.map((tab) => (
-              <TabsTrigger
-                key={tab}
-                value={tab}
-                ref={(el) => {
-                  tabRefs.current.set(tab, el);
-                }}
+    <SectionWrapper id="demo">
+      <SectionHeader
+        icon={TvMinimal}
+        badge="Live Demo"
+        title="See it in action"
+        description="Try different optimization options and see real-time results."
+      />
+
+      <div className="animate-scale-in animation-delay-400 mx-auto max-w-5xl">
+        <Tabs
+          value={activeTab}
+          onValueChange={handleTabChange}
+          className="w-full"
+        >
+          {/* Tabs navigation - scrollable on mobile */}
+          <div className="mb-6 flex justify-center md:mb-8">
+            <TabsList
+              ref={tabsListRef}
+              className="bg-muted text-muted-foreground relative h-10 w-full max-w-[calc(100vw-2rem)] overflow-x-auto rounded-full p-1 scrollbar-hide sm:h-11 sm:w-auto"
+            >
+              {/* Sliding indicator with squash-and-stretch effect */}
+              <div
                 className={cn(
-                  "relative z-10 cursor-pointer rounded-full bg-transparent",
-                  "px-3 py-1.5 text-xs font-medium capitalize sm:px-5 sm:py-2 sm:text-sm",
-                  "border-none shadow-none",
-                  "transition-colors duration-300",
-                  "data-[state=active]:bg-transparent data-[state=active]:shadow-none",
-                  "dark:data-[state=active]:bg-transparent dark:data-[state=active]:shadow-none",
+                  "bg-background absolute top-1 h-8 rounded-full shadow-sm sm:h-9",
+                  "transition-[left,width,opacity] duration-300 ease-out",
+                  indicatorStyle.isSquashing &&
+                    "animate-indicator-squash-stretch",
+                  indicatorStyle.width === 0 ? "opacity-0" : "opacity-100",
+                )}
+                style={{
+                  left: indicatorStyle.left,
+                  width: indicatorStyle.width,
+                }}
+                aria-hidden="true"
+              />
+              {DEMO_KEYS.map((tab) => (
+                <TabsTrigger
+                  key={tab}
+                  value={tab}
+                  ref={(el) => {
+                    tabRefs.current.set(tab, el);
+                  }}
+                  className={cn(
+                    "relative z-10 cursor-pointer rounded-full bg-transparent",
+                    "px-3 py-1.5 text-xs font-medium capitalize sm:px-5 sm:py-2 sm:text-sm",
+                    "border-none shadow-none",
+                    "transition-colors duration-300",
+                    "data-[state=active]:bg-transparent data-[state=active]:shadow-none",
+                    "dark:data-[state=active]:bg-transparent dark:data-[state=active]:shadow-none",
+                  )}
+                >
+                  {tab}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </div>
+
+          {/* Demo content card - fixed height to prevent layout shifts */}
+          <div className="h-[520px] sm:h-[560px] md:h-[600px]">
+            <div className="bg-card border-border rounded-xl border shadow-sm transition-shadow duration-500 hover:shadow-lg sm:rounded-2xl">
+              {/* Hidden TabsContent to maintain Radix accessibility */}
+              {DEMO_KEYS.map((tab) => (
+                <TabsContent key={tab} value={tab} className="hidden" />
+              ))}
+              <div
+                className={cn(
+                  "h-full overflow-y-auto p-4 sm:p-6 md:p-8",
+                  getAnimationClass(animation),
                 )}
               >
-                {tab}
-              </TabsTrigger>
-            ))}
-          </TabsList>
-        </div>
-
-        {/* Demo content card */}
-        <div className="bg-card border-border overflow-hidden rounded-xl border p-4 shadow-sm transition-shadow duration-500 hover:shadow-lg sm:rounded-2xl sm:p-6 md:p-8">
-          {/* Hidden TabsContent to maintain Radix accessibility */}
-          {DEMO_KEYS.map((tab) => (
-            <TabsContent key={tab} value={tab} className="hidden" />
-          ))}
-          <div className={getAnimationClass(animation)}>
-            <ActiveDemo />
+                <ActiveDemo />
+              </div>
+            </div>
           </div>
-        </div>
-      </Tabs>
-    </div>
+        </Tabs>
+      </div>
+    </SectionWrapper>
   );
 }
 

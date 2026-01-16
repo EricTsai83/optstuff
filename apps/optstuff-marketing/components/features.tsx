@@ -1,10 +1,19 @@
 "use client";
 
 import type { LucideIcon } from "lucide-react";
-import { Code, Globe, ImageIcon, Layers, Shield, Zap } from "lucide-react";
+import {
+  Code,
+  Globe,
+  ImageIcon,
+  Layers,
+  Shield,
+  Sparkles,
+  Zap,
+} from "lucide-react";
 import { useCallback, useState } from "react";
 import { cn } from "@workspace/ui/lib/utils";
 import { useIntersectionVisibility } from "@/hooks/use-intersection-visibility";
+import { SectionWrapper, SectionHeader } from "@/components/ui/section";
 
 type Feature = {
   readonly icon: LucideIcon;
@@ -73,37 +82,30 @@ export function Features() {
   );
 
   return (
-    <section id="features" className="bg-background py-16 sm:py-24">
-      <div className="container mx-auto px-4 md:px-6">
-        {/* Header */}
-        <div className="mb-10 text-center sm:mb-16">
-          <p className="text-accent animate-fade-in mb-2 text-sm font-medium sm:mb-3">
-            Features
-          </p>
-          <h2 className="animate-fade-in-up animation-delay-100 mb-3 text-2xl font-bold tracking-tight sm:mb-4 sm:text-3xl md:text-4xl">
-            Everything you need
-          </h2>
-          <p className="text-muted-foreground animate-fade-in-up animation-delay-200 mx-auto max-w-lg text-sm sm:text-base">
-            Powerful features for developers who care about performance.
-          </p>
-        </div>
+    <SectionWrapper id="features" maxWidth="5xl">
+      <SectionHeader
+        icon={Sparkles}
+        badge="Features"
+        title="Everything you need"
+        description="Powerful features for developers who care about performance."
+        className="mb-10 sm:mb-16"
+      />
 
-        {/* Feature grid */}
-        <div className="mx-auto grid max-w-5xl gap-3 sm:gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {FEATURES.map((feature, index) => (
-            <div key={feature.title} ref={setItemRef(index)}>
-              <FeatureCard
-                feature={feature}
-                index={index}
-                isVisible={visibleCards.has(index)}
-                isAnimated={animatedCards.has(index)}
-                onAnimationEnd={handleAnimationEnd}
-              />
-            </div>
-          ))}
-        </div>
+      {/* Feature grid */}
+      <div className="mx-auto grid max-w-5xl gap-3 sm:gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {FEATURES.map((feature, index) => (
+          <div key={feature.title} ref={setItemRef(index)}>
+            <FeatureCard
+              feature={feature}
+              index={index}
+              isVisible={visibleCards.has(index)}
+              isAnimated={animatedCards.has(index)}
+              onAnimationEnd={handleAnimationEnd}
+            />
+          </div>
+        ))}
       </div>
-    </section>
+    </SectionWrapper>
   );
 }
 

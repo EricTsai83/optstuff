@@ -4,7 +4,6 @@ import { ImageOptimizationDemo } from "@/components/image-optimization-demo";
 import { IntegrationSteps } from "@/components/integration-steps";
 import { ApiDemo } from "@/components/api-demo";
 import { Features } from "@/components/features";
-import { CodeExample } from "@/components/code-example";
 import { Footer } from "@/components/footer";
 import { HeroBackground } from "@/components/hero-background";
 
@@ -17,24 +16,13 @@ export default async function Home() {
       <main className="pt-20 pb-16 sm:pt-24 sm:pb-20 md:pt-40 md:pb-32">
         <HeroIntro />
 
-        {/* Demo section */}
-        <section
-          id="demo"
-          className="container mx-auto px-4 py-12 sm:py-16 md:px-6 md:py-24"
-        >
-          <ImageOptimizationDemo />
-        </section>
+        <ImageOptimizationDemo />
 
         <IntegrationSteps />
 
         <ApiDemo />
 
-        {/* Features section */}
-        <div className="container mx-auto px-4 md:px-6">
-          <Features />
-        </div>
-
-        <CodeExample />
+        <Features />
       </main>
       <Footer />
     </div>
