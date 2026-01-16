@@ -14,7 +14,8 @@ export const STEPS: readonly Step[] = [
   {
     number: "3",
     title: "Start Optimizing",
-    description: "Use the API to optimize images instantly.",
+    description:
+      "Prefix the remote image URL (no protocol) with our optimization endpoint to get the optimized URL.",
   },
 ] as const;
 

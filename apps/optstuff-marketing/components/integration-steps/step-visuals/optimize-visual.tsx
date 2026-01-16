@@ -12,7 +12,7 @@ function ArrowRight({ active, color }: { active: boolean; color: string }) {
       height="12"
       viewBox="0 0 32 12"
       fill="none"
-      className="h-3 w-8 sm:h-4 sm:w-10"
+      className="h-4 w-10 sm:h-5 sm:w-12"
     >
       <line
         x1="0"
@@ -91,7 +91,7 @@ function ArrowLeft({ active, color }: { active: boolean; color: string }) {
       height="12"
       viewBox="0 0 32 12"
       fill="none"
-      className="h-3 w-8 sm:h-4 sm:w-10"
+      className="h-4 w-10 sm:h-5 sm:w-12"
     >
       <line
         x1="8"
@@ -198,7 +198,7 @@ export function OptimizeVisual() {
         <div className="flex-1 p-2 sm:p-3">
           <div
             className={cn(
-              "flex h-full flex-col items-center justify-center overflow-hidden rounded-md border px-2 py-1.5 font-mono transition-all duration-300 sm:items-start sm:rounded-lg sm:px-4 sm:py-3",
+              "flex h-full flex-col items-center justify-center overflow-hidden rounded-md border px-2 py-1.5 font-mono transition-all duration-300 sm:rounded-lg sm:px-4 sm:py-3",
               isWebsiteActive
                 ? "border-accent/40 bg-accent/5"
                 : isWebsiteShowingResult
@@ -207,11 +207,12 @@ export function OptimizeVisual() {
             )}
           >
             {!isWebsiteShowingResult && (
-              <div className="flex flex-wrap items-center justify-center text-xs leading-relaxed sm:justify-start sm:text-sm">
+              <div className="flex flex-wrap items-center justify-center text-sm leading-relaxed sm:text-base">
                 <span className="text-purple-500 dark:text-purple-400">
-                  &lt;img
+                  {`<img`}
                 </span>
-                <span className="text-muted-foreground">{" src="}</span>
+                {"\u00A0"}
+                <span className="text-muted-foreground">{"src="}</span>
                 <span
                   className={cn(
                     "transition-colors duration-300",
@@ -230,16 +231,8 @@ export function OptimizeVisual() {
 
             {isWebsiteShowingResult && (
               <div className="flex flex-col items-center gap-1.5 sm:flex-row sm:gap-3">
-                <div className="flex h-10 w-11 items-center justify-center rounded-lg bg-green-500/20 sm:h-10 sm:w-12">
-                  <span className="text-lg sm:text-lg">🖼️</span>
-                </div>
-                <div className="text-center sm:text-left">
-                  <div className="text-sm font-medium text-emerald-600 dark:text-green-400">
-                    hero.webp
-                  </div>
-                  <div className="text-muted-foreground text-xs">
-                    92% smaller
-                  </div>
+                <div className="flex size-14 items-center justify-center rounded-lg bg-green-500/20">
+                  <span className="text-2xl sm:text-3xl">🖼️</span>
                 </div>
               </div>
             )}
@@ -267,10 +260,10 @@ export function OptimizeVisual() {
               : "border-border/50",
         )}
       >
-        <div className="relative flex flex-col items-center gap-1 sm:gap-2">
+        <div className="relative flex flex-col items-center gap-1.5 sm:gap-3">
           <div
             className={cn(
-              "relative flex h-10 w-10 items-center justify-center rounded-xl transition-all duration-300 sm:h-14 sm:w-14 sm:rounded-2xl",
+              "relative flex h-12 w-12 items-center justify-center rounded-xl transition-all duration-300 sm:h-16 sm:w-16 sm:rounded-2xl",
               isOptStuffActive
                 ? "bg-accent/20"
                 : step >= 3
@@ -284,18 +277,18 @@ export function OptimizeVisual() {
 
             <div className="relative">
               {isOptStuffActive ? (
-                <span className="text-lg sm:text-2xl">⚡</span>
+                <span className="text-xl sm:text-3xl">⚡</span>
               ) : step >= 3 ? (
-                <Check className="h-5 w-5 text-emerald-600 dark:text-green-400 sm:h-7 sm:w-7" />
+                <Check className="h-6 w-6 text-emerald-600 dark:text-green-400 sm:h-8 sm:w-8" />
               ) : (
-                <span className="text-lg sm:text-2xl">📦</span>
+                <span className="text-xl sm:text-3xl">📦</span>
               )}
             </div>
           </div>
 
           <div
             className={cn(
-              "text-xs font-bold transition-colors duration-300 sm:text-sm",
+              "text-sm font-bold transition-colors duration-300 sm:text-base",
               isOptStuffActive
                 ? "text-accent"
                 : step >= 3
