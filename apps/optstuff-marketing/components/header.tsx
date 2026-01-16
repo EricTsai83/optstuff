@@ -147,20 +147,11 @@ export function Header() {
               </ClerkLoading>
               <ClerkLoaded>
                 <SignedOut>
-                  <Link
-                    href="/sign-in"
-                    className="text-muted-foreground hover:text-foreground dark:text-foreground px-3 py-2 text-sm font-medium transition-colors"
-                  >
-                    Sign in
-                  </Link>
                   <Button asChild size="sm" className="cursor-pointer">
-                    <a href="/sign-up">Get Started</a>
+                    <a href="/sign-in">Get Started</a>
                   </Button>
                 </SignedOut>
                 <SignedIn>
-                  <Button asChild size="sm" className="cursor-pointer">
-                    <a href="/dashboard">Dashboard</a>
-                  </Button>
                   <SignOutButton>
                     <Button
                       variant="ghost"
@@ -170,6 +161,9 @@ export function Header() {
                       Sign out
                     </Button>
                   </SignOutButton>
+                  <Button asChild size="sm" className="cursor-pointer">
+                    <a href="/dashboard">Dashboard</a>
+                  </Button>
                 </SignedIn>
               </ClerkLoaded>
             </div>
