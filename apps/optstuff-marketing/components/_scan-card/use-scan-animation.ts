@@ -18,7 +18,7 @@ type UseScanAnimationParams = {
 };
 
 /**
- * 掃描動畫邏輯 Hook
+ * Scan animation logic hook
  */
 export const useScanAnimation = ({
   autoPlay,
@@ -35,7 +35,7 @@ export const useScanAnimation = ({
   const wasOptimizingRef = useRef(false);
   const onFrameRef = useRef(onFrame);
 
-  // 更新 onFrame ref，避免依賴變化
+  // Update onFrame ref to avoid dependency changes
   useEffect(() => {
     onFrameRef.current = onFrame;
   }, [onFrame]);
@@ -44,7 +44,7 @@ export const useScanAnimation = ({
     const animate = (): void => {
       const now = Date.now();
 
-      // === 狀態機 ===
+      // === State machine ===
       if (autoPlay) {
         if (!isOptimizedRef.current) {
           const elapsed = now - startTimeRef.current;

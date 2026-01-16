@@ -2,25 +2,15 @@
 
 import type { LucideIcon } from "lucide-react";
 import { Code, Globe, ImageIcon, Layers, Shield, Zap } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useState } from "react";
 import { cn } from "@workspace/ui/lib/utils";
+import { useIntersectionVisibility } from "@/hooks/use-intersection-visibility";
 
 type Feature = {
   readonly icon: LucideIcon;
   readonly title: string;
   readonly description: string;
   readonly animation: string;
-};
-
-type FeatureCardProps = {
-  readonly feature: Feature;
-  readonly index: number;
-  readonly isVisible: boolean;
-  readonly isAnimated: boolean;
-  readonly onAnimationEnd: (
-    e: React.AnimationEvent<HTMLDivElement>,
-    index: number,
-  ) => void;
 };
 
 const FEATURES: readonly Feature[] = [
@@ -64,9 +54,23 @@ const FEATURES: readonly Feature[] = [
   },
 ];
 
+const ANIMATION_DELAY_MS = 100;
+
 export function Features() {
-  const { cardRefs, visibleCards, animatedCards, handleAnimationEnd } =
-    useCardVisibility(FEATURES.length);
+  const { visibleItems: visibleCards, setItemRef } =
+    useIntersectionVisibility<HTMLDivElement>(FEATURES.length);
+  const [animatedCards, setAnimatedCards] = useState<ReadonlySet<number>>(
+    () => new Set(),
+  );
+
+  const handleAnimationEnd = useCallback(
+    (e: React.AnimationEvent<HTMLDivElement>, index: number): void => {
+      if (e.animationName === "feature-card-enter") {
+        setAnimatedCards((prev) => new Set(prev).add(index));
+      }
+    },
+    [],
+  );
 
   return (
     <section id="features" className="bg-background py-16 sm:py-24">
@@ -87,12 +91,7 @@ export function Features() {
         {/* Feature grid */}
         <div className="mx-auto grid max-w-5xl gap-3 sm:gap-4 md:grid-cols-2 lg:grid-cols-3">
           {FEATURES.map((feature, index) => (
-            <div
-              key={feature.title}
-              ref={(el) => {
-                cardRefs.current[index] = el;
-              }}
-            >
+            <div key={feature.title} ref={setItemRef(index)}>
               <FeatureCard
                 feature={feature}
                 index={index}
@@ -108,64 +107,16 @@ export function Features() {
   );
 }
 
-const INTERSECTION_THRESHOLD = 0.2;
-
-function useCardVisibility(cardCount: number): {
-  readonly cardRefs: React.MutableRefObject<(HTMLDivElement | null)[]>;
-  readonly visibleCards: ReadonlySet<number>;
-  readonly animatedCards: ReadonlySet<number>;
-  readonly handleAnimationEnd: (
+type FeatureCardProps = {
+  readonly feature: Feature;
+  readonly index: number;
+  readonly isVisible: boolean;
+  readonly isAnimated: boolean;
+  readonly onAnimationEnd: (
     e: React.AnimationEvent<HTMLDivElement>,
     index: number,
   ) => void;
-} {
-  const [visibleCards, setVisibleCards] = useState<ReadonlySet<number>>(
-    () => new Set(),
-  );
-  const [animatedCards, setAnimatedCards] = useState<ReadonlySet<number>>(
-    () => new Set(),
-  );
-  const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
-
-  const handleAnimationEnd = useCallback(
-    (e: React.AnimationEvent<HTMLDivElement>, index: number): void => {
-      if (e.animationName === "feature-card-enter") {
-        setAnimatedCards((prev) => new Set(prev).add(index));
-      }
-    },
-    [],
-  );
-
-  useEffect(() => {
-    const currentRefs = cardRefs.current;
-    const observers: IntersectionObserver[] = [];
-
-    currentRefs.forEach((ref, index) => {
-      if (!ref) return;
-
-      const observer = new IntersectionObserver(
-        ([entry]) => {
-          if (entry?.isIntersecting) {
-            setVisibleCards((prev) => new Set(prev).add(index));
-            observer.disconnect();
-          }
-        },
-        { threshold: INTERSECTION_THRESHOLD },
-      );
-
-      observer.observe(ref);
-      observers.push(observer);
-    });
-
-    return () => {
-      observers.forEach((observer) => observer.disconnect());
-    };
-  }, [cardCount]);
-
-  return { cardRefs, visibleCards, animatedCards, handleAnimationEnd };
-}
-
-const ANIMATION_DELAY_MS = 100;
+};
 
 function FeatureCard({
   feature,

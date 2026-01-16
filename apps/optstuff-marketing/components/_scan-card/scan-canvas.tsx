@@ -31,7 +31,7 @@ type ScanCanvasProps = {
 };
 
 /**
- * 掃描動畫 Canvas 組件
+ * Scan animation canvas component
  */
 export function ScanCanvas({
   width,
@@ -46,7 +46,7 @@ export function ScanCanvas({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const hasDrawnRef = useRef(false);
 
-  // === 常數定義 ===
+  // === Constants ===
   const imgPadding = 10;
   const imgX = imgPadding;
   const imgY = imgPadding;
@@ -55,7 +55,7 @@ export function ScanCanvas({
   const cardRadius = 10;
   const imgRadius = 6;
 
-  // 設置 canvas 大小
+  // Set canvas size
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -71,7 +71,7 @@ export function ScanCanvas({
     ctx.scale(dpr, dpr);
   }, [width, height]);
 
-  // 動畫邏輯
+  // Animation logic
   const handleFrame = useCallback(
     ({
       scanProgress,
@@ -90,7 +90,7 @@ export function ScanCanvas({
 
       ctx.clearRect(0, 0, width, height);
 
-      // 通知父組件 canvas 已準備好（僅第一次）
+      // Notify parent component canvas is ready (first time only)
       if (!hasDrawnRef.current && onReady) {
         hasDrawnRef.current = true;
         onReady();
@@ -98,7 +98,7 @@ export function ScanCanvas({
 
       const now = Date.now();
 
-      // === 背景效果 ===
+      // === Background effects ===
       const bgGradient = ctx.createRadialGradient(
         width * 0.5,
         height * 0.3,
@@ -112,7 +112,7 @@ export function ScanCanvas({
       ctx.fillStyle = bgGradient;
       ctx.fillRect(0, 0, width, height);
 
-      // 細微網格
+      // Subtle grid
       ctx.strokeStyle = "rgba(16, 185, 129, 0.015)";
       ctx.lineWidth = 0.5;
       for (let i = 1; i < 8; i++) {
@@ -128,7 +128,7 @@ export function ScanCanvas({
         ctx.stroke();
       }
 
-      // === 卡片容器 ===
+      // === Card container ===
       const cardPath = new Path2D();
       cardPath.moveTo(cardRadius, 0);
       cardPath.lineTo(width - cardRadius, 0);
@@ -141,11 +141,11 @@ export function ScanCanvas({
       cardPath.quadraticCurveTo(0, 0, cardRadius, 0);
       cardPath.closePath();
 
-      // 背景
+      // Background
       ctx.fillStyle = `rgba(255, 255, 255, ${opacity * 0.03})`;
       ctx.fill(cardPath);
 
-      // === 圖片區域 ===
+      // === Image area ===
       ctx.save();
       ctx.beginPath();
       drawRoundedRect(ctx, imgX, imgY, imgW, imgH, imgRadius);
@@ -204,7 +204,7 @@ export function ScanCanvas({
 
       ctx.restore();
 
-      // === 檔案大小顯示（圖片正中） ===
+      // === File size display (centered on image) ===
       const centerX = imgX + imgW / 2;
       const centerY = imgY + imgH / 2;
       const currentSize = isOptimized
@@ -220,7 +220,7 @@ export function ScanCanvas({
         savingsPercent,
       });
 
-      // === 狀態標籤 ===
+      // === Status badge ===
       const labelY = imgY + 12;
       const labelRightMargin = 4;
       const transitionDuration = 300;
@@ -238,7 +238,7 @@ export function ScanCanvas({
           const fadeOut = 1 - transitionProgress;
           const fadeIn = transitionProgress;
 
-          // BLURRING（淡出）
+          // BLURRING (fade out)
           drawStatusBadge({
             ctx,
             text: "BLURRING",
@@ -249,7 +249,7 @@ export function ScanCanvas({
             opacity: badgeOpacity * fadeOut,
           });
 
-          // BLURRED（淡入）
+          // BLURRED (fade in)
           drawStatusBadge({
             ctx,
             text: "BLURRED",
@@ -274,7 +274,7 @@ export function ScanCanvas({
         }
       }
 
-      // === 掃描光束 ===
+      // === Scan beam ===
       if (isScanning) {
         const beamY = scanLineY;
         const beamGradient = ctx.createLinearGradient(
@@ -302,7 +302,7 @@ export function ScanCanvas({
         ctx.shadowBlur = 0;
       }
 
-      // === 優化完成閃光 ===
+      // === Optimization complete flash ===
       if (isOptimized) {
         const flashProgress = (now - pauseStartTime) / 300;
         if (flashProgress < 1) {

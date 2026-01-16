@@ -16,114 +16,36 @@ import {
 import { cn } from "@workspace/ui/lib/utils";
 import { useIsMobile } from "@workspace/hooks/use-mobile";
 import { MobileSidebar } from "@/components/mobile-sidebar";
+import {
+  useScrollPercent,
+  calculateBackgroundOpacity,
+  calculateBorderOpacity,
+} from "@/hooks/use-scroll-percent";
 
 type NavigationItem = {
   readonly href: string;
   readonly label: string;
 };
 
-type HeaderConfig = {
-  readonly scroll: {
-    readonly threshold: number;
-    readonly divisor: number;
-  };
-  readonly style: {
-    readonly backgroundColorOpacity: number;
-    readonly borderColorMaxOpacity: number;
-    readonly borderColorDivisor: number;
-  };
-  readonly logo: {
-    readonly size: number;
-  };
-  readonly navigation: readonly NavigationItem[];
-};
-
-const HEADER_CONFIG: HeaderConfig = {
-  scroll: {
-    threshold: 100,
-    divisor: 2,
-  },
+const HEADER_CONFIG = {
+  scroll: { threshold: 100, divisor: 2 },
   style: {
     backgroundColorOpacity: 0.95,
     borderColorMaxOpacity: 0.15,
     borderColorDivisor: 5,
   },
-  logo: {
-    size: 32,
-  },
+  logo: { size: 32 },
   navigation: [
     { href: "#demo", label: "Demo" },
     { href: "#features", label: "Features" },
     { href: "#docs", label: "Docs" },
-  ],
+  ] as readonly NavigationItem[],
 } as const;
-
-/**
- * Calculates scroll percentage
- */
-const calculateScrollPercent = (
-  scrollY: number,
-  threshold: number,
-  divisor: number,
-): number => {
-  return Math.min(scrollY / divisor / threshold, 1);
-};
-
-/**
- * Calculates background color opacity
- */
-const calculateBackgroundOpacity = (
-  scrollPercent: number,
-  maxOpacity: number,
-): number => {
-  return scrollPercent * maxOpacity;
-};
-
-/**
- * Calculates border color opacity
- */
-const calculateBorderOpacity = (
-  scrollPercent: number,
-  divisor: number,
-  maxOpacity: number,
-): number => {
-  return Math.min(scrollPercent / divisor, maxOpacity);
-};
-
-/**
- * Custom hook to track page scroll percentage
- */
-const useScrollPercent = (threshold: number, divisor: number): number => {
-  const [scrollPercent, setScrollPercent] = useState(0);
-
-  useEffect(() => {
-    const handleScroll = (): void => {
-      const percent = calculateScrollPercent(
-        window.scrollY,
-        threshold,
-        divisor,
-      );
-      setScrollPercent(percent);
-    };
-
-    handleScroll();
-
-    window.addEventListener("scroll", handleScroll);
-    return () => {
-      window.removeEventListener("scroll", handleScroll);
-    };
-  }, [threshold, divisor]);
-
-  return scrollPercent;
-};
 
 export function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const isMobile = useIsMobile();
-  const scrollPercent = useScrollPercent(
-    HEADER_CONFIG.scroll.threshold,
-    HEADER_CONFIG.scroll.divisor,
-  );
+  const scrollPercent = useScrollPercent(HEADER_CONFIG.scroll);
 
   const backgroundOpacity = calculateBackgroundOpacity(
     scrollPercent,
@@ -142,10 +64,6 @@ export function Header() {
       setIsMobileMenuOpen(false);
     }
   }, [isMobile, isMobileMenuOpen]);
-
-  const handleCloseMobileMenu = () => {
-    setIsMobileMenuOpen(false);
-  };
 
   return (
     <>
@@ -248,7 +166,7 @@ export function Header() {
       {isMobile && (
         <MobileSidebar
           isOpen={isMobileMenuOpen}
-          onClose={handleCloseMobileMenu}
+          onClose={() => setIsMobileMenuOpen(false)}
           navigation={HEADER_CONFIG.navigation}
         />
       )}
@@ -256,9 +174,6 @@ export function Header() {
   );
 }
 
-/**
- * Skeleton for auth button while Clerk is loading
- */
 function AuthButtonsSkeleton() {
   return (
     <div className="flex h-9 w-25 items-center justify-center rounded-md border border-border bg-background">

@@ -1,14 +1,14 @@
 "use client";
 
 /**
- * 掃描卡片 Skeleton 載入狀態
- * 從中心向外擴散的單一光源效果
+ * Scan card skeleton loading state
+ * Single light source effect radiating from center
  */
 export function ScanSkeleton() {
   return (
     <div className="absolute inset-0 overflow-hidden bg-black/10">
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
-        {/* 模糊光暈層 */}
+        {/* Blur glow layer */}
         <div
           className="absolute top-1/2 left-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full"
           style={{
@@ -21,7 +21,7 @@ export function ScanSkeleton() {
             `,
           }}
         />
-        {/* 中心點 */}
+        {/* Center point */}
         <div
           className="h-1 w-1 rounded-full"
           style={{

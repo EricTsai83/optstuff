@@ -103,7 +103,7 @@ export function IntegrationSteps() {
                     <div
                       className={cn(
                         "border-border/50 bg-card/50 overflow-hidden rounded-xl border backdrop-blur-sm transition-all duration-500 sm:rounded-2xl",
-                        // 第三個步驟的 OptimizeVisual 在移動設備上需要更多高度
+                        // Third step's OptimizeVisual needs more height on mobile devices
                         index === 2
                           ? "h-[200px] sm:h-[180px] md:h-[220px]"
                           : "h-[140px] sm:h-[180px] md:h-[220px]",
