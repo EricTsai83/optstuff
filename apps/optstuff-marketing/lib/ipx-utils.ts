@@ -57,7 +57,12 @@ export function ensureProtocol(path: string): string {
     );
   }
 
-  if (path.startsWith("localhost")) {
+  // Only treat exact localhost (optionally with port or path) as HTTP
+  if (
+    path === "localhost" ||
+    path.startsWith("localhost:") ||
+    path.startsWith("localhost/")
+  ) {
     return `http://${path}`;
   }
 
@@ -101,9 +106,12 @@ export function parseIpxPath(pathSegments: string[]): {
 /**
  * Convert IPX URL format operation string to operation object
  *
+ * Parses IPX param strings by splitting on commas and extracting key-value pairs
+ * at underscore positions. Keys are preserved as-is (abbreviated form).
+ *
  * @example
- * - "w_200" => { width: "200" }
- * - "embed,f_webp,s_200x200" => { fit: "embed", format: "webp", resize: "200x200" }
+ * - "w_200" => { w: "200" }
+ * - "embed,f_webp,s_200x200" => { embed: true, f: "webp", s: "200x200" }
  * - "_" => {}
  */
 export function parseOperationsString(
