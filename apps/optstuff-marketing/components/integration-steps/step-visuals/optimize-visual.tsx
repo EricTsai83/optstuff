@@ -174,7 +174,7 @@ export function OptimizeVisual() {
     return () => clearTimeout(timeout);
   }, [step]);
 
-  const isWebsiteActive = step === 1 || step === 4;
+  const isWebsiteActive = step === 1;
   const isOptStuffActive = step === 2;
   const isRequestArrowActive = step === 1;
   const isResponseArrowActive = step === 3;
