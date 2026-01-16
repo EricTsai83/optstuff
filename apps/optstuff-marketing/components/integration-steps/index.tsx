@@ -4,7 +4,7 @@ import { Terminal } from "lucide-react";
 import { cn } from "@workspace/ui/lib/utils";
 
 import { STEPS } from "./constants";
-import { useStepVisibility } from "./hooks";
+import { useIntersectionVisibility } from "@/hooks/use-intersection-visibility";
 import {
   CreateProjectVisual,
   SetupProjectVisual,
@@ -13,7 +13,11 @@ import {
 import { SectionWrapper, SectionHeader } from "@/components/ui/section";
 
 export function IntegrationSteps() {
-  const { visibleSteps, setStepRef } = useStepVisibility(STEPS.length);
+  const { visibleItems: visibleSteps, setItemRef: setStepRef } =
+    useIntersectionVisibility<HTMLDivElement>(STEPS.length, {
+      threshold: 0.2,
+      once: true,
+    });
 
   return (
     <SectionWrapper id="quickstart">
