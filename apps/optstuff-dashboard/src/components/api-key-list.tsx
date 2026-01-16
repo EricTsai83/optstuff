@@ -10,7 +10,6 @@ import {
   Copy,
   Check,
   AlertTriangle,
-  ExternalLink,
 } from "lucide-react";
 import { Button } from "@workspace/ui/components/button";
 import { Badge } from "@workspace/ui/components/badge";
@@ -36,14 +35,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@workspace/ui/components/dropdown-menu";
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@workspace/ui/components/tabs";
 import { Label } from "@workspace/ui/components/label";
 import { api } from "@/trpc/react";
+import { copyToClipboard } from "@/lib/clipboard";
+import { ApiCodeExamples, DocsLink } from "./api-code-examples";
 import { CreateApiKeyDialog } from "./create-api-key-dialog";
 
 type ApiKeyListProps = {
@@ -69,7 +64,7 @@ export function ApiKeyList({ projectId }: ApiKeyListProps) {
     api.apiKey.rotate.useMutation({
       onSuccess: (result) => {
         utils.apiKey.list.invalidate();
-        if (result?.key) {
+        if (result?.key && result?.name) {
           setRotatedKey({
             key: result.key,
             name: result.name,
@@ -173,7 +168,7 @@ function ApiKeyItem({
   const [copied, setCopied] = useState(false);
 
   const handleCopyPrefix = async () => {
-    await navigator.clipboard.writeText(apiKey.keyPrefix + "...");
+    await copyToClipboard(apiKey.keyPrefix + "...");
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -267,41 +262,19 @@ type RotatedKeyDialogProps = {
 };
 
 function RotatedKeyDialog({ rotatedKey, onClose }: RotatedKeyDialogProps) {
-  const [copied, setCopied] = useState<"key" | "curl" | "ts" | null>(null);
+  const [keyCopied, setKeyCopied] = useState(false);
 
-  const handleCopy = async (text: string, type: "key" | "curl" | "ts") => {
-    await navigator.clipboard.writeText(text);
-    setCopied(type);
-    setTimeout(() => setCopied(null), 2000);
+  const handleCopyKey = async () => {
+    if (!rotatedKey) return;
+    await copyToClipboard(rotatedKey.key);
+    setKeyCopied(true);
+    setTimeout(() => setKeyCopied(false), 2000);
   };
 
   const handleClose = () => {
-    setCopied(null);
+    setKeyCopied(false);
     onClose();
   };
-
-  // Generate code examples
-  const curlExample = rotatedKey
-    ? `curl -X GET "https://api.optstuff.dev/v1/optimize?url=YOUR_IMAGE_URL&width=800&format=webp" \\
-  -H "Authorization: Bearer ${rotatedKey.key}"`
-    : "";
-
-  const tsExample = rotatedKey
-    ? `const response = await fetch(
-  "https://api.optstuff.dev/v1/optimize?" + new URLSearchParams({
-    url: "YOUR_IMAGE_URL",
-    width: "800",
-    format: "webp",
-  }),
-  {
-    headers: {
-      Authorization: "Bearer ${rotatedKey.key}",
-    },
-  }
-);
-
-const optimizedImage = await response.blob();`
-    : "";
 
   return (
     <Dialog open={!!rotatedKey} onOpenChange={(open) => !open && handleClose()}>
@@ -345,10 +318,10 @@ const optimizedImage = await response.blob();`
                 type="button"
                 variant="outline"
                 size="icon"
-                onClick={() => handleCopy(rotatedKey!.key, "key")}
+                onClick={handleCopyKey}
                 className="shrink-0"
               >
-                {copied === "key" ? (
+                {keyCopied ? (
                   <Check className="h-4 w-4 text-green-500" />
                 ) : (
                   <Copy className="h-4 w-4" />
@@ -358,73 +331,10 @@ const optimizedImage = await response.blob();`
           </div>
 
           {/* Usage Examples */}
-          <div>
-            <Label className="text-muted-foreground text-xs">Quick Start</Label>
-            <Tabs defaultValue="curl" className="mt-2">
-              <TabsList className="w-full">
-                <TabsTrigger value="curl" className="flex-1">
-                  cURL
-                </TabsTrigger>
-                <TabsTrigger value="typescript" className="flex-1">
-                  TypeScript
-                </TabsTrigger>
-              </TabsList>
-              <TabsContent value="curl" className="mt-2">
-                <div className="relative">
-                  <pre className="bg-muted overflow-x-auto rounded-md p-3 text-xs">
-                    <code>{curlExample}</code>
-                  </pre>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => handleCopy(curlExample, "curl")}
-                    className="absolute top-2 right-2 h-7 w-7"
-                  >
-                    {copied === "curl" ? (
-                      <Check className="h-3.5 w-3.5 text-green-500" />
-                    ) : (
-                      <Copy className="h-3.5 w-3.5" />
-                    )}
-                  </Button>
-                </div>
-              </TabsContent>
-              <TabsContent value="typescript" className="mt-2">
-                <div className="relative">
-                  <pre className="bg-muted overflow-x-auto rounded-md p-3 text-xs">
-                    <code>{tsExample}</code>
-                  </pre>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => handleCopy(tsExample, "ts")}
-                    className="absolute top-2 right-2 h-7 w-7"
-                  >
-                    {copied === "ts" ? (
-                      <Check className="h-3.5 w-3.5 text-green-500" />
-                    ) : (
-                      <Copy className="h-3.5 w-3.5" />
-                    )}
-                  </Button>
-                </div>
-              </TabsContent>
-            </Tabs>
-          </div>
+          {rotatedKey && <ApiCodeExamples apiKey={rotatedKey.key} />}
 
           {/* Documentation Link */}
-          <div className="text-muted-foreground flex items-center justify-center gap-1 text-xs">
-            <span>Need more help?</span>
-            <a
-              href="https://docs.optstuff.dev"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-primary inline-flex items-center gap-1 hover:underline"
-            >
-              View full documentation
-              <ExternalLink className="h-3 w-3" />
-            </a>
-          </div>
+          <DocsLink />
         </div>
         <DialogFooter>
           <Button onClick={handleClose}>Done</Button>

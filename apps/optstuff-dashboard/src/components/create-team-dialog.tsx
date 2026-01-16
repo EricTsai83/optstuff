@@ -19,7 +19,10 @@ type CreateTeamDialogProps = {
   readonly onSuccess?: () => void;
 };
 
-export function CreateTeamDialog({ trigger, onSuccess }: CreateTeamDialogProps) {
+export function CreateTeamDialog({
+  trigger,
+  onSuccess,
+}: CreateTeamDialogProps) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const { userMemberships, isLoaded } = useOrganizationList({
@@ -75,19 +78,12 @@ export function CreateTeamDialog({ trigger, onSuccess }: CreateTeamDialogProps) 
     }
 
     prevOrgCountRef.current = currentCount;
-  }, [
-    isLoaded,
-    userMemberships?.data,
-    open,
-    syncFromClerk,
-    onSuccess,
-    router,
-  ]);
+  }, [isLoaded, userMemberships?.data, open, syncFromClerk, onSuccess, router]);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>{trigger}</DialogTrigger>
-      <DialogContent className="max-w-md p-0 overflow-hidden [&>button]:hidden">
+      <DialogContent className="max-w-md overflow-hidden p-0 [&>button]:hidden">
         <DialogTitle className="sr-only">Create Team</DialogTitle>
         <CreateOrganization
           appearance={{

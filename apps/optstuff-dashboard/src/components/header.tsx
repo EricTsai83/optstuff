@@ -3,11 +3,7 @@
 import { Search, Bell, Menu } from "lucide-react";
 import { Button } from "@workspace/ui/components/button";
 import { Input } from "@workspace/ui/components/input";
-import {
-  ClerkLoaded,
-  ClerkLoading,
-  UserButton,
-} from "@workspace/auth/client";
+import { ClerkLoaded, ClerkLoading, UserButton } from "@workspace/auth/client";
 import { UserButtonSkeleton } from "@workspace/auth/components/user-button-skeleton";
 import { AnimatedLogo } from "@/components/animated-logo";
 import { TeamSwitcher } from "@/components/team-switcher";
@@ -26,7 +22,7 @@ export function Header({ teamSlug }: HeaderProps) {
       {/* Desktop: Display Logo and Team Selector */}
       <div className="hidden items-center gap-2 md:flex">
         <AnimatedLogo />
-        <div className="ml-4 flex items-center gap-2">
+        <div className="ml-15 flex items-center gap-2">
           <span className="text-muted-foreground text-lg">/</span>
           <TeamSwitcher currentTeamSlug={teamSlug} />
         </div>

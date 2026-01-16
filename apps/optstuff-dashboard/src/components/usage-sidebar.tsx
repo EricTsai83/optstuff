@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { ChevronDown, ChevronUp, Zap } from "lucide-react";
 import { Button } from "@workspace/ui/components/button";
 import {
@@ -8,33 +9,13 @@ import {
   CardHeader,
   CardTitle,
 } from "@workspace/ui/components/card";
-import { useState } from "react";
 import { Separator } from "@workspace/ui/components/separator";
 import { api } from "@/trpc/react";
+import { formatBytes, formatNumber } from "@/lib/format";
 
 type UsageSidebarProps = {
   readonly teamId: string;
 };
-
-// Format bytes to human readable
-function formatBytes(bytes: number): string {
-  if (bytes === 0) return "0 B";
-  const k = 1024;
-  const sizes = ["B", "KB", "MB", "GB", "TB"];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + " " + sizes[i];
-}
-
-// Format number with K, M suffix
-function formatNumber(num: number): string {
-  if (num >= 1000000) {
-    return (num / 1000000).toFixed(1) + "M";
-  }
-  if (num >= 1000) {
-    return (num / 1000).toFixed(1) + "K";
-  }
-  return num.toString();
-}
 
 export function UsageSidebar({ teamId }: UsageSidebarProps) {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -122,10 +103,13 @@ export function UsageSidebar({ teamId }: UsageSidebarProps) {
                                       : "bg-green-500"
                                 }`}
                               />
-                              <span className="text-foreground">{item.name}</span>
+                              <span className="text-foreground">
+                                {item.name}
+                              </span>
                             </div>
                             <span className="text-muted-foreground">
-                              {item.format(item.used)} / {item.format(item.total)}
+                              {item.format(item.used)} /{" "}
+                              {item.format(item.total)}
                             </span>
                           </div>
                           <div className="bg-muted h-1.5 overflow-hidden rounded-full">
@@ -205,7 +189,8 @@ export function UsageSidebar({ teamId }: UsageSidebarProps) {
             </div>
             <h4 className="font-medium">Ready to optimize?</h4>
             <p className="text-muted-foreground text-sm">
-              Create a project and generate an API key to start optimizing your images.
+              Create a project and generate an API key to start optimizing your
+              images.
             </p>
             <Button variant="outline" className="w-full bg-transparent" asChild>
               <a

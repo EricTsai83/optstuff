@@ -24,28 +24,34 @@ import { CreateProjectDialog } from "./create-project-dialog";
 type ProjectListProps = {
   readonly teamId: string;
   readonly teamSlug: string;
+  readonly searchQuery?: string;
 };
 
-// Generate a consistent color based on project name
-function getProjectColor(name: string): string {
-  const colors = [
-    "bg-blue-500",
-    "bg-green-500",
-    "bg-purple-500",
-    "bg-orange-500",
-    "bg-pink-500",
-    "bg-cyan-500",
-    "bg-amber-500",
-    "bg-emerald-500",
-  ];
+const PROJECT_COLORS = [
+  "bg-blue-500",
+  "bg-green-500",
+  "bg-purple-500",
+  "bg-orange-500",
+  "bg-pink-500",
+  "bg-cyan-500",
+  "bg-amber-500",
+  "bg-emerald-500",
+] as const;
+
+/** Generate a consistent color based on project name */
+function getProjectColor(name: string): (typeof PROJECT_COLORS)[number] {
   let hash = 0;
   for (let i = 0; i < name.length; i++) {
     hash = name.charCodeAt(i) + ((hash << 5) - hash);
   }
-  return colors[Math.abs(hash) % colors.length]!;
+  return PROJECT_COLORS[Math.abs(hash) % PROJECT_COLORS.length]!;
 }
 
-export function ProjectList({ teamId, teamSlug }: ProjectListProps) {
+export function ProjectList({
+  teamId,
+  teamSlug,
+  searchQuery = "",
+}: ProjectListProps) {
   const { data: projects, isLoading } = api.project.list.useQuery({ teamId });
   const { data: pinnedProjects, isLoading: isPinnedLoading } =
     api.project.listPinned.useQuery();
@@ -57,10 +63,24 @@ export function ProjectList({ teamId, teamSlug }: ProjectListProps) {
     { enabled: projectIds.length > 0 },
   );
 
-  // Filter pinned projects that belong to this team
+  // Filter projects by search query
+  const normalizedQuery = searchQuery.toLowerCase().trim();
+  const filteredProjects = projects?.filter((p) =>
+    normalizedQuery
+      ? p.name.toLowerCase().includes(normalizedQuery) ||
+        p.description?.toLowerCase().includes(normalizedQuery)
+      : true,
+  );
+
+  // Filter pinned projects that belong to this team and match search
   const teamPinnedProjects =
     pinnedProjects?.filter(
-      (p) => projects?.some((proj) => proj.id === p.id),
+      (p) =>
+        projects?.some((proj) => proj.id === p.id) &&
+        (normalizedQuery
+          ? p.name.toLowerCase().includes(normalizedQuery) ||
+            p.description?.toLowerCase().includes(normalizedQuery)
+          : true),
     ) ?? [];
 
   if (isLoading || isPinnedLoading) {
@@ -104,16 +124,21 @@ export function ProjectList({ teamId, teamSlug }: ProjectListProps) {
       {/* All Projects Section */}
       <div className="mb-4 flex items-center justify-between">
         <h2 className="text-sm font-medium">
-          Projects {projects && `(${projects.length})`}
+          Projects{" "}
+          {filteredProjects &&
+            (searchQuery
+              ? `(${filteredProjects.length} of ${projects?.length ?? 0})`
+              : `(${filteredProjects.length})`)}
         </h2>
-        <CreateProjectDialog teamId={teamId} teamSlug={teamSlug} />
       </div>
 
       {!projects || projects.length === 0 ? (
         <EmptyProjectState teamId={teamId} teamSlug={teamSlug} />
+      ) : filteredProjects?.length === 0 ? (
+        <NoSearchResults query={searchQuery} />
       ) : (
         <div className="space-y-2">
-          {projects.map((project, index) => (
+          {filteredProjects?.map((project, index) => (
             <ProjectItem
               key={project.id}
               project={project}
@@ -206,9 +231,7 @@ function ProjectItem({
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
           <span className="font-medium">{project.name}</span>
-          {isPinned && (
-            <Pin className="h-3.5 w-3.5 text-amber-500" />
-          )}
+          {isPinned && <Pin className="h-3.5 w-3.5 text-amber-500" />}
         </div>
         <div className="text-muted-foreground flex items-center gap-2 text-sm">
           {project.description ? (
@@ -245,7 +268,7 @@ function ProjectItem({
         size="icon"
         className={`h-8 w-8 transition-opacity duration-200 ${
           isPinned
-            ? "opacity-100 text-amber-500 hover:text-amber-600"
+            ? "text-amber-500 opacity-100 hover:text-amber-600"
             : "opacity-0 group-hover:opacity-100"
         }`}
         onClick={handlePinToggle}
@@ -325,6 +348,19 @@ function EmptyProjectState({
         teamSlug={teamSlug}
         trigger={<Button>Create Your First Project</Button>}
       />
+    </div>
+  );
+}
+
+function NoSearchResults({ query }: { query: string }) {
+  return (
+    <div className="text-muted-foreground flex flex-col items-center justify-center py-12 text-center">
+      <FolderOpen className="mb-4 h-10 w-10 opacity-50" />
+      <p className="text-sm">
+        No projects found matching &quot;
+        <span className="text-foreground font-medium">{query}</span>&quot;
+      </p>
+      <p className="mt-1 text-xs opacity-75">Try a different search term</p>
     </div>
   );
 }

@@ -4,11 +4,7 @@ import { db } from "@/server/db";
 import { teams } from "@/server/db/schema";
 import { eq, and } from "drizzle-orm";
 import { Header } from "@/components/header";
-import { NavigationTabs } from "@/components/navigation-tabs";
-import { SearchToolbar } from "@/components/search-toolbar";
-import { UsageSidebar } from "@/components/usage-sidebar";
-import { ProjectList } from "@/components/project-list";
-import { MobileTabs } from "@/components/mobile-tabs";
+import { TeamContent } from "@/components/team-content";
 import { Footer } from "@/components/footer";
 
 type PageProps = {
@@ -66,15 +62,12 @@ export default async function TeamPage({ params }: PageProps) {
   return (
     <div className="bg-background flex min-h-screen flex-col">
       <Header teamSlug={teamSlug} />
-      <NavigationTabs />
-      <main className="container mx-auto flex-1 px-4 py-4">
-        <SearchToolbar teamId={team.id} teamSlug={teamSlug} />
-        <MobileTabs />
-        <div className="flex gap-8">
-          <UsageSidebar teamId={team.id} />
-          <ProjectList teamId={team.id} teamSlug={teamSlug} />
-        </div>
-      </main>
+      <TeamContent
+        teamId={team.id}
+        teamSlug={teamSlug}
+        teamName={team.name}
+        isPersonal={team.isPersonal}
+      />
       <Footer />
     </div>
   );
