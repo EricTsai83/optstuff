@@ -846,3 +846,13 @@ Moving dot animations for request/response arrows
 .animate-soft-pulse {
   animation: soft-pulse 1.5s ease-in-out infinite;
 }
+
+/* ==========================================================================
+13. Touch-friendly Improvements
+========================================================================== */
+@media (hover: none) {
+  .feature-card-hover:hover {
+    transform: none;
+    box-shadow: none;
+  }
+}

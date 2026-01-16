@@ -35,15 +35,16 @@ export function ImageOptimizationDemo() {
         onValueChange={handleTabChange}
         className="w-full"
       >
-        <div className="mb-8 flex justify-center">
+        {/* Tabs navigation - scrollable on mobile */}
+        <div className="mb-6 flex justify-center md:mb-8">
           <TabsList
             ref={tabsListRef}
-            className="bg-muted text-muted-foreground relative h-11 rounded-full p-1"
+            className="bg-muted text-muted-foreground relative h-10 w-full max-w-[calc(100vw-2rem)] overflow-x-auto rounded-full p-1 scrollbar-hide sm:h-11 sm:w-auto"
           >
             {/* Sliding indicator with squash-and-stretch effect */}
             <div
               className={cn(
-                "bg-background absolute top-1 h-9 rounded-full shadow-sm",
+                "bg-background absolute top-1 h-8 rounded-full shadow-sm sm:h-9",
                 "transition-[left,width,opacity] duration-300 ease-out",
                 indicatorStyle.isSquashing &&
                   "animate-indicator-squash-stretch",
@@ -61,7 +62,7 @@ export function ImageOptimizationDemo() {
                 }}
                 className={cn(
                   "relative z-10 cursor-pointer rounded-full bg-transparent",
-                  "px-5 py-2 text-sm font-medium capitalize",
+                  "px-3 py-1.5 text-xs font-medium capitalize sm:px-5 sm:py-2 sm:text-sm",
                   "border-none shadow-none",
                   "transition-colors duration-300",
                   "data-[state=active]:bg-transparent data-[state=active]:shadow-none",
@@ -74,7 +75,8 @@ export function ImageOptimizationDemo() {
           </TabsList>
         </div>
 
-        <div className="bg-card border-border overflow-hidden rounded-2xl border p-6 shadow-sm transition-shadow duration-500 hover:shadow-lg md:p-8">
+        {/* Demo content card */}
+        <div className="bg-card border-border overflow-hidden rounded-xl border p-4 shadow-sm transition-shadow duration-500 hover:shadow-lg sm:rounded-2xl sm:p-6 md:p-8">
           {/* Hidden TabsContent to maintain Radix accessibility */}
           {DEMO_KEYS.map((tab) => (
             <TabsContent key={tab} value={tab} className="hidden" />
@@ -143,12 +145,6 @@ type IndicatorStyle = {
 
 /**
  * Manages the tab indicator position based on active tab.
- * Also tracks squash animation state for velocity feel effect.
- *
- * Limitations:
- * - Requires `useLayoutEffect` to measure DOM before paint, avoiding visual flicker.
- * - Must listen to window resize to recalculate position when viewport changes.
- * - The `tabRefs` Map must be populated via ref callbacks on each TabsTrigger.
  */
 function useIndicatorPosition(
   tabRefs: React.RefObject<Map<DemoKey, HTMLButtonElement | null>>,
@@ -176,9 +172,7 @@ function useIndicatorPosition(
     // Detect tab change and trigger squash animation
     if (prevTabRef.current !== activeTab) {
       prevTabRef.current = activeTab;
-      // Reset animation by toggling off then on
       setIsSquashing(false);
-      // Use requestAnimationFrame to ensure the class is removed before re-adding
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
           setIsSquashing(true);
@@ -196,10 +190,6 @@ function useIndicatorPosition(
 
 /**
  * Manages tab switching animation state with directional slide transitions.
- *
- * Limitations:
- * - Uses setTimeout for animation sequencing; timers are cleaned up on unmount
- *   or when a new tab change interrupts the previous animation.
  */
 function useTabAnimation(initialTab: DemoKey): {
   activeTab: DemoKey;

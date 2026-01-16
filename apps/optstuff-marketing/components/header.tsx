@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { Menu, X } from "lucide-react";
 import { Button } from "@workspace/ui/components/button";
 import { Logo } from "@workspace/ui/components/logo";
 import { ThemeToggleButton } from "@workspace/ui/components/theme-toggle-button";
@@ -12,6 +13,9 @@ import {
   SignedOut,
   SignOutButton,
 } from "@workspace/auth/client";
+import { cn } from "@workspace/ui/lib/utils";
+import { useIsMobile } from "@workspace/hooks/use-mobile";
+import { MobileSidebar } from "@/components/mobile-sidebar";
 
 type NavigationItem = {
   readonly href: string;
@@ -56,10 +60,6 @@ const HEADER_CONFIG: HeaderConfig = {
 
 /**
  * Calculates scroll percentage
- * @param scrollY Current scroll position
- * @param threshold Scroll threshold
- * @param divisor Scroll divisor
- * @returns Scroll percentage (0-1)
  */
 const calculateScrollPercent = (
   scrollY: number,
@@ -71,9 +71,6 @@ const calculateScrollPercent = (
 
 /**
  * Calculates background color opacity
- * @param scrollPercent Scroll percentage
- * @param maxOpacity Maximum opacity
- * @returns Background color opacity value
  */
 const calculateBackgroundOpacity = (
   scrollPercent: number,
@@ -84,10 +81,6 @@ const calculateBackgroundOpacity = (
 
 /**
  * Calculates border color opacity
- * @param scrollPercent Scroll percentage
- * @param divisor Divisor
- * @param maxOpacity Maximum opacity
- * @returns Border color opacity value
  */
 const calculateBorderOpacity = (
   scrollPercent: number,
@@ -99,9 +92,6 @@ const calculateBorderOpacity = (
 
 /**
  * Custom hook to track page scroll percentage
- * @param threshold Scroll threshold
- * @param divisor Scroll divisor
- * @returns Scroll percentage (0-1)
  */
 const useScrollPercent = (threshold: number, divisor: number): number => {
   const [scrollPercent, setScrollPercent] = useState(0);
@@ -128,6 +118,8 @@ const useScrollPercent = (threshold: number, divisor: number): number => {
 };
 
 export function Header() {
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const isMobile = useIsMobile();
   const scrollPercent = useScrollPercent(
     HEADER_CONFIG.scroll.threshold,
     HEADER_CONFIG.scroll.divisor,
@@ -144,72 +136,128 @@ export function Header() {
     HEADER_CONFIG.style.borderColorMaxOpacity,
   );
 
+  // Close mobile menu when switching to desktop view
+  useEffect(() => {
+    if (!isMobile && isMobileMenuOpen) {
+      setIsMobileMenuOpen(false);
+    }
+  }, [isMobile, isMobileMenuOpen]);
+
+  const handleCloseMobileMenu = () => {
+    setIsMobileMenuOpen(false);
+  };
+
   return (
-    <header
-      style={{
-        backgroundColor: `color-mix(in srgb, var(--background) ${backgroundOpacity * 100}%, transparent)`,
-        borderColor: `color-mix(in srgb, white ${borderOpacity * 100}%, transparent)`,
-      }}
-      className="animate-fade-in-down fixed top-0 z-100 w-full py-1"
-    >
-      <div className="container mx-auto grid h-16 grid-cols-[1fr_auto_1fr] items-center px-4 md:px-6">
-        {/* Left: Logo */}
-        <Link
-          href="/"
-          className="group flex items-center gap-2.5 justify-self-start"
-        >
-          <Logo size={HEADER_CONFIG.logo.size} />
-        </Link>
+    <>
+      <header
+        style={{
+          backgroundColor: `color-mix(in srgb, var(--background) ${Math.max(backgroundOpacity, isMobileMenuOpen ? 1 : 0) * 100}%, transparent)`,
+          borderColor: `color-mix(in srgb, white ${borderOpacity * 100}%, transparent)`,
+        }}
+        className="animate-fade-in-down fixed top-0 z-50 w-full py-1"
+      >
+        <div className="container mx-auto flex h-16 items-center justify-between px-4 md:grid md:grid-cols-[1fr_auto_1fr] md:px-6">
+          {/* Left: Logo */}
+          <Link
+            href="/"
+            className="group flex items-center gap-2.5 justify-self-start"
+          >
+            <Logo size={HEADER_CONFIG.logo.size} />
+          </Link>
 
-        {/* Center: Navigation - 真正置中，不受左右區塊影響 */}
-        <nav className="hidden items-center gap-8 md:flex">
-          {HEADER_CONFIG.navigation.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className="text-muted-foreground dark:text-accent-foreground hover:text-foreground after:bg-foreground relative text-sm transition-colors after:absolute after:bottom-0 after:left-0 after:h-px after:w-0 after:transition-all after:duration-300 hover:after:w-full"
-            >
-              {item.label}
-            </Link>
-          ))}
-        </nav>
-
-        {/* Right: Auth buttons - 使用 flex-row-reverse 讓 ThemeToggle 永遠在最右邊 */}
-        <div className="flex flex-row-reverse items-center gap-4 justify-self-end">
-          <ThemeToggleButton />
-          <ClerkLoading>
-            <AuthButtonsSkeleton />
-            <SignOutButtonSkeleton />
-          </ClerkLoading>
-          <ClerkLoaded>
-            <SignedOut>
-              <Button asChild variant="outline" className="w-25 cursor-pointer">
-                <a href="/sign-in">Sign in</a>
-              </Button>
-            </SignedOut>
-            <SignedIn>
-              <Button
-                asChild
-                className="w-25 cursor-pointer bg-accent text-accent-foreground hover:bg-accent/95"
+          {/* Center: Navigation - Desktop only */}
+          <nav className="hidden items-center gap-8 md:flex">
+            {HEADER_CONFIG.navigation.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className="text-muted-foreground dark:text-accent-foreground hover:text-foreground after:bg-foreground relative text-sm transition-colors after:absolute after:bottom-0 after:left-0 after:h-px after:w-0 after:transition-all after:duration-300 hover:after:w-full"
               >
-                <a href="/dashboard">Dashboard</a>
-              </Button>
-              <SignOutButton>
-                <Button variant="outline" className="w-20 cursor-pointer">
-                  Sign out
-                </Button>
-              </SignOutButton>
-            </SignedIn>
-          </ClerkLoaded>
+                {item.label}
+              </Link>
+            ))}
+          </nav>
+
+          {/* Right: Auth buttons & Mobile menu toggle */}
+          <div className="flex flex-row-reverse items-center gap-3 justify-self-end md:gap-4">
+            {/* Mobile menu toggle */}
+            {isMobile && (
+              <button
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                className="relative flex h-9 w-9 items-center justify-center rounded-md text-foreground transition-colors hover:bg-muted"
+                aria-label={isMobileMenuOpen ? "Close menu" : "Open menu"}
+                aria-expanded={isMobileMenuOpen}
+              >
+                <Menu
+                  className={cn(
+                    "absolute h-5 w-5 transition-all duration-300",
+                    isMobileMenuOpen
+                      ? "rotate-90 scale-0 opacity-0"
+                      : "rotate-0 scale-100 opacity-100",
+                  )}
+                />
+                <X
+                  className={cn(
+                    "absolute h-5 w-5 transition-all duration-300",
+                    isMobileMenuOpen
+                      ? "rotate-0 scale-100 opacity-100"
+                      : "-rotate-90 scale-0 opacity-0",
+                  )}
+                />
+              </button>
+            )}
+
+            <ThemeToggleButton />
+
+            {/* Desktop auth buttons */}
+            <div className="hidden items-center gap-4 md:flex">
+              <ClerkLoading>
+                <AuthButtonsSkeleton />
+                <SignOutButtonSkeleton />
+              </ClerkLoading>
+              <ClerkLoaded>
+                <SignedOut>
+                  <Button
+                    asChild
+                    variant="outline"
+                    className="w-25 cursor-pointer"
+                  >
+                    <a href="/sign-in">Sign in</a>
+                  </Button>
+                </SignedOut>
+                <SignedIn>
+                  <Button
+                    asChild
+                    className="w-25 cursor-pointer bg-accent text-accent-foreground hover:bg-accent/95"
+                  >
+                    <a href="/dashboard">Dashboard</a>
+                  </Button>
+                  <SignOutButton>
+                    <Button variant="outline" className="w-20 cursor-pointer">
+                      Sign out
+                    </Button>
+                  </SignOutButton>
+                </SignedIn>
+              </ClerkLoaded>
+            </div>
+          </div>
         </div>
-      </div>
-    </header>
+      </header>
+
+      {/* Mobile Sidebar */}
+      {isMobile && (
+        <MobileSidebar
+          isOpen={isMobileMenuOpen}
+          onClose={handleCloseMobileMenu}
+          navigation={HEADER_CONFIG.navigation}
+        />
+      )}
+    </>
   );
 }
 
 /**
  * Skeleton for auth button while Clerk is loading
- * 對應 Dashboard / Sign in 按鈕大小 (w-25)
  */
 function AuthButtonsSkeleton() {
   return (

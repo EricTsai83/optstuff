@@ -15,6 +15,7 @@
     "@t3-oss/env-nextjs": "^0.13.10",
     "@vercel/microfrontends": "^2.2.1",
     "@workspace/auth": "workspace:*",
+    "@workspace/hooks": "workspace:*",
     "@workspace/ui": "workspace:*",
     "ipx": "^3.1.1",
     "lucide-react": "^0.475.0",

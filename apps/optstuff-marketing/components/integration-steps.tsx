@@ -32,29 +32,29 @@ export function IntegrationSteps() {
   const { visibleSteps, setStepRef } = useStepVisibility(STEPS.length);
 
   return (
-    <section className="relative overflow-hidden px-6 py-24 md:px-8">
-      {/* 背景裝飾 */}
+    <section className="relative overflow-hidden px-4 py-16 sm:px-6 sm:py-24 md:px-8">
+      {/* Background decorations */}
       <div className="pointer-events-none absolute inset-0">
-        <div className="bg-accent/5 absolute left-1/4 top-1/4 h-96 w-96 rounded-full blur-3xl" />
-        <div className="bg-accent/3 absolute bottom-1/4 right-1/4 h-64 w-64 rounded-full blur-3xl" />
+        <div className="bg-accent/5 absolute left-1/4 top-1/4 h-64 w-64 rounded-full blur-3xl sm:h-96 sm:w-96" />
+        <div className="bg-accent/3 absolute bottom-1/4 right-1/4 h-48 w-48 rounded-full blur-3xl sm:h-64 sm:w-64" />
       </div>
 
       <div className="relative mx-auto max-w-4xl">
         {/* Header */}
-        <div className="mb-20 text-center">
-          <div className="animate-fade-in border-accent/30 bg-accent/10 text-accent mb-4 inline-flex items-center gap-2 rounded-full border px-4 py-1.5 text-sm font-medium">
-            <Terminal className="h-4 w-4" />
+        <div className="mb-12 text-center sm:mb-20">
+          <div className="animate-fade-in border-accent/30 bg-accent/10 text-accent mb-4 inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium sm:px-4 sm:text-sm">
+            <Terminal className="h-3 w-3 sm:h-4 sm:w-4" />
             Quick Start
           </div>
-          <h2 className="text-foreground animate-fade-in-up animation-delay-100 mb-4 text-3xl font-bold tracking-tight md:text-4xl lg:text-5xl">
+          <h2 className="text-foreground animate-fade-in-up animation-delay-100 mb-3 text-2xl font-bold tracking-tight sm:mb-4 sm:text-3xl md:text-4xl lg:text-5xl">
             Three steps to faster images
           </h2>
-          <p className="text-muted-foreground animate-fade-in-up animation-delay-200 mx-auto max-w-2xl text-lg">
+          <p className="text-muted-foreground animate-fade-in-up animation-delay-200 mx-auto max-w-2xl text-sm sm:text-base md:text-lg">
             Get started in minutes with a simple integration.
           </p>
         </div>
 
-        {/* 垂直時間線 */}
+        {/* Vertical timeline */}
         <div className="relative">
           {STEPS.map((step, index) => {
             const isVisible = visibleSteps.has(index);
@@ -69,28 +69,28 @@ export function IntegrationSteps() {
                   isVisible
                     ? "translate-y-0 opacity-100"
                     : "translate-y-12 opacity-0",
-                  !isLast && "pb-16",
+                  !isLast && "pb-12 sm:pb-16",
                 )}
                 style={{ transitionDelay: `${index * 200}ms` }}
               >
-                {/* 連接線 */}
+                {/* Connecting line */}
                 {!isLast && (
                   <div
                     className={cn(
-                      "absolute left-5 top-12 h-[calc(100%-3rem)] w-0.5 transition-all duration-1000 md:left-6",
+                      "absolute left-4 top-10 h-[calc(100%-2.5rem)] w-0.5 transition-all duration-1000 sm:left-5 sm:top-12 sm:h-[calc(100%-3rem)] md:left-6",
                       isVisible ? "bg-accent/30" : "bg-border/30",
                     )}
                     style={{ transitionDelay: `${index * 200 + 300}ms` }}
                   />
                 )}
 
-                {/* 步驟內容 */}
-                <div className="flex gap-6 md:gap-8">
-                  {/* 左側：步驟編號 */}
+                {/* Step content */}
+                <div className="flex gap-4 sm:gap-6 md:gap-8">
+                  {/* Left: Step number */}
                   <div className="relative z-10 shrink-0">
                     <div
                       className={cn(
-                        "bg-accent text-accent-foreground flex h-10 w-10 items-center justify-center rounded-xl text-base font-bold shadow-lg transition-all duration-500 md:h-12 md:w-12 md:text-lg",
+                        "bg-accent text-accent-foreground flex h-8 w-8 items-center justify-center rounded-lg text-sm font-bold shadow-lg transition-all duration-500 sm:h-10 sm:w-10 sm:rounded-xl sm:text-base md:h-12 md:w-12 md:text-lg",
                         isVisible ? "scale-100" : "scale-0",
                       )}
                       style={{
@@ -104,29 +104,29 @@ export function IntegrationSteps() {
                     </div>
                   </div>
 
-                  {/* 右側：標題 + Demo */}
-                  <div className="flex-1">
-                    {/* 標題區域 */}
-                    <div className="mb-4">
-                      <h3 className="text-foreground text-xl font-bold md:text-2xl">
+                  {/* Right: Title + Demo */}
+                  <div className="min-w-0 flex-1">
+                    {/* Title area */}
+                    <div className="mb-3 sm:mb-4">
+                      <h3 className="text-foreground text-lg font-bold sm:text-xl md:text-2xl">
                         {step.title}
                       </h3>
-                      <p className="text-muted-foreground mt-1 text-sm">
+                      <p className="text-muted-foreground mt-0.5 text-xs sm:mt-1 sm:text-sm">
                         {step.description}
                       </p>
                     </div>
 
-                    {/* Demo 區域 - 固定高度卡片 */}
+                    {/* Demo area */}
                     <div
                       className={cn(
-                        "border-border/50 bg-card/50 h-[200px] overflow-hidden rounded-2xl border backdrop-blur-sm transition-all duration-500 md:h-[220px]",
+                        "border-border/50 bg-card/50 h-[160px] overflow-hidden rounded-xl border backdrop-blur-sm transition-all duration-500 sm:h-[180px] sm:rounded-2xl md:h-[220px]",
                         isVisible
                           ? "translate-x-0 opacity-100"
                           : "translate-x-8 opacity-0",
                       )}
                       style={{ transitionDelay: `${index * 200 + 200}ms` }}
                     >
-                      <div className="h-full p-4 md:p-5">
+                      <div className="h-full p-3 sm:p-4 md:p-5">
                         {index === 0 && <CreateProjectVisual />}
                         {index === 1 && <SetupProjectVisual />}
                         {index === 2 && <OptimizeVisual />}
@@ -140,7 +140,7 @@ export function IntegrationSteps() {
         </div>
 
         {/* API Demo Section */}
-        <div className="mt-20">
+        <div className="mt-12 sm:mt-20">
           <ApiDemoSection />
         </div>
       </div>
@@ -148,18 +148,13 @@ export function IntegrationSteps() {
   );
 }
 
-/** Step 1: Dashboard 模擬界面 - 參考 Vercel Dashboard */
+/** Step 1: Dashboard mock interface */
 function CreateProjectVisual() {
   const [step, setStep] = useState(0);
   const [typedName, setTypedName] = useState("");
   const projectName = "my-app";
 
   useEffect(() => {
-    // step 0: 初始狀態，顯示 Add New 按鈕高亮
-    // step 1: 點擊 Add New，顯示下拉選單
-    // step 2: 顯示 Create a new app 表單，打字輸入名稱
-    // step 3: Submit 按鈕高亮，準備提交
-    // step 4: 顯示成功畫面
     const delays = [1500, 1200, 2000, 1200, 2500];
     const timeout = setTimeout(() => {
       setStep((prev) => {
@@ -173,7 +168,6 @@ function CreateProjectVisual() {
     return () => clearTimeout(timeout);
   }, [step]);
 
-  // 打字效果
   useEffect(() => {
     if (step === 2 && typedName.length < projectName.length) {
       const timeout = setTimeout(() => {
@@ -183,45 +177,45 @@ function CreateProjectVisual() {
     }
   }, [step, typedName]);
 
-  // 判斷是否在表單步驟（包括打字和準備提交）
   const isFormStep = step === 2 || step === 3;
-  // 判斷是否準備提交（Submit 按鈕高亮）
   const isReadyToSubmit = step === 3;
-  // 判斷是否成功
   const isSuccess = step === 4;
 
   return (
-    <div className="bg-card flex h-full flex-col overflow-hidden rounded-xl border border-border/50">
+    <div className="bg-card flex h-full flex-col overflow-hidden rounded-lg border border-border/50 sm:rounded-xl">
       {/* Mac window header */}
-      <div className="bg-muted/50 flex items-center justify-between border-b border-border/50 px-4 py-2">
-        <div className="flex items-center gap-1.5">
-          <div className="h-2.5 w-2.5 rounded-full bg-[#ff5f57]" />
-          <div className="h-2.5 w-2.5 rounded-full bg-[#febc2e]" />
-          <div className="h-2.5 w-2.5 rounded-full bg-[#28c840]" />
-          <span className="text-muted-foreground ml-2 text-xs">Dashboard</span>
+      <div className="bg-muted/50 flex items-center justify-between border-b border-border/50 px-3 py-1.5 sm:px-4 sm:py-2">
+        <div className="flex items-center gap-1 sm:gap-1.5">
+          <div className="h-2 w-2 rounded-full bg-[#ff5f57] sm:h-2.5 sm:w-2.5" />
+          <div className="h-2 w-2 rounded-full bg-[#febc2e] sm:h-2.5 sm:w-2.5" />
+          <div className="h-2 w-2 rounded-full bg-[#28c840] sm:h-2.5 sm:w-2.5" />
+          <span className="text-muted-foreground ml-2 hidden text-xs sm:inline">
+            Dashboard
+          </span>
         </div>
 
         {/* Add New button */}
         <div className="relative">
           <button
             className={cn(
-              "flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-all",
+              "flex items-center gap-1 rounded-md px-2 py-1 text-[10px] font-medium transition-all sm:gap-1.5 sm:rounded-lg sm:px-3 sm:py-1.5 sm:text-xs",
               step === 0
                 ? "border border-accent bg-transparent text-accent ring-2 ring-accent/30"
                 : "border border-accent bg-accent text-accent-foreground",
             )}
           >
-            Add New...
-            <span className="text-[10px]">▼</span>
+            <span className="hidden sm:inline">Add New...</span>
+            <span className="sm:hidden">Add</span>
+            <span className="text-[8px] sm:text-[10px]">▼</span>
           </button>
 
           {/* Dropdown menu */}
           {step === 1 && (
-            <div className="bg-popover absolute right-0 top-full z-10 mt-1.5 w-36 overflow-hidden rounded-lg border border-border/50 py-1.5 shadow-xl">
-              <div className="cursor-pointer bg-accent/20 px-4 py-2 text-xs font-medium text-accent">
+            <div className="bg-popover absolute right-0 top-full z-10 mt-1 w-28 overflow-hidden rounded-md border border-border/50 py-1 shadow-xl sm:mt-1.5 sm:w-36 sm:rounded-lg sm:py-1.5">
+              <div className="cursor-pointer bg-accent/20 px-3 py-1.5 text-[10px] font-medium text-accent sm:px-4 sm:py-2 sm:text-xs">
                 New Project
               </div>
-              <div className="text-muted-foreground px-4 py-2 text-xs">
+              <div className="text-muted-foreground hidden px-4 py-2 text-xs sm:block">
                 Import from GitHub
               </div>
             </div>
@@ -230,43 +224,35 @@ function CreateProjectVisual() {
       </div>
 
       {/* Main content area */}
-      <div className="flex flex-1 flex-col p-4">
+      <div className="flex flex-1 flex-col p-3 sm:p-4">
         {(step === 0 || step === 1) && (
           <div className="flex h-full flex-col items-center justify-center">
-            <div className="text-muted-foreground/50 text-sm">
-              {step === 0 ? 'Click "Add New..."' : 'Select "New Project"'}
+            <div className="text-muted-foreground/50 text-xs sm:text-sm">
+              {step === 0 ? 'Click "Add"' : 'Select "New Project"'}
             </div>
           </div>
         )}
 
         {isFormStep && (
-          <div className="flex h-full flex-col justify-center space-y-3">
-            <div className="text-foreground text-sm font-semibold">
+          <div className="flex h-full flex-col justify-center space-y-2 sm:space-y-3">
+            <div className="text-foreground text-xs font-semibold sm:text-sm">
               Create a new app
             </div>
-            <div className="flex items-end gap-2">
-              {/* Team select */}
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
+              {/* App name input - simplified for mobile */}
               <div className="flex-1">
-                <div className="text-muted-foreground mb-1.5 text-xs">Team</div>
-                <div className="bg-muted/30 flex h-9 items-center justify-between rounded-lg border border-border/50 px-3">
-                  <span className="text-foreground/70 text-xs">Personal</span>
-                  <span className="text-muted-foreground text-xs">▼</span>
+                <div className="text-muted-foreground mb-1 text-[10px] sm:mb-1.5 sm:text-xs">
+                  Name
                 </div>
-              </div>
-              {/* Separator */}
-              <div className="text-muted-foreground pb-2.5 text-sm">/</div>
-              {/* App name input */}
-              <div className="flex-1">
-                <div className="text-muted-foreground mb-1.5 text-xs">Name</div>
                 <div
                   className={cn(
-                    "bg-muted/30 flex h-9 items-center rounded-lg border px-3 transition-all",
+                    "bg-muted/30 flex h-8 items-center rounded-md border px-2 transition-all sm:h-9 sm:rounded-lg sm:px-3",
                     isReadyToSubmit
                       ? "border-border/50"
                       : "border-accent/50 ring-2 ring-accent/20",
                   )}
                 >
-                  <span className="text-foreground text-xs">
+                  <span className="text-foreground text-[10px] sm:text-xs">
                     {typedName}
                     {!isReadyToSubmit && (
                       <span className="animate-pulse text-accent">|</span>
@@ -277,7 +263,7 @@ function CreateProjectVisual() {
               {/* Submit button */}
               <button
                 className={cn(
-                  "h-9 rounded-lg px-4 text-xs font-medium transition-all",
+                  "h-8 rounded-md px-3 text-[10px] font-medium transition-all sm:h-9 sm:rounded-lg sm:px-4 sm:text-xs",
                   isReadyToSubmit
                     ? "bg-accent text-accent-foreground ring-2 ring-accent/50"
                     : "bg-muted text-muted-foreground",
@@ -290,11 +276,11 @@ function CreateProjectVisual() {
         )}
 
         {isSuccess && (
-          <div className="flex h-full flex-col items-center justify-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-green-500/20">
-              <Check className="h-6 w-6 text-emerald-600 dark:text-green-400" />
+          <div className="flex h-full flex-col items-center justify-center gap-2 sm:gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-500/20 sm:h-12 sm:w-12">
+              <Check className="h-5 w-5 text-emerald-600 dark:text-green-400 sm:h-6 sm:w-6" />
             </div>
-            <div className="text-sm font-medium text-emerald-600 dark:text-green-400">
+            <div className="text-xs font-medium text-emerald-600 dark:text-green-400 sm:text-sm">
               Project Created!
             </div>
           </div>
@@ -304,12 +290,11 @@ function CreateProjectVisual() {
   );
 }
 
-/** Step 2: API Key 列表 - 參考 Standard Keys 設計 */
+/** Step 2: API Key list */
 function SetupProjectVisual() {
-  // 0: 初始遮罩狀態, 1: 眼睛按鈕高亮, 2: key 已揭示
   const [step, setStep] = useState(0);
-  const apiKey = "sk_live_a1b2c3ihgk9f76g9g0";
-  const maskedKey = "sk_live_******************";
+  const apiKey = "sk_live_a1b2c3...";
+  const maskedKey = "sk_live_*******";
 
   useEffect(() => {
     const delays = [1500, 1200, 3000];
@@ -323,34 +308,35 @@ function SetupProjectVisual() {
   const isRevealed = step === 2;
 
   return (
-    <div className="bg-card flex h-full flex-col overflow-hidden rounded-xl border border-border/50">
+    <div className="bg-card flex h-full flex-col overflow-hidden rounded-lg border border-border/50 sm:rounded-xl">
       {/* Mac window header */}
-      <div className="bg-muted/50 flex items-center gap-1.5 border-b border-border/50 px-4 py-2">
-        <div className="h-2.5 w-2.5 rounded-full bg-[#ff5f57]" />
-        <div className="h-2.5 w-2.5 rounded-full bg-[#febc2e]" />
-        <div className="h-2.5 w-2.5 rounded-full bg-[#28c840]" />
-        <span className="text-muted-foreground ml-2 text-xs">API Keys</span>
+      <div className="bg-muted/50 flex items-center gap-1 border-b border-border/50 px-3 py-1.5 sm:gap-1.5 sm:px-4 sm:py-2">
+        <div className="h-2 w-2 rounded-full bg-[#ff5f57] sm:h-2.5 sm:w-2.5" />
+        <div className="h-2 w-2 rounded-full bg-[#febc2e] sm:h-2.5 sm:w-2.5" />
+        <div className="h-2 w-2 rounded-full bg-[#28c840] sm:h-2.5 sm:w-2.5" />
+        <span className="text-muted-foreground ml-2 text-[10px] sm:text-xs">
+          API Keys
+        </span>
       </div>
 
       {/* Content */}
-      <div className="flex flex-1 flex-col justify-center p-4">
-        {/* Section title */}
-        <div className="mb-3">
-          <div className="text-foreground text-sm font-semibold">
+      <div className="flex flex-1 flex-col justify-center p-3 sm:p-4">
+        <div className="mb-2 sm:mb-3">
+          <div className="text-foreground text-xs font-semibold sm:text-sm">
             Standard Keys
           </div>
         </div>
 
         {/* Key row */}
-        <div className="bg-muted/30 flex items-center gap-3 rounded-lg border border-border/50 px-4 py-3">
-          {/* Name */}
-          <div className="text-foreground/70 shrink-0 text-xs">Secret Key</div>
+        <div className="bg-muted/30 flex items-center gap-2 rounded-md border border-border/50 px-3 py-2 sm:gap-3 sm:rounded-lg sm:px-4 sm:py-3">
+          <div className="text-foreground/70 shrink-0 text-[10px] sm:text-xs">
+            Secret
+          </div>
 
-          {/* Key with eye button */}
-          <div className="flex flex-1 items-center gap-2.5">
+          <div className="flex min-w-0 flex-1 items-center gap-2">
             <code
               className={cn(
-                "flex-1 rounded-lg border px-3 py-1.5 font-mono text-xs transition-all duration-300",
+                "min-w-0 flex-1 truncate rounded-md border px-2 py-1 font-mono text-[10px] transition-all duration-300 sm:rounded-lg sm:px-3 sm:py-1.5 sm:text-xs",
                 isRevealed
                   ? "border-accent/30 bg-accent/10 text-accent"
                   : "border-border/50 bg-muted/50 text-muted-foreground",
@@ -360,7 +346,7 @@ function SetupProjectVisual() {
             </code>
             <button
               className={cn(
-                "shrink-0 rounded-lg p-1.5 transition-all duration-300",
+                "shrink-0 rounded-md p-1 transition-all duration-300 sm:rounded-lg sm:p-1.5",
                 isEyeHighlighted
                   ? "bg-accent/20 text-accent ring-2 ring-accent/40"
                   : isRevealed
@@ -370,9 +356,9 @@ function SetupProjectVisual() {
               aria-label={isRevealed ? "Hide API key" : "Show API key"}
             >
               {isRevealed ? (
-                <EyeOff className="h-4 w-4" />
+                <EyeOff className="h-3 w-3 sm:h-4 sm:w-4" />
               ) : (
-                <Eye className="h-4 w-4" />
+                <Eye className="h-3 w-3 sm:h-4 sm:w-4" />
               )}
             </button>
           </div>
@@ -382,9 +368,8 @@ function SetupProjectVisual() {
   );
 }
 
-/** Step 3: Realtime 優化流程視覺化 - 清楚展示 OptStuff 服務器最佳化後回傳 */
+/** Step 3: Realtime optimization flow visualization */
 function OptimizeVisual() {
-  // 0: idle, 1: website sends request, 2: optstuff processing, 3: response returning, 4: website received
   const [step, setStep] = useState(0);
 
   useEffect(() => {
@@ -395,7 +380,6 @@ function OptimizeVisual() {
     return () => clearTimeout(timeout);
   }, [step]);
 
-  // 判斷各區塊是否高亮
   const isWebsiteActive = step === 1 || step === 4;
   const isOptStuffActive = step === 2;
   const isRequestArrowActive = step === 1;
@@ -403,24 +387,24 @@ function OptimizeVisual() {
   const isWebsiteShowingResult = step === 4;
 
   return (
-    <div className="flex h-full items-stretch gap-3">
-      {/* 左側：Website（有 Mac 窗口佈局） */}
-      <div className="flex flex-[1.5] flex-col overflow-hidden rounded-xl border border-border/50 bg-card">
+    <div className="flex h-full flex-col gap-2 sm:flex-row sm:items-stretch sm:gap-3">
+      {/* Left: Website */}
+      <div className="flex flex-1 flex-col overflow-hidden rounded-lg border border-border/50 bg-card sm:flex-[1.5] sm:rounded-xl">
         {/* Mac window header */}
-        <div className="flex items-center gap-1.5 border-b border-border/50 bg-muted/50 px-4 py-2">
-          <div className="h-2.5 w-2.5 rounded-full bg-[#ff5f57]" />
-          <div className="h-2.5 w-2.5 rounded-full bg-[#febc2e]" />
-          <div className="h-2.5 w-2.5 rounded-full bg-[#28c840]" />
-          <span className="text-muted-foreground ml-2 text-xs">
+        <div className="flex items-center gap-1 border-b border-border/50 bg-muted/50 px-3 py-1.5 sm:gap-1.5 sm:px-4 sm:py-2">
+          <div className="h-2 w-2 rounded-full bg-[#ff5f57] sm:h-2.5 sm:w-2.5" />
+          <div className="h-2 w-2 rounded-full bg-[#febc2e] sm:h-2.5 sm:w-2.5" />
+          <div className="h-2 w-2 rounded-full bg-[#28c840] sm:h-2.5 sm:w-2.5" />
+          <span className="text-muted-foreground ml-2 text-[10px] sm:text-xs">
             yoursite.com
           </span>
         </div>
 
-        {/* 代碼視圖：展示 img src URL */}
-        <div className="flex-1 p-3">
+        {/* Code view */}
+        <div className="flex-1 p-2 sm:p-3">
           <div
             className={cn(
-              "flex h-full flex-col justify-center overflow-hidden rounded-lg border px-4 py-3 font-mono transition-all duration-300",
+              "flex h-full flex-col justify-center overflow-hidden rounded-md border px-2 py-1.5 font-mono transition-all duration-300 sm:rounded-lg sm:px-4 sm:py-3",
               isWebsiteActive
                 ? "border-accent/40 bg-accent/5"
                 : isWebsiteShowingResult
@@ -428,14 +412,8 @@ function OptimizeVisual() {
                   : "border-border/50 bg-muted/30",
             )}
           >
-            {/* 初始/請求狀態：顯示 URL */}
-            <div
-              className={cn(
-                "transition-all duration-500",
-                isWebsiteShowingResult ? "hidden" : "block",
-              )}
-            >
-              <div className="flex flex-wrap items-center text-xs leading-relaxed">
+            {!isWebsiteShowingResult && (
+              <div className="flex flex-wrap items-center text-[9px] leading-relaxed sm:text-xs">
                 <span className="text-purple-500 dark:text-purple-400">
                   &lt;img
                 </span>
@@ -448,78 +426,56 @@ function OptimizeVisual() {
                       : "text-emerald-600 dark:text-green-400",
                   )}
                 >
-                  &quot;optstuff.dev/?url=
-                </span>
-                <span className="text-amber-600 dark:text-amber-400">
-                  hero.png
-                </span>
-                <span
-                  className={cn(
-                    "transition-colors duration-300",
-                    isWebsiteActive
-                      ? "text-accent"
-                      : "text-emerald-600 dark:text-green-400",
-                  )}
-                >
-                  &quot;
+                  &quot;optstuff.dev/...&quot;
                 </span>
                 <span className="text-purple-500 dark:text-purple-400">
                   /&gt;
                 </span>
               </div>
-            </div>
+            )}
 
-            {/* 優化完成：顯示結果 */}
-            <div
-              className={cn(
-                "transition-all duration-500",
-                isWebsiteShowingResult ? "block" : "hidden",
-              )}
-            >
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-12 items-center justify-center rounded-lg bg-green-500/20">
-                  <span className="text-lg">🖼️</span>
+            {isWebsiteShowingResult && (
+              <div className="flex items-center gap-2 sm:gap-3">
+                <div className="flex h-8 w-10 items-center justify-center rounded-md bg-green-500/20 sm:h-10 sm:w-12 sm:rounded-lg">
+                  <span className="text-sm sm:text-lg">🖼️</span>
                 </div>
                 <div>
-                  <div className="text-sm font-medium text-emerald-600 dark:text-green-400">
+                  <div className="text-[10px] font-medium text-emerald-600 dark:text-green-400 sm:text-sm">
                     hero.webp
                   </div>
-                  <div className="text-muted-foreground text-xs">
+                  <div className="text-muted-foreground text-[9px] sm:text-xs">
                     92% smaller
                   </div>
                 </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
       </div>
 
-      {/* 中間：雙向箭頭區域 */}
-      <div className="relative flex flex-col items-center justify-center gap-3 px-3">
-        {/* Request 箭頭（向右）*/}
-        <div className="relative flex items-center">
+      {/* Middle: Arrows - horizontal on mobile, vertical on desktop */}
+      <div className="relative flex items-center justify-center gap-2 px-2 py-1 sm:flex-col sm:gap-3 sm:px-3 sm:py-0">
+        {/* Request arrow */}
+        <div className="relative flex items-center sm:flex-col">
           <div
             className={cn(
-              "h-0.5 w-6 transition-all duration-300",
+              "h-0.5 w-4 transition-all duration-300 sm:h-4 sm:w-0.5",
               isRequestArrowActive ? "bg-accent" : "bg-muted-foreground/30",
             )}
           />
           <ArrowRight
             className={cn(
-              "-ml-1 h-5 w-5 transition-all duration-300",
+              "-ml-0.5 h-4 w-4 transition-all duration-300 sm:-mt-0.5 sm:ml-0 sm:rotate-90",
               isRequestArrowActive ? "text-accent" : "text-muted-foreground/30",
             )}
           />
-          {isRequestArrowActive && (
-            <div className="animate-flow-dot-right absolute left-0 top-1/2 h-2 w-2 -translate-y-1/2 rounded-full bg-accent shadow-[0_0_8px_3px_hsl(var(--accent)/0.5)]" />
-          )}
         </div>
 
-        {/* Response 箭頭（向左）*/}
-        <div className="relative flex items-center">
+        {/* Response arrow */}
+        <div className="relative flex items-center sm:flex-col">
           <ArrowRight
             className={cn(
-              "-mr-1 h-5 w-5 rotate-180 transition-all duration-300",
+              "-mr-0.5 h-4 w-4 rotate-180 transition-all duration-300 sm:-mb-0.5 sm:mr-0 sm:rotate-90",
               isResponseArrowActive
                 ? "text-emerald-600 dark:text-green-400"
                 : "text-muted-foreground/30",
@@ -527,22 +483,19 @@ function OptimizeVisual() {
           />
           <div
             className={cn(
-              "h-0.5 w-6 transition-all duration-300",
+              "h-0.5 w-4 transition-all duration-300 sm:h-4 sm:w-0.5",
               isResponseArrowActive
                 ? "bg-emerald-500"
                 : "bg-muted-foreground/30",
             )}
           />
-          {isResponseArrowActive && (
-            <div className="animate-flow-dot-left absolute right-0 top-1/2 h-2 w-2 -translate-y-1/2 rounded-full bg-emerald-500 shadow-[0_0_8px_3px_rgba(16,185,129,0.5)]" />
-          )}
         </div>
       </div>
 
-      {/* 右側：OptStuff Server */}
+      {/* Right: OptStuff Server */}
       <div
         className={cn(
-          "bg-card relative flex flex-1 flex-col items-center justify-center gap-3 overflow-hidden rounded-xl border p-4 transition-all duration-300",
+          "bg-card relative flex flex-1 flex-col items-center justify-center gap-2 overflow-hidden rounded-lg border p-3 transition-all duration-300 sm:gap-3 sm:rounded-xl sm:p-4",
           isOptStuffActive
             ? "border-accent/50"
             : step >= 3
@@ -550,11 +503,10 @@ function OptimizeVisual() {
               : "border-border/50",
         )}
       >
-        {/* Logo / 圖示區域 */}
-        <div className="relative flex flex-col items-center gap-2">
+        <div className="relative flex flex-col items-center gap-1 sm:gap-2">
           <div
             className={cn(
-              "relative flex h-14 w-14 items-center justify-center rounded-2xl transition-all duration-300",
+              "relative flex h-10 w-10 items-center justify-center rounded-xl transition-all duration-300 sm:h-14 sm:w-14 sm:rounded-2xl",
               isOptStuffActive
                 ? "bg-accent/20"
                 : step >= 3
@@ -562,26 +514,24 @@ function OptimizeVisual() {
                   : "bg-muted/50",
             )}
           >
-            {/* Ping 效果 */}
             {isOptStuffActive && (
-              <div className="animate-soft-pulse absolute inset-0 rounded-2xl bg-accent/40" />
+              <div className="animate-soft-pulse absolute inset-0 rounded-xl bg-accent/40 sm:rounded-2xl" />
             )}
 
             <div className="relative">
               {isOptStuffActive ? (
-                <span className="text-2xl">⚡</span>
+                <span className="text-lg sm:text-2xl">⚡</span>
               ) : step >= 3 ? (
-                <Check className="h-7 w-7 text-emerald-600 dark:text-green-400" />
+                <Check className="h-5 w-5 text-emerald-600 dark:text-green-400 sm:h-7 sm:w-7" />
               ) : (
-                <span className="text-2xl">📦</span>
+                <span className="text-lg sm:text-2xl">📦</span>
               )}
             </div>
           </div>
 
-          {/* OptStuff 標題 */}
           <div
             className={cn(
-              "text-sm font-bold transition-colors duration-300",
+              "text-xs font-bold transition-colors duration-300 sm:text-sm",
               isOptStuffActive
                 ? "text-accent"
                 : step >= 3
@@ -608,8 +558,7 @@ function ApiDemoSection() {
   const codeExamples = {
     curl: `curl "https://api.optstuff.dev/v1/optimize?\\
   url=https://example.com/hero.png&\\
-  width=800&\\
-  format=webp" \\
+  width=800&format=webp" \\
   -H "Authorization: Bearer sk_live_xxx"`,
     js: `const response = await fetch(
   "https://api.optstuff.dev/v1/optimize?" +
@@ -618,11 +567,7 @@ function ApiDemoSection() {
     width: "800",
     format: "webp"
   }),
-  {
-    headers: {
-      Authorization: "Bearer sk_live_xxx"
-    }
-  }
+  { headers: { Authorization: "Bearer sk_live_xxx" } }
 );`,
     response: `{
   "success": true,
@@ -652,16 +597,16 @@ function ApiDemoSection() {
   };
 
   return (
-    <div className="border-border/50 bg-card/30 overflow-hidden rounded-2xl border backdrop-blur-sm">
+    <div className="border-border/50 bg-card/30 overflow-hidden rounded-xl border backdrop-blur-sm sm:rounded-2xl">
       {/* Header */}
-      <div className="border-border/50 flex items-center justify-between border-b px-4 py-3">
+      <div className="border-border/50 flex flex-col gap-2 border-b px-3 py-2 sm:flex-row sm:items-center sm:justify-between sm:px-4 sm:py-3">
         <div className="flex items-center gap-2">
-          <div className="flex gap-1.5">
-            <div className="h-3 w-3 rounded-full bg-red-500/80" />
-            <div className="h-3 w-3 rounded-full bg-yellow-500/80" />
-            <div className="h-3 w-3 rounded-full bg-green-500/80" />
+          <div className="flex gap-1 sm:gap-1.5">
+            <div className="h-2.5 w-2.5 rounded-full bg-red-500/80 sm:h-3 sm:w-3" />
+            <div className="h-2.5 w-2.5 rounded-full bg-yellow-500/80 sm:h-3 sm:w-3" />
+            <div className="h-2.5 w-2.5 rounded-full bg-green-500/80 sm:h-3 sm:w-3" />
           </div>
-          <span className="text-muted-foreground ml-2 text-sm font-medium">
+          <span className="text-muted-foreground ml-1 text-xs font-medium sm:ml-2 sm:text-sm">
             API Example
           </span>
         </div>
@@ -673,17 +618,13 @@ function ApiDemoSection() {
               key={tab}
               onClick={() => handleTabChange(tab)}
               className={cn(
-                "rounded-md px-3 py-1 text-xs font-medium transition-all duration-200",
+                "rounded-md px-2 py-1 text-[10px] font-medium transition-all duration-200 sm:px-3 sm:text-xs",
                 activeTab === tab
                   ? "bg-accent text-accent-foreground"
                   : "text-muted-foreground hover:text-foreground hover:bg-muted",
               )}
             >
-              {tab === "curl"
-                ? "cURL"
-                : tab === "js"
-                  ? "JavaScript"
-                  : "Response"}
+              {tab === "curl" ? "cURL" : tab === "js" ? "JS" : "Response"}
             </button>
           ))}
         </div>
@@ -700,17 +641,17 @@ function ApiDemoSection() {
         {/* Copy Button */}
         <button
           onClick={handleCopy}
-          className="absolute right-4 top-4 flex items-center gap-1.5 rounded-lg bg-white/10 px-3 py-1.5 text-xs font-medium text-white/80 backdrop-blur-sm transition-all hover:bg-white/20 hover:text-white"
+          className="absolute right-2 top-2 flex items-center gap-1 rounded-md bg-white/10 px-2 py-1 text-[10px] font-medium text-white/80 backdrop-blur-sm transition-all hover:bg-white/20 hover:text-white sm:right-4 sm:top-4 sm:gap-1.5 sm:rounded-lg sm:px-3 sm:py-1.5 sm:text-xs"
         >
           {copied ? (
             <>
-              <Check className="h-3.5 w-3.5" />
-              Copied!
+              <Check className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+              <span className="hidden sm:inline">Copied!</span>
             </>
           ) : (
             <>
-              <Copy className="h-3.5 w-3.5" />
-              Copy
+              <Copy className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+              <span className="hidden sm:inline">Copy</span>
             </>
           )}
         </button>
@@ -743,7 +684,6 @@ function TypewriterCode({ code, isTyping, isResponse }: TypewriterCodeProps) {
           setDisplayedCode(code.slice(0, currentIndex + 1));
           setCurrentIndex((prev) => prev + 1);
         },
-        // Response JSON 打字速度較快
         isResponse ? 5 : 15,
       );
       return () => clearTimeout(timeout);
@@ -751,9 +691,9 @@ function TypewriterCode({ code, isTyping, isResponse }: TypewriterCodeProps) {
   }, [currentIndex, code, isResponse]);
 
   return (
-    <div className="bg-[#0d0d0f] p-4">
+    <div className="bg-[#0d0d0f] p-3 sm:p-4">
       <pre className="scrollbar-hide overflow-x-auto">
-        <code className="font-mono text-sm leading-relaxed">
+        <code className="font-mono text-[10px] leading-relaxed sm:text-sm">
           <SyntaxHighlight code={displayedCode} isResponse={isResponse} />
           <span className="animate-pulse text-accent">▊</span>
         </code>
@@ -767,10 +707,8 @@ type SyntaxHighlightProps = {
   readonly isResponse?: boolean;
 };
 
-/** 簡單的語法高亮 */
 function SyntaxHighlight({ code, isResponse }: SyntaxHighlightProps) {
   if (isResponse) {
-    // JSON 語法高亮
     const highlighted = code
       .replace(/"([^"]+)":/g, '<span class="text-purple-400">"$1"</span>:')
       .replace(/: "([^"]+)"/g, ': <span class="text-green-400">"$1"</span>')
@@ -784,7 +722,6 @@ function SyntaxHighlight({ code, isResponse }: SyntaxHighlightProps) {
     );
   }
 
-  // cURL / JS 語法高亮
   const highlighted = code
     .replace(
       /(curl|const|await|fetch|new)/g,

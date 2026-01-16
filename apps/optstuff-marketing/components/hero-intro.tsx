@@ -8,9 +8,10 @@ export function HeroIntro() {
   return (
     <section
       id="hero"
-      className="mx-auto max-w-6xl px-6 pb-10 text-center md:pb-46"
+      className="mx-auto max-w-6xl px-4 pb-8 text-center sm:px-6 md:pb-46"
     >
-      <div className="bg-accent/10 text-accent animate-fade-in-up mb-8 inline-flex items-center gap-2 rounded-full px-3 py-1 text-sm font-medium md:mb-14">
+      {/* Badge */}
+      <div className="bg-accent/10 text-accent animate-fade-in mb-6 inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-medium sm:text-sm md:mb-14">
         <span className="relative flex h-2 w-2">
           <span className="bg-accent absolute inline-flex h-full w-full animate-ping rounded-full opacity-75"></span>
           <span className="bg-accent relative inline-flex h-2 w-2 rounded-full"></span>
@@ -24,20 +25,25 @@ export function HeroIntro() {
           🖼️ IPX
         </AnimatedLink>
       </div>
-      <div className="flex flex-col items-center gap-12 md:flex-row md:items-center md:justify-between">
-        <div className="flex flex-col items-center text-left md:items-start md:justify-center">
-          <h1 className="animate-fade-in-up animation-delay-100 mb-6 text-center text-4xl leading-[1.1] font-bold tracking-tight text-balance md:text-left md:text-5xl lg:text-6xl lg:text-nowrap xl:text-7xl">
-            Image optimization <br />
+
+      {/* Main content */}
+      <div className="flex flex-col items-center gap-8 md:flex-row md:items-center md:justify-between md:gap-12">
+        {/* Text content */}
+        <div className="flex flex-col items-center md:items-start md:justify-center">
+          <h1 className="animate-fade-in-up animation-delay-100 mb-4 text-center text-3xl font-bold leading-[1.15] tracking-tight sm:text-4xl md:mb-6 md:text-left md:text-5xl md:leading-[1.1] lg:text-6xl lg:text-nowrap xl:text-7xl">
+            Image optimization <br className="hidden sm:block" />
             <span className="text-muted-foreground">that just works</span>
           </h1>
-          <p className="text-muted-foreground animate-fade-in-up animation-delay-200 max-w-xl text-center text-lg leading-relaxed text-pretty md:text-left md:text-xl">
+          <p className="text-muted-foreground animate-fade-in-up animation-delay-200 max-w-md text-center text-base leading-relaxed sm:max-w-xl sm:text-lg md:text-left md:text-xl">
             Transform, resize, and optimize images on-the-fly. One API for all
             your image processing needs.
           </p>
-          <div className="animate-fade-in-up animation-delay-300 mt-10 space-x-6">
+
+          {/* CTA Buttons */}
+          <div className="animate-fade-in-up animation-delay-300 mt-8 flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:gap-4 md:mt-10 md:gap-6">
             <Button
               size="lg"
-              className="group h-12 rounded-full px-6 hover:shadow-xl"
+              className="group h-12 w-full rounded-full px-6 hover:shadow-xl sm:w-auto"
               asChild
             >
               <Link href="/">
@@ -48,14 +54,16 @@ export function HeroIntro() {
             <Button
               size="lg"
               variant="outline"
-              className="h-12 rounded-full px-6 hover:shadow-xl"
+              className="h-12 w-full rounded-full px-6 hover:shadow-xl sm:w-auto"
               asChild
             >
               <Link href="/docs">Documentation</Link>
             </Button>
           </div>
         </div>
-        <div className="h-full w-full max-w-[480px]">
+
+        {/* Hero Animation */}
+        <div className="mt-4 h-full w-full max-w-[320px] sm:max-w-[400px] md:mt-0 md:max-w-[480px]">
           <HeroAnimation />
         </div>
       </div>

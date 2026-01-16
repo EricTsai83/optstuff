@@ -46,43 +46,49 @@ export function CodeExample() {
   const [activeTab, setActiveTab] = useState("url");
 
   return (
-    <section id="docs" className="bg-muted/30 py-24">
+    <section id="docs" className="bg-muted/30 py-16 sm:py-24">
       <div className="container mx-auto px-4 md:px-6">
-        <div className="mb-16 text-center">
-          <p className="text-accent mb-3 font-medium">Integration</p>
-          <h2 className="mb-4 text-3xl font-bold tracking-tight md:text-4xl">
+        {/* Header */}
+        <div className="mb-10 text-center sm:mb-16">
+          <p className="text-accent mb-2 text-sm font-medium sm:mb-3">
+            Integration
+          </p>
+          <h2 className="mb-3 text-2xl font-bold tracking-tight sm:mb-4 sm:text-3xl md:text-4xl">
             Easy to integrate
           </h2>
-          <p className="text-muted-foreground mx-auto max-w-lg">
+          <p className="text-muted-foreground mx-auto max-w-lg text-sm sm:text-base">
             Works with any stack. Choose your preferred method.
           </p>
         </div>
 
+        {/* Code tabs */}
         <div className="mx-auto max-w-3xl">
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <div className="mb-4">
-              <TabsList className="bg-muted h-10 rounded-full p-1">
+            {/* Tab navigation */}
+            <div className="mb-4 flex justify-center">
+              <TabsList className="bg-muted h-9 rounded-full p-1 sm:h-10">
                 <TabsTrigger
                   value="url"
-                  className="data-[state=active]:bg-background rounded-full px-4 text-sm data-[state=active]:shadow-sm"
+                  className="data-[state=active]:bg-background rounded-full px-3 text-xs data-[state=active]:shadow-sm sm:px-4 sm:text-sm"
                 >
                   URL API
                 </TabsTrigger>
                 <TabsTrigger
                   value="express"
-                  className="data-[state=active]:bg-background rounded-full px-4 text-sm data-[state=active]:shadow-sm"
+                  className="data-[state=active]:bg-background rounded-full px-3 text-xs data-[state=active]:shadow-sm sm:px-4 sm:text-sm"
                 >
-                  Express.js
+                  Express
                 </TabsTrigger>
                 <TabsTrigger
                   value="next"
-                  className="data-[state=active]:bg-background rounded-full px-4 text-sm data-[state=active]:shadow-sm"
+                  className="data-[state=active]:bg-background rounded-full px-3 text-xs data-[state=active]:shadow-sm sm:px-4 sm:text-sm"
                 >
                   Next.js
                 </TabsTrigger>
               </TabsList>
             </div>
 
+            {/* Code content */}
             <TabsContent value="url" className="mt-0">
               <CodeBlock content={codeExamples.url} variant="block" />
             </TabsContent>

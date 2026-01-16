@@ -69,21 +69,23 @@ export function Features() {
     useCardVisibility(FEATURES.length);
 
   return (
-    <section id="features" className="bg-background py-24">
+    <section id="features" className="bg-background py-16 sm:py-24">
       <div className="container mx-auto px-4 md:px-6">
-        <div className="mb-16 text-center">
-          <p className="text-accent animate-fade-in mb-3 font-medium">
+        {/* Header */}
+        <div className="mb-10 text-center sm:mb-16">
+          <p className="text-accent animate-fade-in mb-2 text-sm font-medium sm:mb-3">
             Features
           </p>
-          <h2 className="animate-fade-in-up animation-delay-100 mb-4 text-3xl font-bold tracking-tight md:text-4xl">
+          <h2 className="animate-fade-in-up animation-delay-100 mb-3 text-2xl font-bold tracking-tight sm:mb-4 sm:text-3xl md:text-4xl">
             Everything you need
           </h2>
-          <p className="text-muted-foreground animate-fade-in-up animation-delay-200 mx-auto max-w-lg">
+          <p className="text-muted-foreground animate-fade-in-up animation-delay-200 mx-auto max-w-lg text-sm sm:text-base">
             Powerful features for developers who care about performance.
           </p>
         </div>
 
-        <div className="mx-auto grid max-w-5xl gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {/* Feature grid */}
+        <div className="mx-auto grid max-w-5xl gap-3 sm:gap-4 md:grid-cols-2 lg:grid-cols-3">
           {FEATURES.map((feature, index) => (
             <div
               key={feature.title}
@@ -127,7 +129,6 @@ function useCardVisibility(cardCount: number): {
 
   const handleAnimationEnd = useCallback(
     (e: React.AnimationEvent<HTMLDivElement>, index: number): void => {
-      // 只處理卡片入場動畫，忽略圖標 hover 動畫的冒泡事件
       if (e.animationName === "feature-card-enter") {
         setAnimatedCards((prev) => new Set(prev).add(index));
       }
@@ -176,8 +177,9 @@ function FeatureCard({
   const Icon = feature.icon;
 
   const cardClassName = cn(
-    "group rounded-2xl border border-transparent p-6",
+    "group rounded-xl p-4 sm:rounded-2xl sm:p-6 border border-transparent",
     "hover:border-border hover:bg-muted/30",
+    "active:scale-[0.98] transition-transform",
     isAnimated
       ? "feature-card-hover opacity-100"
       : isVisible
@@ -197,19 +199,21 @@ function FeatureCard({
     >
       <div
         className={cn(
-          "bg-muted group-hover:bg-accent/10 mb-4 flex h-10 w-10 items-center justify-center rounded-xl transition-all duration-500",
+          "bg-muted group-hover:bg-accent/10 mb-3 flex h-9 w-9 items-center justify-center rounded-lg transition-all duration-500 sm:mb-4 sm:h-10 sm:w-10 sm:rounded-xl",
           `icon-container-${feature.animation}`,
         )}
       >
         <Icon
           className={cn(
-            "text-muted-foreground group-hover:text-accent h-5 w-5 transition-colors duration-300",
+            "text-muted-foreground group-hover:text-accent h-4 w-4 transition-colors duration-300 sm:h-5 sm:w-5",
             feature.animation,
           )}
         />
       </div>
-      <h3 className="mb-2 font-semibold">{feature.title}</h3>
-      <p className="text-muted-foreground text-sm leading-relaxed">
+      <h3 className="mb-1 text-sm font-semibold sm:mb-2 sm:text-base">
+        {feature.title}
+      </h3>
+      <p className="text-muted-foreground text-xs leading-relaxed sm:text-sm">
         {feature.description}
       </p>
     </div>

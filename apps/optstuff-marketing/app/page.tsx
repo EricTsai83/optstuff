@@ -13,15 +13,20 @@ export default async function Home() {
       <HeroBackground />
 
       <Header />
-      <main className="pt-16 pb-24 md:pt-40 md:pb-32">
+      <main className="pt-20 pb-16 sm:pt-24 sm:pb-20 md:pt-40 md:pb-32">
         <HeroIntro />
+
+        {/* Demo section */}
         <section
           id="demo"
-          className="container mx-auto px-4 py-16 md:px-6 md:py-24"
+          className="container mx-auto px-4 py-12 sm:py-16 md:px-6 md:py-24"
         >
           <ImageOptimizationDemo />
         </section>
+
         <IntegrationSteps />
+
+        {/* Features section */}
         <div className="container mx-auto px-4 md:px-6">
           <Features />
         </div>
