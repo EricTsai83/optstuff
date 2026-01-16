@@ -2,6 +2,7 @@ import { Header } from "@/components/header";
 import { HeroIntro } from "@/components/hero-intro";
 import { ImageOptimizationDemo } from "@/components/image-optimization-demo";
 import { IntegrationSteps } from "@/components/integration-steps";
+import { ApiDemo } from "@/components/api-demo";
 import { Features } from "@/components/features";
 import { CodeExample } from "@/components/code-example";
 import { Footer } from "@/components/footer";
@@ -25,6 +26,8 @@ export default async function Home() {
         </section>
 
         <IntegrationSteps />
+
+        <ApiDemo />
 
         {/* Features section */}
         <div className="container mx-auto px-4 md:px-6">
