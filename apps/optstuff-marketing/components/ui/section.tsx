@@ -10,6 +10,7 @@ type SectionWrapperProps = {
   readonly children: React.ReactNode;
   readonly className?: string;
   readonly maxWidth?: "4xl" | "5xl";
+  readonly allowOverflow?: boolean;
 };
 
 export function SectionWrapper({
@@ -17,12 +18,14 @@ export function SectionWrapper({
   children,
   className,
   maxWidth = "4xl",
+  allowOverflow = false,
 }: SectionWrapperProps) {
   return (
     <section
       id={id}
       className={cn(
-        "relative overflow-hidden px-4 py-16 sm:px-6 sm:py-24 md:px-8",
+        "relative px-4 py-16 sm:px-6 sm:py-24 md:px-8",
+        !allowOverflow && "overflow-hidden",
         className,
       )}
     >

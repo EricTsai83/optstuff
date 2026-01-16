@@ -31,7 +31,7 @@ export function ImageOptimizationDemo() {
   const ActiveDemo = DEMOS[animation.displayedTab];
 
   return (
-    <SectionWrapper id="demo">
+    <SectionWrapper id="demo" allowOverflow>
       <SectionHeader
         icon={TvMinimal}
         badge="Live Demo"
@@ -45,8 +45,8 @@ export function ImageOptimizationDemo() {
           onValueChange={handleTabChange}
           className="w-full"
         >
-          {/* Tabs navigation - scrollable on mobile */}
-          <div className="mb-6 flex justify-center md:mb-8">
+          {/* Tabs navigation - scrollable on mobile, sticky when scrolling */}
+          <div className="sticky top-[72px] z-40 -mx-4 mb-6 flex justify-center bg-background/95 px-4 py-3 backdrop-blur-sm sm:-mx-6 sm:px-6 md:static md:mx-0 md:mb-8 md:bg-transparent md:px-0 md:py-0 md:backdrop-blur-none">
             <TabsList
               ref={tabsListRef}
               className="bg-muted text-muted-foreground relative h-10 w-full max-w-[calc(100vw-2rem)] overflow-x-auto rounded-full p-1 scrollbar-hide sm:h-11 sm:w-auto"
