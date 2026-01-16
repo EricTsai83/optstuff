@@ -90,7 +90,7 @@ export function ImageOptimizationDemo() {
 
           {/* Demo content card - fixed height to prevent layout shifts */}
           <div className="h-[520px] sm:h-[560px] md:h-[600px]">
-            <div className="bg-card border-border rounded-xl border shadow-sm transition-shadow duration-500 hover:shadow-lg sm:rounded-2xl">
+            <div className="bg-card border-border overflow-hidden rounded-xl border shadow-sm transition-shadow duration-500 hover:shadow-lg sm:rounded-2xl">
               {/* Hidden TabsContent to maintain Radix accessibility */}
               {DEMO_KEYS.map((tab) => (
                 <TabsContent key={tab} value={tab} className="hidden" />
