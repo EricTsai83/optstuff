@@ -32,7 +32,10 @@ export function getProxyAllowedDomains(): string[] {
   if (envDomains) {
     return envDomains.split(",").map((d) => d.trim());
   }
-  return [...PRODUCTION_DOMAINS, ...DEV_ONLY_DOMAINS];
+  if (process.env.NODE_ENV !== "production") {
+    return [...PRODUCTION_DOMAINS, ...DEV_ONLY_DOMAINS];
+  }
+  return PRODUCTION_DOMAINS;
 }
 
 /**
