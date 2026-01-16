@@ -12,6 +12,11 @@ import {
 import { Separator } from "@workspace/ui/components/separator";
 import { api } from "@/trpc/react";
 import { formatBytes, formatNumber } from "@/lib/format";
+import { USAGE_LIMITS } from "@/lib/constants";
+import {
+  UsageProgressBar,
+  UsageProgressBarSkeleton,
+} from "./usage-progress-bar";
 
 type UsageSidebarProps = {
   readonly teamId: string;
@@ -22,26 +27,20 @@ export function UsageSidebar({ teamId }: UsageSidebarProps) {
 
   const { data: teamSummary, isLoading } = api.usage.getTeamSummary.useQuery(
     { teamId },
-    { enabled: !!teamId },
+    { enabled: !!teamId }
   );
-
-  // Define usage limits (could come from a plan/subscription in the future)
-  const limits = {
-    requests: 10000,
-    bandwidth: 1024 * 1024 * 1024, // 1GB in bytes
-  };
 
   const usageData = [
     {
       name: "API Requests",
       used: teamSummary?.totalRequests ?? 0,
-      total: limits.requests,
+      total: USAGE_LIMITS.requests,
       format: formatNumber,
     },
     {
       name: "Bandwidth",
       used: teamSummary?.totalBytes ?? 0,
-      total: limits.bandwidth,
+      total: USAGE_LIMITS.bandwidth,
       format: formatBytes,
     },
   ];
@@ -69,64 +68,26 @@ export function UsageSidebar({ teamId }: UsageSidebarProps) {
           <CardContent className="flex flex-col gap-3">
             {isLoading ? (
               <div className="space-y-3">
-                {[1, 2].map((i) => (
-                  <div key={i} className="bg-muted h-6 animate-pulse rounded" />
-                ))}
+                <UsageProgressBarSkeleton compact />
+                <UsageProgressBarSkeleton compact />
               </div>
             ) : (
               <>
                 <div className="overflow-hidden">
                   <div
                     className="space-y-3 transition-[max-height] duration-300 ease-in-out"
-                    style={{
-                      maxHeight: isExpanded ? "1000px" : "80px",
-                    }}
+                    style={{ maxHeight: isExpanded ? "1000px" : "80px" }}
                   >
-                    {usageData.map((item, index) => {
-                      const percentage = Math.min(
-                        (item.used / item.total) * 100,
-                        100,
-                      );
-                      const isWarning = percentage > 80;
-                      const isDanger = percentage > 95;
-
-                      return (
-                        <div key={index} className="space-y-1.5">
-                          <div className="flex items-center justify-between text-sm">
-                            <div className="flex items-center gap-2">
-                              <div
-                                className={`h-2 w-2 rounded-full ${
-                                  isDanger
-                                    ? "bg-red-500"
-                                    : isWarning
-                                      ? "bg-yellow-500"
-                                      : "bg-green-500"
-                                }`}
-                              />
-                              <span className="text-foreground">
-                                {item.name}
-                              </span>
-                            </div>
-                            <span className="text-muted-foreground">
-                              {item.format(item.used)} /{" "}
-                              {item.format(item.total)}
-                            </span>
-                          </div>
-                          <div className="bg-muted h-1.5 overflow-hidden rounded-full">
-                            <div
-                              className={`h-full rounded-full transition-all duration-500 ${
-                                isDanger
-                                  ? "bg-red-500"
-                                  : isWarning
-                                    ? "bg-yellow-500"
-                                    : "bg-green-500"
-                              }`}
-                              style={{ width: `${percentage}%` }}
-                            />
-                          </div>
-                        </div>
-                      );
-                    })}
+                    {usageData.map((item) => (
+                      <UsageProgressBar
+                        key={item.name}
+                        label={item.name}
+                        used={item.used}
+                        total={item.total}
+                        format={item.format}
+                        compact
+                      />
+                    ))}
                   </div>
                 </div>
                 {usageData.length > 2 && (

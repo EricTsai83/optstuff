@@ -1,6 +1,6 @@
 "use client";
 
-import { Search, Bell, Menu } from "lucide-react";
+import { Search, Bell, Menu, BookOpen } from "lucide-react";
 import { Button } from "@workspace/ui/components/button";
 import { Input } from "@workspace/ui/components/input";
 import { ClerkLoaded, ClerkLoading, UserButton } from "@workspace/auth/client";
@@ -12,14 +12,10 @@ type HeaderProps = {
   readonly teamSlug?: string;
 };
 
-/**
- * Header component
- * Uses CSS media queries instead of useIsMobile hook for better performance
- */
 export function Header({ teamSlug }: HeaderProps) {
   return (
     <header className="border-border bg-background flex h-16 items-center justify-between border-b px-4">
-      {/* Desktop: Display Logo and Team Selector */}
+      {/* Desktop: Logo and Team Selector */}
       <div className="hidden items-center gap-2 md:flex">
         <AnimatedLogo />
         <div className="ml-15 flex items-center gap-2">
@@ -28,20 +24,36 @@ export function Header({ teamSlug }: HeaderProps) {
         </div>
       </div>
 
-      {/* Mobile: Display Team Selector only */}
+      {/* Mobile: Team Selector only */}
       <div className="flex items-center md:hidden">
         <TeamSwitcher currentTeamSlug={teamSlug} />
       </div>
 
-      <DesktopActions />
-      <MobileActions />
+      {/* Desktop Actions */}
+      <div className="hidden items-center gap-2 md:flex">
+        <SearchInput />
+        <Button
+          variant="ghost"
+          size="sm"
+          className="text-muted-foreground transition-colors duration-200"
+        >
+          Feedback
+        </Button>
+        <IconButton icon={Bell} hasNotification />
+        <IconButton icon={BookOpen} href="https://docs.optstuff.dev" />
+        <UserAvatar />
+      </div>
+
+      {/* Mobile Actions */}
+      <div className="flex items-center gap-1 md:hidden">
+        <IconButton icon={Search} size="mobile" />
+        <IconButton icon={Bell} size="mobile" hasNotification />
+        <IconButton icon={Menu} size="mobile" />
+      </div>
     </header>
   );
 }
 
-/**
- * Search input component
- */
 function SearchInput() {
   return (
     <div className="relative">
@@ -57,68 +69,55 @@ function SearchInput() {
   );
 }
 
-/**
- * Notification button component
- */
-function NotificationButton({
-  isMobile = false,
-}: {
-  readonly isMobile?: boolean;
-}) {
-  const size = isMobile ? "h-9 w-9" : "h-8 w-8";
+type IconButtonProps = {
+  readonly icon: React.ComponentType<{ className?: string }>;
+  readonly href?: string;
+  readonly hasNotification?: boolean;
+  readonly size?: "default" | "mobile";
+};
+
+function IconButton({
+  icon: Icon,
+  href,
+  hasNotification,
+  size = "default",
+}: IconButtonProps) {
+  const isMobile = size === "mobile";
+  const buttonSize = isMobile ? "h-9 w-9" : "h-8 w-8";
   const iconSize = isMobile ? "h-5 w-5" : "h-4 w-4";
   const dotPosition = isMobile ? "top-1.5 right-1.5" : "top-1 right-1";
 
-  return (
+  const button = (
     <Button
       variant="ghost"
       size="icon"
-      className={`relative ${size} transition-colors duration-200`}
+      className={`relative ${buttonSize} transition-colors duration-200`}
+      asChild={!!href}
     >
-      <Bell className={iconSize} />
-      <span
-        className={`absolute ${dotPosition} h-2 w-2 animate-pulse rounded-full bg-blue-500`}
-      />
+      {href ? (
+        <a href={href} target="_blank" rel="noopener noreferrer">
+          <Icon className={iconSize} />
+        </a>
+      ) : (
+        <Icon className={iconSize} />
+      )}
     </Button>
   );
+
+  if (hasNotification) {
+    return (
+      <div className="relative">
+        {button}
+        <span
+          className={`absolute ${dotPosition} h-2 w-2 animate-pulse rounded-full bg-blue-500`}
+        />
+      </div>
+    );
+  }
+
+  return button;
 }
 
-/**
- * Docs button component
- */
-function DocsButton({ isMobile = false }: { readonly isMobile?: boolean }) {
-  const size = isMobile ? "h-9 w-9" : "h-8 w-8";
-  const iconSize = isMobile ? "h-5 w-5" : "h-4 w-4";
-
-  return (
-    <Button
-      variant="ghost"
-      size="icon"
-      className={`${size} transition-colors duration-200`}
-      asChild
-    >
-      <a
-        href="https://docs.optstuff.dev"
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        <svg
-          className={iconSize}
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-        >
-          <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20" />
-        </svg>
-      </a>
-    </Button>
-  );
-}
-
-/**
- * User avatar component using Clerk
- */
 function UserAvatar() {
   return (
     <div className="flex h-8 w-8 items-center justify-center">
@@ -135,52 +134,6 @@ function UserAvatar() {
           }}
         />
       </ClerkLoaded>
-    </div>
-  );
-}
-
-/**
- * Desktop actions component
- */
-function DesktopActions() {
-  return (
-    <div className="hidden items-center gap-2 md:flex">
-      <SearchInput />
-      <Button
-        variant="ghost"
-        size="sm"
-        className="text-muted-foreground transition-colors duration-200"
-      >
-        Feedback
-      </Button>
-      <NotificationButton />
-      <DocsButton />
-      <UserAvatar />
-    </div>
-  );
-}
-
-/**
- * Mobile actions component
- */
-function MobileActions() {
-  return (
-    <div className="flex items-center gap-1 md:hidden">
-      <Button
-        variant="ghost"
-        size="icon"
-        className="h-9 w-9 transition-colors duration-200"
-      >
-        <Search className="h-5 w-5" />
-      </Button>
-      <NotificationButton isMobile />
-      <Button
-        variant="ghost"
-        size="icon"
-        className="h-9 w-9 transition-colors duration-200"
-      >
-        <Menu className="h-5 w-5" />
-      </Button>
     </div>
   );
 }

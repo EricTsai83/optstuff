@@ -1,7 +1,6 @@
 "use client";
 
 import { Search, X } from "lucide-react";
-import { Button } from "@workspace/ui/components/button";
 import { Input } from "@workspace/ui/components/input";
 import { CreateProjectDialog } from "./create-project-dialog";
 
@@ -38,7 +37,6 @@ export function SearchToolbar({
           </button>
         )}
       </div>
-
       <CreateProjectDialog teamId={teamId} teamSlug={teamSlug} />
     </div>
   );

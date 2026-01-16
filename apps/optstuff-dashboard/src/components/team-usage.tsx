@@ -10,6 +10,8 @@ import {
 } from "@workspace/ui/components/card";
 import { api } from "@/trpc/react";
 import { formatBytes, formatNumber } from "@/lib/format";
+import { USAGE_LIMITS } from "@/lib/constants";
+import { UsageProgressBar } from "./usage-progress-bar";
 
 type TeamUsageProps = {
   readonly teamId: string;
@@ -18,16 +20,10 @@ type TeamUsageProps = {
 export function TeamUsage({ teamId }: TeamUsageProps) {
   const { data: teamSummary, isLoading } = api.usage.getTeamSummary.useQuery(
     { teamId },
-    { enabled: !!teamId },
+    { enabled: !!teamId }
   );
 
   const { data: projects } = api.project.list.useQuery({ teamId });
-
-  // Define usage limits
-  const limits = {
-    requests: 10000,
-    bandwidth: 1024 * 1024 * 1024, // 1GB
-  };
 
   if (isLoading) {
     return (
@@ -46,69 +42,36 @@ export function TeamUsage({ teamId }: TeamUsageProps) {
   }
 
   const requestPercentage = Math.min(
-    ((teamSummary?.totalRequests ?? 0) / limits.requests) * 100,
-    100,
+    ((teamSummary?.totalRequests ?? 0) / USAGE_LIMITS.requests) * 100,
+    100
   );
   const bandwidthPercentage = Math.min(
-    ((teamSummary?.totalBytes ?? 0) / limits.bandwidth) * 100,
-    100,
+    ((teamSummary?.totalBytes ?? 0) / USAGE_LIMITS.bandwidth) * 100,
+    100
   );
 
   return (
     <div className="space-y-6">
       {/* Summary Cards */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">
-              Total Requests
-            </CardTitle>
-            <Activity className="text-muted-foreground h-4 w-4" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {formatNumber(teamSummary?.totalRequests ?? 0)}
-            </div>
-            <p className="text-muted-foreground text-xs">Last 30 days</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">
-              Total Bandwidth
-            </CardTitle>
-            <Activity className="text-muted-foreground h-4 w-4" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {formatBytes(teamSummary?.totalBytes ?? 0)}
-            </div>
-            <p className="text-muted-foreground text-xs">Last 30 days</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Projects</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {teamSummary?.projectCount ?? 0}
-            </div>
-            <p className="text-muted-foreground text-xs">Active projects</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Plan</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">Free</div>
-            <p className="text-muted-foreground text-xs">Current plan</p>
-          </CardContent>
-        </Card>
+        <StatCard
+          title="Total Requests"
+          value={formatNumber(teamSummary?.totalRequests ?? 0)}
+          subtitle="Last 30 days"
+          icon={<Activity className="text-muted-foreground h-4 w-4" />}
+        />
+        <StatCard
+          title="Total Bandwidth"
+          value={formatBytes(teamSummary?.totalBytes ?? 0)}
+          subtitle="Last 30 days"
+          icon={<Activity className="text-muted-foreground h-4 w-4" />}
+        />
+        <StatCard
+          title="Projects"
+          value={String(teamSummary?.projectCount ?? 0)}
+          subtitle="Active projects"
+        />
+        <StatCard title="Plan" value="Free" subtitle="Current plan" />
       </div>
 
       {/* Usage Progress */}
@@ -123,16 +86,16 @@ export function TeamUsage({ teamId }: TeamUsageProps) {
           <UsageProgressBar
             label="API Requests"
             used={teamSummary?.totalRequests ?? 0}
-            total={limits.requests}
-            percentage={requestPercentage}
+            total={USAGE_LIMITS.requests}
             format={formatNumber}
+            showPercentage
           />
           <UsageProgressBar
             label="Bandwidth"
             used={teamSummary?.totalBytes ?? 0}
-            total={limits.bandwidth}
-            percentage={bandwidthPercentage}
+            total={USAGE_LIMITS.bandwidth}
             format={formatBytes}
+            showPercentage
           />
         </CardContent>
       </Card>
@@ -163,48 +126,25 @@ export function TeamUsage({ teamId }: TeamUsageProps) {
   );
 }
 
-type UsageProgressBarProps = {
-  label: string;
-  used: number;
-  total: number;
-  percentage: number;
-  format: (value: number) => string;
+type StatCardProps = {
+  readonly title: string;
+  readonly value: string;
+  readonly subtitle: string;
+  readonly icon?: React.ReactNode;
 };
 
-function UsageProgressBar({
-  label,
-  used,
-  total,
-  percentage,
-  format,
-}: UsageProgressBarProps) {
-  const isWarning = percentage > 80;
-  const isDanger = percentage > 95;
-
+function StatCard({ title, value, subtitle, icon }: StatCardProps) {
   return (
-    <div className="space-y-2">
-      <div className="flex items-center justify-between">
-        <span className="text-sm font-medium">{label}</span>
-        <span className="text-muted-foreground text-sm">
-          {format(used)} / {format(total)}
-        </span>
-      </div>
-      <div className="bg-muted h-2 overflow-hidden rounded-full">
-        <div
-          className={`h-full rounded-full transition-all duration-500 ${
-            isDanger
-              ? "bg-red-500"
-              : isWarning
-                ? "bg-yellow-500"
-                : "bg-green-500"
-          }`}
-          style={{ width: `${percentage}%` }}
-        />
-      </div>
-      <p className="text-muted-foreground text-xs">
-        {percentage.toFixed(1)}% used
-      </p>
-    </div>
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between pb-2">
+        <CardTitle className="text-sm font-medium">{title}</CardTitle>
+        {icon}
+      </CardHeader>
+      <CardContent>
+        <div className="text-2xl font-bold">{value}</div>
+        <p className="text-muted-foreground text-xs">{subtitle}</p>
+      </CardContent>
+    </Card>
   );
 }
 

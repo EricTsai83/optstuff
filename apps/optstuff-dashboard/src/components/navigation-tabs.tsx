@@ -13,10 +13,7 @@ type NavigationTabsProps = {
   readonly onTabChange: (tab: NavTab) => void;
 };
 
-export function NavigationTabs({
-  activeTab,
-  onTabChange,
-}: NavigationTabsProps) {
+export function NavigationTabs({ activeTab, onTabChange }: NavigationTabsProps) {
   const scrollY = useScroll();
   const isMobile = useIsMobile();
 
@@ -39,7 +36,7 @@ export function NavigationTabs({
               "border-b-2 px-3 py-3 text-sm whitespace-nowrap transition-all duration-200",
               activeTab === tab
                 ? "border-foreground text-foreground font-medium"
-                : "text-muted-foreground hover:text-foreground hover:border-muted-foreground border-transparent",
+                : "text-muted-foreground hover:text-foreground hover:border-muted-foreground border-transparent"
             )}
           >
             {tab}

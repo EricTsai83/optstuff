@@ -124,7 +124,7 @@ export function TeamSettings({
         </CardContent>
       </Card>
 
-      {/* Team Members (placeholder for future) */}
+      {/* Team Members */}
       <Card>
         <CardHeader>
           <CardTitle>Team Members</CardTitle>

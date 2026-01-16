@@ -43,7 +43,7 @@ export function TeamSwitcher({ currentTeamSlug }: TeamSwitcherProps) {
   }, [isSuccess, ensurePersonalTeam]);
 
   const currentTeam =
-    teams?.find((t) => t.slug === currentTeamSlug) ?? teams?.[0];
+    teams?.find((t: Team) => t.slug === currentTeamSlug) ?? teams?.[0];
 
   const handleTeamSelect = (team: Team) => {
     setIsOpen(false);
@@ -87,7 +87,7 @@ export function TeamSwitcher({ currentTeamSlug }: TeamSwitcherProps) {
         <div className="text-muted-foreground px-2 py-1.5 text-xs font-medium">
           Teams
         </div>
-        {teams?.map((team) => (
+        {teams?.map((team: Team) => (
           <DropdownMenuItem
             key={team.id}
             onClick={() => handleTeamSelect(team)}

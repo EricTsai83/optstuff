@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Loader2, Copy, Check, AlertTriangle } from "lucide-react";
+import { Loader2, Check, AlertTriangle } from "lucide-react";
 import { Button } from "@workspace/ui/components/button";
 import { Input } from "@workspace/ui/components/input";
 import { Label } from "@workspace/ui/components/label";
@@ -16,7 +16,7 @@ import {
 } from "@workspace/ui/components/dialog";
 import { Card, CardContent } from "@workspace/ui/components/card";
 import { api } from "@/trpc/react";
-import { copyToClipboard } from "@/lib/clipboard";
+import { CopyButton } from "./copy-button";
 import { ApiCodeExamples, DocsLink } from "./api-code-examples";
 
 type CreateApiKeyDialogProps = {
@@ -31,7 +31,6 @@ export function CreateApiKeyDialog({
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const [createdKey, setCreatedKey] = useState<string | null>(null);
-  const [keyCopied, setKeyCopied] = useState(false);
 
   const utils = api.useUtils();
 
@@ -47,25 +46,13 @@ export function CreateApiKeyDialog({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
-
-    createApiKey({
-      projectId,
-      name: name.trim(),
-    });
-  };
-
-  const handleCopyKey = async () => {
-    if (!createdKey) return;
-    await copyToClipboard(createdKey);
-    setKeyCopied(true);
-    setTimeout(() => setKeyCopied(false), 2000);
+    createApiKey({ projectId, name: name.trim() });
   };
 
   const handleClose = () => {
     setOpen(false);
     setName("");
     setCreatedKey(null);
-    setKeyCopied(false);
   };
 
   return (
@@ -141,8 +128,7 @@ export function CreateApiKeyDialog({
                     </p>
                     <p className="text-muted-foreground mt-1">
                       This is the only time you&apos;ll see the full API key.
-                      Store it in a secure location like a password manager or
-                      environment variable.
+                      Store it in a secure location.
                     </p>
                   </div>
                 </CardContent>
@@ -156,26 +142,11 @@ export function CreateApiKeyDialog({
                   <code className="bg-muted flex-1 rounded-md px-3 py-2 font-mono text-sm break-all">
                     {createdKey}
                   </code>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    onClick={handleCopyKey}
-                    className="shrink-0"
-                  >
-                    {keyCopied ? (
-                      <Check className="h-4 w-4 text-green-500" />
-                    ) : (
-                      <Copy className="h-4 w-4" />
-                    )}
-                  </Button>
+                  <CopyButton text={createdKey} className="shrink-0" />
                 </div>
               </div>
 
-              {/* Usage Examples */}
               <ApiCodeExamples apiKey={createdKey} />
-
-              {/* Documentation Link */}
               <DocsLink />
             </div>
             <DialogFooter>

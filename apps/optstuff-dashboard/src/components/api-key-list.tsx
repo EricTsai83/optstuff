@@ -2,15 +2,7 @@
 
 import { useState } from "react";
 import { formatDistanceToNow } from "date-fns";
-import {
-  Key,
-  MoreHorizontal,
-  Trash2,
-  RotateCcw,
-  Copy,
-  Check,
-  AlertTriangle,
-} from "lucide-react";
+import { Key, MoreHorizontal, Trash2, RotateCcw, AlertTriangle } from "lucide-react";
 import { Button } from "@workspace/ui/components/button";
 import { Badge } from "@workspace/ui/components/badge";
 import {
@@ -37,7 +29,7 @@ import {
 } from "@workspace/ui/components/dropdown-menu";
 import { Label } from "@workspace/ui/components/label";
 import { api } from "@/trpc/react";
-import { copyToClipboard } from "@/lib/clipboard";
+import { CopyButton, CopyIcon } from "./copy-button";
 import { ApiCodeExamples, DocsLink } from "./api-code-examples";
 import { CreateApiKeyDialog } from "./create-api-key-dialog";
 
@@ -55,9 +47,7 @@ export function ApiKeyList({ projectId }: ApiKeyListProps) {
 
   const { mutate: revokeKey, isPending: isRevoking } =
     api.apiKey.revoke.useMutation({
-      onSuccess: () => {
-        utils.apiKey.list.invalidate();
-      },
+      onSuccess: () => utils.apiKey.list.invalidate(),
     });
 
   const { mutate: rotateKey, isPending: isRotating } =
@@ -65,10 +55,7 @@ export function ApiKeyList({ projectId }: ApiKeyListProps) {
       onSuccess: (result) => {
         utils.apiKey.list.invalidate();
         if (result?.key && result?.name) {
-          setRotatedKey({
-            key: result.key,
-            name: result.name,
-          });
+          setRotatedKey({ key: result.key, name: result.name });
         }
       },
     });
@@ -107,7 +94,7 @@ export function ApiKeyList({ projectId }: ApiKeyListProps) {
           <CreateApiKeyDialog projectId={projectId} />
         </CardHeader>
         <CardContent>
-          {!apiKeys || apiKeys.length === 0 ? (
+          {!apiKeys?.length ? (
             <div className="text-muted-foreground flex flex-col items-center justify-center py-8 text-center">
               <Key className="mb-3 h-10 w-10 opacity-50" />
               <p className="font-medium">No API keys yet</p>
@@ -132,7 +119,6 @@ export function ApiKeyList({ projectId }: ApiKeyListProps) {
         </CardContent>
       </Card>
 
-      {/* Rotated Key Dialog */}
       <RotatedKeyDialog
         rotatedKey={rotatedKey}
         onClose={() => setRotatedKey(null)}
@@ -149,8 +135,6 @@ type ApiKeyItemProps = {
     createdAt: Date;
     lastUsedAt: Date | null;
     expiresAt: Date | null;
-    rateLimitPerMinute: number | null;
-    rateLimitPerDay: number | null;
   };
   readonly onRevoke: () => void;
   readonly onRotate: () => void;
@@ -165,14 +149,6 @@ function ApiKeyItem({
   isRevoking,
   isRotating,
 }: ApiKeyItemProps) {
-  const [copied, setCopied] = useState(false);
-
-  const handleCopyPrefix = async () => {
-    await copyToClipboard(apiKey.keyPrefix + "...");
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
   const isExpired = apiKey.expiresAt && new Date(apiKey.expiresAt) < new Date();
 
   return (
@@ -194,16 +170,7 @@ function ApiKeyItem({
             <code className="bg-background rounded px-1.5 py-0.5 font-mono text-xs">
               {apiKey.keyPrefix}...
             </code>
-            <button
-              onClick={handleCopyPrefix}
-              className="hover:text-foreground transition-colors"
-            >
-              {copied ? (
-                <Check className="h-3 w-3 text-green-500" />
-              ) : (
-                <Copy className="h-3 w-3" />
-              )}
-            </button>
+            <CopyIcon text={`${apiKey.keyPrefix}...`} />
             <span className="text-muted-foreground">·</span>
             <span>
               Created{" "}
@@ -252,32 +219,14 @@ function ApiKeyItem({
   );
 }
 
-// ============================================================================
-// Rotated Key Dialog
-// ============================================================================
-
 type RotatedKeyDialogProps = {
   readonly rotatedKey: { key: string; name: string } | null;
   readonly onClose: () => void;
 };
 
 function RotatedKeyDialog({ rotatedKey, onClose }: RotatedKeyDialogProps) {
-  const [keyCopied, setKeyCopied] = useState(false);
-
-  const handleCopyKey = async () => {
-    if (!rotatedKey) return;
-    await copyToClipboard(rotatedKey.key);
-    setKeyCopied(true);
-    setTimeout(() => setKeyCopied(false), 2000);
-  };
-
-  const handleClose = () => {
-    setKeyCopied(false);
-    onClose();
-  };
-
   return (
-    <Dialog open={!!rotatedKey} onOpenChange={(open) => !open && handleClose()}>
+    <Dialog open={!!rotatedKey} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -286,8 +235,7 @@ function RotatedKeyDialog({ rotatedKey, onClose }: RotatedKeyDialogProps) {
           </DialogTitle>
           <DialogDescription>
             Your API key <strong>{rotatedKey?.name}</strong> has been rotated.
-            The old key is now invalid. Make sure to copy the new key - you
-            won&apos;t be able to see it again!
+            The old key is now invalid. Make sure to copy the new key!
           </DialogDescription>
         </DialogHeader>
         <div className="max-h-[60vh] space-y-4 overflow-y-auto py-4">
@@ -299,8 +247,7 @@ function RotatedKeyDialog({ rotatedKey, onClose }: RotatedKeyDialogProps) {
                   Update your applications
                 </p>
                 <p className="text-muted-foreground mt-1">
-                  Replace the old key with this new one in all your
-                  applications. The old key will no longer work.
+                  Replace the old key with this new one in all your applications.
                 </p>
               </div>
             </CardContent>
@@ -314,30 +261,15 @@ function RotatedKeyDialog({ rotatedKey, onClose }: RotatedKeyDialogProps) {
               <code className="bg-muted flex-1 rounded-md px-3 py-2 font-mono text-sm break-all">
                 {rotatedKey?.key}
               </code>
-              <Button
-                type="button"
-                variant="outline"
-                size="icon"
-                onClick={handleCopyKey}
-                className="shrink-0"
-              >
-                {keyCopied ? (
-                  <Check className="h-4 w-4 text-green-500" />
-                ) : (
-                  <Copy className="h-4 w-4" />
-                )}
-              </Button>
+              <CopyButton text={rotatedKey?.key ?? ""} className="shrink-0" />
             </div>
           </div>
 
-          {/* Usage Examples */}
           {rotatedKey && <ApiCodeExamples apiKey={rotatedKey.key} />}
-
-          {/* Documentation Link */}
           <DocsLink />
         </div>
         <DialogFooter>
-          <Button onClick={handleClose}>Done</Button>
+          <Button onClick={onClose}>Done</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

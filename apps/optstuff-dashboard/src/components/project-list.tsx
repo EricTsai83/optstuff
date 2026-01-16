@@ -19,6 +19,7 @@ import {
   DropdownMenuTrigger,
 } from "@workspace/ui/components/dropdown-menu";
 import { api } from "@/trpc/react";
+import { getProjectColor } from "@/lib/constants";
 import { CreateProjectDialog } from "./create-project-dialog";
 
 type ProjectListProps = {
@@ -26,26 +27,6 @@ type ProjectListProps = {
   readonly teamSlug: string;
   readonly searchQuery?: string;
 };
-
-const PROJECT_COLORS = [
-  "bg-blue-500",
-  "bg-green-500",
-  "bg-purple-500",
-  "bg-orange-500",
-  "bg-pink-500",
-  "bg-cyan-500",
-  "bg-amber-500",
-  "bg-emerald-500",
-] as const;
-
-/** Generate a consistent color based on project name */
-function getProjectColor(name: string): (typeof PROJECT_COLORS)[number] {
-  let hash = 0;
-  for (let i = 0; i < name.length; i++) {
-    hash = name.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  return PROJECT_COLORS[Math.abs(hash) % PROJECT_COLORS.length]!;
-}
 
 export function ProjectList({
   teamId,
@@ -56,23 +37,20 @@ export function ProjectList({
   const { data: pinnedProjects, isLoading: isPinnedLoading } =
     api.project.listPinned.useQuery();
 
-  // Get pinned status for all projects in this team
   const projectIds = projects?.map((p) => p.id) ?? [];
   const { data: pinnedStatus } = api.project.getPinnedStatus.useQuery(
     { projectIds },
-    { enabled: projectIds.length > 0 },
+    { enabled: projectIds.length > 0 }
   );
 
-  // Filter projects by search query
   const normalizedQuery = searchQuery.toLowerCase().trim();
   const filteredProjects = projects?.filter((p) =>
     normalizedQuery
       ? p.name.toLowerCase().includes(normalizedQuery) ||
         p.description?.toLowerCase().includes(normalizedQuery)
-      : true,
+      : true
   );
 
-  // Filter pinned projects that belong to this team and match search
   const teamPinnedProjects =
     pinnedProjects?.filter(
       (p) =>
@@ -80,7 +58,7 @@ export function ProjectList({
         (normalizedQuery
           ? p.name.toLowerCase().includes(normalizedQuery) ||
             p.description?.toLowerCase().includes(normalizedQuery)
-          : true),
+          : true)
     ) ?? [];
 
   if (isLoading || isPinnedLoading) {
@@ -114,7 +92,7 @@ export function ProjectList({
                 project={project}
                 teamSlug={teamSlug}
                 index={index}
-                isPinned={true}
+                isPinned
               />
             ))}
           </div>
@@ -132,13 +110,13 @@ export function ProjectList({
         </h2>
       </div>
 
-      {!projects || projects.length === 0 ? (
+      {!projects?.length ? (
         <EmptyProjectState teamId={teamId} teamSlug={teamSlug} />
-      ) : filteredProjects?.length === 0 ? (
+      ) : !filteredProjects?.length ? (
         <NoSearchResults query={searchQuery} />
       ) : (
         <div className="space-y-2">
-          {filteredProjects?.map((project, index) => (
+          {filteredProjects.map((project, index) => (
             <ProjectItem
               key={project.id}
               project={project}
@@ -274,11 +252,7 @@ function ProjectItem({
         onClick={handlePinToggle}
         disabled={isPinning || isUnpinning}
       >
-        {isPinned ? (
-          <PinOff className="h-4 w-4" />
-        ) : (
-          <Pin className="h-4 w-4" />
-        )}
+        {isPinned ? <PinOff className="h-4 w-4" /> : <Pin className="h-4 w-4" />}
       </Button>
 
       {/* Actions */}
