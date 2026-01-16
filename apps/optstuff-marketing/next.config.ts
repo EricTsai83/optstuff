@@ -1,5 +1,8 @@
 import { withMicrofrontends } from "@vercel/microfrontends/next/config";
 
+// 在 build/dev 啟動時驗證 Clerk 環境變數
+import "@workspace/auth/keys";
+
 const nextConfig = {
   // https://nextjs.org/docs/app/api-reference/config/next-config-js/transpilePackages
   transpilePackages: ["@workspace/ui", "@workspace/auth", "@workspace/hooks"],

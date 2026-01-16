@@ -1,11 +1,11 @@
 /**
- * Canvas 繪製工具函數
+ * Canvas drawing utility functions
  */
 
 type CanvasContext = CanvasRenderingContext2D;
 
 /**
- * 手動繪製圓角矩形
+ * Manually draw a rounded rectangle
  */
 export const drawRoundedRect = (
   ctx: CanvasContext,
@@ -39,7 +39,7 @@ type DrawLandscapeParams = {
 };
 
 /**
- * 繪製風景圖（可控制模糊程度）
+ * Draw landscape image (with controllable blur level)
  */
 export const drawLandscape = ({
   ctx,
@@ -50,7 +50,7 @@ export const drawLandscape = ({
   baseOpacity,
   blurLevel,
 }: DrawLandscapeParams): void => {
-  // 天空漸層
+  // Sky gradient
   const skyGradient = ctx.createLinearGradient(
     imgX,
     imgY,
@@ -62,7 +62,7 @@ export const drawLandscape = ({
   ctx.fillStyle = skyGradient;
   ctx.fillRect(imgX, imgY, imgW, imgH * 0.5);
 
-  // 地面漸層
+  // Ground gradient
   const groundGradient = ctx.createLinearGradient(
     imgX,
     imgY + imgH * 0.5,
@@ -74,13 +74,13 @@ export const drawLandscape = ({
   ctx.fillStyle = groundGradient;
   ctx.fillRect(imgX, imgY + imgH * 0.5, imgW, imgH * 0.5);
 
-  // 太陽
+  // Sun
   const sunX = imgX + imgW * 0.75;
   const sunY = imgY + imgH * 0.28;
   const sunRadius = 11;
   const glowRadius = 26;
 
-  // 太陽光暈
+  // Sun glow
   const actualGlowRadius = glowRadius + blurLevel * 20;
   const sunGlow = ctx.createRadialGradient(
     sunX,
@@ -98,7 +98,7 @@ export const drawLandscape = ({
   ctx.arc(sunX, sunY, actualGlowRadius, 0, Math.PI * 2);
   ctx.fill();
 
-  // 太陽本體
+  // Sun body
   if (blurLevel > 0) {
     const blurExpand = blurLevel * 9;
     const sunBody = ctx.createRadialGradient(
@@ -124,7 +124,7 @@ export const drawLandscape = ({
     ctx.fill();
   }
 
-  // 山脈 1
+  // Mountain 1
   const m1BaseOpacity = blurLevel > 0 ? baseOpacity * 0.25 : baseOpacity * 0.4;
   const mountain1Gradient = ctx.createLinearGradient(
     imgX,
@@ -146,7 +146,7 @@ export const drawLandscape = ({
   ctx.closePath();
   ctx.fill();
 
-  // 山脈 1 模糊柔化
+  // Mountain 1 blur softening
   if (blurLevel > 0) {
     const layers = [
       { offset: 8, opacity: 0.06 },
@@ -166,7 +166,7 @@ export const drawLandscape = ({
     });
   }
 
-  // 山脈 2
+  // Mountain 2
   const m2BaseOpacity = blurLevel > 0 ? baseOpacity * 0.2 : baseOpacity * 0.33;
   const mountain2Gradient = ctx.createLinearGradient(
     imgX,
@@ -187,7 +187,7 @@ export const drawLandscape = ({
   ctx.closePath();
   ctx.fill();
 
-  // 山脈 2 模糊柔化
+  // Mountain 2 blur softening
   if (blurLevel > 0) {
     const layers = [
       { offset: 4, opacity: 0.05 },
@@ -206,7 +206,7 @@ export const drawLandscape = ({
     });
   }
 
-  // 山脈 3
+  // Mountain 3
   const m3BaseOpacity = blurLevel > 0 ? baseOpacity * 0.18 : baseOpacity * 0.28;
   ctx.fillStyle = `rgba(16, 185, 129, ${m3BaseOpacity})`;
   ctx.beginPath();
@@ -216,7 +216,7 @@ export const drawLandscape = ({
   ctx.closePath();
   ctx.fill();
 
-  // 山脈 3 模糊柔化
+  // Mountain 3 blur softening
   if (blurLevel > 0) {
     const layers = [
       { offset: 6, opacity: 0.04 },
@@ -235,7 +235,7 @@ export const drawLandscape = ({
     });
   }
 
-  // 整體霧化
+  // Overall fog effect
   if (blurLevel > 0) {
     ctx.fillStyle = `rgba(16, 185, 129, ${blurLevel * 0.07})`;
     ctx.fillRect(imgX, imgY, imgW, imgH);
@@ -253,7 +253,7 @@ type DrawStatusBadgeParams = {
 };
 
 /**
- * 繪製狀態標籤
+ * Draw status badge
  */
 export const drawStatusBadge = ({
   ctx,
@@ -264,12 +264,12 @@ export const drawStatusBadge = ({
   height,
   opacity,
 }: DrawStatusBadgeParams): void => {
-  // 背景
+  // Background
   ctx.fillStyle = `rgba(16, 185, 129, ${opacity * 0.2})`;
   drawRoundedRect(ctx, x, y, width, height, 3);
   ctx.fill();
 
-  // 文字
+  // Text
   ctx.fillStyle = `rgba(16, 185, 129, ${opacity * 0.9})`;
   ctx.font = "bold 7px 'JetBrains Mono', monospace";
   ctx.textAlign = "center";
@@ -287,7 +287,7 @@ type DrawFileSizeDisplayParams = {
 };
 
 /**
- * 繪製檔案大小顯示（圖片正中）
+ * Draw file size display (centered on image)
  */
 export const drawFileSizeDisplay = ({
   ctx,
@@ -299,19 +299,19 @@ export const drawFileSizeDisplay = ({
 }: DrawFileSizeDisplayParams): void => {
   const circleRadius = 55;
 
-  // 背景圓形
+  // Background circle
   ctx.fillStyle = "rgba(16, 185, 129, 0.15)";
   ctx.beginPath();
   ctx.arc(centerX, centerY, circleRadius, 0, Math.PI * 2);
   ctx.fill();
 
-  // 外圈
+  // Outer ring
   ctx.strokeStyle = "rgba(16, 185, 129, 0.4)";
   ctx.lineWidth = 1.5;
   ctx.stroke();
 
   if (isOptimized) {
-    // 減少百分比
+    // Reduction percentage
     ctx.fillStyle = "rgba(16, 185, 129, 1)";
     ctx.font = "bold 24px 'JetBrains Mono', monospace";
     ctx.textAlign = "center";
@@ -322,7 +322,7 @@ export const drawFileSizeDisplay = ({
     ctx.font = "8px 'JetBrains Mono', monospace";
     ctx.fillText("FILE SIZE", centerX, centerY + 12);
   } else {
-    // 當前檔案大小
+    // Current file size
     ctx.fillStyle = "rgba(16, 185, 129, 1)";
     ctx.font = "bold 22px 'JetBrains Mono', monospace";
     ctx.textAlign = "center";

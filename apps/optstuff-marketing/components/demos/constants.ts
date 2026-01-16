@@ -41,7 +41,7 @@ function getDomain(includeProtocol = false): string {
     return domain;
   }
 
-  // localhost 使用 http://，其他域名使用 https://
+  // localhost uses http://, other domains use https://
   if (domain.startsWith("localhost")) {
     return `http://${domain}`;
   }

@@ -7,7 +7,17 @@
       "dependsOn": ["^build"],
       "inputs": ["$TURBO_DEFAULT$", ".env*"],
       "outputs": [".next/**", "!.next/cache/**"],
-      "env": ["DATABASE_URL", "SKIP_ENV_VALIDATION"]
+      "env": [
+        "DATABASE_URL",
+        "SKIP_ENV_VALIDATION",
+        "ALLOWED_DOMAINS",
+        "CLERK_SECRET_KEY",
+        "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY",
+        "NEXT_PUBLIC_CLERK_SIGN_IN_FORCE_REDIRECT_URL",
+        "NEXT_PUBLIC_CLERK_SIGN_UP_FORCE_REDIRECT_URL",
+        "NEXT_PUBLIC_CLERK_SIGN_IN_FALLBACK_REDIRECT_URL",
+        "NEXT_PUBLIC_CLERK_SIGN_UP_FALLBACK_REDIRECT_URL"
+      ]
     },
     "lint": {
       "dependsOn": ["^lint"]
@@ -18,7 +28,17 @@
     "dev": {
       "cache": false,
       "persistent": true,
-      "env": ["DATABASE_URL", "SKIP_ENV_VALIDATION"]
+      "env": [
+        "DATABASE_URL",
+        "SKIP_ENV_VALIDATION",
+        "ALLOWED_DOMAINS",
+        "CLERK_SECRET_KEY",
+        "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY",
+        "NEXT_PUBLIC_CLERK_SIGN_IN_FORCE_REDIRECT_URL",
+        "NEXT_PUBLIC_CLERK_SIGN_UP_FORCE_REDIRECT_URL",
+        "NEXT_PUBLIC_CLERK_SIGN_IN_FALLBACK_REDIRECT_URL",
+        "NEXT_PUBLIC_CLERK_SIGN_UP_FALLBACK_REDIRECT_URL"
+      ]
     }
   }
 }
