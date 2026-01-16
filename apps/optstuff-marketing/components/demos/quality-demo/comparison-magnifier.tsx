@@ -19,7 +19,15 @@ export function ComparisonMagnifier({
   zoom = 5,
   height = 120,
 }: ComparisonMagnifierProps) {
-  const bgPosition = `${((0.5 - imagePos.x * zoom) / (1 - zoom)) * 100}% ${((0.5 - imagePos.y * zoom) / (1 - zoom)) * 100}%`;
+  // Guard: ensure zoom > 1 to avoid division by zero or negative in (1 - zoom)
+  const MIN_ZOOM = 1.01;
+  const validZoom = zoom > 1 ? zoom : MIN_ZOOM;
+
+  // Calculate background position; uses centered fallback if original zoom was invalid
+  const bgPosition =
+    zoom > 1
+      ? `${((0.5 - imagePos.x * validZoom) / (1 - validZoom)) * 100}% ${((0.5 - imagePos.y * validZoom) / (1 - validZoom)) * 100}%`
+      : "50% 50%";
 
   return (
     <div
@@ -37,7 +45,7 @@ export function ComparisonMagnifier({
             className="h-full w-full"
             style={{
               backgroundImage: `url(${originalImageUrl})`,
-              backgroundSize: `${zoom * 100}%`,
+              backgroundSize: `${validZoom * 100}%`,
               backgroundPosition: bgPosition,
               backgroundRepeat: "no-repeat",
             }}
@@ -66,7 +74,7 @@ export function ComparisonMagnifier({
             className="h-full w-full"
             style={{
               backgroundImage: `url(${optimizedImageUrl})`,
-              backgroundSize: `${zoom * 100}%`,
+              backgroundSize: `${validZoom * 100}%`,
               backgroundPosition: bgPosition,
               backgroundRepeat: "no-repeat",
             }}
@@ -84,7 +92,7 @@ export function ComparisonMagnifier({
 
       {/* Zoom indicator */}
       <div className="absolute top-2 right-2 rounded-md bg-black/50 px-1.5 py-0.5 text-[10px] font-medium text-white/80 backdrop-blur-sm">
-        {zoom}x
+        {validZoom}x
       </div>
     </div>
   );
