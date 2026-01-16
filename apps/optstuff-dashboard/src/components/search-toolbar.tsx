@@ -15,8 +15,14 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@workspace/ui/components/dropdown-menu";
+import { CreateProjectDialog } from "./create-project-dialog";
 
-export function SearchToolbar() {
+type SearchToolbarProps = {
+  readonly teamId: string;
+  readonly teamSlug: string;
+};
+
+export function SearchToolbar({ teamId, teamSlug }: SearchToolbarProps) {
   return (
     <div className="flex items-center gap-2 py-4">
       <div className="relative flex-1">
@@ -57,9 +63,15 @@ export function SearchToolbar() {
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          <DropdownMenuItem>New Project</DropdownMenuItem>
-          <DropdownMenuItem>Import from GitHub</DropdownMenuItem>
-          <DropdownMenuItem>Clone Template</DropdownMenuItem>
+          <CreateProjectDialog
+            teamId={teamId}
+            teamSlug={teamSlug}
+            trigger={
+              <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                New Project
+              </DropdownMenuItem>
+            }
+          />
         </DropdownMenuContent>
       </DropdownMenu>
     </div>

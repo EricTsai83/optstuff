@@ -1,396 +1,329 @@
 "use client";
 
-import { useState } from "react";
+import Link from "next/link";
+import { formatDistanceToNow } from "date-fns";
 import {
-  ChevronDown,
-  ChevronRight,
-  GitBranch,
   MoreHorizontal,
-  AlertTriangle,
+  FolderOpen,
+  Key,
+  Activity,
+  Pin,
+  PinOff,
 } from "lucide-react";
 import { Button } from "@workspace/ui/components/button";
-import { Badge } from "@workspace/ui/components/badge";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@workspace/ui/components/dropdown-menu";
+import { api } from "@/trpc/react";
+import { CreateProjectDialog } from "./create-project-dialog";
 
-const projects = [
-  {
-    id: "erictsai-dev",
-    name: "erictsai-dev",
-    url: "erictsai-dev.vercel.app",
-    commit:
-      "update next.js to version 14.2.35 in package.json and package-lock.json",
-    date: "Dec 12",
-    branch: "main",
-    repo: "EricTsai83/erictsai.dev",
-    icon: "E",
-    iconBg: "bg-foreground text-background",
-    hasWarning: false,
-    isFavorite: true,
-  },
-  {
-    id: "document",
-    name: "document",
-    url: "eric-document.vercel.app",
-    commit: "update next.js version to 15.0.7 and update bun.lockb",
-    date: "Dec 12",
-    branch: "main",
-    repo: "EricTsai83/document",
-    icon: "📄",
-    iconBg: "bg-secondary",
-    hasWarning: false,
-    isFavorite: true,
-  },
-  {
-    id: "blog",
-    name: "blog",
-    url: "ericts.com",
-    commit: "update next.js version to 15.0.7 in package.json",
-    date: "Dec 12",
-    branch: "main",
-    repo: "EricTsai83/blog",
-    icon: "📝",
-    iconBg: "bg-amber-500",
-    hasWarning: false,
-    isFavorite: false,
-  },
-  {
-    id: "google-drive-clone",
-    name: "google-drive-clone",
-    url: "google-drive-clone-amber.vercel...",
-    commit: "Update dependencies and add .pnpm-store to .git...",
-    date: "Dec 12",
-    branch: "main",
-    repo: "EricTsai83/google-dri...",
-    icon: "🔷",
-    iconBg: "bg-green-500",
-    hasWarning: false,
-    isFavorite: false,
-  },
-  {
-    id: "drawstuff",
-    name: "drawstuff",
-    url: "drawstuff-ericts.vercel.app",
-    commit: "Update Next.js dependency from 16.0.7 to 16.0.10 in ...",
-    date: "Dec 12",
-    branch: "main",
-    repo: "EricTsai83/drawstuff",
-    icon: "✖",
-    iconBg: "bg-pink-500",
-    hasWarning: true,
-    isFavorite: false,
-  },
-  {
-    id: "optimize-stuff",
-    name: "optimize-stuff",
-    url: "optstuff.vercel.app",
-    commit: "Merge pull request #12 from EricTsai83/feat/copy-bu...",
-    date: "15h ago",
-    branch: "main",
-    repo: "EricTsai83/optstuff",
-    icon: "🟢",
-    iconBg: "bg-green-500",
-    hasWarning: false,
-    isFavorite: false,
-  },
-  {
-    id: "v0-generate-api-keys",
-    name: "v0-generate-api-keys",
-    url: "v0-generate-api-keys.vercel.app",
-    commit: "",
-    date: "15h ago",
-    branch: "",
-    repo: "",
-    icon: "▲",
-    iconBg: "bg-secondary",
-    hasWarning: false,
-    isFavorite: false,
-  },
-  {
-    id: "viz-maker",
-    name: "viz-maker",
-    url: "viz-maker.vercel.app",
-    commit: "Update Next.js to version 15.2.8 and add .pnpm-stor...",
-    date: "Dec 12",
-    branch: "main",
-    repo: "EricTsai83/viz-maker",
-    icon: "▲",
-    iconBg: "bg-foreground text-background",
-    hasWarning: false,
-    isFavorite: false,
-  },
-  {
-    id: "registry-template-v4",
-    name: "registry-template-v4",
-    url: "registry-template-v4-roan.vercel...",
-    commit: "update next.js to version 15.3.8 and add .pnpm-st...",
-    date: "Dec 12",
-    branch: "main",
-    repo: "EricTsai83/registry-te...",
-    icon: "▲",
-    iconBg: "bg-foreground text-background",
-    hasWarning: false,
-    isFavorite: false,
-  },
-];
+type ProjectListProps = {
+  readonly teamId: string;
+  readonly teamSlug: string;
+};
 
-type Project = (typeof projects)[number];
+// Generate a consistent color based on project name
+function getProjectColor(name: string): string {
+  const colors = [
+    "bg-blue-500",
+    "bg-green-500",
+    "bg-purple-500",
+    "bg-orange-500",
+    "bg-pink-500",
+    "bg-cyan-500",
+    "bg-amber-500",
+    "bg-emerald-500",
+  ];
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return colors[Math.abs(hash) % colors.length]!;
+}
+
+export function ProjectList({ teamId, teamSlug }: ProjectListProps) {
+  const { data: projects, isLoading } = api.project.list.useQuery({ teamId });
+  const { data: pinnedProjects, isLoading: isPinnedLoading } =
+    api.project.listPinned.useQuery();
+
+  // Get pinned status for all projects in this team
+  const projectIds = projects?.map((p) => p.id) ?? [];
+  const { data: pinnedStatus } = api.project.getPinnedStatus.useQuery(
+    { projectIds },
+    { enabled: projectIds.length > 0 },
+  );
+
+  // Filter pinned projects that belong to this team
+  const teamPinnedProjects =
+    pinnedProjects?.filter(
+      (p) => projects?.some((proj) => proj.id === p.id),
+    ) ?? [];
+
+  if (isLoading || isPinnedLoading) {
+    return (
+      <div className="min-w-0 flex-1">
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-sm font-medium">Projects</h2>
+        </div>
+        <div className="space-y-2">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="bg-muted h-20 animate-pulse rounded-lg" />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-w-0 flex-1">
+      {/* Pinned Projects Section */}
+      {teamPinnedProjects.length > 0 && (
+        <div className="mb-6">
+          <div className="mb-3 flex items-center gap-2">
+            <Pin className="text-muted-foreground h-4 w-4" />
+            <h2 className="text-sm font-medium">Pinned</h2>
+          </div>
+          <div className="space-y-2">
+            {teamPinnedProjects.map((project, index) => (
+              <ProjectItem
+                key={project.id}
+                project={project}
+                teamSlug={teamSlug}
+                index={index}
+                isPinned={true}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* All Projects Section */}
+      <div className="mb-4 flex items-center justify-between">
+        <h2 className="text-sm font-medium">
+          Projects {projects && `(${projects.length})`}
+        </h2>
+        <CreateProjectDialog teamId={teamId} teamSlug={teamSlug} />
+      </div>
+
+      {!projects || projects.length === 0 ? (
+        <EmptyProjectState teamId={teamId} teamSlug={teamSlug} />
+      ) : (
+        <div className="space-y-2">
+          {projects.map((project, index) => (
+            <ProjectItem
+              key={project.id}
+              project={project}
+              teamSlug={teamSlug}
+              index={index}
+              isPinned={pinnedStatus?.[project.id] ?? false}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+type Project = {
+  id: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  createdAt: Date;
+};
 
 type ProjectItemProps = {
   readonly project: Project;
+  readonly teamSlug: string;
   readonly index: number;
+  readonly isPinned?: boolean;
 };
 
-const ProjectItem = ({ project, index }: ProjectItemProps) => {
+function ProjectItem({
+  project,
+  teamSlug,
+  index,
+  isPinned = false,
+}: ProjectItemProps) {
+  const utils = api.useUtils();
+
+  const { mutate: deleteProject } = api.project.delete.useMutation({
+    onSuccess: () => {
+      utils.project.list.invalidate();
+      utils.project.listPinned.invalidate();
+    },
+  });
+
+  const { mutate: pinProject, isPending: isPinning } =
+    api.project.pin.useMutation({
+      onSuccess: () => {
+        utils.project.listPinned.invalidate();
+        utils.project.getPinnedStatus.invalidate();
+      },
+    });
+
+  const { mutate: unpinProject, isPending: isUnpinning } =
+    api.project.unpin.useMutation({
+      onSuccess: () => {
+        utils.project.listPinned.invalidate();
+        utils.project.getPinnedStatus.invalidate();
+      },
+    });
+
+  const projectColor = getProjectColor(project.name);
+  const projectInitial = project.name.charAt(0).toUpperCase();
+
+  const handlePinToggle = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (isPinned) {
+      unpinProject({ projectId: project.id });
+    } else {
+      pinProject({ projectId: project.id });
+    }
+  };
+
   return (
-    <div
-      key={project.id}
-      className="hover:bg-secondary/50 group animate-in fade-in slide-in-from-bottom-2 flex cursor-pointer flex-col gap-2 rounded-lg p-3 transition-all duration-200 md:flex-row md:items-center md:gap-4"
+    <Link
+      href={`/${teamSlug}/${project.slug}`}
+      className="hover:bg-secondary/50 group animate-in fade-in slide-in-from-bottom-2 flex cursor-pointer items-center gap-4 rounded-lg p-3 transition-all duration-200"
       style={{
         animationDelay: `${index * 50}ms`,
         animationFillMode: "both",
       }}
     >
-      {/* Project icon and basic info row */}
-      <div className="flex min-w-0 flex-1 items-center gap-3">
-        {/* Project icon */}
-        <div
-          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-sm font-medium transition-transform duration-200 group-hover:scale-105 ${project.iconBg}`}
-        >
-          {project.icon}
-        </div>
+      {/* Project icon */}
+      <div
+        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-sm font-medium text-white transition-transform duration-200 group-hover:scale-105 ${projectColor}`}
+      >
+        {projectInitial}
+      </div>
 
-        {/* Project info */}
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
-            <span className="font-medium">{project.name}</span>
-          </div>
-          <span className="text-muted-foreground block truncate text-sm">
-            {project.url}
+      {/* Project info */}
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-2">
+          <span className="font-medium">{project.name}</span>
+          {isPinned && (
+            <Pin className="h-3.5 w-3.5 text-amber-500" />
+          )}
+        </div>
+        <div className="text-muted-foreground flex items-center gap-2 text-sm">
+          {project.description ? (
+            <span className="truncate">{project.description}</span>
+          ) : (
+            <span className="text-muted-foreground/50 italic">
+              No description
+            </span>
+          )}
+          <span className="text-muted-foreground">·</span>
+          <span>
+            {formatDistanceToNow(new Date(project.createdAt), {
+              addSuffix: true,
+            })}
           </span>
         </div>
+      </div>
 
-        {/* Actions - visible on mobile at end of row */}
-        <div className="flex items-center gap-1 md:hidden">
+      {/* Quick stats */}
+      <div className="hidden items-center gap-4 md:flex">
+        <div className="text-muted-foreground flex items-center gap-1.5 text-sm">
+          <Key className="h-3.5 w-3.5" />
+          <span>API Keys</span>
+        </div>
+        <div className="text-muted-foreground flex items-center gap-1.5 text-sm">
+          <Activity className="h-3.5 w-3.5" />
+          <span>Usage</span>
+        </div>
+      </div>
+
+      {/* Pin button */}
+      <Button
+        variant="ghost"
+        size="icon"
+        className={`h-8 w-8 transition-opacity duration-200 ${
+          isPinned
+            ? "opacity-100 text-amber-500 hover:text-amber-600"
+            : "opacity-0 group-hover:opacity-100"
+        }`}
+        onClick={handlePinToggle}
+        disabled={isPinning || isUnpinning}
+      >
+        {isPinned ? (
+          <PinOff className="h-4 w-4" />
+        ) : (
+          <Pin className="h-4 w-4" />
+        )}
+      </Button>
+
+      {/* Actions */}
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild onClick={(e) => e.preventDefault()}>
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8 transition-colors duration-200"
-          >
-            <svg
-              className="h-4 w-4"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
-            </svg>
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 transition-colors duration-200"
+            className="h-8 w-8 opacity-0 transition-opacity duration-200 group-hover:opacity-100"
           >
             <MoreHorizontal className="h-4 w-4" />
           </Button>
-        </div>
-      </div>
-
-      <div className="space-y-2 pl-13 md:hidden">
-        {project.repo && (
-          <Badge
-            variant="outline"
-            className="inline-flex items-center gap-1 text-xs font-normal"
-          >
-            <svg className="h-3 w-3" viewBox="0 0 16 16" fill="currentColor">
-              <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z" />
-            </svg>
-            {project.repo}
-          </Badge>
-        )}
-        {project.commit && (
-          <div className="space-y-1">
-            <p className="text-muted-foreground text-sm">{project.commit}</p>
-            <p className="text-muted-foreground flex items-center gap-1 text-xs">
-              {project.date} on <GitBranch className="h-3 w-3" />{" "}
-              {project.branch}
-            </p>
-          </div>
-        )}
-        {!project.commit && project.date && (
-          <span className="text-muted-foreground text-sm">{project.date}</span>
-        )}
-      </div>
-
-      {/* Desktop: Commit info */}
-      <div className="hidden max-w-xs min-w-0 flex-1 flex-col items-start md:flex">
-        {project.commit && (
-          <>
-            <span className="text-muted-foreground w-full truncate text-sm">
-              {project.commit}
-            </span>
-            <span className="text-muted-foreground flex items-center gap-1 text-xs">
-              {project.date} on <GitBranch className="h-3 w-3" />{" "}
-              {project.branch}
-            </span>
-          </>
-        )}
-        {!project.commit && project.date && (
-          <span className="text-muted-foreground text-sm">{project.date}</span>
-        )}
-      </div>
-
-      {/* Desktop: GitHub repo badge */}
-      {project.repo && (
-        <Badge
-          variant="outline"
-          className="hover:bg-secondary hidden items-center gap-1 text-xs font-normal transition-colors duration-200 lg:flex"
-        >
-          <svg className="h-3 w-3" viewBox="0 0 16 16" fill="currentColor">
-            <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z" />
-          </svg>
-          {project.repo}
-        </Badge>
-      )}
-
-      {/* Desktop: Actions */}
-      <div className="hidden items-center gap-1 opacity-0 transition-opacity duration-200 group-hover:opacity-100 md:flex">
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-8 w-8 transition-colors duration-200"
-        >
-          <svg
-            className="h-4 w-4"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-          >
-            <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
-          </svg>
-        </Button>
-        {project.hasWarning && (
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 text-yellow-500"
-          >
-            <AlertTriangle className="h-4 w-4" />
-          </Button>
-        )}
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-8 w-8 transition-colors duration-200"
-        >
-          <MoreHorizontal className="h-4 w-4" />
-        </Button>
-      </div>
-    </div>
-  );
-};
-
-type ProjectSectionProps = {
-  readonly title: string;
-  readonly projects: readonly Project[];
-  readonly isExpanded?: boolean;
-  readonly onToggleExpanded?: () => void;
-  readonly initialVisibleCount?: number;
-  readonly collapsible?: boolean;
-};
-
-const ProjectSection = ({
-  title,
-  projects,
-  isExpanded = true,
-  onToggleExpanded,
-  initialVisibleCount = 6,
-  collapsible = true,
-}: ProjectSectionProps) => {
-  const [visibleCount, setVisibleCount] = useState(initialVisibleCount);
-
-  const visibleProjects = projects.slice(0, visibleCount);
-  const hasMore = visibleCount < projects.length;
-
-  const handleShowMore = () => {
-    setVisibleCount((prev) => Math.min(prev + 3, projects.length));
-  };
-
-  if (projects.length === 0) {
-    return null;
-  }
-
-  const shouldShowContent = collapsible ? isExpanded : true;
-
-  return (
-    <div className="mb-8">
-      {collapsible ? (
-        <button
-          onClick={onToggleExpanded}
-          className="hover:bg-secondary/50 mb-4 -ml-2 flex items-center gap-2 rounded-md px-2 py-1 transition-all duration-200 active:scale-95"
-        >
-          <span className="transition-transform duration-200">
-            {isExpanded ? (
-              <ChevronDown className="h-4 w-4" />
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem asChild>
+            <Link href={`/${teamSlug}/${project.slug}`}>View Project</Link>
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={handlePinToggle}>
+            {isPinned ? (
+              <>
+                <PinOff className="mr-2 h-4 w-4" />
+                Unpin Project
+              </>
             ) : (
-              <ChevronRight className="h-4 w-4" />
+              <>
+                <Pin className="mr-2 h-4 w-4" />
+                Pin Project
+              </>
             )}
-          </span>
-          <h2 className="text-sm font-medium">{title}</h2>
-        </button>
-      ) : (
-        <h2 className="mb-4 text-sm font-medium">{title}</h2>
-      )}
-
-      <div
-        className={`grid transition-all duration-300 ease-in-out ${
-          shouldShowContent
-            ? "grid-rows-[1fr] opacity-100"
-            : "grid-rows-[0fr] opacity-0"
-        }`}
-      >
-        <div className="overflow-hidden">
-          <div className="space-y-1">
-            {visibleProjects.map((project, index) => (
-              <ProjectItem key={project.id} project={project} index={index} />
-            ))}
-          </div>
-
-          {hasMore && (
-            <Button
-              variant="outline"
-              className="hover:bg-secondary mt-4 w-full bg-transparent transition-all duration-200 active:scale-[0.98]"
-              onClick={handleShowMore}
-            >
-              Show More
-            </Button>
-          )}
-        </div>
-      </div>
-    </div>
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem
+            onClick={(e) => {
+              e.preventDefault();
+              if (confirm("Are you sure you want to delete this project?")) {
+                deleteProject({ projectId: project.id });
+              }
+            }}
+            className="text-destructive focus:text-destructive"
+          >
+            Delete Project
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </Link>
   );
-};
+}
 
-export function ProjectList() {
-  const [isFavoritesExpanded, setIsFavoritesExpanded] = useState(true);
-
-  const favoriteProjects = projects.filter((project) => project.isFavorite);
-  const allProjects = projects.filter((project) => !project.isFavorite);
-
+function EmptyProjectState({
+  teamId,
+  teamSlug,
+}: {
+  teamId: string;
+  teamSlug: string;
+}) {
   return (
-    <div className="min-w-0 flex-1">
-      <ProjectSection
-        title="Your Favorites"
-        projects={favoriteProjects}
-        isExpanded={isFavoritesExpanded}
-        onToggleExpanded={() => setIsFavoritesExpanded(!isFavoritesExpanded)}
-        collapsible={true}
-      />
-
-      <ProjectSection
-        title="All Projects"
-        projects={allProjects}
-        collapsible={false}
+    <div className="border-border flex flex-col items-center justify-center rounded-lg border-2 border-dashed py-12 text-center">
+      <div className="bg-muted mb-4 flex h-12 w-12 items-center justify-center rounded-full">
+        <FolderOpen className="text-muted-foreground h-6 w-6" />
+      </div>
+      <h3 className="font-medium">No projects yet</h3>
+      <p className="text-muted-foreground mt-1 mb-4 max-w-sm text-sm">
+        Create your first project to start optimizing images with API keys.
+      </p>
+      <CreateProjectDialog
+        teamId={teamId}
+        teamSlug={teamSlug}
+        trigger={<Button>Create Your First Project</Button>}
       />
     </div>
   );

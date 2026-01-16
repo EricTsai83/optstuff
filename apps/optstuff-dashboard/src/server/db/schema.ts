@@ -1,7 +1,5 @@
-// Example model schema from the Drizzle docs
-// https://orm.drizzle.team/docs/sql-schema-declaration
-
-import { index, pgTableCreator } from "drizzle-orm/pg-core";
+import { relations } from "drizzle-orm";
+import { index, pgTableCreator, unique } from "drizzle-orm/pg-core";
 
 /**
  * This is an example of how to use the multi-project schema feature of Drizzle ORM. Use the same
@@ -11,16 +9,171 @@ import { index, pgTableCreator } from "drizzle-orm/pg-core";
  */
 export const createTable = pgTableCreator((name) => `optimize-stuff_${name}`);
 
-export const posts = createTable(
-  "post",
+// ============================================================================
+// Teams (Organizations)
+// ============================================================================
+
+/**
+ * Teams table - synced with Clerk Organizations.
+ * Personal Team is created automatically when a user first logs in.
+ */
+export const teams = createTable(
+  "team",
   (d) => ({
-    id: d.integer().primaryKey().generatedByDefaultAsIdentity(),
-    name: d.varchar({ length: 256 }),
-    createdAt: d
-      .timestamp({ withTimezone: true })
-      .$defaultFn(() => /* @__PURE__ */ new Date())
-      .notNull(),
+    id: d.uuid().primaryKey().defaultRandom(),
+    clerkOrgId: d.varchar({ length: 255 }).unique(), // null for Personal Team
+    ownerId: d.varchar({ length: 255 }).notNull(), // Clerk user ID
+    name: d.varchar({ length: 255 }).notNull(),
+    slug: d.varchar({ length: 255 }).notNull().unique(),
+    isPersonal: d.boolean().default(false).notNull(),
+    createdAt: d.timestamp({ withTimezone: true }).defaultNow().notNull(),
     updatedAt: d.timestamp({ withTimezone: true }).$onUpdate(() => new Date()),
   }),
-  (t) => [index("name_idx").on(t.name)],
+  (t) => [index("team_owner_idx").on(t.ownerId)],
 );
+
+export const teamsRelations = relations(teams, ({ many }) => ({
+  projects: many(projects),
+}));
+
+// ============================================================================
+// Projects
+// ============================================================================
+
+export const projects = createTable(
+  "project",
+  (d) => ({
+    id: d.uuid().primaryKey().defaultRandom(),
+    teamId: d
+      .uuid()
+      .notNull()
+      .references(() => teams.id, { onDelete: "cascade" }),
+    name: d.varchar({ length: 255 }).notNull(),
+    slug: d.varchar({ length: 255 }).notNull(),
+    description: d.text(),
+    createdAt: d.timestamp({ withTimezone: true }).defaultNow().notNull(),
+    updatedAt: d.timestamp({ withTimezone: true }).$onUpdate(() => new Date()),
+  }),
+  (t) => [
+    index("project_team_idx").on(t.teamId),
+    unique("project_team_slug_unique").on(t.teamId, t.slug),
+  ],
+);
+
+export const projectsRelations = relations(projects, ({ one, many }) => ({
+  team: one(teams, {
+    fields: [projects.teamId],
+    references: [teams.id],
+  }),
+  apiKeys: many(apiKeys),
+  usageRecords: many(usageRecords),
+  pinnedBy: many(pinnedProjects),
+}));
+
+// ============================================================================
+// Pinned Projects
+// ============================================================================
+
+/**
+ * Pinned Projects table - tracks which projects users have pinned.
+ * Allows users to quickly access their favorite projects.
+ */
+export const pinnedProjects = createTable(
+  "pinned_project",
+  (d) => ({
+    id: d.uuid().primaryKey().defaultRandom(),
+    userId: d.varchar({ length: 255 }).notNull(), // Clerk user ID
+    projectId: d
+      .uuid()
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
+    pinnedAt: d.timestamp({ withTimezone: true }).defaultNow().notNull(),
+  }),
+  (t) => [
+    unique("pinned_user_project_unique").on(t.userId, t.projectId),
+    index("pinned_user_idx").on(t.userId),
+  ],
+);
+
+export const pinnedProjectsRelations = relations(pinnedProjects, ({ one }) => ({
+  project: one(projects, {
+    fields: [pinnedProjects.projectId],
+    references: [projects.id],
+  }),
+}));
+
+// ============================================================================
+// API Keys
+// ============================================================================
+
+export const apiKeys = createTable(
+  "api_key",
+  (d) => ({
+    id: d.uuid().primaryKey().defaultRandom(),
+    projectId: d
+      .uuid()
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
+    name: d.varchar({ length: 255 }).notNull(),
+    keyPrefix: d.varchar({ length: 12 }).notNull(), // Display prefix "pk_abc123..."
+    keyHash: d.varchar({ length: 64 }).notNull().unique(), // SHA256 hash
+    expiresAt: d.timestamp({ withTimezone: true }),
+    rateLimitPerMinute: d.integer().default(60),
+    rateLimitPerDay: d.integer().default(10000),
+    lastUsedAt: d.timestamp({ withTimezone: true }),
+    createdAt: d.timestamp({ withTimezone: true }).defaultNow().notNull(),
+    revokedAt: d.timestamp({ withTimezone: true }),
+  }),
+  (t) => [
+    index("api_key_project_idx").on(t.projectId),
+    index("api_key_hash_idx").on(t.keyHash),
+  ],
+);
+
+export const apiKeysRelations = relations(apiKeys, ({ one, many }) => ({
+  project: one(projects, {
+    fields: [apiKeys.projectId],
+    references: [projects.id],
+  }),
+  usageRecords: many(usageRecords),
+}));
+
+// ============================================================================
+// Usage Records
+// ============================================================================
+
+export const usageRecords = createTable(
+  "usage_record",
+  (d) => ({
+    id: d.uuid().primaryKey().defaultRandom(),
+    projectId: d
+      .uuid()
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
+    apiKeyId: d.uuid().references(() => apiKeys.id, { onDelete: "set null" }),
+    date: d.date().notNull(),
+    requestCount: d.integer().default(0).notNull(),
+    bytesProcessed: d.bigint({ mode: "number" }).default(0).notNull(),
+    createdAt: d.timestamp({ withTimezone: true }).defaultNow().notNull(),
+  }),
+  (t) => [
+    index("usage_project_idx").on(t.projectId),
+    index("usage_date_idx").on(t.date),
+    unique("usage_project_apikey_date_unique").on(
+      t.projectId,
+      t.apiKeyId,
+      t.date,
+    ),
+  ],
+);
+
+export const usageRecordsRelations = relations(usageRecords, ({ one }) => ({
+  project: one(projects, {
+    fields: [usageRecords.projectId],
+    references: [projects.id],
+  }),
+  apiKey: one(apiKeys, {
+    fields: [usageRecords.apiKeyId],
+    references: [apiKeys.id],
+  }),
+}));

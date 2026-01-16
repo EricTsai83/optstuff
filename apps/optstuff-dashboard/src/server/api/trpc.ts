@@ -6,10 +6,11 @@
  * TL;DR - This is where all the tRPC server stuff is created and plugged in. The pieces you will
  * need to use are documented accordingly near the end.
  */
-import { initTRPC } from "@trpc/server";
+import { initTRPC, TRPCError } from "@trpc/server";
 import superjson from "superjson";
 import { ZodError } from "zod";
 
+import { auth } from "@workspace/auth/server";
 import { db } from "@/server/db";
 
 /**
@@ -104,3 +105,35 @@ const timingMiddleware = t.middleware(async ({ next, path }) => {
  * are logged in.
  */
 export const publicProcedure = t.procedure.use(timingMiddleware);
+
+/**
+ * Auth middleware for protected procedures.
+ *
+ * This middleware checks if the user is authenticated via Clerk and adds
+ * the userId and orgId to the context.
+ */
+const authMiddleware = t.middleware(async ({ ctx, next }) => {
+  const { userId, orgId } = await auth();
+
+  if (!userId) {
+    throw new TRPCError({ code: "UNAUTHORIZED" });
+  }
+
+  return next({
+    ctx: {
+      ...ctx,
+      userId,
+      orgId: orgId ?? null,
+    },
+  });
+});
+
+/**
+ * Protected (authenticated) procedure
+ *
+ * This procedure guarantees that the user is authenticated. If they are not,
+ * a TRPC UNAUTHORIZED error is thrown.
+ */
+export const protectedProcedure = t.procedure
+  .use(timingMiddleware)
+  .use(authMiddleware);

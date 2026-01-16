@@ -1,5 +1,8 @@
-import { redirect } from "next/navigation";
+import { redirect, notFound } from "next/navigation";
 import { auth } from "@workspace/auth/server";
+import { db } from "@/server/db";
+import { teams } from "@/server/db/schema";
+import { eq, and } from "drizzle-orm";
 import { Header } from "@/components/header";
 import { NavigationTabs } from "@/components/navigation-tabs";
 import { SearchToolbar } from "@/components/search-toolbar";
@@ -8,22 +11,68 @@ import { ProjectList } from "@/components/project-list";
 import { MobileTabs } from "@/components/mobile-tabs";
 import { Footer } from "@/components/footer";
 
-export default async function Page() {
+type PageProps = {
+  params: Promise<{ team: string }>;
+};
+
+export default async function TeamPage({ params }: PageProps) {
+  const { team: teamSlug } = await params;
   const { userId } = await auth();
 
   if (!userId) {
     redirect("/sign-in");
   }
+
+  // Get team by slug
+  const team = await db.query.teams.findFirst({
+    where: and(eq(teams.slug, teamSlug), eq(teams.ownerId, userId)),
+  });
+
+  // If team not found, check if it's the first visit and we need to create personal team
+  if (!team) {
+    // Check if user has any teams
+    const userTeams = await db.query.teams.findMany({
+      where: eq(teams.ownerId, userId),
+    });
+
+    // If no teams at all, create personal team and redirect
+    if (userTeams.length === 0) {
+      const [newTeam] = await db
+        .insert(teams)
+        .values({
+          ownerId: userId,
+          name: "Personal Team",
+          slug: `personal-${userId.toLowerCase().slice(0, 8)}-${Date.now()}`,
+          isPersonal: true,
+        })
+        .returning();
+
+      if (newTeam) {
+        redirect(`/${newTeam.slug}`);
+      }
+    }
+
+    // If user has teams but this slug doesn't exist, redirect to first team
+    if (userTeams.length > 0) {
+      const personalTeam = userTeams.find((t) => t.isPersonal) ?? userTeams[0];
+      if (personalTeam && teamSlug !== personalTeam.slug) {
+        redirect(`/${personalTeam.slug}`);
+      }
+    }
+
+    notFound();
+  }
+
   return (
     <div className="bg-background flex min-h-screen flex-col">
-      <Header />
+      <Header teamSlug={teamSlug} />
       <NavigationTabs />
       <main className="container mx-auto flex-1 px-4 py-4">
-        <SearchToolbar />
+        <SearchToolbar teamId={team.id} teamSlug={teamSlug} />
         <MobileTabs />
         <div className="flex gap-8">
-          <UsageSidebar />
-          <ProjectList />
+          <UsageSidebar teamId={team.id} />
+          <ProjectList teamId={team.id} teamSlug={teamSlug} />
         </div>
       </main>
       <Footer />

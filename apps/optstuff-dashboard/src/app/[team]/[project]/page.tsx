@@ -1,3 +1,50 @@
-export default function ProjectPage() {
-  return <div>ProjectPage</div>;
+import { redirect, notFound } from "next/navigation";
+import { auth } from "@workspace/auth/server";
+import { db } from "@/server/db";
+import { teams, projects } from "@/server/db/schema";
+import { eq, and } from "drizzle-orm";
+import { Header } from "@/components/header";
+import { Footer } from "@/components/footer";
+import { ProjectDetailContent } from "./project-detail-content";
+
+type PageProps = {
+  params: Promise<{ team: string; project: string }>;
+};
+
+export default async function ProjectPage({ params }: PageProps) {
+  const { team: teamSlug, project: projectSlug } = await params;
+  const { userId } = await auth();
+
+  if (!userId) {
+    redirect("/sign-in");
+  }
+
+  // Get team by slug
+  const team = await db.query.teams.findFirst({
+    where: and(eq(teams.slug, teamSlug), eq(teams.ownerId, userId)),
+  });
+
+  if (!team) {
+    notFound();
+  }
+
+  // Get project by slug
+  const project = await db.query.projects.findFirst({
+    where: and(eq(projects.teamId, team.id), eq(projects.slug, projectSlug)),
+  });
+
+  if (!project) {
+    notFound();
+  }
+
+  return (
+    <div className="bg-background flex min-h-screen flex-col">
+      <Header teamSlug={teamSlug} />
+      <ProjectDetailContent
+        project={project}
+        team={team}
+      />
+      <Footer />
+    </div>
+  );
 }

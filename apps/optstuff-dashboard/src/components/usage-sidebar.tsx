@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { ChevronDown, ChevronUp, Zap } from "lucide-react";
 import { Button } from "@workspace/ui/components/button";
 import {
   Card,
@@ -8,94 +8,62 @@ import {
   CardHeader,
   CardTitle,
 } from "@workspace/ui/components/card";
-import { Badge } from "@workspace/ui/components/badge";
 import { useState } from "react";
 import { Separator } from "@workspace/ui/components/separator";
+import { api } from "@/trpc/react";
 
-const usageData = [
-  {
-    name: "Image Optimization - Transformations",
-    used: 554,
-    total: "5K",
-    icon: "green",
-  },
-  {
-    name: "Speed Insights Data Points",
-    used: 405,
-    total: "10K",
-    icon: "green",
-  },
-  {
-    name: "Image Optimization - Cache Writes",
-    used: "2.8K",
-    total: "100K",
-    icon: "green",
-  },
-  { name: "Fluid Active CPU", used: "5m 57s", total: "4h", icon: "green" },
-  {
-    name: "Edge Function Invocations",
-    used: "1.2K",
-    total: "50K",
-    icon: "green",
-  },
-  {
-    name: "Bandwidth",
-    used: "45GB",
-    total: "500GB",
-    icon: "green",
-  },
-  {
-    name: "Serverless Function Execution Time",
-    used: "2h 15m",
-    total: "24h",
-    icon: "green",
-  },
-  {
-    name: "Database Queries",
-    used: "8.5K",
-    total: "100K",
-    icon: "green",
-  },
-  {
-    name: "API Requests",
-    used: "12.3K",
-    total: "200K",
-    icon: "green",
-  },
-  {
-    name: "Storage Operations",
-    used: "3.1K",
-    total: "50K",
-    icon: "green",
-  },
-];
+type UsageSidebarProps = {
+  readonly teamId: string;
+};
 
-const recentPreviews = [
-  {
-    title: "Enhance CodeBlock component and integ...",
-    badge: "Preview",
-    pr: "#12",
-    commit: "JGMZ87D0W",
-    avatars: [{ color: "bg-yellow-500" }, { color: "bg-green-500" }],
-  },
-  {
-    title: "Translate SVG comments in LogoIcon com...",
-    badge: "Preview",
-    pr: "#11",
-    commit: "DWfEUtfNt",
-    avatars: [{ color: "bg-yellow-500" }, { color: "bg-green-500" }],
-  },
-  {
-    title: "Update favicon.ico to a new version for im...",
-    badge: "Preview",
-    pr: "#10",
-    commit: "BwbBPdVbz",
-    avatars: [{ color: "bg-yellow-500" }, { color: "bg-green-500" }],
-  },
-];
+// Format bytes to human readable
+function formatBytes(bytes: number): string {
+  if (bytes === 0) return "0 B";
+  const k = 1024;
+  const sizes = ["B", "KB", "MB", "GB", "TB"];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + " " + sizes[i];
+}
 
-export function UsageSidebar() {
+// Format number with K, M suffix
+function formatNumber(num: number): string {
+  if (num >= 1000000) {
+    return (num / 1000000).toFixed(1) + "M";
+  }
+  if (num >= 1000) {
+    return (num / 1000).toFixed(1) + "K";
+  }
+  return num.toString();
+}
+
+export function UsageSidebar({ teamId }: UsageSidebarProps) {
   const [isExpanded, setIsExpanded] = useState(false);
+
+  const { data: teamSummary, isLoading } = api.usage.getTeamSummary.useQuery(
+    { teamId },
+    { enabled: !!teamId },
+  );
+
+  // Define usage limits (could come from a plan/subscription in the future)
+  const limits = {
+    requests: 10000,
+    bandwidth: 1024 * 1024 * 1024, // 1GB in bytes
+  };
+
+  const usageData = [
+    {
+      name: "API Requests",
+      used: teamSummary?.totalRequests ?? 0,
+      total: limits.requests,
+      format: formatNumber,
+    },
+    {
+      name: "Bandwidth",
+      used: teamSummary?.totalBytes ?? 0,
+      total: limits.bandwidth,
+      format: formatBytes,
+    },
+  ];
 
   return (
     <div className="hidden w-80 shrink-0 space-y-6 md:block">
@@ -118,130 +86,138 @@ export function UsageSidebar() {
             </div>
           </CardHeader>
           <CardContent className="flex flex-col gap-3">
-            <div className="overflow-hidden">
-              <div
-                className="space-y-3 transition-[max-height] duration-300 ease-in-out"
-                style={{
-                  maxHeight: isExpanded ? "1000px" : "120px",
-                }}
-              >
-                {usageData.map((item, index) => (
-                  <div
-                    key={index}
-                    className="flex items-center justify-between text-sm"
-                  >
-                    <div className="flex items-center gap-2">
-                      <div className="h-2 w-2 rounded-full bg-green-500" />
-                      <span className="text-foreground">{item.name}</span>
-                    </div>
-                    <span className="text-muted-foreground">
-                      {item.used} / {item.total}
-                    </span>
-                  </div>
+            {isLoading ? (
+              <div className="space-y-3">
+                {[1, 2].map((i) => (
+                  <div key={i} className="bg-muted h-6 animate-pulse rounded" />
                 ))}
               </div>
-            </div>
-            {usageData.length > 3 && (
-              <div className="relative flex justify-center">
-                <Separator className="absolute top-3 left-0 w-full" />
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="text-muted-foreground z-10 h-6 w-6 justify-center rounded-full transition-colors"
-                  onClick={() => setIsExpanded(!isExpanded)}
-                  aria-expanded={isExpanded}
-                  aria-label={
-                    isExpanded
-                      ? "Collapse usage details"
-                      : "Expand usage details"
-                  }
-                >
-                  {isExpanded ? (
-                    <ChevronUp className="h-4 w-4" />
-                  ) : (
-                    <ChevronDown className="h-4 w-4" />
-                  )}
-                </Button>
-              </div>
+            ) : (
+              <>
+                <div className="overflow-hidden">
+                  <div
+                    className="space-y-3 transition-[max-height] duration-300 ease-in-out"
+                    style={{
+                      maxHeight: isExpanded ? "1000px" : "80px",
+                    }}
+                  >
+                    {usageData.map((item, index) => {
+                      const percentage = Math.min(
+                        (item.used / item.total) * 100,
+                        100,
+                      );
+                      const isWarning = percentage > 80;
+                      const isDanger = percentage > 95;
+
+                      return (
+                        <div key={index} className="space-y-1.5">
+                          <div className="flex items-center justify-between text-sm">
+                            <div className="flex items-center gap-2">
+                              <div
+                                className={`h-2 w-2 rounded-full ${
+                                  isDanger
+                                    ? "bg-red-500"
+                                    : isWarning
+                                      ? "bg-yellow-500"
+                                      : "bg-green-500"
+                                }`}
+                              />
+                              <span className="text-foreground">{item.name}</span>
+                            </div>
+                            <span className="text-muted-foreground">
+                              {item.format(item.used)} / {item.format(item.total)}
+                            </span>
+                          </div>
+                          <div className="bg-muted h-1.5 overflow-hidden rounded-full">
+                            <div
+                              className={`h-full rounded-full transition-all duration-500 ${
+                                isDanger
+                                  ? "bg-red-500"
+                                  : isWarning
+                                    ? "bg-yellow-500"
+                                    : "bg-green-500"
+                              }`}
+                              style={{ width: `${percentage}%` }}
+                            />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+                {usageData.length > 2 && (
+                  <div className="relative flex justify-center">
+                    <Separator className="absolute top-3 left-0 w-full" />
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-muted-foreground z-10 h-6 w-6 justify-center rounded-full transition-colors"
+                      onClick={() => setIsExpanded(!isExpanded)}
+                      aria-expanded={isExpanded}
+                      aria-label={
+                        isExpanded
+                          ? "Collapse usage details"
+                          : "Expand usage details"
+                      }
+                    >
+                      {isExpanded ? (
+                        <ChevronUp className="h-4 w-4" />
+                      ) : (
+                        <ChevronDown className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </div>
+                )}
+              </>
             )}
           </CardContent>
         </Card>
       </div>
 
-      {/* Alerts section */}
+      {/* Quick Stats */}
       <div>
-        <h3 className="mb-3 text-sm font-medium">Alerts</h3>
+        <h3 className="mb-3 text-sm font-medium">Quick Stats</h3>
         <Card>
-          <CardContent className="space-y-3 pt-6 text-center">
-            <h4 className="font-medium">Get alerted for anomalies</h4>
-            <p className="text-muted-foreground text-sm">
-              Automatically monitor your projects for anomalies and get
-              notified.
-            </p>
-            <Button variant="outline" className="w-full bg-transparent">
-              Upgrade to Observability Plus
-            </Button>
+          <CardContent className="grid grid-cols-2 gap-4 pt-6">
+            <div className="text-center">
+              <div className="text-2xl font-bold">
+                {teamSummary?.projectCount ?? 0}
+              </div>
+              <div className="text-muted-foreground text-xs">Projects</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold">
+                {formatNumber(teamSummary?.totalRequests ?? 0)}
+              </div>
+              <div className="text-muted-foreground text-xs">Requests</div>
+            </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Recent Previews section */}
+      {/* Quick Actions */}
       <div>
-        <h3 className="mb-3 text-sm font-medium">Recent Previews</h3>
-        <div className="space-y-2">
-          {recentPreviews.map((preview, index) => (
-            <Card
-              key={index}
-              className="hover:bg-secondary/50 cursor-pointer transition-colors"
-            >
-              <CardContent className="p-3">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex min-w-0 items-center gap-2">
-                    <div className="flex shrink-0 -space-x-1">
-                      {preview.avatars.map((avatar, i) => (
-                        <div
-                          key={i}
-                          className={`h-5 w-5 rounded-full ${avatar.color} border-background border-2`}
-                        />
-                      ))}
-                    </div>
-                    <span className="truncate text-sm">{preview.title}</span>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-6 w-6 shrink-0"
-                  >
-                    <span className="text-muted-foreground">•••</span>
-                  </Button>
-                </div>
-                <div className="mt-2 ml-7 flex items-center gap-2">
-                  <Badge variant="secondary" className="text-xs">
-                    {preview.badge}
-                  </Badge>
-                  <span className="text-muted-foreground flex items-center gap-1 text-xs">
-                    <svg
-                      className="h-3 w-3"
-                      viewBox="0 0 16 16"
-                      fill="currentColor"
-                    >
-                      <path d="M5 3.25a.75.75 0 01.75-.75h4.5a.75.75 0 010 1.5h-4.5A.75.75 0 015 3.25zm0 9.5a.75.75 0 01.75-.75h4.5a.75.75 0 010 1.5h-4.5a.75.75 0 01-.75-.75z" />
-                      <path
-                        fillRule="evenodd"
-                        d="M8 1a.75.75 0 01.75.75v12.5a.75.75 0 01-1.5 0V1.75A.75.75 0 018 1z"
-                      />
-                    </svg>
-                    {preview.pr}
-                  </span>
-                  <span className="text-muted-foreground flex items-center gap-1 text-xs">
-                    <span className="bg-muted-foreground h-1.5 w-1.5 rounded-full" />
-                    {preview.commit}
-                  </span>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+        <h3 className="mb-3 text-sm font-medium">Get Started</h3>
+        <Card>
+          <CardContent className="space-y-3 pt-6 text-center">
+            <div className="bg-primary/10 mx-auto flex h-10 w-10 items-center justify-center rounded-full">
+              <Zap className="text-primary h-5 w-5" />
+            </div>
+            <h4 className="font-medium">Ready to optimize?</h4>
+            <p className="text-muted-foreground text-sm">
+              Create a project and generate an API key to start optimizing your images.
+            </p>
+            <Button variant="outline" className="w-full bg-transparent" asChild>
+              <a
+                href="https://docs.optstuff.dev"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                View Documentation
+              </a>
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
