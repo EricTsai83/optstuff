@@ -106,7 +106,7 @@ export const teamRouter = createTRPCRouter({
       z.object({
         teamId: z.string().uuid(),
         name: z.string().min(1).max(255),
-      })
+      }),
     )
     .mutation(async ({ ctx, input }) => {
       const [updatedTeam] = await ctx.db
@@ -127,7 +127,7 @@ export const teamRouter = createTRPCRouter({
         clerkOrgId: z.string().min(1),
         name: z.string().min(1).max(255),
         slug: z.string().min(1).max(255),
-      })
+      }),
     )
     .mutation(async ({ ctx, input }) => {
       const existingTeam = await ctx.db.query.teams.findFirst({

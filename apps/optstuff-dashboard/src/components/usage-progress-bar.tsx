@@ -35,9 +35,7 @@ export function UsageProgressBar({
     <div className={cn("space-y-1.5", compact && "space-y-1")}>
       <div className="flex items-center justify-between text-sm">
         <div className="flex items-center gap-2">
-          {compact && (
-            <div className={cn("h-2 w-2 rounded-full", barColor)} />
-          )}
+          {compact && <div className={cn("h-2 w-2 rounded-full", barColor)} />}
           <span className={cn(compact ? "text-foreground" : "font-medium")}>
             {label}
           </span>
@@ -49,11 +47,14 @@ export function UsageProgressBar({
       <div
         className={cn(
           "bg-muted overflow-hidden rounded-full",
-          compact ? "h-1.5" : "h-2"
+          compact ? "h-1.5" : "h-2",
         )}
       >
         <div
-          className={cn("h-full rounded-full transition-all duration-500", barColor)}
+          className={cn(
+            "h-full rounded-full transition-all duration-500",
+            barColor,
+          )}
           style={{ width: `${percentage}%` }}
         />
       </div>
@@ -70,11 +71,18 @@ type UsageProgressBarSkeletonProps = {
   readonly compact?: boolean;
 };
 
-export function UsageProgressBarSkeleton({ compact = false }: UsageProgressBarSkeletonProps) {
+export function UsageProgressBarSkeleton({
+  compact = false,
+}: UsageProgressBarSkeletonProps) {
   return (
     <div className={cn("space-y-1.5", compact && "space-y-1")}>
       <div className="bg-muted h-4 w-full animate-pulse rounded" />
-      <div className={cn("bg-muted animate-pulse rounded-full", compact ? "h-1.5" : "h-2")} />
+      <div
+        className={cn(
+          "bg-muted animate-pulse rounded-full",
+          compact ? "h-1.5" : "h-2",
+        )}
+      />
     </div>
   );
 }

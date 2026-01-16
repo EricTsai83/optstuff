@@ -15,7 +15,7 @@ export const projectRouter = createTRPCRouter({
         teamId: z.string().uuid(),
         name: z.string().min(1).max(255),
         description: z.string().max(1000).optional(),
-      })
+      }),
     )
     .mutation(async ({ ctx, input }) => {
       const team = await ctx.db.query.teams.findFirst({
@@ -76,11 +76,11 @@ export const projectRouter = createTRPCRouter({
           teamName: team.name,
           teamSlug: team.slug,
           isPersonalTeam: team.isPersonal,
-        }))
+        })),
       )
       .sort(
         (a, b) =>
-          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
       );
   }),
 
@@ -108,7 +108,7 @@ export const projectRouter = createTRPCRouter({
       const team = await ctx.db.query.teams.findFirst({
         where: and(
           eq(teams.slug, input.teamSlug),
-          eq(teams.ownerId, ctx.userId)
+          eq(teams.ownerId, ctx.userId),
         ),
       });
 
@@ -117,7 +117,7 @@ export const projectRouter = createTRPCRouter({
       const project = await ctx.db.query.projects.findFirst({
         where: and(
           eq(projects.teamId, team.id),
-          eq(projects.slug, input.projectSlug)
+          eq(projects.slug, input.projectSlug),
         ),
       });
 
@@ -133,7 +133,7 @@ export const projectRouter = createTRPCRouter({
         projectId: z.string().uuid(),
         name: z.string().min(1).max(255).optional(),
         description: z.string().max(1000).optional(),
-      })
+      }),
     )
     .mutation(async ({ ctx, input }) => {
       const project = await ctx.db.query.projects.findFirst({
@@ -196,7 +196,7 @@ export const projectRouter = createTRPCRouter({
       const existingPin = await ctx.db.query.pinnedProjects.findFirst({
         where: and(
           eq(pinnedProjects.userId, ctx.userId),
-          eq(pinnedProjects.projectId, input.projectId)
+          eq(pinnedProjects.projectId, input.projectId),
         ),
       });
 
@@ -220,8 +220,8 @@ export const projectRouter = createTRPCRouter({
         .where(
           and(
             eq(pinnedProjects.userId, ctx.userId),
-            eq(pinnedProjects.projectId, input.projectId)
-          )
+            eq(pinnedProjects.projectId, input.projectId),
+          ),
         );
 
       return { success: true };
@@ -257,7 +257,7 @@ export const projectRouter = createTRPCRouter({
       const pin = await ctx.db.query.pinnedProjects.findFirst({
         where: and(
           eq(pinnedProjects.userId, ctx.userId),
-          eq(pinnedProjects.projectId, input.projectId)
+          eq(pinnedProjects.projectId, input.projectId),
         ),
       });
 
@@ -275,13 +275,13 @@ export const projectRouter = createTRPCRouter({
       const pins = await ctx.db.query.pinnedProjects.findMany({
         where: and(
           eq(pinnedProjects.userId, ctx.userId),
-          inArray(pinnedProjects.projectId, input.projectIds)
+          inArray(pinnedProjects.projectId, input.projectIds),
         ),
       });
 
       const pinnedSet = new Set(pins.map((p) => p.projectId));
       return Object.fromEntries(
-        input.projectIds.map((id) => [id, pinnedSet.has(id)])
+        input.projectIds.map((id) => [id, pinnedSet.has(id)]),
       );
     }),
 });

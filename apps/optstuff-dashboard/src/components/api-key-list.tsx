@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { formatDistanceToNow } from "date-fns";
-import { Key, MoreHorizontal, Trash2, RotateCcw, AlertTriangle } from "lucide-react";
+import { Key, MoreHorizontal, Trash2, RotateCcw, Shield } from "lucide-react";
 import { Button } from "@workspace/ui/components/button";
 import { Badge } from "@workspace/ui/components/badge";
 import {
@@ -17,7 +17,6 @@ import {
   DialogContent,
   DialogDescription,
   DialogFooter,
-  DialogHeader,
   DialogTitle,
 } from "@workspace/ui/components/dialog";
 import {
@@ -227,50 +226,67 @@ type RotatedKeyDialogProps = {
 function RotatedKeyDialog({ rotatedKey, onClose }: RotatedKeyDialogProps) {
   return (
     <Dialog open={!!rotatedKey} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-[500px]">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <RotateCcw className="h-5 w-5 text-green-500" />
-            API Key Rotated
-          </DialogTitle>
-          <DialogDescription>
-            Your API key <strong>{rotatedKey?.name}</strong> has been rotated.
-            The old key is now invalid. Make sure to copy the new key!
-          </DialogDescription>
-        </DialogHeader>
-        <div className="max-h-[60vh] space-y-4 overflow-y-auto py-4">
-          <Card className="border-amber-500/50 bg-amber-500/10">
-            <CardContent className="flex items-start gap-3 pt-4">
-              <AlertTriangle className="h-5 w-5 shrink-0 text-amber-500" />
-              <div className="text-sm">
-                <p className="font-medium text-amber-600 dark:text-amber-400">
-                  Update your applications
-                </p>
-                <p className="text-muted-foreground mt-1">
-                  Replace the old key with this new one in all your applications.
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-
-          <div>
-            <Label className="text-muted-foreground text-xs">
-              Your New API Key
-            </Label>
-            <div className="mt-1.5 flex items-center gap-2">
-              <code className="bg-muted flex-1 rounded-md px-3 py-2 font-mono text-sm break-all">
-                {rotatedKey?.key}
-              </code>
-              <CopyButton text={rotatedKey?.key ?? ""} className="shrink-0" />
+      <DialogContent className="sm:max-w-[480px]">
+        <div className="flex flex-col">
+          {/* Success Header */}
+          <div className="flex items-center gap-3 pb-4">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-500/10">
+              <RotateCcw className="h-5 w-5 text-blue-500" />
+            </div>
+            <div>
+              <DialogTitle className="text-lg">API Key Rotated</DialogTitle>
+              <DialogDescription className="mt-0.5 text-sm">
+                <strong>{rotatedKey?.name}</strong> has been rotated
+              </DialogDescription>
             </div>
           </div>
 
-          {rotatedKey && <ApiCodeExamples apiKey={rotatedKey.key} />}
-          <DocsLink />
+          {/* Content */}
+          <div className="space-y-4">
+            {/* API Key Display */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label className="text-muted-foreground text-xs tracking-wider uppercase">
+                  Your New API Key
+                </Label>
+                <div className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400">
+                  <Shield className="h-3 w-3" />
+                  <span>Only shown once</span>
+                </div>
+              </div>
+              <div className="bg-muted/50 border-border group relative rounded-lg border p-3">
+                <code className="block pr-10 font-mono text-sm break-all">
+                  {rotatedKey?.key}
+                </code>
+                <div className="absolute top-2 right-2">
+                  <CopyButton
+                    text={rotatedKey?.key ?? ""}
+                    variant="secondary"
+                    size="icon"
+                    className="h-8 w-8 shadow-sm"
+                  />
+                </div>
+              </div>
+              <p className="text-muted-foreground text-xs">
+                The old key is now invalid. Update your applications with this
+                new key.
+              </p>
+            </div>
+
+            {/* Code Examples */}
+            {rotatedKey && <ApiCodeExamples apiKey={rotatedKey.key} />}
+
+            {/* Docs Link */}
+            <DocsLink />
+          </div>
+
+          {/* Footer */}
+          <DialogFooter className="mt-6">
+            <Button onClick={onClose} className="w-full sm:w-auto">
+              Done
+            </Button>
+          </DialogFooter>
         </div>
-        <DialogFooter>
-          <Button onClick={onClose}>Done</Button>
-        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

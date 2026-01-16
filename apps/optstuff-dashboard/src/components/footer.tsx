@@ -47,7 +47,7 @@ export function Footer() {
                   <LegalDropdown key={link.name} />
                 ) : (
                   <FooterLink key={link.name} {...link} />
-                )
+                ),
               )}
             </nav>
           </div>
@@ -64,7 +64,11 @@ export function Footer() {
               All systems normal.
             </a>
 
-            <ThemeSwitcher mounted={mounted} theme={theme} setTheme={setTheme} />
+            <ThemeSwitcher
+              mounted={mounted}
+              theme={theme}
+              setTheme={setTheme}
+            />
           </div>
         </div>
       </div>
@@ -143,7 +147,7 @@ function ThemeSwitcher({
             "h-7 w-7 transition-colors duration-200",
             mounted && theme === option.id
               ? "text-foreground bg-secondary"
-              : "text-muted-foreground hover:text-foreground"
+              : "text-muted-foreground hover:text-foreground",
           )}
           onClick={() => setTheme(option.id)}
           aria-label={option.label}

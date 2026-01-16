@@ -51,6 +51,11 @@ export const projects = createTable(
     name: d.varchar({ length: 255 }).notNull(),
     slug: d.varchar({ length: 255 }).notNull(),
     description: d.text(),
+    // Cached statistics (updated on API key/usage changes)
+    apiKeyCount: d.integer().default(0).notNull(),
+    totalRequests: d.bigint({ mode: "number" }).default(0).notNull(),
+    totalBandwidth: d.bigint({ mode: "number" }).default(0).notNull(),
+    lastActivityAt: d.timestamp({ withTimezone: true }),
     createdAt: d.timestamp({ withTimezone: true }).defaultNow().notNull(),
     updatedAt: d.timestamp({ withTimezone: true }).$onUpdate(() => new Date()),
   }),

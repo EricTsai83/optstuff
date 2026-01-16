@@ -7,7 +7,7 @@ import { copyToClipboard } from "@/lib/clipboard";
 
 type CopyButtonProps = {
   readonly text: string;
-  readonly variant?: "default" | "outline" | "ghost";
+  readonly variant?: "default" | "outline" | "ghost" | "secondary";
   readonly size?: "default" | "sm" | "lg" | "icon";
   readonly className?: string;
 };

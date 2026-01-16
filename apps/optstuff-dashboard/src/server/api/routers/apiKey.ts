@@ -2,13 +2,25 @@ import { eq, and, isNull, desc } from "drizzle-orm";
 import { z } from "zod";
 
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
-import { apiKeys, projects, teams } from "@/server/db/schema";
+import { apiKeys, projects } from "@/server/db/schema";
 import { generateApiKey } from "@/server/lib/api-key";
+import type { db as dbType } from "@/server/db";
+
+/** Helper to update project's API key count */
+async function updateProjectApiKeyCount(db: typeof dbType, projectId: string) {
+  const count = await db.query.apiKeys.findMany({
+    where: and(eq(apiKeys.projectId, projectId), isNull(apiKeys.revokedAt)),
+  });
+
+  await db
+    .update(projects)
+    .set({ apiKeyCount: count.length })
+    .where(eq(projects.id, projectId));
+}
 
 export const apiKeyRouter = createTRPCRouter({
   /**
    * Create a new API key for a project.
-   * Returns the full key only once - it should be shown to the user immediately.
    */
   create: protectedProcedure
     .input(
@@ -21,25 +33,18 @@ export const apiKeyRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const { userId, db } = ctx;
-
-      // Verify user has access to the project
-      const project = await db.query.projects.findFirst({
+      const project = await ctx.db.query.projects.findFirst({
         where: eq(projects.id, input.projectId),
-        with: {
-          team: true,
-        },
+        with: { team: true },
       });
 
-      if (!project || project.team.ownerId !== userId) {
+      if (!project || project.team.ownerId !== ctx.userId) {
         throw new Error("Project not found or access denied");
       }
 
-      // Generate new API key
       const { key, keyPrefix, keyHash } = generateApiKey();
 
-      // Insert into database
-      const [newApiKey] = await db
+      const [newApiKey] = await ctx.db
         .insert(apiKeys)
         .values({
           projectId: input.projectId,
@@ -52,44 +57,34 @@ export const apiKeyRouter = createTRPCRouter({
         })
         .returning();
 
-      // Return with full key (only time it's returned)
-      return {
-        ...newApiKey,
-        key, // Full key - only returned on creation
-      };
+      // Update project's API key count
+      await updateProjectApiKeyCount(ctx.db, input.projectId);
+
+      return { ...newApiKey, key };
     }),
 
   /**
    * List all active API keys for a project.
-   * Does NOT return the full key, only metadata.
    */
   list: protectedProcedure
     .input(z.object({ projectId: z.string().uuid() }))
     .query(async ({ ctx, input }) => {
-      const { userId, db } = ctx;
-
-      // Verify user has access to the project
-      const project = await db.query.projects.findFirst({
+      const project = await ctx.db.query.projects.findFirst({
         where: eq(projects.id, input.projectId),
-        with: {
-          team: true,
-        },
+        with: { team: true },
       });
 
-      if (!project || project.team.ownerId !== userId) {
+      if (!project || project.team.ownerId !== ctx.userId) {
         return [];
       }
 
-      // Get all non-revoked API keys
-      const keys = await db.query.apiKeys.findMany({
+      return ctx.db.query.apiKeys.findMany({
         where: and(
           eq(apiKeys.projectId, input.projectId),
           isNull(apiKeys.revokedAt),
         ),
         orderBy: [desc(apiKeys.createdAt)],
       });
-
-      return keys;
     }),
 
   /**
@@ -98,26 +93,19 @@ export const apiKeyRouter = createTRPCRouter({
   listAll: protectedProcedure
     .input(z.object({ projectId: z.string().uuid() }))
     .query(async ({ ctx, input }) => {
-      const { userId, db } = ctx;
-
-      // Verify user has access to the project
-      const project = await db.query.projects.findFirst({
+      const project = await ctx.db.query.projects.findFirst({
         where: eq(projects.id, input.projectId),
-        with: {
-          team: true,
-        },
+        with: { team: true },
       });
 
-      if (!project || project.team.ownerId !== userId) {
+      if (!project || project.team.ownerId !== ctx.userId) {
         return [];
       }
 
-      const keys = await db.query.apiKeys.findMany({
+      return ctx.db.query.apiKeys.findMany({
         where: eq(apiKeys.projectId, input.projectId),
         orderBy: [desc(apiKeys.createdAt)],
       });
-
-      return keys;
     }),
 
   /**
@@ -126,20 +114,12 @@ export const apiKeyRouter = createTRPCRouter({
   get: protectedProcedure
     .input(z.object({ apiKeyId: z.string().uuid() }))
     .query(async ({ ctx, input }) => {
-      const { userId, db } = ctx;
-
-      const apiKey = await db.query.apiKeys.findFirst({
+      const apiKey = await ctx.db.query.apiKeys.findFirst({
         where: eq(apiKeys.id, input.apiKeyId),
-        with: {
-          project: {
-            with: {
-              team: true,
-            },
-          },
-        },
+        with: { project: { with: { team: true } } },
       });
 
-      if (!apiKey || apiKey.project.team.ownerId !== userId) {
+      if (!apiKey || apiKey.project.team.ownerId !== ctx.userId) {
         return null;
       }
 
@@ -148,75 +128,55 @@ export const apiKeyRouter = createTRPCRouter({
 
   /**
    * Revoke an API key.
-   * The key will no longer be valid for API requests.
    */
   revoke: protectedProcedure
     .input(z.object({ apiKeyId: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {
-      const { userId, db } = ctx;
-
-      // Get the API key with project and team info
-      const apiKey = await db.query.apiKeys.findFirst({
+      const apiKey = await ctx.db.query.apiKeys.findFirst({
         where: eq(apiKeys.id, input.apiKeyId),
-        with: {
-          project: {
-            with: {
-              team: true,
-            },
-          },
-        },
+        with: { project: { with: { team: true } } },
       });
 
-      if (!apiKey || apiKey.project.team.ownerId !== userId) {
+      if (!apiKey || apiKey.project.team.ownerId !== ctx.userId) {
         throw new Error("API key not found or access denied");
       }
 
-      // Mark as revoked
-      const [revokedKey] = await db
+      const [revokedKey] = await ctx.db
         .update(apiKeys)
         .set({ revokedAt: new Date() })
         .where(eq(apiKeys.id, input.apiKeyId))
         .returning();
+
+      // Update project's API key count
+      await updateProjectApiKeyCount(ctx.db, apiKey.projectId);
 
       return revokedKey;
     }),
 
   /**
    * Rotate an API key - revoke the old one and create a new one.
-   * Returns the new full key.
    */
   rotate: protectedProcedure
     .input(z.object({ apiKeyId: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {
-      const { userId, db } = ctx;
-
-      // Get the old API key
-      const oldApiKey = await db.query.apiKeys.findFirst({
+      const oldApiKey = await ctx.db.query.apiKeys.findFirst({
         where: eq(apiKeys.id, input.apiKeyId),
-        with: {
-          project: {
-            with: {
-              team: true,
-            },
-          },
-        },
+        with: { project: { with: { team: true } } },
       });
 
-      if (!oldApiKey || oldApiKey.project.team.ownerId !== userId) {
+      if (!oldApiKey || oldApiKey.project.team.ownerId !== ctx.userId) {
         throw new Error("API key not found or access denied");
       }
 
       // Revoke the old key
-      await db
+      await ctx.db
         .update(apiKeys)
         .set({ revokedAt: new Date() })
         .where(eq(apiKeys.id, input.apiKeyId));
 
-      // Generate new key
       const { key, keyPrefix, keyHash } = generateApiKey();
 
-      // Create new API key with same settings
-      const [newApiKey] = await db
+      const [newApiKey] = await ctx.db
         .insert(apiKeys)
         .values({
           projectId: oldApiKey.projectId,
@@ -229,14 +189,13 @@ export const apiKeyRouter = createTRPCRouter({
         })
         .returning();
 
-      return {
-        ...newApiKey,
-        key, // Full key - only returned on creation/rotation
-      };
+      // Count doesn't change on rotation (one revoked, one created)
+
+      return { ...newApiKey, key };
     }),
 
   /**
-   * Update API key settings (name, rate limits, expiration).
+   * Update API key settings.
    */
   update: protectedProcedure
     .input(
@@ -249,21 +208,12 @@ export const apiKeyRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const { userId, db } = ctx;
-
-      // Get the API key with project and team info
-      const apiKey = await db.query.apiKeys.findFirst({
+      const apiKey = await ctx.db.query.apiKeys.findFirst({
         where: eq(apiKeys.id, input.apiKeyId),
-        with: {
-          project: {
-            with: {
-              team: true,
-            },
-          },
-        },
+        with: { project: { with: { team: true } } },
       });
 
-      if (!apiKey || apiKey.project.team.ownerId !== userId) {
+      if (!apiKey || apiKey.project.team.ownerId !== ctx.userId) {
         throw new Error("API key not found or access denied");
       }
 
@@ -281,7 +231,7 @@ export const apiKeyRouter = createTRPCRouter({
       if (input.rateLimitPerDay !== undefined)
         updateData.rateLimitPerDay = input.rateLimitPerDay;
 
-      const [updatedKey] = await db
+      const [updatedKey] = await ctx.db
         .update(apiKeys)
         .set(updateData)
         .where(eq(apiKeys.id, input.apiKeyId))
@@ -292,17 +242,26 @@ export const apiKeyRouter = createTRPCRouter({
 
   /**
    * Update the last used timestamp for an API key.
-   * Called by the API gateway when a key is used.
    */
   updateLastUsed: protectedProcedure
     .input(z.object({ apiKeyId: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {
-      const { db } = ctx;
+      const apiKey = await ctx.db.query.apiKeys.findFirst({
+        where: eq(apiKeys.id, input.apiKeyId),
+      });
 
-      await db
-        .update(apiKeys)
-        .set({ lastUsedAt: new Date() })
-        .where(eq(apiKeys.id, input.apiKeyId));
+      if (apiKey) {
+        await ctx.db
+          .update(apiKeys)
+          .set({ lastUsedAt: new Date() })
+          .where(eq(apiKeys.id, input.apiKeyId));
+
+        // Update project's last activity
+        await ctx.db
+          .update(projects)
+          .set({ lastActivityAt: new Date() })
+          .where(eq(projects.id, apiKey.projectId));
+      }
 
       return { success: true };
     }),

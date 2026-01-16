@@ -9,6 +9,7 @@ import {
   Activity,
   Pin,
   PinOff,
+  Clock,
 } from "lucide-react";
 import { Button } from "@workspace/ui/components/button";
 import {
@@ -20,6 +21,7 @@ import {
 } from "@workspace/ui/components/dropdown-menu";
 import { api } from "@/trpc/react";
 import { getProjectColor } from "@/lib/constants";
+import { formatNumber, formatBytes } from "@/lib/format";
 import { CreateProjectDialog } from "./create-project-dialog";
 
 type ProjectListProps = {
@@ -40,7 +42,7 @@ export function ProjectList({
   const projectIds = projects?.map((p) => p.id) ?? [];
   const { data: pinnedStatus } = api.project.getPinnedStatus.useQuery(
     { projectIds },
-    { enabled: projectIds.length > 0 }
+    { enabled: projectIds.length > 0 },
   );
 
   const normalizedQuery = searchQuery.toLowerCase().trim();
@@ -48,7 +50,7 @@ export function ProjectList({
     normalizedQuery
       ? p.name.toLowerCase().includes(normalizedQuery) ||
         p.description?.toLowerCase().includes(normalizedQuery)
-      : true
+      : true,
   );
 
   const teamPinnedProjects =
@@ -58,7 +60,7 @@ export function ProjectList({
         (normalizedQuery
           ? p.name.toLowerCase().includes(normalizedQuery) ||
             p.description?.toLowerCase().includes(normalizedQuery)
-          : true)
+          : true),
     ) ?? [];
 
   if (isLoading || isPinnedLoading) {
@@ -136,6 +138,10 @@ type Project = {
   name: string;
   slug: string;
   description: string | null;
+  apiKeyCount: number;
+  totalRequests: number;
+  totalBandwidth: number;
+  lastActivityAt: Date | null;
   createdAt: Date;
 };
 
@@ -213,14 +219,16 @@ function ProjectItem({
         </div>
         <div className="text-muted-foreground flex items-center gap-2 text-sm">
           {project.description ? (
-            <span className="truncate">{project.description}</span>
+            <span className="max-w-[200px] truncate">
+              {project.description}
+            </span>
           ) : (
             <span className="text-muted-foreground/50 italic">
               No description
             </span>
           )}
           <span className="text-muted-foreground">·</span>
-          <span>
+          <span className="shrink-0">
             {formatDistanceToNow(new Date(project.createdAt), {
               addSuffix: true,
             })}
@@ -228,16 +236,39 @@ function ProjectItem({
         </div>
       </div>
 
-      {/* Quick stats */}
-      <div className="hidden items-center gap-4 md:flex">
-        <div className="text-muted-foreground flex items-center gap-1.5 text-sm">
+      {/* Stats */}
+      <div className="hidden items-center gap-3 md:flex">
+        <div
+          className="text-muted-foreground flex items-center gap-1.5 text-sm"
+          title={`${project.apiKeyCount} active API keys`}
+        >
           <Key className="h-3.5 w-3.5" />
-          <span>API Keys</span>
+          <span className="tabular-nums">{project.apiKeyCount}</span>
         </div>
-        <div className="text-muted-foreground flex items-center gap-1.5 text-sm">
+
+        <div
+          className="text-muted-foreground flex items-center gap-1.5 text-sm"
+          title={`${project.totalRequests.toLocaleString()} requests · ${formatBytes(project.totalBandwidth)} bandwidth`}
+        >
           <Activity className="h-3.5 w-3.5" />
-          <span>Usage</span>
+          <span className="tabular-nums">
+            {formatNumber(project.totalRequests)}
+          </span>
         </div>
+
+        {project.lastActivityAt && (
+          <div
+            className="text-muted-foreground flex items-center gap-1.5 text-sm"
+            title="Last activity"
+          >
+            <Clock className="h-3.5 w-3.5" />
+            <span className="text-xs">
+              {formatDistanceToNow(new Date(project.lastActivityAt), {
+                addSuffix: true,
+              })}
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Pin button */}
@@ -252,7 +283,11 @@ function ProjectItem({
         onClick={handlePinToggle}
         disabled={isPinning || isUnpinning}
       >
-        {isPinned ? <PinOff className="h-4 w-4" /> : <Pin className="h-4 w-4" />}
+        {isPinned ? (
+          <PinOff className="h-4 w-4" />
+        ) : (
+          <Pin className="h-4 w-4" />
+        )}
       </Button>
 
       {/* Actions */}

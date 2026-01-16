@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { ExternalLink } from "lucide-react";
 import { Label } from "@workspace/ui/components/label";
 import {
@@ -36,65 +35,55 @@ const generateTsExample = (apiKey: string) =>
 const optimizedImage = await response.blob();`;
 
 export function ApiCodeExamples({ apiKey }: ApiCodeExamplesProps) {
-  const [copied, setCopied] = useState<"curl" | "ts" | null>(null);
-
   const curlExample = generateCurlExample(apiKey);
   const tsExample = generateTsExample(apiKey);
 
-  const handleCopy = (type: "curl" | "ts") => {
-    setCopied(type);
-    setTimeout(() => setCopied(null), 2000);
-  };
-
   return (
-    <div>
-      <Label className="text-muted-foreground text-xs">Quick Start</Label>
-      <Tabs defaultValue="curl" className="mt-2">
-        <TabsList className="w-full">
-          <TabsTrigger value="curl" className="flex-1">
+    <div className="space-y-2">
+      <Label className="text-muted-foreground text-xs tracking-wider uppercase">
+        Quick Start
+      </Label>
+      <Tabs defaultValue="curl" className="w-full">
+        <TabsList className="bg-muted/50 grid w-full grid-cols-2">
+          <TabsTrigger
+            value="curl"
+            className="data-[state=active]:bg-background text-xs"
+          >
             cURL
           </TabsTrigger>
-          <TabsTrigger value="typescript" className="flex-1">
+          <TabsTrigger
+            value="typescript"
+            className="data-[state=active]:bg-background text-xs"
+          >
             TypeScript
           </TabsTrigger>
         </TabsList>
-        <TabsContent value="curl" className="mt-2">
-          <CodeBlock
-            code={curlExample}
-            copied={copied === "curl"}
-            onCopy={() => handleCopy("curl")}
-          />
-        </TabsContent>
-        <TabsContent value="typescript" className="mt-2">
-          <CodeBlock
-            code={tsExample}
-            copied={copied === "ts"}
-            onCopy={() => handleCopy("ts")}
-          />
-        </TabsContent>
+        {/* Fixed height container to prevent layout shift */}
+        <div className="relative mt-2 h-[140px]">
+          <TabsContent value="curl" className="absolute inset-0 mt-0">
+            <CodeBlock code={curlExample} />
+          </TabsContent>
+          <TabsContent value="typescript" className="absolute inset-0 mt-0">
+            <CodeBlock code={tsExample} />
+          </TabsContent>
+        </div>
       </Tabs>
     </div>
   );
 }
 
-type CodeBlockProps = {
-  readonly code: string;
-  readonly copied: boolean;
-  readonly onCopy: () => void;
-};
-
-function CodeBlock({ code, onCopy }: CodeBlockProps) {
+function CodeBlock({ code }: { readonly code: string }) {
   return (
-    <div className="relative">
-      <pre className="bg-muted overflow-x-auto rounded-md p-3 text-xs">
-        <code>{code}</code>
+    <div className="group relative h-full">
+      <pre className="bg-muted/50 border-border h-full overflow-auto rounded-lg border p-3 text-xs leading-relaxed">
+        <code className="text-foreground/80">{code}</code>
       </pre>
-      <div className="absolute top-2 right-2">
+      <div className="absolute top-2 right-2 opacity-0 transition-opacity group-hover:opacity-100">
         <CopyButton
           text={code}
-          variant="ghost"
+          variant="secondary"
           size="icon"
-          className="h-7 w-7"
+          className="h-7 w-7 shadow-sm"
         />
       </div>
     </div>
@@ -103,17 +92,14 @@ function CodeBlock({ code, onCopy }: CodeBlockProps) {
 
 export function DocsLink() {
   return (
-    <div className="text-muted-foreground flex items-center justify-center gap-1 text-xs">
-      <span>Need more help?</span>
-      <a
-        href="https://docs.optstuff.dev"
-        target="_blank"
-        rel="noopener noreferrer"
-        className="text-primary inline-flex items-center gap-1 hover:underline"
-      >
-        View full documentation
-        <ExternalLink className="h-3 w-3" />
-      </a>
-    </div>
+    <a
+      href="https://docs.optstuff.dev"
+      target="_blank"
+      rel="noopener noreferrer"
+      className="text-muted-foreground hover:text-foreground hover:bg-muted/50 flex items-center justify-center gap-2 rounded-lg border border-dashed py-2.5 text-xs transition-colors"
+    >
+      <ExternalLink className="h-3.5 w-3.5" />
+      View full documentation
+    </a>
   );
 }

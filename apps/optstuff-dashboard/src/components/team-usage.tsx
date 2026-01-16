@@ -20,7 +20,7 @@ type TeamUsageProps = {
 export function TeamUsage({ teamId }: TeamUsageProps) {
   const { data: teamSummary, isLoading } = api.usage.getTeamSummary.useQuery(
     { teamId },
-    { enabled: !!teamId }
+    { enabled: !!teamId },
   );
 
   const { data: projects } = api.project.list.useQuery({ teamId });
@@ -43,11 +43,11 @@ export function TeamUsage({ teamId }: TeamUsageProps) {
 
   const requestPercentage = Math.min(
     ((teamSummary?.totalRequests ?? 0) / USAGE_LIMITS.requests) * 100,
-    100
+    100,
   );
   const bandwidthPercentage = Math.min(
     ((teamSummary?.totalBytes ?? 0) / USAGE_LIMITS.bandwidth) * 100,
-    100
+    100,
   );
 
   return (

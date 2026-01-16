@@ -27,7 +27,7 @@ export function UsageSidebar({ teamId }: UsageSidebarProps) {
 
   const { data: teamSummary, isLoading } = api.usage.getTeamSummary.useQuery(
     { teamId },
-    { enabled: !!teamId }
+    { enabled: !!teamId },
   );
 
   const usageData = [

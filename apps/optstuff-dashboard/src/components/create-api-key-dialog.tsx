@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Loader2, Check, AlertTriangle } from "lucide-react";
+import { Loader2, Check, Shield, Copy } from "lucide-react";
 import { Button } from "@workspace/ui/components/button";
 import { Input } from "@workspace/ui/components/input";
 import { Label } from "@workspace/ui/components/label";
@@ -14,7 +14,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@workspace/ui/components/dialog";
-import { Card, CardContent } from "@workspace/ui/components/card";
 import { api } from "@/trpc/react";
 import { CopyButton } from "./copy-button";
 import { ApiCodeExamples, DocsLink } from "./api-code-examples";
@@ -66,7 +65,7 @@ export function CreateApiKeyDialog({
       <DialogTrigger asChild>
         {trigger ?? <Button>Create API Key</Button>}
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[480px]">
         {!createdKey ? (
           <form onSubmit={handleSubmit}>
             <DialogHeader>
@@ -107,52 +106,62 @@ export function CreateApiKeyDialog({
             </DialogFooter>
           </form>
         ) : (
-          <>
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
+          <div className="flex flex-col">
+            {/* Success Header */}
+            <div className="flex items-center gap-3 pb-4">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-500/10">
                 <Check className="h-5 w-5 text-green-500" />
-                API Key Created
-              </DialogTitle>
-              <DialogDescription>
-                Your new API key has been created. Make sure to copy it now -
-                you won&apos;t be able to see it again!
-              </DialogDescription>
-            </DialogHeader>
-            <div className="max-h-[60vh] space-y-4 overflow-y-auto py-4">
-              <Card className="border-amber-500/50 bg-amber-500/10">
-                <CardContent className="flex items-start gap-3 pt-4">
-                  <AlertTriangle className="h-5 w-5 shrink-0 text-amber-500" />
-                  <div className="text-sm">
-                    <p className="font-medium text-amber-600 dark:text-amber-400">
-                      Save this key securely
-                    </p>
-                    <p className="text-muted-foreground mt-1">
-                      This is the only time you&apos;ll see the full API key.
-                      Store it in a secure location.
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-
+              </div>
               <div>
-                <Label className="text-muted-foreground text-xs">
-                  Your API Key
-                </Label>
-                <div className="mt-1.5 flex items-center gap-2">
-                  <code className="bg-muted flex-1 rounded-md px-3 py-2 font-mono text-sm break-all">
+                <DialogTitle className="text-lg">API Key Created</DialogTitle>
+                <DialogDescription className="mt-0.5 text-sm">
+                  Copy and save your key securely
+                </DialogDescription>
+              </div>
+            </div>
+
+            {/* Content with fixed height */}
+            <div className="space-y-4">
+              {/* API Key Display */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label className="text-muted-foreground text-xs uppercase tracking-wider">
+                    Your API Key
+                  </Label>
+                  <div className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400">
+                    <Shield className="h-3 w-3" />
+                    <span>Only shown once</span>
+                  </div>
+                </div>
+                <div className="bg-muted/50 border-border group relative rounded-lg border p-3">
+                  <code className="block break-all pr-10 font-mono text-sm">
                     {createdKey}
                   </code>
-                  <CopyButton text={createdKey} className="shrink-0" />
+                  <div className="absolute top-2 right-2">
+                    <CopyButton
+                      text={createdKey}
+                      variant="secondary"
+                      size="icon"
+                      className="h-8 w-8 shadow-sm"
+                    />
+                  </div>
                 </div>
               </div>
 
+              {/* Code Examples */}
               <ApiCodeExamples apiKey={createdKey} />
+
+              {/* Docs Link */}
               <DocsLink />
             </div>
-            <DialogFooter>
-              <Button onClick={handleClose}>Done</Button>
+
+            {/* Footer */}
+            <DialogFooter className="mt-6">
+              <Button onClick={handleClose} className="w-full sm:w-auto">
+                Done
+              </Button>
             </DialogFooter>
-          </>
+          </div>
         )}
       </DialogContent>
     </Dialog>
