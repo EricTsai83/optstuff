@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
+import { Github } from "lucide-react";
 import { Button } from "@workspace/ui/components/button";
 import {
   ClerkLoaded,
@@ -21,19 +22,28 @@ type MobileSidebarProps = {
   readonly isOpen: boolean;
   readonly onClose: () => void;
   readonly navigation: readonly NavigationItem[];
+  readonly githubUrl?: string;
 };
 
 export function MobileSidebar({
   isOpen,
   onClose,
   navigation,
+  githubUrl,
 }: MobileSidebarProps) {
+  // Track if items should animate (only when opening, not when closing)
+  const [shouldAnimate, setShouldAnimate] = useState(false);
+
   // Prevent body scroll when sidebar is open
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = "hidden";
+      // Small delay to ensure CSS transition starts properly
+      const timer = setTimeout(() => setShouldAnimate(true), 50);
+      return () => clearTimeout(timer);
     } else {
       document.body.style.overflow = "";
+      setShouldAnimate(false);
     }
     return () => {
       document.body.style.overflow = "";
@@ -72,12 +82,20 @@ export function MobileSidebar({
                 key={item.href}
                 href={item.href}
                 onClick={onClose}
-                className="group flex items-center justify-between border-b border-border/30 py-4 text-lg font-medium text-foreground transition-colors hover:text-accent"
+                className={cn(
+                  "group flex items-center justify-between border-b border-border/30 py-4 text-lg font-medium text-foreground transition-all hover:text-accent",
+                  "transform",
+                  shouldAnimate
+                    ? "translate-x-0 opacity-100"
+                    : "translate-x-4 opacity-0",
+                )}
                 style={{
-                  animationDelay: isOpen ? `${index * 50}ms` : undefined,
+                  transitionDelay: shouldAnimate ? `${index * 60}ms` : "0ms",
+                  transitionDuration: "300ms",
+                  transitionProperty: "transform, opacity, color",
                 }}
               >
-                {item.label}
+                <span>{item.label}</span>
                 <span className="text-muted-foreground transition-transform duration-200 group-hover:translate-x-1">
                   →
                 </span>
@@ -85,8 +103,32 @@ export function MobileSidebar({
             ))}
           </nav>
 
-          {/* Auth buttons */}
-          <div className="mt-auto border-t border-border/30 p-6">
+          {/* Bottom section: GitHub + Auth */}
+          <div
+            className={cn(
+              "mt-auto border-t border-border/30 p-6 transition-all duration-300",
+              shouldAnimate
+                ? "translate-y-0 opacity-100"
+                : "translate-y-4 opacity-0",
+            )}
+            style={{
+              transitionDelay: shouldAnimate
+                ? `${navigation.length * 60 + 50}ms`
+                : "0ms",
+            }}
+          >
+            {/* GitHub link */}
+            {githubUrl && (
+              <a
+                href={githubUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-muted-foreground hover:text-foreground hover:bg-muted mb-4 flex items-center gap-3 rounded-lg px-3 py-2.5 transition-colors"
+              >
+                <Github className="h-5 w-5" />
+                <span className="text-sm font-medium">View on GitHub</span>
+              </a>
+            )}
             <MobileAuthButtons onNavClick={onClose} />
           </div>
         </div>
@@ -107,19 +149,29 @@ function MobileAuthButtons({ onNavClick }: MobileAuthButtonsProps) {
       </ClerkLoading>
       <ClerkLoaded>
         <SignedOut>
-          <Button
-            asChild
-            className="h-11 w-full cursor-pointer rounded-lg"
-            onClick={onNavClick}
-          >
-            <a href="/sign-in">Sign in</a>
-          </Button>
+          <div className="flex flex-col gap-3">
+            <Button
+              asChild
+              className="h-11 w-full cursor-pointer rounded-lg"
+              onClick={onNavClick}
+            >
+              <a href="/sign-up">Get Started</a>
+            </Button>
+            <Button
+              asChild
+              variant="outline"
+              className="h-11 w-full cursor-pointer rounded-lg"
+              onClick={onNavClick}
+            >
+              <a href="/sign-in">Sign in</a>
+            </Button>
+          </div>
         </SignedOut>
         <SignedIn>
           <div className="flex flex-col gap-3">
             <Button
               asChild
-              className="h-11 w-full cursor-pointer rounded-lg bg-accent text-accent-foreground hover:bg-accent/95"
+              className="h-11 w-full cursor-pointer rounded-lg"
               onClick={onNavClick}
             >
               <a href="/dashboard">Dashboard</a>

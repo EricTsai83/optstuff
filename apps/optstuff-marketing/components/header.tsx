@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Menu, X } from "lucide-react";
+import { Github, Menu, X } from "lucide-react";
 import { Button } from "@workspace/ui/components/button";
 import { Logo } from "@workspace/ui/components/logo";
 import { ThemeToggleButton } from "@workspace/ui/components/theme-toggle-button";
@@ -27,6 +27,12 @@ type NavigationItem = {
   readonly label: string;
 };
 
+const NAVIGATION: readonly NavigationItem[] = [
+  { href: "#demo", label: "Demo" },
+  { href: "/blog", label: "Blog" },
+  { href: "/docs", label: "Docs" },
+] as const;
+
 const HEADER_CONFIG = {
   scroll: { threshold: 100, divisor: 2 },
   style: {
@@ -35,11 +41,7 @@ const HEADER_CONFIG = {
     borderColorDivisor: 5,
   },
   logo: { size: 32 },
-  navigation: [
-    { href: "#demo", label: "Demo" },
-    { href: "#features", label: "Features" },
-    { href: "#docs", label: "Docs" },
-  ] as readonly NavigationItem[],
+  github: "https://github.com/EricTsai83/optstuff",
 } as const;
 
 export function Header() {
@@ -84,20 +86,20 @@ export function Header() {
           </Link>
 
           {/* Center: Navigation - Desktop only */}
-          <nav className="hidden items-center gap-8 md:flex">
-            {HEADER_CONFIG.navigation.map((item) => (
+          <nav className="hidden items-center gap-6 md:flex">
+            {NAVIGATION.map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
-                className="text-muted-foreground dark:text-accent-foreground hover:text-foreground after:bg-foreground relative text-sm transition-colors after:absolute after:bottom-0 after:left-0 after:h-px after:w-0 after:transition-all after:duration-300 hover:after:w-full"
+                className="text-muted-foreground hover:text-foreground dark:text-foreground relative text-sm font-medium transition-colors after:absolute after:bottom-0 after:left-0 after:h-px after:w-0 after:bg-foreground after:transition-all after:duration-300 hover:after:w-full"
               >
                 {item.label}
               </Link>
             ))}
           </nav>
 
-          {/* Right: Auth buttons & Mobile menu toggle */}
-          <div className="flex flex-row-reverse items-center gap-3 justify-self-end md:gap-4">
+          {/* Right: Actions & Mobile menu toggle */}
+          <div className="flex flex-row-reverse items-center gap-2 justify-self-end md:gap-3">
             {/* Mobile menu toggle */}
             {isMobile && (
               <button
@@ -127,31 +129,44 @@ export function Header() {
 
             <ThemeToggleButton />
 
-            {/* Desktop auth buttons */}
-            <div className="hidden items-center gap-4 md:flex">
+            {/* GitHub link - Desktop only */}
+            <a
+              href={HEADER_CONFIG.github}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-muted-foreground hover:text-foreground dark:text-foreground hover:bg-muted hidden h-9 w-9 items-center justify-center rounded-md transition-colors md:flex"
+              aria-label="GitHub repository"
+            >
+              <Github className="h-5 w-5" />
+            </a>
+
+            {/* Desktop auth/CTA buttons */}
+            <div className="hidden items-center gap-2 md:flex">
               <ClerkLoading>
-                <AuthButtonsSkeleton />
-                <SignOutButtonSkeleton />
+                <GetStartedButtonSkeleton />
               </ClerkLoading>
               <ClerkLoaded>
                 <SignedOut>
-                  <Button
-                    asChild
-                    variant="outline"
-                    className="w-25 cursor-pointer"
+                  <Link
+                    href="/sign-in"
+                    className="text-muted-foreground hover:text-foreground dark:text-foreground px-3 py-2 text-sm font-medium transition-colors"
                   >
-                    <a href="/sign-in">Sign in</a>
+                    Sign in
+                  </Link>
+                  <Button asChild size="sm" className="cursor-pointer">
+                    <a href="/sign-up">Get Started</a>
                   </Button>
                 </SignedOut>
                 <SignedIn>
-                  <Button
-                    asChild
-                    className="w-25 cursor-pointer bg-accent text-accent-foreground hover:bg-accent/95"
-                  >
+                  <Button asChild size="sm" className="cursor-pointer">
                     <a href="/dashboard">Dashboard</a>
                   </Button>
                   <SignOutButton>
-                    <Button variant="outline" className="w-20 cursor-pointer">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="cursor-pointer"
+                    >
                       Sign out
                     </Button>
                   </SignOutButton>
@@ -167,25 +182,18 @@ export function Header() {
         <MobileSidebar
           isOpen={isMobileMenuOpen}
           onClose={() => setIsMobileMenuOpen(false)}
-          navigation={HEADER_CONFIG.navigation}
+          navigation={NAVIGATION}
+          githubUrl={HEADER_CONFIG.github}
         />
       )}
     </>
   );
 }
 
-function AuthButtonsSkeleton() {
+function GetStartedButtonSkeleton() {
   return (
-    <div className="flex h-9 w-25 items-center justify-center rounded-md border border-border bg-background">
-      <div className="h-3 w-14 animate-pulse rounded-sm bg-muted-foreground/20" />
-    </div>
-  );
-}
-
-function SignOutButtonSkeleton() {
-  return (
-    <div className="flex h-9 w-20 items-center justify-center rounded-md border border-border bg-background">
-      <div className="h-3 w-12 animate-pulse rounded-sm bg-muted-foreground/20" />
+    <div className="bg-primary/80 flex h-8 w-24 items-center justify-center rounded-md">
+      <div className="bg-primary-foreground/30 h-3 w-16 animate-pulse rounded-sm" />
     </div>
   );
 }

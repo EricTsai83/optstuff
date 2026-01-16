@@ -5,7 +5,10 @@ import { ApiDemoSection } from "./integration-steps/api-demo";
 
 export function ApiDemo() {
   return (
-    <section className="relative overflow-hidden px-4 py-16 sm:px-6 sm:py-24 md:px-8">
+    <section
+      id="api"
+      className="relative overflow-hidden px-4 py-16 sm:px-6 sm:py-24 md:px-8"
+    >
       {/* Background decorations */}
       <div className="pointer-events-none absolute inset-0">
         <div className="bg-accent/5 absolute right-1/4 top-1/3 h-64 w-64 rounded-full blur-3xl sm:h-96 sm:w-96" />
