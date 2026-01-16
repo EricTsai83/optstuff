@@ -68,7 +68,9 @@ export function ensureProtocol(path: string): string {
  * Resolve Content-Type based on image format
  */
 export function resolveContentType(format: string): string {
-  return format === "jpeg" ? "image/jpeg" : `image/${format}`;
+  return format === "jpg" || format === "jpeg"
+    ? "image/jpeg"
+    : `image/${format}`;
 }
 
 /**
