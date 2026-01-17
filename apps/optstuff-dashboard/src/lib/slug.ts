@@ -11,9 +11,7 @@ function normalizeSlug(slug: string): string {
  * Generates a URL-friendly slug from a name.
  */
 export function generateSlug(name: string): string {
-  const slug = name
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-");
+  const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, "-");
   return normalizeSlug(slug);
 }
 
