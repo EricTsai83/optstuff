@@ -29,7 +29,8 @@ export const usageRouter = createTRPCRouter({
       if (!project || project.team.ownerId !== ctx.userId) {
         throw new TRPCError({
           code: "FORBIDDEN",
-          message: "You do not have permission to record usage for this project",
+          message:
+            "You do not have permission to record usage for this project",
         });
       }
 
@@ -52,48 +53,43 @@ export const usageRouter = createTRPCRouter({
 
       const today = new Date().toISOString().split("T")[0]!;
 
-      const existingRecord = await ctx.db.query.usageRecords.findFirst({
-        where: and(
-          eq(usageRecords.projectId, input.projectId),
-          input.apiKeyId
-            ? eq(usageRecords.apiKeyId, input.apiKeyId)
-            : sql`${usageRecords.apiKeyId} IS NULL`,
-          eq(usageRecords.date, today),
-        ),
-      });
-
-      let result;
-      if (existingRecord) {
-        [result] = await ctx.db
-          .update(usageRecords)
-          .set({
-            requestCount: sql`${usageRecords.requestCount} + ${input.requestCount}`,
-            bytesProcessed: sql`${usageRecords.bytesProcessed} + ${input.bytesProcessed}`,
-          })
-          .where(eq(usageRecords.id, existingRecord.id))
-          .returning();
-      } else {
-        [result] = await ctx.db
+      // Use transaction to ensure atomic updates for both usage record and project totals
+      const result = await ctx.db.transaction(async (tx) => {
+        // Atomic upsert for usage record - eliminates race condition
+        const [upsertedRecord] = await tx
           .insert(usageRecords)
           .values({
             projectId: input.projectId,
-            apiKeyId: input.apiKeyId,
+            apiKeyId: input.apiKeyId ?? null,
             date: today,
             requestCount: input.requestCount,
             bytesProcessed: input.bytesProcessed,
           })
+          .onConflictDoUpdate({
+            target: [
+              usageRecords.projectId,
+              usageRecords.apiKeyId,
+              usageRecords.date,
+            ],
+            set: {
+              requestCount: sql`${usageRecords.requestCount} + ${input.requestCount}`,
+              bytesProcessed: sql`${usageRecords.bytesProcessed} + ${input.bytesProcessed}`,
+            },
+          })
           .returning();
-      }
 
-      // Update project's cached stats
-      await ctx.db
-        .update(projects)
-        .set({
-          totalRequests: sql`${projects.totalRequests} + ${input.requestCount}`,
-          totalBandwidth: sql`${projects.totalBandwidth} + ${input.bytesProcessed}`,
-          lastActivityAt: new Date(),
-        })
-        .where(eq(projects.id, input.projectId));
+        // Update project's cached stats within the same transaction
+        await tx
+          .update(projects)
+          .set({
+            totalRequests: sql`${projects.totalRequests} + ${input.requestCount}`,
+            totalBandwidth: sql`${projects.totalBandwidth} + ${input.bytesProcessed}`,
+            lastActivityAt: new Date(),
+          })
+          .where(eq(projects.id, input.projectId));
+
+        return upsertedRecord;
+      });
 
       return result;
     }),
