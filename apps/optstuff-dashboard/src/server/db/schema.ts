@@ -175,11 +175,14 @@ export const usageRecords = createTable(
   (t) => [
     index("usage_project_idx").on(t.projectId),
     index("usage_date_idx").on(t.date),
-    unique("usage_project_apikey_date_unique").on(
-      t.projectId,
-      t.apiKeyId,
-      t.date,
-    ),
+    // Partial unique index for usage without API key (NULL apiKeyId)
+    uniqueIndex("usage_project_date_null_apikey_unique")
+      .on(t.projectId, t.date)
+      .where(sql`${t.apiKeyId} IS NULL`),
+    // Partial unique index for usage with specific API key
+    uniqueIndex("usage_project_apikey_date_unique")
+      .on(t.projectId, t.apiKeyId, t.date)
+      .where(sql`${t.apiKeyId} IS NOT NULL`),
   ],
 );
 
