@@ -210,7 +210,8 @@ function ProjectItem({
     >
       {/* Project icon */}
       <div
-        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-sm font-medium text-white transition-transform duration-200 group-hover:scale-105 ${projectColor}`}
+        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-sm font-medium text-white transition-transform duration-200 group-hover:scale-105"
+        style={{ backgroundColor: projectColor }}
       >
         {projectInitial}
       </div>
