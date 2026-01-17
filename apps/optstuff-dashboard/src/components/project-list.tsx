@@ -164,6 +164,7 @@ function ProjectItem({
     onSuccess: () => {
       utils.project.list.invalidate();
       utils.project.listPinned.invalidate();
+      utils.project.listAll.invalidate();
     },
   });
 
