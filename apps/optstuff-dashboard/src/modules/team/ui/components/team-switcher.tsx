@@ -14,13 +14,7 @@ import {
 } from "@workspace/ui/components/dropdown-menu";
 import { api } from "@/trpc/react";
 import { CreateTeamDialog } from "./create-team-dialog";
-
-type Team = {
-  id: string;
-  name: string;
-  slug: string;
-  isPersonal: boolean;
-};
+import type { Team } from "../../types";
 
 type TeamSwitcherProps = {
   readonly currentTeamSlug?: string;

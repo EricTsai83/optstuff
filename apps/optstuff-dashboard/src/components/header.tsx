@@ -6,7 +6,7 @@ import { Input } from "@workspace/ui/components/input";
 import { ClerkLoaded, ClerkLoading, UserButton } from "@workspace/auth/client";
 import { UserButtonSkeleton } from "@workspace/auth/components/user-button-skeleton";
 import { AnimatedLogo } from "@/components/animated-logo";
-import { TeamSwitcher } from "@/components/team-switcher";
+import { TeamSwitcher } from "@/modules/team";
 
 type HeaderProps = {
   readonly teamSlug?: string;

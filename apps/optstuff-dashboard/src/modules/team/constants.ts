@@ -21,3 +21,5 @@ export const SCROLL_CONFIG = {
     TRANSLATE_X_MULTIPLIER: 0.8,
   },
 } as const;
+
+export const NAV_TABS = ["Overview", "Usage", "Settings"] as const;

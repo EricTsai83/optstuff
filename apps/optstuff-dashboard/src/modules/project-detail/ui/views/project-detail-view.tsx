@@ -17,7 +17,7 @@ import {
   TabsList,
   TabsTrigger,
 } from "@workspace/ui/components/tabs";
-import { ApiKeyList } from "@/components/api-key-list";
+import { ApiKeyList } from "../components/api-key-list";
 import { OverviewTab } from "./overview-tab";
 import { UsageTab } from "./usage-tab";
 import { SettingsTab } from "./settings-tab";

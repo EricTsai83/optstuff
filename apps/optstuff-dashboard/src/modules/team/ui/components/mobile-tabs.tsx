@@ -8,7 +8,7 @@ import { USAGE_LIMITS } from "@/lib/constants";
 import {
   UsageProgressBar,
   UsageProgressBarSkeleton,
-} from "./usage-progress-bar";
+} from "@/components/usage-progress-bar";
 
 type MobileTabsProps = {
   readonly teamId: string;
@@ -17,7 +17,11 @@ type MobileTabsProps = {
 type Tab = "projects" | "usage" | "alerts";
 
 const TABS: { id: Tab; label: string; icon: React.ReactNode }[] = [
-  { id: "projects", label: "Projects", icon: <FolderOpen className="h-4 w-4" /> },
+  {
+    id: "projects",
+    label: "Projects",
+    icon: <FolderOpen className="h-4 w-4" />,
+  },
   { id: "usage", label: "Usage", icon: <Activity className="h-4 w-4" /> },
   { id: "alerts", label: "Alerts", icon: <Bell className="h-4 w-4" /> },
 ];
@@ -85,7 +89,7 @@ function ProjectsTabContent({ teamId }: { teamId: string }) {
 function UsageTabContent({ teamId }: { teamId: string }) {
   const { data: teamSummary, isLoading } = api.usage.getTeamSummary.useQuery(
     { teamId },
-    { enabled: !!teamId }
+    { enabled: !!teamId },
   );
 
   if (isLoading) {

@@ -2,11 +2,9 @@
 
 import { useScroll } from "@workspace/hooks/use-scroll";
 import { useIsMobile } from "@workspace/hooks/use-mobile";
-import { SCROLL_CONFIG } from "./scroll-config";
 import { cn } from "@workspace/ui/lib/utils";
-
-export const NAV_TABS = ["Overview", "Usage", "Settings"] as const;
-export type NavTab = (typeof NAV_TABS)[number];
+import { SCROLL_CONFIG, NAV_TABS } from "../../constants";
+import type { NavTab } from "../../types";
 
 type NavigationTabsProps = {
   readonly activeTab: NavTab;
