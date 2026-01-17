@@ -1,8 +1,9 @@
+import { TRPCError } from "@trpc/server";
 import { eq, and, gte, lte, sql, desc } from "drizzle-orm";
 import { z } from "zod";
 
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
-import { usageRecords, projects, teams } from "@/server/db/schema";
+import { usageRecords, projects, teams, apiKeys } from "@/server/db/schema";
 
 export const usageRouter = createTRPCRouter({
   /**
@@ -19,6 +20,36 @@ export const usageRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
+      // Ownership guard: verify the caller owns the project
+      const project = await ctx.db.query.projects.findFirst({
+        where: eq(projects.id, input.projectId),
+        with: { team: true },
+      });
+
+      if (!project || project.team.ownerId !== ctx.userId) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "You do not have permission to record usage for this project",
+        });
+      }
+
+      // If apiKeyId is provided, verify it belongs to the same project
+      if (input.apiKeyId) {
+        const apiKey = await ctx.db.query.apiKeys.findFirst({
+          where: and(
+            eq(apiKeys.id, input.apiKeyId),
+            eq(apiKeys.projectId, input.projectId),
+          ),
+        });
+
+        if (!apiKey) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "The specified API key does not belong to this project",
+          });
+        }
+      }
+
       const today = new Date().toISOString().split("T")[0]!;
 
       const existingRecord = await ctx.db.query.usageRecords.findFirst({
