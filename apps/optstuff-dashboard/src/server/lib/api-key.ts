@@ -1,4 +1,4 @@
-import { createHash, randomBytes } from "crypto";
+import { createHash, randomBytes, timingSafeEqual } from "crypto";
 
 const API_KEY_PREFIX = "pk_";
 const API_KEY_LENGTH = 32; // 32 bytes = 64 hex chars
@@ -43,6 +43,7 @@ export function hashApiKey(key: string): string {
 
 /**
  * Verifies if a provided API key matches a stored hash.
+ * Uses constant-time comparison to prevent timing attacks.
  *
  * @param key - The API key to verify
  * @param storedHash - The hash stored in the database
@@ -50,5 +51,14 @@ export function hashApiKey(key: string): string {
  */
 export function verifyApiKey(key: string, storedHash: string): boolean {
   const keyHash = hashApiKey(key);
-  return keyHash === storedHash;
+
+  const keyHashBuffer = Buffer.from(keyHash, "hex");
+  const storedHashBuffer = Buffer.from(storedHash, "hex");
+
+  // Length mismatch - return false without leaking timing info
+  if (keyHashBuffer.length !== storedHashBuffer.length) {
+    return false;
+  }
+
+  return timingSafeEqual(keyHashBuffer, storedHashBuffer);
 }
