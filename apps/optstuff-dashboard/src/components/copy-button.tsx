@@ -1,9 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { Copy, Check } from "lucide-react";
+import { Copy, Check, X } from "lucide-react";
 import { Button } from "@workspace/ui/components/button";
 import { copyToClipboard } from "@/lib/clipboard";
+
+type CopyStatus = "idle" | "copied" | "error";
 
 type CopyButtonProps = {
   readonly text: string;
@@ -18,12 +20,18 @@ export function CopyButton({
   size = "icon",
   className,
 }: CopyButtonProps) {
-  const [copied, setCopied] = useState(false);
+  const [status, setStatus] = useState<CopyStatus>("idle");
 
   const handleCopy = async () => {
-    await copyToClipboard(text);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    try {
+      await copyToClipboard(text);
+      setStatus("copied");
+      setTimeout(() => setStatus("idle"), 2000);
+    } catch (error) {
+      console.error("Failed to copy to clipboard:", error);
+      setStatus("error");
+      setTimeout(() => setStatus("idle"), 2000);
+    }
   };
 
   return (
@@ -34,8 +42,10 @@ export function CopyButton({
       onClick={handleCopy}
       className={className}
     >
-      {copied ? (
+      {status === "copied" ? (
         <Check className="h-4 w-4 text-green-500" />
+      ) : status === "error" ? (
+        <X className="h-4 w-4 text-red-500" />
       ) : (
         <Copy className="h-4 w-4" />
       )}
@@ -49,12 +59,18 @@ type CopyIconProps = {
 };
 
 export function CopyIcon({ text, className }: CopyIconProps) {
-  const [copied, setCopied] = useState(false);
+  const [status, setStatus] = useState<CopyStatus>("idle");
 
   const handleCopy = async () => {
-    await copyToClipboard(text);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    try {
+      await copyToClipboard(text);
+      setStatus("copied");
+      setTimeout(() => setStatus("idle"), 2000);
+    } catch (error) {
+      console.error("Failed to copy to clipboard:", error);
+      setStatus("error");
+      setTimeout(() => setStatus("idle"), 2000);
+    }
   };
 
   return (
@@ -62,8 +78,10 @@ export function CopyIcon({ text, className }: CopyIconProps) {
       onClick={handleCopy}
       className={`hover:text-foreground transition-colors ${className}`}
     >
-      {copied ? (
+      {status === "copied" ? (
         <Check className="h-3 w-3 text-green-500" />
+      ) : status === "error" ? (
+        <X className="h-3 w-3 text-red-500" />
       ) : (
         <Copy className="h-3 w-3" />
       )}
