@@ -187,8 +187,11 @@ function ProjectItem({
   const projectColor = getProjectColor(project.name);
   const projectInitial = project.name.charAt(0).toUpperCase();
 
+  const isMutating = isPinning || isUnpinning;
+
   const handlePinToggle = (e: React.MouseEvent) => {
     e.preventDefault();
+    if (isMutating) return;
     if (isPinned) {
       unpinProject({ projectId: project.id });
     } else {
@@ -306,7 +309,7 @@ function ProjectItem({
           <DropdownMenuItem asChild>
             <Link href={`/${teamSlug}/${project.slug}`}>View Project</Link>
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={handlePinToggle}>
+          <DropdownMenuItem onClick={handlePinToggle} disabled={isMutating}>
             {isPinned ? (
               <>
                 <PinOff className="mr-2 h-4 w-4" />
