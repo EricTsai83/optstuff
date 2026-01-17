@@ -16,7 +16,7 @@ import { USAGE_LIMITS } from "@/lib/constants";
 import {
   UsageProgressBar,
   UsageProgressBarSkeleton,
-} from "./usage-progress-bar";
+} from "@/components/usage-progress-bar";
 
 type UsageSidebarProps = {
   readonly teamId: string;

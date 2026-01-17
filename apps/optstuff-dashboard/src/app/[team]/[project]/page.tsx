@@ -5,7 +5,7 @@ import { teams, projects } from "@/server/db/schema";
 import { eq, and } from "drizzle-orm";
 import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
-import { ProjectDetailContent } from "./project-detail-content";
+import { ProjectDetailView } from "@/modules/project-detail";
 
 type PageProps = {
   params: Promise<{ team: string; project: string }>;
@@ -40,10 +40,7 @@ export default async function ProjectPage({ params }: PageProps) {
   return (
     <div className="bg-background flex min-h-screen flex-col">
       <Header teamSlug={teamSlug} />
-      <ProjectDetailContent
-        project={project}
-        team={team}
-      />
+      <ProjectDetailView project={project} team={team} />
       <Footer />
     </div>
   );

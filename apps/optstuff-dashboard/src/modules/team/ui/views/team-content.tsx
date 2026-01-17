@@ -1,13 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { NavigationTabs, type NavTab } from "./navigation-tabs";
-import { SearchToolbar } from "./search-toolbar";
-import { UsageSidebar } from "./usage-sidebar";
-import { ProjectList } from "./project-list";
-import { MobileTabs } from "./mobile-tabs";
+import { NavigationTabs } from "../components/navigation-tabs";
+import { SearchToolbar } from "../components/search-toolbar";
+import { UsageSidebar } from "../components/usage-sidebar";
+import { ProjectList } from "../components/project-list";
+import { MobileTabs } from "../components/mobile-tabs";
 import { TeamUsage } from "./team-usage";
 import { TeamSettings } from "./team-settings";
+import type { NavTab } from "../../types";
 
 type TeamContentProps = {
   readonly teamId: string;

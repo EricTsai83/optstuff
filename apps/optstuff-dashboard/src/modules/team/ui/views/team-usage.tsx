@@ -11,7 +11,7 @@ import {
 import { api } from "@/trpc/react";
 import { formatBytes, formatNumber } from "@/lib/format";
 import { USAGE_LIMITS } from "@/lib/constants";
-import { UsageProgressBar } from "./usage-progress-bar";
+import { UsageProgressBar } from "@/components/usage-progress-bar";
 
 type TeamUsageProps = {
   readonly teamId: string;
@@ -40,15 +40,6 @@ export function TeamUsage({ teamId }: TeamUsageProps) {
       </div>
     );
   }
-
-  const requestPercentage = Math.min(
-    ((teamSummary?.totalRequests ?? 0) / USAGE_LIMITS.requests) * 100,
-    100,
-  );
-  const bandwidthPercentage = Math.min(
-    ((teamSummary?.totalBytes ?? 0) / USAGE_LIMITS.bandwidth) * 100,
-    100,
-  );
 
   return (
     <div className="space-y-6">

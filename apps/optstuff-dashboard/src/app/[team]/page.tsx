@@ -4,7 +4,7 @@ import { db } from "@/server/db";
 import { teams } from "@/server/db/schema";
 import { eq, and } from "drizzle-orm";
 import { Header } from "@/components/header";
-import { TeamContent } from "@/components/team-content";
+import { TeamContent } from "@/modules/team";
 import { Footer } from "@/components/footer";
 
 type PageProps = {
