@@ -9,7 +9,7 @@ const API_KEY_LENGTH = 32; // 32 bytes = 64 hex chars
  *
  * @returns Object containing:
  *   - key: The full API key to show to the user (only shown once)
- *   - keyPrefix: The first 8 chars of the key for display purposes
+ *   - keyPrefix: The first 12 chars of the key for display purposes
  *   - keyHash: SHA256 hash of the key to store in database
  */
 export function generateApiKey(): {
