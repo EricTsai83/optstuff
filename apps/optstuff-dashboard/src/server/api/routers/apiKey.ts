@@ -252,20 +252,23 @@ export const apiKeyRouter = createTRPCRouter({
     .mutation(async ({ ctx, input }) => {
       const apiKey = await ctx.db.query.apiKeys.findFirst({
         where: eq(apiKeys.id, input.apiKeyId),
+        with: { project: { with: { team: true } } },
       });
 
-      if (apiKey) {
-        await ctx.db
-          .update(apiKeys)
-          .set({ lastUsedAt: new Date() })
-          .where(eq(apiKeys.id, input.apiKeyId));
-
-        // Update project's last activity
-        await ctx.db
-          .update(projects)
-          .set({ lastActivityAt: new Date() })
-          .where(eq(projects.id, apiKey.projectId));
+      if (!apiKey || apiKey.project.team.ownerId !== ctx.userId) {
+        throw new Error("API key not found or access denied");
       }
+
+      await ctx.db
+        .update(apiKeys)
+        .set({ lastUsedAt: new Date() })
+        .where(eq(apiKeys.id, input.apiKeyId));
+
+      // Update project's last activity
+      await ctx.db
+        .update(projects)
+        .set({ lastActivityAt: new Date() })
+        .where(eq(projects.id, apiKey.projectId));
 
       return { success: true };
     }),
