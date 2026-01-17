@@ -20,7 +20,7 @@ import {
   DropdownMenuTrigger,
 } from "@workspace/ui/components/dropdown-menu";
 import { api } from "@/trpc/react";
-import { getProjectColor } from "@/lib/constants";
+import { getProjectColor } from "../../constants";
 import { formatNumber, formatBytes } from "@/lib/format";
 import { CreateProjectDialog } from "./create-project-dialog";
 
