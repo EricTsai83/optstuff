@@ -13,7 +13,6 @@ import {
 } from "@workspace/ui/components/card";
 import {
   AlertDialog,
-  AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
@@ -44,6 +43,7 @@ export function SettingsTab({ project, team }: SettingsTabProps) {
       onSuccess: () => {
         utils.project.list.invalidate();
         utils.project.listPinned.invalidate();
+        setIsDeleteDialogOpen(false);
         router.push(`/${team.slug}`);
       },
     });
@@ -129,16 +129,16 @@ export function SettingsTab({ project, team }: SettingsTabProps) {
                   <AlertDialogCancel disabled={isDeleting}>
                     Cancel
                   </AlertDialogCancel>
-                  <AlertDialogAction
+                  <Button
                     onClick={handleDelete}
                     disabled={confirmText !== project.name || isDeleting}
-                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    variant="destructive"
                   >
                     {isDeleting && (
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     )}
                     Delete Project
-                  </AlertDialogAction>
+                  </Button>
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
