@@ -19,13 +19,14 @@ export function UsageTab({ projectId }: UsageTabProps) {
   const { data: usageSummary, isLoading } = api.usage.getSummary.useQuery({
     projectId,
   });
-  const { data: dailyUsage } = api.usage.getDailyUsage.useQuery({
-    projectId,
-    startDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
-      .toISOString()
-      .split("T")[0]!,
-    endDate: new Date().toISOString().split("T")[0]!,
-  });
+  const { data: dailyUsage, isLoading: isDailyLoading } =
+    api.usage.getDailyUsage.useQuery({
+      projectId,
+      startDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+        .toISOString()
+        .split("T")[0]!,
+      endDate: new Date().toISOString().split("T")[0]!,
+    });
 
   if (isLoading) {
     return (
@@ -68,7 +69,22 @@ export function UsageTab({ projectId }: UsageTabProps) {
           <CardDescription>Last 30 days of API usage</CardDescription>
         </CardHeader>
         <CardContent>
-          {!dailyUsage?.length ? (
+          {isDailyLoading ? (
+            <div className="space-y-2">
+              {[1, 2, 3].map((i) => (
+                <div
+                  key={i}
+                  className="bg-muted/50 flex items-center justify-between rounded-lg px-4 py-2"
+                >
+                  <div className="bg-muted h-4 w-24 animate-pulse rounded" />
+                  <div className="flex items-center gap-6">
+                    <div className="bg-muted h-4 w-20 animate-pulse rounded" />
+                    <div className="bg-muted h-4 w-16 animate-pulse rounded" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : !dailyUsage?.length ? (
             <div className="text-muted-foreground py-8 text-center">
               No usage data yet
             </div>
