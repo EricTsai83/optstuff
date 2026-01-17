@@ -1,4 +1,4 @@
-import { eq, and } from "drizzle-orm";
+import { eq, and, ne } from "drizzle-orm";
 import { z } from "zod";
 
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
@@ -135,9 +135,21 @@ export const teamRouter = createTRPCRouter({
       });
 
       if (existingTeam) {
+        // Check if new slug conflicts with another team (excluding this one)
+        const slugConflict = await ctx.db.query.teams.findFirst({
+          where: and(
+            eq(teams.slug, input.slug),
+            ne(teams.clerkOrgId, input.clerkOrgId),
+          ),
+        });
+
+        const finalSlug = slugConflict
+          ? generateUniqueSlug(input.slug)
+          : input.slug;
+
         const [updatedTeam] = await ctx.db
           .update(teams)
-          .set({ name: input.name, slug: input.slug })
+          .set({ name: input.name, slug: finalSlug })
           .where(eq(teams.clerkOrgId, input.clerkOrgId))
           .returning();
 
