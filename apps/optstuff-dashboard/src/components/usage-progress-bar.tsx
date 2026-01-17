@@ -21,9 +21,9 @@ export function UsageProgressBar({
   showPercentage = false,
   compact = false,
 }: UsageProgressBarProps) {
-  const percentage = Math.min((used / total) * 100, 100);
-  const isWarning = percentage > 80;
-  const isDanger = percentage > 95;
+  const safePercentage = total <= 0 ? 0 : Math.min((used / total) * 100, 100);
+  const isWarning = safePercentage > 80;
+  const isDanger = safePercentage > 95;
 
   const barColor = isDanger
     ? "bg-red-500"
@@ -55,12 +55,12 @@ export function UsageProgressBar({
             "h-full rounded-full transition-all duration-500",
             barColor,
           )}
-          style={{ width: `${percentage}%` }}
+          style={{ width: `${safePercentage}%` }}
         />
       </div>
       {showPercentage && (
         <p className="text-muted-foreground text-xs">
-          {percentage.toFixed(1)}% used
+          {safePercentage.toFixed(1)}% used
         </p>
       )}
     </div>
