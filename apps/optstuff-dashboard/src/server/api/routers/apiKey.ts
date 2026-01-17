@@ -231,6 +231,10 @@ export const apiKeyRouter = createTRPCRouter({
       if (input.rateLimitPerDay !== undefined)
         updateData.rateLimitPerDay = input.rateLimitPerDay;
 
+      if (Object.keys(updateData).length === 0) {
+        throw new Error("No fields to update");
+      }
+
       const [updatedKey] = await ctx.db
         .update(apiKeys)
         .set(updateData)
