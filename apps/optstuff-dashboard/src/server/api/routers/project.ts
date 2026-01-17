@@ -150,6 +150,10 @@ export const projectRouter = createTRPCRouter({
       if (input.description !== undefined)
         updateData.description = input.description;
 
+      if (Object.keys(updateData).length === 0) {
+        throw new Error("No fields to update");
+      }
+
       const [updatedProject] = await ctx.db
         .update(projects)
         .set(updateData)
