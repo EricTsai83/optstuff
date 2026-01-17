@@ -3,7 +3,7 @@ import Link from "next/link";
 
 export function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="relative flex min-h-svh flex-col items-center justify-center overflow-hidden">
+    <div className="relative flex min-h-screen flex-col overflow-hidden">
       {/* Gradient background */}
       <div className="absolute inset-0 -z-10">
         <div className="bg-background absolute inset-0" />
@@ -27,12 +27,14 @@ export function AuthLayout({ children }: { children: React.ReactNode }) {
       </Link>
 
       {/* Auth content */}
-      <div className="animate-in fade-in slide-in-from-bottom-4 w-full max-w-md px-4 duration-500">
-        {children}
-      </div>
+      <main className="flex flex-1 items-center justify-center px-4 py-20">
+        <div className="animate-in fade-in slide-in-from-bottom-4 w-full max-w-md duration-500">
+          {children}
+        </div>
+      </main>
 
       {/* Footer */}
-      <footer className="text-muted-foreground absolute bottom-6 text-center text-xs">
+      <footer className="text-muted-foreground shrink-0 py-6 text-center text-xs">
         <p>
           By continuing, you agree to our{" "}
           <Link href="/terms" className="hover:text-foreground underline">
