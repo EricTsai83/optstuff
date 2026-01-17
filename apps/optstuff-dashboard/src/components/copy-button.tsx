@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Copy, Check, X } from "lucide-react";
 import { Button } from "@workspace/ui/components/button";
 import { copyToClipboard } from "@/lib/clipboard";
@@ -21,16 +21,28 @@ export function CopyButton({
   className,
 }: CopyButtonProps) {
   const [status, setStatus] = useState<CopyStatus>("idle");
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, []);
 
   const handleCopy = async () => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
     try {
       await copyToClipboard(text);
       setStatus("copied");
-      setTimeout(() => setStatus("idle"), 2000);
+      timeoutRef.current = setTimeout(() => setStatus("idle"), 2000);
     } catch (error) {
       console.error("Failed to copy to clipboard:", error);
       setStatus("error");
-      setTimeout(() => setStatus("idle"), 2000);
+      timeoutRef.current = setTimeout(() => setStatus("idle"), 2000);
     }
   };
 
@@ -60,16 +72,28 @@ type CopyIconProps = {
 
 export function CopyIcon({ text, className }: CopyIconProps) {
   const [status, setStatus] = useState<CopyStatus>("idle");
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, []);
 
   const handleCopy = async () => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
     try {
       await copyToClipboard(text);
       setStatus("copied");
-      setTimeout(() => setStatus("idle"), 2000);
+      timeoutRef.current = setTimeout(() => setStatus("idle"), 2000);
     } catch (error) {
       console.error("Failed to copy to clipboard:", error);
       setStatus("error");
-      setTimeout(() => setStatus("idle"), 2000);
+      timeoutRef.current = setTimeout(() => setStatus("idle"), 2000);
     }
   };
 
