@@ -1,6 +1,7 @@
 "use client";
 
 import { Search, X } from "lucide-react";
+import { Button } from "@workspace/ui/components/button";
 import { Input } from "@workspace/ui/components/input";
 import { CreateProjectDialog } from "./create-project-dialog";
 
@@ -28,13 +29,15 @@ export function SearchToolbar({
           onChange={(e) => onSearchChange(e.target.value)}
         />
         {searchQuery && (
-          <button
+          <Button
             type="button"
+            variant="ghost"
+            size="icon"
             onClick={() => onSearchChange("")}
-            className="text-muted-foreground hover:text-foreground absolute top-1/2 right-3 -translate-y-1/2 transition-colors"
+            className="absolute top-1/2 right-1 h-8 w-8 -translate-y-1/2"
           >
             <X className="h-4 w-4" />
-          </button>
+          </Button>
         )}
       </div>
       <CreateProjectDialog teamId={teamId} teamSlug={teamSlug} />

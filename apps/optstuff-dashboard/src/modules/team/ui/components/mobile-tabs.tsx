@@ -1,7 +1,12 @@
 "use client";
 
-import { useState } from "react";
 import { Bell, Activity, FolderOpen } from "lucide-react";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@workspace/ui/components/tabs";
 import { api } from "@/trpc/react";
 import { formatBytes, formatNumber } from "@/lib/format";
 import { USAGE_LIMITS } from "@/lib/constants";
@@ -27,33 +32,31 @@ const TABS: { id: Tab; label: string; icon: React.ReactNode }[] = [
 ];
 
 export function MobileTabs({ teamId }: MobileTabsProps) {
-  const [activeTab, setActiveTab] = useState<Tab>("projects");
-
   return (
-    <div className="md:hidden">
-      <div className="border-border flex border-b">
+    <Tabs defaultValue="projects" className="md:hidden">
+      <TabsList className="border-border h-auto w-full justify-start gap-0 rounded-none border-b bg-transparent p-0">
         {TABS.map((tab) => (
-          <button
+          <TabsTrigger
             key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={`flex flex-1 items-center justify-center gap-2 py-3 text-sm font-medium transition-colors ${
-              activeTab === tab.id
-                ? "text-foreground border-foreground border-b-2"
-                : "text-muted-foreground"
-            }`}
+            value={tab.id}
+            className="data-[state=active]:border-foreground text-muted-foreground data-[state=active]:text-foreground flex flex-1 items-center justify-center gap-2 rounded-none border-b-2 border-transparent py-3 text-sm font-medium shadow-none transition-colors data-[state=active]:bg-transparent data-[state=active]:shadow-none"
           >
             {tab.icon}
             {tab.label}
-          </button>
+          </TabsTrigger>
         ))}
-      </div>
+      </TabsList>
 
-      <div className="py-4">
-        {activeTab === "projects" && <ProjectsTabContent teamId={teamId} />}
-        {activeTab === "usage" && <UsageTabContent teamId={teamId} />}
-        {activeTab === "alerts" && <AlertsTabContent />}
-      </div>
-    </div>
+      <TabsContent value="projects" className="mt-0 py-4">
+        <ProjectsTabContent teamId={teamId} />
+      </TabsContent>
+      <TabsContent value="usage" className="mt-0 py-4">
+        <UsageTabContent teamId={teamId} />
+      </TabsContent>
+      <TabsContent value="alerts" className="mt-0 py-4">
+        <AlertsTabContent />
+      </TabsContent>
+    </Tabs>
   );
 }
 

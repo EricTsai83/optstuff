@@ -2,7 +2,12 @@
 
 import { useState } from "react";
 import { ExternalLink } from "lucide-react";
-import { cn } from "@workspace/ui/lib/utils";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@workspace/ui/components/tabs";
 import { CopyButton } from "./copy-button";
 
 type Tab = "curl" | "node" | "python";
@@ -37,37 +42,40 @@ response = requests.get(
   };
 
   return (
-    <div className="space-y-2">
-      <div className="flex items-center gap-1 rounded-t-lg border-b">
+    <Tabs
+      value={activeTab}
+      onValueChange={(value) => setActiveTab(value as Tab)}
+      className="space-y-2"
+    >
+      <TabsList className="h-auto w-full justify-start gap-0 rounded-none rounded-t-lg border-b bg-transparent p-0">
         {TABS.map((tab) => (
-          <button
+          <TabsTrigger
             key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={cn(
-              "px-3 py-1.5 text-xs font-medium transition-colors",
-              activeTab === tab.id
-                ? "text-foreground border-foreground border-b-2"
-                : "text-muted-foreground hover:text-foreground",
-            )}
+            value={tab.id}
+            className="data-[state=active]:border-foreground text-muted-foreground data-[state=active]:text-foreground rounded-none border-b-2 border-transparent px-3 py-1.5 text-xs font-medium shadow-none transition-colors data-[state=active]:bg-transparent data-[state=active]:shadow-none"
           >
             {tab.label}
-          </button>
+          </TabsTrigger>
         ))}
-      </div>
-      <div className="bg-muted/50 border-border group relative rounded-lg border p-3">
-        <pre className="overflow-x-auto pr-10 text-xs">
-          <code>{codeExamples[activeTab]}</code>
-        </pre>
-        <div className="absolute top-2 right-2">
-          <CopyButton
-            text={codeExamples[activeTab]}
-            variant="secondary"
-            size="icon"
-            className="h-7 w-7 opacity-0 shadow-sm transition-opacity group-hover:opacity-100"
-          />
-        </div>
-      </div>
-    </div>
+      </TabsList>
+      {TABS.map((tab) => (
+        <TabsContent key={tab.id} value={tab.id} className="mt-0">
+          <div className="bg-muted/50 border-border group relative rounded-lg border p-3">
+            <pre className="overflow-x-auto pr-10 text-xs">
+              <code>{codeExamples[tab.id]}</code>
+            </pre>
+            <div className="absolute top-2 right-2">
+              <CopyButton
+                text={codeExamples[tab.id]}
+                variant="secondary"
+                size="icon"
+                className="h-7 w-7 opacity-0 shadow-sm transition-opacity group-hover:opacity-100"
+              />
+            </div>
+          </div>
+        </TabsContent>
+      ))}
+    </Tabs>
   );
 }
 

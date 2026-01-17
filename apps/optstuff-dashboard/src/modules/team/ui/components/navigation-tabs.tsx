@@ -2,7 +2,7 @@
 
 import { useScroll } from "@workspace/hooks/use-scroll";
 import { useIsMobile } from "@workspace/hooks/use-mobile";
-import { cn } from "@workspace/ui/lib/utils";
+import { Tabs, TabsList, TabsTrigger } from "@workspace/ui/components/tabs";
 import { SCROLL_CONFIG, NAV_TABS } from "../../constants";
 import type { NavTab } from "../../types";
 
@@ -24,26 +24,26 @@ export function NavigationTabs({
       SCROLL_CONFIG.NAVIGATION_TABS.TRANSLATE_X_MULTIPLIER;
 
   return (
-    <nav
+    <Tabs
+      value={activeTab}
+      onValueChange={(value) => onTabChange(value as NavTab)}
+      className="border-border bg-background scrollbar-hide sticky top-0 z-50 border-b"
       data-navigation-tabs="true"
-      className="border-border bg-background scrollbar-hide sticky top-0 z-50 flex h-[46px] items-center overflow-x-auto border-b px-2 *:shrink-0 md:px-4"
     >
-      <div style={{ transform: `translateX(${translateX}px)` }}>
+      <TabsList
+        className="h-[46px] w-full justify-start gap-0 overflow-x-auto rounded-none border-none bg-transparent px-2 *:shrink-0 md:px-4"
+        style={{ transform: `translateX(${translateX}px)` }}
+      >
         {NAV_TABS.map((tab) => (
-          <button
+          <TabsTrigger
             key={tab}
-            onClick={() => onTabChange(tab)}
-            className={cn(
-              "border-b-2 px-3 py-3 text-sm whitespace-nowrap transition-all duration-200",
-              activeTab === tab
-                ? "border-foreground text-foreground font-medium"
-                : "text-muted-foreground hover:text-foreground hover:border-muted-foreground border-transparent",
-            )}
+            value={tab}
+            className="data-[state=active]:border-foreground text-muted-foreground data-[state=active]:text-foreground rounded-none border-b-2 border-transparent px-3 py-3 text-sm whitespace-nowrap shadow-none transition-all duration-200 data-[state=active]:bg-transparent data-[state=active]:font-medium data-[state=active]:shadow-none"
           >
             {tab}
-          </button>
+          </TabsTrigger>
         ))}
-      </div>
-    </nav>
+      </TabsList>
+    </Tabs>
   );
 }
