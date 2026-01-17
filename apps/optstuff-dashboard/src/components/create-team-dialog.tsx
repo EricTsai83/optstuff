@@ -59,21 +59,26 @@ export function CreateTeamDialog({
       currentCount > prevOrgCountRef.current &&
       open
     ) {
-      // Find the newest org (last in the list after creation)
-      const newestMembership = userMemberships.data[0]; // Usually the newest is first
+      // Find the newest org (first in the list, as Clerk returns newest first)
+      const newestMembership = userMemberships.data[0];
       if (newestMembership?.organization) {
         const org = newestMembership.organization;
         syncFromClerk({
           clerkOrgId: org.id,
           name: org.name,
           slug: org.slug ?? org.name.toLowerCase().replace(/\s+/g, "-"),
-        }).then((team) => {
-          setOpen(false);
-          onSuccess?.();
-          if (team?.slug) {
-            router.push(`/${team.slug}`);
-          }
-        });
+        })
+          .then((team) => {
+            setOpen(false);
+            onSuccess?.();
+            if (team?.slug) {
+              router.push(`/${team.slug}`);
+            }
+          })
+          .catch((error) => {
+            console.error("Failed to sync team from Clerk:", error);
+            // Keep dialog open so user can retry or close manually
+          });
       }
     }
 

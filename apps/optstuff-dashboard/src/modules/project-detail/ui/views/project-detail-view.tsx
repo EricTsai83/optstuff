@@ -1,0 +1,115 @@
+"use client";
+
+import Link from "next/link";
+import { formatDistanceToNow } from "date-fns";
+import {
+  ArrowLeft,
+  Settings,
+  Key,
+  Activity,
+  LayoutDashboard,
+} from "lucide-react";
+import { Button } from "@workspace/ui/components/button";
+import { Badge } from "@workspace/ui/components/badge";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@workspace/ui/components/tabs";
+import { ApiKeyList } from "@/components/api-key-list";
+import { OverviewTab } from "./overview-tab";
+import { UsageTab } from "./usage-tab";
+import { SettingsTab } from "./settings-tab";
+import type { Project, Team } from "../../types";
+
+type ProjectDetailViewProps = {
+  readonly project: Project;
+  readonly team: Team;
+};
+
+export function ProjectDetailView({ project, team }: ProjectDetailViewProps) {
+  return (
+    <Tabs defaultValue="overview" className="flex flex-1 flex-col">
+      {/* Project Header */}
+      <div className="border-border border-b">
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex items-center gap-4">
+            <Link href={`/${team.slug}`}>
+              <Button variant="ghost" size="icon" className="h-8 w-8">
+                <ArrowLeft className="h-4 w-4" />
+              </Button>
+            </Link>
+            <div className="flex-1">
+              <div className="flex items-center gap-3">
+                <h1 className="text-xl font-semibold">{project.name}</h1>
+                <Badge variant="secondary">{team.name}</Badge>
+              </div>
+              {project.description && (
+                <p className="text-muted-foreground mt-1 text-sm">
+                  {project.description}
+                </p>
+              )}
+            </div>
+            <div className="text-muted-foreground hidden text-sm md:block">
+              Created{" "}
+              {formatDistanceToNow(new Date(project.createdAt), {
+                addSuffix: true,
+              })}
+            </div>
+          </div>
+        </div>
+
+        {/* Tabs */}
+        <div className="container mx-auto px-4">
+          <TabsList className="h-auto w-full justify-start gap-0 rounded-none border-none bg-transparent p-0">
+            <TabsTrigger
+              value="overview"
+              className="data-[state=active]:border-foreground text-muted-foreground data-[state=active]:text-foreground rounded-none border-b-2 border-transparent px-4 py-3 shadow-none data-[state=active]:bg-transparent data-[state=active]:shadow-none"
+            >
+              <LayoutDashboard className="h-4 w-4" />
+              Overview
+            </TabsTrigger>
+            <TabsTrigger
+              value="api-keys"
+              className="data-[state=active]:border-foreground text-muted-foreground data-[state=active]:text-foreground rounded-none border-b-2 border-transparent px-4 py-3 shadow-none data-[state=active]:bg-transparent data-[state=active]:shadow-none"
+            >
+              <Key className="h-4 w-4" />
+              API Keys
+            </TabsTrigger>
+            <TabsTrigger
+              value="usage"
+              className="data-[state=active]:border-foreground text-muted-foreground data-[state=active]:text-foreground rounded-none border-b-2 border-transparent px-4 py-3 shadow-none data-[state=active]:bg-transparent data-[state=active]:shadow-none"
+            >
+              <Activity className="h-4 w-4" />
+              Usage
+            </TabsTrigger>
+            <TabsTrigger
+              value="settings"
+              className="data-[state=active]:border-foreground text-muted-foreground data-[state=active]:text-foreground rounded-none border-b-2 border-transparent px-4 py-3 shadow-none data-[state=active]:bg-transparent data-[state=active]:shadow-none"
+            >
+              <Settings className="h-4 w-4" />
+              Settings
+            </TabsTrigger>
+          </TabsList>
+        </div>
+      </div>
+
+      {/* Tab Content */}
+      <main className="container mx-auto flex-1 px-4 py-6">
+        <TabsContent value="overview" className="mt-0">
+          <OverviewTab project={project} />
+        </TabsContent>
+        <TabsContent value="api-keys" className="mt-0">
+          <ApiKeyList projectId={project.id} />
+        </TabsContent>
+        <TabsContent value="usage" className="mt-0">
+          <UsageTab projectId={project.id} />
+        </TabsContent>
+        <TabsContent value="settings" className="mt-0">
+          <SettingsTab project={project} team={team} />
+        </TabsContent>
+      </main>
+    </Tabs>
+  );
+}

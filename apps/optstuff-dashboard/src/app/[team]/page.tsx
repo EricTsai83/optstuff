@@ -32,8 +32,10 @@ export default async function TeamPage({ params }: PageProps) {
     });
 
     // If no teams at all, create personal team and redirect
+    // Use atomic upsert to prevent race condition creating duplicate personal teams
     if (userTeams.length === 0) {
-      const [newTeam] = await db
+      // Try to insert, but do nothing if a personal team already exists (concurrent insert)
+      const [insertedTeam] = await db
         .insert(teams)
         .values({
           ownerId: userId,
@@ -41,10 +43,21 @@ export default async function TeamPage({ params }: PageProps) {
           slug: `personal-${userId.toLowerCase().slice(0, 8)}-${Date.now()}`,
           isPersonal: true,
         })
+        .onConflictDoNothing()
         .returning();
 
-      if (newTeam) {
-        redirect(`/${newTeam.slug}`);
+      // If insert succeeded, redirect to new team
+      if (insertedTeam) {
+        redirect(`/${insertedTeam.slug}`);
+      }
+
+      // If insert was skipped (conflict), fetch the existing personal team
+      const existingPersonalTeam = await db.query.teams.findFirst({
+        where: and(eq(teams.ownerId, userId), eq(teams.isPersonal, true)),
+      });
+
+      if (existingPersonalTeam) {
+        redirect(`/${existingPersonalTeam.slug}`);
       }
     }
 

@@ -1,5 +1,10 @@
-import { relations } from "drizzle-orm";
-import { index, pgTableCreator, unique } from "drizzle-orm/pg-core";
+import { relations, sql } from "drizzle-orm";
+import {
+  index,
+  pgTableCreator,
+  unique,
+  uniqueIndex,
+} from "drizzle-orm/pg-core";
 
 /**
  * This is an example of how to use the multi-project schema feature of Drizzle ORM. Use the same
@@ -29,7 +34,13 @@ export const teams = createTable(
     createdAt: d.timestamp({ withTimezone: true }).defaultNow().notNull(),
     updatedAt: d.timestamp({ withTimezone: true }).$onUpdate(() => new Date()),
   }),
-  (t) => [index("team_owner_idx").on(t.ownerId)],
+  (t) => [
+    index("team_owner_idx").on(t.ownerId),
+    // Ensure each user can only have one personal team
+    uniqueIndex("team_owner_personal_unique")
+      .on(t.ownerId)
+      .where(sql`${t.isPersonal} = true`),
+  ],
 );
 
 export const teamsRelations = relations(teams, ({ many }) => ({
