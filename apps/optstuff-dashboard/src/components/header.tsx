@@ -1,12 +1,13 @@
 "use client";
 
-import { Search, Bell, Menu, BookOpen } from "lucide-react";
+import { Search, Bell, Menu, BookOpen, Sun, Moon } from "lucide-react";
 import { Button } from "@workspace/ui/components/button";
 import { Input } from "@workspace/ui/components/input";
 import { ClerkLoaded, ClerkLoading, UserButton } from "@workspace/auth/client";
 import { UserButtonSkeleton } from "@workspace/auth/components/user-button-skeleton";
 import { AnimatedLogo } from "@/components/animated-logo";
 import { TeamSwitcher } from "@/modules/team";
+import { useTheme } from "next-themes";
 
 type HeaderProps = {
   readonly teamSlug?: string;
@@ -119,6 +120,9 @@ function IconButton({
 }
 
 function UserAvatar() {
+  const { resolvedTheme, setTheme } = useTheme();
+  const isDark = resolvedTheme === "dark";
+
   return (
     <div className="flex h-8 w-8 items-center justify-center">
       <ClerkLoading>
@@ -132,7 +136,21 @@ function UserAvatar() {
               userButtonPopoverCard: "shadow-lg",
             },
           }}
-        />
+        >
+          <UserButton.MenuItems>
+            <UserButton.Action
+              label={isDark ? "Light Mode" : "Dark Mode"}
+              labelIcon={
+                isDark ? (
+                  <Sun className="h-4 w-4" />
+                ) : (
+                  <Moon className="h-4 w-4" />
+                )
+              }
+              onClick={() => setTheme(isDark ? "light" : "dark")}
+            />
+          </UserButton.MenuItems>
+        </UserButton>
       </ClerkLoaded>
     </div>
   );
