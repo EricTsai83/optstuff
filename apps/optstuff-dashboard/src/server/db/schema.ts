@@ -20,13 +20,14 @@ export const createTable = pgTableCreator((name) => `optstuff_${name}`);
 
 /**
  * Teams table - synced with Clerk Organizations.
- * Personal Team is created automatically when a user first logs in.
+ * Personal Team is created automatically when a user first logs in,
+ * along with a corresponding Clerk Organization.
  */
 export const teams = createTable(
   "team",
   (d) => ({
     id: d.uuid().primaryKey().defaultRandom(),
-    clerkOrgId: d.varchar({ length: 255 }).unique(), // null for Personal Team
+    clerkOrgId: d.varchar({ length: 255 }).unique(), // All teams have clerkOrgId (including Personal)
     ownerId: d.varchar({ length: 255 }).notNull(), // Clerk user ID
     name: d.varchar({ length: 255 }).notNull(),
     slug: d.varchar({ length: 255 }).notNull().unique(),

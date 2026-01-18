@@ -1,5 +1,5 @@
 import { redirect, notFound } from "next/navigation";
-import { auth } from "@workspace/auth/server";
+import { auth, clerkClient } from "@workspace/auth/server";
 import { db } from "@/server/db";
 import { teams } from "@/server/db/schema";
 import { eq, and } from "drizzle-orm";
@@ -31,16 +31,23 @@ export default async function TeamPage({ params }: PageProps) {
       where: eq(teams.ownerId, userId),
     });
 
-    // If no teams at all, create personal team and redirect
-    // Use atomic upsert to prevent race condition creating duplicate personal teams
+    // If no teams at all, create Clerk organization and personal team
     if (userTeams.length === 0) {
-      // Try to insert, but do nothing if a personal team already exists (concurrent insert)
+      // Create Clerk organization for the personal team
+      const client = await clerkClient();
+      const org = await client.organizations.createOrganization({
+        name: "Personal Team",
+        createdBy: userId,
+      });
+
+      // Create personal team with Clerk org ID and slug
       const [insertedTeam] = await db
         .insert(teams)
         .values({
           ownerId: userId,
+          clerkOrgId: org.id,
           name: "Personal Team",
-          slug: `personal-${userId.toLowerCase().slice(0, 8)}-${Date.now()}`,
+          slug: org.slug,
           isPersonal: true,
         })
         .onConflictDoNothing()

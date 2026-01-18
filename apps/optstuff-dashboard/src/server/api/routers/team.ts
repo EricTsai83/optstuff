@@ -1,5 +1,6 @@
 import { eq, and, ne } from "drizzle-orm";
 import { z } from "zod";
+import { clerkClient } from "@workspace/auth/server";
 
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
 import { teams } from "@/server/db/schema";
@@ -8,6 +9,7 @@ import { generateSlug, generateUniqueSlug } from "@/lib/slug";
 export const teamRouter = createTRPCRouter({
   /**
    * Get or create the user's personal team.
+   * Creates a Clerk organization and uses its slug for the URL.
    */
   ensurePersonalTeam: protectedProcedure.mutation(async ({ ctx }) => {
     const { userId, db } = ctx;
@@ -18,12 +20,20 @@ export const teamRouter = createTRPCRouter({
 
     if (existingTeam) return existingTeam;
 
+    // Create Clerk organization for the personal team
+    const client = await clerkClient();
+    const org = await client.organizations.createOrganization({
+      name: "Personal Team",
+      createdBy: userId,
+    });
+
     const [newTeam] = await db
       .insert(teams)
       .values({
         ownerId: userId,
+        clerkOrgId: org.id,
         name: "Personal Team",
-        slug: `personal-${userId.toLowerCase().slice(0, 8)}-${Date.now()}`,
+        slug: org.slug,
         isPersonal: true,
       })
       .returning();
