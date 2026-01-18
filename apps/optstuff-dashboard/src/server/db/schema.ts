@@ -12,7 +12,7 @@ import {
  *
  * @see https://orm.drizzle.team/docs/goodies#multi-project-schema
  */
-export const createTable = pgTableCreator((name) => `optimize-stuff_${name}`);
+export const createTable = pgTableCreator((name) => `optstuff_${name}`);
 
 // ============================================================================
 // Teams (Organizations)
