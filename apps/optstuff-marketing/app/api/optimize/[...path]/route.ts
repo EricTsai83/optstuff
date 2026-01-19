@@ -9,6 +9,7 @@ import {
   parseIpxPath,
   parseOperationsString,
   isLocalFilePath,
+  stripSelfDomain,
 } from "@/lib/ipx-utils";
 
 /**
@@ -61,10 +62,13 @@ export async function GET(
     imagePath = parsed.imagePath;
     const operations = parseOperationsString(parsed.operations);
 
+    // Strip self-referencing domain (e.g., optstuff.vercel.app/demo.png -> demo.png)
+    const normalizedPath = stripSelfDomain(imagePath);
+
     // Local files use "/" prefix for IPX file storage, remote URLs need protocol
-    finalImagePath = isLocalFilePath(imagePath)
-      ? `/${imagePath}`
-      : ensureProtocol(imagePath);
+    finalImagePath = isLocalFilePath(normalizedPath)
+      ? `/${normalizedPath}`
+      : ensureProtocol(normalizedPath);
 
     const processedImage = await ipx(finalImagePath, operations).process();
     const imageData = ensureUint8Array(processedImage.data);

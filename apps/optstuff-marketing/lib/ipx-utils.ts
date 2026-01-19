@@ -69,6 +69,34 @@ export function ensureProtocol(path: string): string {
   return `https://${path}`;
 }
 
+/** Self-referencing domains that should be treated as local paths */
+const SELF_DOMAINS = [
+  "optstuff.vercel.app",
+  "localhost",
+  "localhost:3000",
+  "localhost:3001",
+  "127.0.0.1",
+  "127.0.0.1:3000",
+  "127.0.0.1:3001",
+];
+
+/**
+ * Strip self-referencing domain prefix from path
+ *
+ * @example
+ * - "optstuff.vercel.app/demo-image.png" -> "demo-image.png"
+ * - "localhost:3000/images/photo.jpg" -> "images/photo.jpg"
+ * - "example.com/image.jpg" -> "example.com/image.jpg" (unchanged)
+ */
+export function stripSelfDomain(path: string): string {
+  for (const domain of SELF_DOMAINS) {
+    if (path.startsWith(`${domain}/`)) {
+      return path.slice(domain.length + 1);
+    }
+  }
+  return path;
+}
+
 /**
  * Check if path is a local file (no domain/protocol)
  *
