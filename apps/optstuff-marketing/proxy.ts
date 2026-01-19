@@ -23,7 +23,15 @@ export default function proxy(request: NextRequest) {
   const referer = request.headers.get("referer");
   const host = request.headers.get("host");
   const secFetchSite = request.headers.get("sec-fetch-site");
+  const secFetchMode = request.headers.get("sec-fetch-mode");
+  const secFetchDest = request.headers.get("sec-fetch-dest");
   const allowedDomains = getProxyAllowedDomains();
+
+  // Allow direct navigation (typing URL in browser) and image embeds (<img> tags)
+  // These are legitimate use cases for an image optimization API
+  if (secFetchMode === "navigate" || secFetchDest === "image") {
+    return NextResponse.next();
+  }
 
   // 1. Check Sec-Fetch-Site header (automatically set by modern browsers, cannot be forged)
   if (
