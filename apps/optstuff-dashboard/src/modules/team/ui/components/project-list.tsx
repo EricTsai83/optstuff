@@ -23,6 +23,7 @@ import { api } from "@/trpc/react";
 import { getProjectColor } from "../../constants";
 import { formatNumber, formatBytes } from "@/lib/format";
 import { CreateProjectDialog } from "./create-project-dialog";
+import type { Project } from "@/lib/types";
 
 type ProjectListProps = {
   readonly teamId: string;
@@ -133,20 +134,15 @@ export function ProjectList({
   );
 }
 
-type Project = {
-  id: string;
-  name: string;
-  slug: string;
-  description: string | null;
+type ProjectWithStats = Project & {
   apiKeyCount: number;
   totalRequests: number;
   totalBandwidth: number;
   lastActivityAt: Date | null;
-  createdAt: Date;
 };
 
 type ProjectItemProps = {
-  readonly project: Project;
+  readonly project: ProjectWithStats;
   readonly teamSlug: string;
   readonly index: number;
   readonly isPinned?: boolean;

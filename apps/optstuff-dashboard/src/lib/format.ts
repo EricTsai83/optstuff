@@ -34,3 +34,24 @@ export function formatNumber(num: number): string {
   }
   return num.toString();
 }
+
+/**
+ * Get date range for last N days
+ */
+export function getDateRange(days: number): { startDate: string; endDate: string } {
+  const today = new Date();
+  const startDay = new Date(today);
+  startDay.setDate(startDay.getDate() - days);
+
+  return {
+    startDate: startDay.toISOString().split("T")[0]!,
+    endDate: today.toISOString().split("T")[0]!,
+  };
+}
+
+/**
+ * Get today's date as ISO string (YYYY-MM-DD)
+ */
+export function getToday(): string {
+  return new Date().toISOString().split("T")[0]!;
+}

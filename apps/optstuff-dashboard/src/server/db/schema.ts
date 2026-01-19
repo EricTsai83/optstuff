@@ -12,25 +12,35 @@ import {
  *
  * @see https://orm.drizzle.team/docs/goodies#multi-project-schema
  */
-export const createTable = pgTableCreator((name) => `optimize-stuff_${name}`);
+export const createTable = pgTableCreator((name) => `optstuff_${name}`);
 
 // ============================================================================
 // Teams (Organizations)
 // ============================================================================
 
 /**
- * Teams table - synced with Clerk Organizations.
- * Personal Team is created automatically when a user first logs in.
+ * Teams table - local cache synced with Clerk Organizations.
+ *
+ * Clerk is the Single Source of Truth for:
+ * - Organization membership (who can access)
+ * - Organization name and slug
+ * - Member roles (admin/member)
+ *
+ * Local-only fields:
+ * - ownerId: Tracks who created the team locally (for personal team lookup)
+ * - isPersonal: App-level concept, not in Clerk
+ *
+ * Access control should ALWAYS use Clerk membership, NOT ownerId.
  */
 export const teams = createTable(
   "team",
   (d) => ({
     id: d.uuid().primaryKey().defaultRandom(),
-    clerkOrgId: d.varchar({ length: 255 }).unique(), // null for Personal Team
-    ownerId: d.varchar({ length: 255 }).notNull(), // Clerk user ID
-    name: d.varchar({ length: 255 }).notNull(),
-    slug: d.varchar({ length: 255 }).notNull().unique(),
-    isPersonal: d.boolean().default(false).notNull(),
+    clerkOrgId: d.varchar({ length: 255 }).notNull().unique(), // Links to Clerk Organization (source of truth)
+    ownerId: d.varchar({ length: 255 }).notNull(), // Clerk user ID who created this team locally (NOT for access control)
+    name: d.varchar({ length: 255 }).notNull(), // Cached from Clerk
+    slug: d.varchar({ length: 255 }).notNull().unique(), // Cached from Clerk
+    isPersonal: d.boolean().default(false).notNull(), // Local-only: is this user's personal team?
     createdAt: d.timestamp({ withTimezone: true }).defaultNow().notNull(),
     updatedAt: d.timestamp({ withTimezone: true }).$onUpdate(() => new Date()),
   }),
@@ -133,6 +143,7 @@ export const apiKeys = createTable(
     name: d.varchar({ length: 255 }).notNull(),
     keyPrefix: d.varchar({ length: 12 }).notNull(), // Display prefix "pk_abc123..."
     keyHash: d.varchar({ length: 64 }).notNull().unique(), // SHA256 hash
+    createdBy: d.varchar({ length: 255 }).notNull(), // Clerk user ID who created this key
     expiresAt: d.timestamp({ withTimezone: true }),
     rateLimitPerMinute: d.integer().default(60),
     rateLimitPerDay: d.integer().default(10000),
@@ -142,7 +153,8 @@ export const apiKeys = createTable(
   }),
   (t) => [
     index("api_key_project_idx").on(t.projectId),
-    index("api_key_hash_idx").on(t.keyHash),
+    // Composite index for querying active keys by project
+    index("api_key_project_active_idx").on(t.projectId, t.revokedAt),
   ],
 );
 
@@ -173,8 +185,8 @@ export const usageRecords = createTable(
     createdAt: d.timestamp({ withTimezone: true }).defaultNow().notNull(),
   }),
   (t) => [
-    index("usage_project_idx").on(t.projectId),
-    index("usage_date_idx").on(t.date),
+    // Composite index for range queries: WHERE projectId = ? AND date BETWEEN ? AND ?
+    index("usage_project_date_idx").on(t.projectId, t.date),
     // Partial unique index for usage without API key (NULL apiKeyId)
     uniqueIndex("usage_project_date_null_apikey_unique")
       .on(t.projectId, t.date)
