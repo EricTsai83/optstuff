@@ -224,6 +224,23 @@ export const teamRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
+      // Verify user has membership in the provided Clerk organization
+      const client = await clerkClient();
+      const memberships = await client.users.getOrganizationMembershipList({
+        userId: ctx.userId,
+      });
+
+      const hasAccess = memberships.data.some(
+        (membership) => membership.organization.id === input.clerkOrgId,
+      );
+
+      if (!hasAccess) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "You do not have access to this organization",
+        });
+      }
+
       // Check if team already exists by clerkOrgId
       const existingTeam = await ctx.db.query.teams.findFirst({
         where: eq(teams.clerkOrgId, input.clerkOrgId),
