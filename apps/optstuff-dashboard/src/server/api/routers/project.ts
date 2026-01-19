@@ -132,27 +132,23 @@ export const projectRouter = createTRPCRouter({
       orderBy: [desc(projects.createdAt)],
     });
 
-    return allProjects.map((project) => {
+    return allProjects.flatMap((project) => {
       const team = teamMap.get(project.teamId);
       if (!team) {
-        // This shouldn't happen given our query filters by teamIds,
-        // but handle gracefully for defensive programming
+        // This shouldn't happen given our query filters by teamIds
         console.warn(
           `Project ${project.id} references unknown team ${project.teamId}`,
         );
-        return {
-          ...project,
-          teamName: "Unknown",
-          teamSlug: null as string | null,
-          isPersonalTeam: false,
-        };
+        return [];
       }
-      return {
-        ...project,
-        teamName: team.name,
-        teamSlug: team.slug,
-        isPersonalTeam: team.isPersonal,
-      };
+      return [
+        {
+          ...project,
+          teamName: team.name,
+          teamSlug: team.slug,
+          isPersonalTeam: team.isPersonal,
+        },
+      ];
     });
   }),
 
@@ -370,7 +366,6 @@ export const projectRouter = createTRPCRouter({
       where: inArray(teams.clerkOrgId, orgIds),
     });
 
-    const teamIds = new Set(userTeams.map((t) => t.id));
     const teamMap = new Map(userTeams.map((t) => [t.id, t]));
 
     const pins = await ctx.db.query.pinnedProjects.findMany({
@@ -380,18 +375,19 @@ export const projectRouter = createTRPCRouter({
     });
 
     // Filter to only projects in teams user has access to
-    return pins
-      .filter((pin) => teamIds.has(pin.project.teamId))
-      .map((pin) => {
-        const team = teamMap.get(pin.project.teamId)!;
-        return {
+    return pins.flatMap((pin) => {
+      const team = teamMap.get(pin.project.teamId);
+      if (!team) return [];
+      return [
+        {
           ...pin.project,
           teamName: team.name,
           teamSlug: team.slug,
           isPersonalTeam: team.isPersonal,
           pinnedAt: pin.pinnedAt,
-        };
-      });
+        },
+      ];
+    });
   }),
 
   /**
