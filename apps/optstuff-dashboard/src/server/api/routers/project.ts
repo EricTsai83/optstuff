@@ -133,7 +133,20 @@ export const projectRouter = createTRPCRouter({
     });
 
     return allProjects.map((project) => {
-      const team = teamMap.get(project.teamId)!;
+      const team = teamMap.get(project.teamId);
+      if (!team) {
+        // This shouldn't happen given our query filters by teamIds,
+        // but handle gracefully for defensive programming
+        console.warn(
+          `Project ${project.id} references unknown team ${project.teamId}`,
+        );
+        return {
+          ...project,
+          teamName: "Unknown",
+          teamSlug: null as string | null,
+          isPersonalTeam: false,
+        };
+      }
       return {
         ...project,
         teamName: team.name,
