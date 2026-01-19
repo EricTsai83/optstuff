@@ -1,21 +1,18 @@
 import { eq, and, desc, inArray } from "drizzle-orm";
 import { z } from "zod";
+import { TRPCError } from "@trpc/server";
+import { clerkClient, auth } from "@workspace/auth/server";
 
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
-import { projects, pinnedProjects, apiKeys } from "@/server/db/schema";
+import { projects, pinnedProjects, apiKeys, teams } from "@/server/db/schema";
 import { generateSlug, generateUniqueSlug } from "@/lib/slug";
 import { generateApiKey } from "@/server/lib/api-key";
-import {
-  checkTeamAccess,
-  checkTeamAccessBySlug,
-  checkProjectAccess,
-  getUserTeams,
-} from "@/server/lib/team-access";
 
 export const projectRouter = createTRPCRouter({
   /**
    * Create a new project under a team.
    * Automatically creates a default API key for the project.
+   * Uses session's orgId to verify access.
    */
   create: protectedProcedure
     .input(
@@ -26,15 +23,18 @@ export const projectRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      // Check team access via Clerk membership
-      const { hasAccess } = await checkTeamAccess(
-        ctx.db,
-        input.teamId,
-        ctx.userId,
-      );
+      const { orgId } = await auth();
 
-      if (!hasAccess) {
-        throw new Error("Team not found or access denied");
+      // Verify team belongs to user's active organization
+      const team = await ctx.db.query.teams.findFirst({
+        where: eq(teams.id, input.teamId),
+      });
+
+      if (!team || team.clerkOrgId !== orgId) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Team not found or access denied",
+        });
       }
 
       const slug = generateSlug(input.name);
@@ -55,7 +55,10 @@ export const projectRouter = createTRPCRouter({
         .returning();
 
       if (!newProject) {
-        throw new Error("Failed to create project");
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to create project",
+        });
       }
 
       // Create default API key
@@ -73,18 +76,21 @@ export const projectRouter = createTRPCRouter({
 
   /**
    * List all projects in a team.
+   * Uses session's orgId to verify access.
    */
   list: protectedProcedure
     .input(z.object({ teamId: z.string().uuid() }))
     .query(async ({ ctx, input }) => {
-      // Check team access via Clerk membership
-      const { hasAccess } = await checkTeamAccess(
-        ctx.db,
-        input.teamId,
-        ctx.userId,
-      );
+      const { orgId } = await auth();
 
-      if (!hasAccess) return [];
+      // Verify team belongs to user's active organization
+      const team = await ctx.db.query.teams.findFirst({
+        where: eq(teams.id, input.teamId),
+      });
+
+      if (!team || team.clerkOrgId !== orgId) {
+        return [];
+      }
 
       return ctx.db.query.projects.findMany({
         where: eq(projects.teamId, input.teamId),
@@ -94,10 +100,26 @@ export const projectRouter = createTRPCRouter({
 
   /**
    * List all projects across all teams the user has access to.
+   * Note: This requires Clerk API call as we need ALL teams, not just active one.
    */
   listAll: protectedProcedure.query(async ({ ctx }) => {
-    // Get all teams user has access to via Clerk
-    const userTeams = await getUserTeams(ctx.db, ctx.userId);
+    const client = await clerkClient();
+
+    // Get all organization memberships for the user from Clerk
+    const memberships = await client.users.getOrganizationMembershipList({
+      userId: ctx.userId,
+    });
+
+    if (!memberships.data || memberships.data.length === 0) {
+      return [];
+    }
+
+    const orgIds = memberships.data.map((m) => m.organization.id);
+
+    // Query local teams that match these Clerk org IDs
+    const userTeams = await ctx.db.query.teams.findMany({
+      where: inArray(teams.clerkOrgId, orgIds),
+    });
 
     if (userTeams.length === 0) return [];
 
@@ -123,34 +145,48 @@ export const projectRouter = createTRPCRouter({
 
   /**
    * Get a specific project by ID.
+   * Uses session's orgId to verify access.
    */
   get: protectedProcedure
     .input(z.object({ projectId: z.string().uuid() }))
     .query(async ({ ctx, input }) => {
-      const { hasAccess, project } = await checkProjectAccess(
-        ctx.db,
-        input.projectId,
-        ctx.userId,
-      );
+      const { orgId } = await auth();
 
-      if (!hasAccess) return null;
+      const project = await ctx.db.query.projects.findFirst({
+        where: eq(projects.id, input.projectId),
+        with: { team: true },
+      });
+
+      // Verify the project's team belongs to user's active organization
+      if (!project || project.team.clerkOrgId !== orgId) {
+        return null;
+      }
+
       return project;
     }),
 
   /**
    * Get a project by team slug and project slug.
+   * Uses session's orgSlug to verify access.
    */
   getBySlug: protectedProcedure
     .input(z.object({ teamSlug: z.string(), projectSlug: z.string() }))
     .query(async ({ ctx, input }) => {
-      // Check team access via Clerk membership
-      const { hasAccess, team } = await checkTeamAccessBySlug(
-        ctx.db,
-        input.teamSlug,
-        ctx.userId,
-      );
+      const { orgSlug, orgId } = await auth();
 
-      if (!hasAccess || !team) return null;
+      // Quick check: if slug doesn't match active org, deny access
+      if (orgSlug !== input.teamSlug) {
+        return null;
+      }
+
+      const team = await ctx.db.query.teams.findFirst({
+        where: eq(teams.slug, input.teamSlug),
+      });
+
+      // Double-check orgId matches for security
+      if (!team || team.clerkOrgId !== orgId) {
+        return null;
+      }
 
       const project = await ctx.db.query.projects.findFirst({
         where: and(
@@ -164,6 +200,7 @@ export const projectRouter = createTRPCRouter({
 
   /**
    * Update a project.
+   * Uses session's orgId to verify access.
    */
   update: protectedProcedure
     .input(
@@ -174,14 +211,18 @@ export const projectRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const { hasAccess } = await checkProjectAccess(
-        ctx.db,
-        input.projectId,
-        ctx.userId,
-      );
+      const { orgId } = await auth();
 
-      if (!hasAccess) {
-        throw new Error("Project not found or access denied");
+      const project = await ctx.db.query.projects.findFirst({
+        where: eq(projects.id, input.projectId),
+        with: { team: true },
+      });
+
+      if (!project || project.team.clerkOrgId !== orgId) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Project not found or access denied",
+        });
       }
 
       const updateData: { name?: string; description?: string } = {};
@@ -190,7 +231,10 @@ export const projectRouter = createTRPCRouter({
         updateData.description = input.description;
 
       if (Object.keys(updateData).length === 0) {
-        throw new Error("No fields to update");
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "No fields to update",
+        });
       }
 
       const [updatedProject] = await ctx.db
@@ -204,20 +248,31 @@ export const projectRouter = createTRPCRouter({
 
   /**
    * Delete a project.
+   * Only org:admin can delete. Uses has() to check role.
    */
   delete: protectedProcedure
     .input(z.object({ projectId: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {
-      // Only admins can delete projects
-      const { hasAccess } = await checkProjectAccess(
-        ctx.db,
-        input.projectId,
-        ctx.userId,
-        ["org:admin"],
-      );
+      const { has, orgId } = await auth();
 
-      if (!hasAccess) {
-        throw new Error("Project not found or access denied");
+      // Use has() to check admin role (reads from session token, no API call)
+      if (!has({ role: "org:admin" })) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Admin role required",
+        });
+      }
+
+      const project = await ctx.db.query.projects.findFirst({
+        where: eq(projects.id, input.projectId),
+        with: { team: true },
+      });
+
+      if (!project || project.team.clerkOrgId !== orgId) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Project not found or access denied",
+        });
       }
 
       await ctx.db.delete(projects).where(eq(projects.id, input.projectId));
@@ -226,18 +281,23 @@ export const projectRouter = createTRPCRouter({
 
   /**
    * Pin a project.
+   * Uses session's orgId to verify access.
    */
   pin: protectedProcedure
     .input(z.object({ projectId: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {
-      const { hasAccess } = await checkProjectAccess(
-        ctx.db,
-        input.projectId,
-        ctx.userId,
-      );
+      const { orgId } = await auth();
 
-      if (!hasAccess) {
-        throw new Error("Project not found or access denied");
+      const project = await ctx.db.query.projects.findFirst({
+        where: eq(projects.id, input.projectId),
+        with: { team: true },
+      });
+
+      if (!project || project.team.clerkOrgId !== orgId) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Project not found or access denied",
+        });
       }
 
       const existingPin = await ctx.db.query.pinnedProjects.findFirst({
@@ -276,11 +336,27 @@ export const projectRouter = createTRPCRouter({
 
   /**
    * List all pinned projects.
-   * Only returns projects the user has access to via Clerk membership.
+   * Note: This requires Clerk API call as we need ALL teams, not just active one.
    */
   listPinned: protectedProcedure.query(async ({ ctx }) => {
-    // Get all teams user has access to
-    const userTeams = await getUserTeams(ctx.db, ctx.userId);
+    const client = await clerkClient();
+
+    // Get all organization memberships for the user from Clerk
+    const memberships = await client.users.getOrganizationMembershipList({
+      userId: ctx.userId,
+    });
+
+    if (!memberships.data || memberships.data.length === 0) {
+      return [];
+    }
+
+    const orgIds = memberships.data.map((m) => m.organization.id);
+
+    // Query local teams that match these Clerk org IDs
+    const userTeams = await ctx.db.query.teams.findMany({
+      where: inArray(teams.clerkOrgId, orgIds),
+    });
+
     const teamIds = new Set(userTeams.map((t) => t.id));
     const teamMap = new Map(userTeams.map((t) => [t.id, t]));
 

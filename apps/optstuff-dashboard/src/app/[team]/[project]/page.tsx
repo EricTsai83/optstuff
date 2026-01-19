@@ -1,12 +1,11 @@
 import { redirect, notFound } from "next/navigation";
+import { eq, and } from "drizzle-orm";
 import { auth } from "@workspace/auth/server";
 import { db } from "@/server/db";
-import { projects } from "@/server/db/schema";
-import { eq, and } from "drizzle-orm";
+import { teams, projects } from "@/server/db/schema";
 import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
 import { ProjectDetailView } from "@/modules/project-detail";
-import { checkTeamAccessBySlug } from "@/server/lib/team-access";
 
 type PageProps = {
   params: Promise<{ team: string; project: string }>;
@@ -14,20 +13,27 @@ type PageProps = {
 
 export default async function ProjectPage({ params }: PageProps) {
   const { team: teamSlug, project: projectSlug } = await params;
-  const { userId } = await auth();
+  const { userId, orgSlug, orgId } = await auth();
 
   if (!userId) {
     redirect("/sign-in");
   }
 
-  // Check team access via Clerk membership (Clerk is source of truth)
-  const { hasAccess, team } = await checkTeamAccessBySlug(db, teamSlug, userId);
-
-  if (!hasAccess || !team) {
+  // Use session's orgSlug to verify access (no Clerk API call needed)
+  if (orgSlug !== teamSlug) {
     notFound();
   }
 
-  // Get project by slug
+  // Get team by slug and verify it matches the user's active org
+  const team = await db.query.teams.findFirst({
+    where: eq(teams.slug, teamSlug),
+  });
+
+  if (!team || team.clerkOrgId !== orgId) {
+    notFound();
+  }
+
+  // Get project by slug within this team
   const project = await db.query.projects.findFirst({
     where: and(eq(projects.teamId, team.id), eq(projects.slug, projectSlug)),
   });

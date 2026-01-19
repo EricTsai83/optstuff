@@ -1,15 +1,11 @@
-import { eq, and } from "drizzle-orm";
+import { eq, and, inArray } from "drizzle-orm";
 import { z } from "zod";
-import { clerkClient } from "@workspace/auth/server";
+import { TRPCError } from "@trpc/server";
+import { clerkClient, auth } from "@workspace/auth/server";
 
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
 import { teams } from "@/server/db/schema";
 import { generateSlug } from "@/lib/slug";
-import {
-  checkTeamAccess,
-  checkTeamAccessBySlug,
-  getUserTeams,
-} from "@/server/lib/team-access";
 import { syncUserTeams } from "@/server/lib/team-sync";
 
 export const teamRouter = createTRPCRouter({
@@ -45,12 +41,41 @@ export const teamRouter = createTRPCRouter({
 
   /**
    * List all teams the user has access to via Clerk memberships.
+   * Note: This requires Clerk API call as we need ALL teams, not just active one.
    */
   list: protectedProcedure.query(async ({ ctx }) => {
-    const userTeams = await getUserTeams(ctx.db, ctx.userId);
+    const client = await clerkClient();
+
+    // Get all organization memberships for the user from Clerk
+    const memberships = await client.users.getOrganizationMembershipList({
+      userId: ctx.userId,
+    });
+
+    if (!memberships.data || memberships.data.length === 0) {
+      return [];
+    }
+
+    // Extract org IDs and create a map of orgId -> role
+    const orgRoleMap = new Map<string, string>();
+    for (const membership of memberships.data) {
+      orgRoleMap.set(membership.organization.id, membership.role);
+    }
+
+    const orgIds = Array.from(orgRoleMap.keys());
+
+    // Query local teams that match these Clerk org IDs
+    const userTeams = await ctx.db.query.teams.findMany({
+      where: inArray(teams.clerkOrgId, orgIds),
+    });
+
+    // Add role to each team and sort
+    const teamsWithRole = userTeams.map((team) => ({
+      ...team,
+      role: orgRoleMap.get(team.clerkOrgId) ?? "org:member",
+    }));
 
     // Sort: personal teams first, then by createdAt descending
-    return userTeams.sort((a, b) => {
+    return teamsWithRole.sort((a, b) => {
       if (a.isPersonal && !b.isPersonal) return -1;
       if (!a.isPersonal && b.isPersonal) return 1;
       return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
@@ -59,35 +84,48 @@ export const teamRouter = createTRPCRouter({
 
   /**
    * Get a specific team by ID.
-   * Verifies access via Clerk membership.
+   * Uses session's orgId to verify access (no Clerk API call).
    */
   get: protectedProcedure
     .input(z.object({ teamId: z.string().uuid() }))
     .query(async ({ ctx, input }) => {
-      const { hasAccess, team } = await checkTeamAccess(
-        ctx.db,
-        input.teamId,
-        ctx.userId,
-      );
+      const { orgId } = await auth();
 
-      if (!hasAccess) return null;
+      const team = await ctx.db.query.teams.findFirst({
+        where: eq(teams.id, input.teamId),
+      });
+
+      // Verify the team belongs to user's active organization
+      if (!team || team.clerkOrgId !== orgId) {
+        return null;
+      }
+
       return team;
     }),
 
   /**
    * Get a team by its slug.
-   * Verifies access via Clerk membership.
+   * Uses session's orgSlug to verify access (no Clerk API call).
    */
   getBySlug: protectedProcedure
     .input(z.object({ slug: z.string() }))
     .query(async ({ ctx, input }) => {
-      const { hasAccess, team } = await checkTeamAccessBySlug(
-        ctx.db,
-        input.slug,
-        ctx.userId,
-      );
+      const { orgSlug, orgId } = await auth();
 
-      if (!hasAccess) return null;
+      // Quick check: if slug doesn't match active org, deny access
+      if (orgSlug !== input.slug) {
+        return null;
+      }
+
+      const team = await ctx.db.query.teams.findFirst({
+        where: eq(teams.slug, input.slug),
+      });
+
+      // Double-check orgId matches for security
+      if (!team || team.clerkOrgId !== orgId) {
+        return null;
+      }
+
       return team;
     }),
 
@@ -126,7 +164,7 @@ export const teamRouter = createTRPCRouter({
 
   /**
    * Update a team's name.
-   * Only org:admin can update. Clerk is source of truth.
+   * Only org:admin can update. Uses has() to check role.
    */
   update: protectedProcedure
     .input(
@@ -136,16 +174,23 @@ export const teamRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      // Check access with admin role required
-      const { hasAccess, team } = await checkTeamAccess(
-        ctx.db,
-        input.teamId,
-        ctx.userId,
-        ["org:admin"],
-      );
+      const { has, orgId } = await auth();
 
-      if (!hasAccess || !team) {
-        throw new Error("Team not found or access denied");
+      // Use has() to check admin role (reads from session token, no API call)
+      if (!has({ role: "org:admin" })) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Admin role required",
+        });
+      }
+
+      // Verify team belongs to user's active organization
+      const team = await ctx.db.query.teams.findFirst({
+        where: eq(teams.id, input.teamId),
+      });
+
+      if (!team || team.clerkOrgId !== orgId) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Team not found" });
       }
 
       // Update Clerk organization first (source of truth)
@@ -231,25 +276,35 @@ export const teamRouter = createTRPCRouter({
 
   /**
    * Delete a team (non-personal only).
-   * Only org:admin can delete. Clerk is source of truth - delete from Clerk first.
+   * Only org:admin can delete. Uses has() to check role.
    */
   delete: protectedProcedure
     .input(z.object({ teamId: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {
-      // Check access with admin role required
-      const { hasAccess, team } = await checkTeamAccess(
-        ctx.db,
-        input.teamId,
-        ctx.userId,
-        ["org:admin"],
-      );
+      const { has, orgId } = await auth();
 
-      if (!hasAccess || !team) {
-        throw new Error("Team not found or access denied");
+      // Use has() to check admin role (reads from session token, no API call)
+      if (!has({ role: "org:admin" })) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Admin role required",
+        });
+      }
+
+      // Verify team belongs to user's active organization
+      const team = await ctx.db.query.teams.findFirst({
+        where: eq(teams.id, input.teamId),
+      });
+
+      if (!team || team.clerkOrgId !== orgId) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Team not found" });
       }
 
       if (team.isPersonal) {
-        throw new Error("Cannot delete personal team");
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Cannot delete personal team",
+        });
       }
 
       // Delete from Clerk first (source of truth)

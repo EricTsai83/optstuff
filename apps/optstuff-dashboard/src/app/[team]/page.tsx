@@ -1,10 +1,11 @@
 import { redirect, notFound } from "next/navigation";
+import { eq } from "drizzle-orm";
 import { auth } from "@workspace/auth/server";
 import { db } from "@/server/db";
+import { teams } from "@/server/db/schema";
 import { Header } from "@/components/header";
 import { TeamContent } from "@/modules/team";
 import { Footer } from "@/components/footer";
-import { checkTeamAccessBySlug, getUserTeams } from "@/server/lib/team-access";
 import { syncUserTeams } from "@/server/lib/team-sync";
 
 type PageProps = {
@@ -13,49 +14,44 @@ type PageProps = {
 
 export default async function TeamPage({ params }: PageProps) {
   const { team: teamSlug } = await params;
-  const { userId } = await auth();
+  const { userId, orgSlug } = await auth();
 
   if (!userId) {
     redirect("/sign-in");
   }
 
-  // Check team access via Clerk membership
-  const { hasAccess, team } = await checkTeamAccessBySlug(db, teamSlug, userId);
+  // Use session's orgSlug to verify access (no Clerk API call needed)
+  if (orgSlug === teamSlug) {
+    // User's active organization matches the URL - authorized
+    const team = await db.query.teams.findFirst({
+      where: eq(teams.slug, teamSlug),
+    });
 
-  // If team not found or no access, check if it's the first visit
-  if (!hasAccess || !team) {
-    // Get all teams user has access to via Clerk
-    const userTeams = await getUserTeams(db, userId);
-
-    // If no local teams, sync from Clerk or create personal team
-    if (userTeams.length === 0) {
-      const syncedTeam = await syncUserTeams(db, userId);
-      if (syncedTeam) {
-        redirect(`/${syncedTeam.slug}`);
-      }
+    if (team) {
+      return (
+        <div className="bg-background flex min-h-screen flex-col">
+          <Header teamSlug={teamSlug} />
+          <TeamContent
+            teamId={team.id}
+            teamSlug={teamSlug}
+            teamName={team.name}
+            isPersonal={team.isPersonal}
+          />
+          <Footer />
+        </div>
+      );
     }
-
-    // If user has teams but this slug doesn't exist or no access, redirect to first team
-    if (userTeams.length > 0) {
-      const personalTeam = userTeams.find((t) => t.isPersonal) ?? userTeams[0];
-      if (personalTeam && teamSlug !== personalTeam.slug) {
-        redirect(`/${personalTeam.slug}`);
-      }
-    }
-
-    notFound();
   }
 
-  return (
-    <div className="bg-background flex min-h-screen flex-col">
-      <Header teamSlug={teamSlug} />
-      <TeamContent
-        teamId={team.id}
-        teamSlug={teamSlug}
-        teamName={team.name}
-        isPersonal={team.isPersonal}
-      />
-      <Footer />
-    </div>
-  );
+  // User's active org doesn't match URL or team not found locally
+  // Try to sync from Clerk (for first-time users or missing local data)
+  const syncedTeam = await syncUserTeams(db, userId);
+
+  if (syncedTeam) {
+    // Redirect to synced team
+    redirect(`/${syncedTeam.slug}`);
+  }
+
+  // No team available
+  notFound();
 }

@@ -1,15 +1,49 @@
 import { TRPCError } from "@trpc/server";
 import { eq, and, gte, lte, sql, desc, inArray } from "drizzle-orm";
 import { z } from "zod";
+import { clerkClient, auth } from "@workspace/auth/server";
 
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
-import { usageRecords, projects, apiKeys } from "@/server/db/schema";
-import {
-  checkProjectAccess,
-  checkTeamAccess,
-  getUserTeams,
-} from "@/server/lib/team-access";
+import { usageRecords, projects, apiKeys, teams } from "@/server/db/schema";
 import { getDateRange, getToday } from "@/lib/format";
+import type { db as dbType } from "@/server/db";
+
+/**
+ * Helper to check project access using session's orgId.
+ * Returns the project with team if access is granted, null otherwise.
+ */
+async function verifyProjectAccess(db: typeof dbType, projectId: string) {
+  const { orgId } = await auth();
+
+  const project = await db.query.projects.findFirst({
+    where: eq(projects.id, projectId),
+    with: { team: true },
+  });
+
+  if (!project || project.team.clerkOrgId !== orgId) {
+    return null;
+  }
+
+  return project;
+}
+
+/**
+ * Helper to check team access using session's orgId.
+ * Returns the team if access is granted, null otherwise.
+ */
+async function verifyTeamAccess(db: typeof dbType, teamId: string) {
+  const { orgId } = await auth();
+
+  const team = await db.query.teams.findFirst({
+    where: eq(teams.id, teamId),
+  });
+
+  if (!team || team.clerkOrgId !== orgId) {
+    return null;
+  }
+
+  return team;
+}
 
 export const usageRouter = createTRPCRouter({
   /**
@@ -26,14 +60,9 @@ export const usageRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      // Check project access via Clerk membership
-      const { hasAccess } = await checkProjectAccess(
-        ctx.db,
-        input.projectId,
-        ctx.userId,
-      );
+      const project = await verifyProjectAccess(ctx.db, input.projectId);
 
-      if (!hasAccess) {
+      if (!project) {
         throw new TRPCError({
           code: "FORBIDDEN",
           message:
@@ -113,13 +142,9 @@ export const usageRouter = createTRPCRouter({
       }),
     )
     .query(async ({ ctx, input }) => {
-      const { hasAccess } = await checkProjectAccess(
-        ctx.db,
-        input.projectId,
-        ctx.userId,
-      );
+      const project = await verifyProjectAccess(ctx.db, input.projectId);
 
-      if (!hasAccess) return [];
+      if (!project) return [];
 
       const records = await ctx.db.query.usageRecords.findMany({
         where: and(
@@ -164,13 +189,9 @@ export const usageRouter = createTRPCRouter({
       }),
     )
     .query(async ({ ctx, input }) => {
-      const { hasAccess } = await checkProjectAccess(
-        ctx.db,
-        input.projectId,
-        ctx.userId,
-      );
+      const project = await verifyProjectAccess(ctx.db, input.projectId);
 
-      if (!hasAccess) return null;
+      if (!project) return null;
 
       const startDate = `${input.year}-${String(input.month).padStart(2, "0")}-01`;
       const lastDay = new Date(input.year, input.month, 0).getDate();
@@ -202,13 +223,9 @@ export const usageRouter = createTRPCRouter({
   getSummary: protectedProcedure
     .input(z.object({ projectId: z.string().uuid() }))
     .query(async ({ ctx, input }) => {
-      const { hasAccess } = await checkProjectAccess(
-        ctx.db,
-        input.projectId,
-        ctx.userId,
-      );
+      const project = await verifyProjectAccess(ctx.db, input.projectId);
 
-      if (!hasAccess) return null;
+      if (!project) return null;
 
       const { startDate, endDate } = getDateRange(30);
 
@@ -246,13 +263,9 @@ export const usageRouter = createTRPCRouter({
       }),
     )
     .query(async ({ ctx, input }) => {
-      const { hasAccess } = await checkProjectAccess(
-        ctx.db,
-        input.projectId,
-        ctx.userId,
-      );
+      const project = await verifyProjectAccess(ctx.db, input.projectId);
 
-      if (!hasAccess) return [];
+      if (!project) return [];
 
       const records = await ctx.db.query.usageRecords.findMany({
         where: and(
@@ -301,19 +314,14 @@ export const usageRouter = createTRPCRouter({
 
   /**
    * Get overall usage summary for a team.
-   * Uses single query with inArray to avoid N+1 problem.
+   * Uses session's orgId to verify access.
    */
   getTeamSummary: protectedProcedure
     .input(z.object({ teamId: z.string().uuid() }))
     .query(async ({ ctx, input }) => {
-      // Check team access via Clerk membership
-      const { hasAccess } = await checkTeamAccess(
-        ctx.db,
-        input.teamId,
-        ctx.userId,
-      );
+      const team = await verifyTeamAccess(ctx.db, input.teamId);
 
-      if (!hasAccess) return null;
+      if (!team) return null;
 
       // Get all projects for this team
       const teamProjects = await ctx.db.query.projects.findMany({
@@ -354,10 +362,32 @@ export const usageRouter = createTRPCRouter({
 
   /**
    * Get overall usage summary across all teams the user has access to.
+   * Note: This requires Clerk API call as we need ALL teams, not just active one.
    */
   getAllTeamsSummary: protectedProcedure.query(async ({ ctx }) => {
-    // Get all teams user has access to via Clerk
-    const userTeams = await getUserTeams(ctx.db, ctx.userId);
+    const client = await clerkClient();
+
+    // Get all organization memberships for the user from Clerk
+    const memberships = await client.users.getOrganizationMembershipList({
+      userId: ctx.userId,
+    });
+
+    if (!memberships.data || memberships.data.length === 0) {
+      return {
+        period: "last_30_days",
+        totalRequests: 0,
+        totalBytes: 0,
+        teamCount: 0,
+        projectCount: 0,
+      };
+    }
+
+    const orgIds = memberships.data.map((m) => m.organization.id);
+
+    // Query local teams that match these Clerk org IDs
+    const userTeams = await ctx.db.query.teams.findMany({
+      where: inArray(teams.clerkOrgId, orgIds),
+    });
 
     if (userTeams.length === 0) {
       return {
