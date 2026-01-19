@@ -1,6 +1,6 @@
 "use client";
 
-import { Bell, Activity, FolderOpen } from "lucide-react";
+import { Activity, FolderOpen } from "lucide-react";
 import {
   Tabs,
   TabsContent,
@@ -19,17 +19,10 @@ type MobileTabsProps = {
   readonly teamId: string;
 };
 
-type Tab = "projects" | "usage" | "alerts";
-
-const TABS: { id: Tab; label: string; icon: React.ReactNode }[] = [
-  {
-    id: "projects",
-    label: "Projects",
-    icon: <FolderOpen className="h-4 w-4" />,
-  },
+const TABS = [
+  { id: "projects", label: "Projects", icon: <FolderOpen className="h-4 w-4" /> },
   { id: "usage", label: "Usage", icon: <Activity className="h-4 w-4" /> },
-  { id: "alerts", label: "Alerts", icon: <Bell className="h-4 w-4" /> },
-];
+] as const;
 
 export function MobileTabs({ teamId }: MobileTabsProps) {
   return (
@@ -52,9 +45,6 @@ export function MobileTabs({ teamId }: MobileTabsProps) {
       </TabsContent>
       <TabsContent value="usage" className="mt-0 py-4">
         <UsageTabContent teamId={teamId} />
-      </TabsContent>
-      <TabsContent value="alerts" className="mt-0 py-4">
-        <AlertsTabContent />
       </TabsContent>
     </Tabs>
   );
@@ -131,18 +121,6 @@ function UsageTabContent({ teamId }: { teamId: string }) {
           compact
         />
       ))}
-    </div>
-  );
-}
-
-function AlertsTabContent() {
-  return (
-    <div className="text-muted-foreground flex flex-col items-center py-8 text-center">
-      <Bell className="mb-2 h-8 w-8 opacity-50" />
-      <p className="text-sm">No alerts at this time</p>
-      <p className="mt-1 text-xs opacity-75">
-        You&apos;ll be notified of important events
-      </p>
     </div>
   );
 }

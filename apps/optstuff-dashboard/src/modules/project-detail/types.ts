@@ -1,14 +1,2 @@
-export type Project = {
-  id: string;
-  name: string;
-  slug: string;
-  description: string | null;
-  createdAt: Date;
-};
-
-export type Team = {
-  id: string;
-  name: string;
-  slug: string;
-  isPersonal: boolean;
-};
+// Re-export from shared types
+export type { Team, Project } from "@/lib/types";

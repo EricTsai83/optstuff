@@ -10,7 +10,7 @@ import {
 type StatCardProps = {
   readonly title: string;
   readonly value: string;
-  readonly subtitle: string;
+  readonly subtitle?: string;
   readonly icon?: React.ReactNode;
 };
 
@@ -18,12 +18,16 @@ export function StatCard({ title, value, subtitle, icon }: StatCardProps) {
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between pb-2">
-        <CardTitle className="text-sm font-medium">{title}</CardTitle>
+        <CardTitle className="text-muted-foreground text-sm font-normal">
+          {title}
+        </CardTitle>
         {icon}
       </CardHeader>
       <CardContent>
         <div className="text-2xl font-bold">{value}</div>
-        <p className="text-muted-foreground text-xs">{subtitle}</p>
+        {subtitle && (
+          <p className="text-muted-foreground text-xs">{subtitle}</p>
+        )}
       </CardContent>
     </Card>
   );

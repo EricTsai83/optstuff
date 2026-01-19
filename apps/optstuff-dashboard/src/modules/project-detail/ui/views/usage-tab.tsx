@@ -9,7 +9,7 @@ import {
 } from "@workspace/ui/components/card";
 import { api } from "@/trpc/react";
 import { formatBytes, formatNumber } from "@/lib/format";
-import { SimpleStatCard } from "../components/simple-stat-card";
+import { StatCard } from "../components/stat-card";
 
 type UsageTabProps = {
   readonly projectId: string;
@@ -45,19 +45,19 @@ export function UsageTab({ projectId }: UsageTabProps) {
   return (
     <div className="space-y-6">
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-        <SimpleStatCard
+        <StatCard
           title="Total Requests"
           value={formatNumber(usageSummary?.totalRequests ?? 0)}
         />
-        <SimpleStatCard
+        <StatCard
           title="Total Bandwidth"
           value={formatBytes(usageSummary?.totalBytes ?? 0)}
         />
-        <SimpleStatCard
+        <StatCard
           title="Avg Daily Requests"
           value={formatNumber(usageSummary?.averageDailyRequests ?? 0)}
         />
-        <SimpleStatCard
+        <StatCard
           title="Avg Daily Bandwidth"
           value={formatBytes(usageSummary?.averageDailyBytes ?? 0)}
         />

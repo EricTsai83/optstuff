@@ -1,8 +1,2 @@
-export type Team = {
-  id: string;
-  name: string;
-  slug: string;
-  isPersonal: boolean;
-};
-
-export type NavTab = "Overview" | "Usage" | "Settings";
+// Re-export from shared types
+export type { Team, NavTab } from "@/lib/types";

@@ -9,6 +9,7 @@ import {
   checkTeamAccess,
   getUserTeams,
 } from "@/server/lib/team-access";
+import { getDateRange, getToday } from "@/lib/format";
 
 export const usageRouter = createTRPCRouter({
   /**
@@ -57,7 +58,7 @@ export const usageRouter = createTRPCRouter({
         }
       }
 
-      const today = new Date().toISOString().split("T")[0]!;
+      const today = getToday();
 
       // Use transaction to ensure atomic updates for both usage record and project totals
       const result = await ctx.db.transaction(async (tx) => {
@@ -209,12 +210,7 @@ export const usageRouter = createTRPCRouter({
 
       if (!hasAccess) return null;
 
-      const today = new Date();
-      const thirtyDaysAgo = new Date(today);
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-
-      const startDate = thirtyDaysAgo.toISOString().split("T")[0]!;
-      const endDate = today.toISOString().split("T")[0]!;
+      const { startDate, endDate } = getDateRange(30);
 
       const records = await ctx.db.query.usageRecords.findMany({
         where: and(
@@ -333,12 +329,7 @@ export const usageRouter = createTRPCRouter({
         };
       }
 
-      const today = new Date();
-      const thirtyDaysAgo = new Date(today);
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-
-      const startDate = thirtyDaysAgo.toISOString().split("T")[0]!;
-      const endDate = today.toISOString().split("T")[0]!;
+      const { startDate, endDate } = getDateRange(30);
 
       // Single query with inArray to get all usage records - fixes N+1 problem
       const projectIds = teamProjects.map((p) => p.id);
@@ -395,12 +386,7 @@ export const usageRouter = createTRPCRouter({
       };
     }
 
-    const today = new Date();
-    const thirtyDaysAgo = new Date(today);
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-
-    const startDate = thirtyDaysAgo.toISOString().split("T")[0]!;
-    const endDate = today.toISOString().split("T")[0]!;
+    const { startDate, endDate } = getDateRange(30);
 
     // Single query with inArray
     const projectIds = allProjects.map((p) => p.id);

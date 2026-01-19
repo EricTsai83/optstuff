@@ -9,6 +9,8 @@ export type OrgRole = "org:admin" | "org:member";
 type Team = typeof teams.$inferSelect;
 type Project = typeof projects.$inferSelect;
 
+type TeamAccessResult = { hasAccess: boolean; team: Team | null; role: string | null };
+
 /**
  * Check if a user is a member of a Clerk Organization.
  * Uses Clerk API to verify membership.
@@ -43,19 +45,13 @@ export async function checkOrgMembership(
 }
 
 /**
- * Check if a user has access to a team by team ID.
- * Queries local DB for team, then verifies Clerk membership.
+ * Internal helper to check team access after finding the team.
  */
-export async function checkTeamAccess(
-  db: typeof dbType,
-  teamId: string,
+async function verifyTeamAccess(
+  team: Team | undefined,
   userId: string,
   requiredRoles?: OrgRole[],
-): Promise<{ hasAccess: boolean; team: Team | null; role: string | null }> {
-  const team = await db.query.teams.findFirst({
-    where: eq(teams.id, teamId),
-  });
-
+): Promise<TeamAccessResult> {
   if (!team) {
     return { hasAccess: false, team: null, role: null };
   }
@@ -74,6 +70,22 @@ export async function checkTeamAccess(
 }
 
 /**
+ * Check if a user has access to a team by team ID.
+ * Queries local DB for team, then verifies Clerk membership.
+ */
+export async function checkTeamAccess(
+  db: typeof dbType,
+  teamId: string,
+  userId: string,
+  requiredRoles?: OrgRole[],
+): Promise<TeamAccessResult> {
+  const team = await db.query.teams.findFirst({
+    where: eq(teams.id, teamId),
+  });
+  return verifyTeamAccess(team, userId, requiredRoles);
+}
+
+/**
  * Check if a user has access to a team by team slug.
  * Queries local DB for team, then verifies Clerk membership.
  */
@@ -82,26 +94,11 @@ export async function checkTeamAccessBySlug(
   teamSlug: string,
   userId: string,
   requiredRoles?: OrgRole[],
-): Promise<{ hasAccess: boolean; team: Team | null; role: string | null }> {
+): Promise<TeamAccessResult> {
   const team = await db.query.teams.findFirst({
     where: eq(teams.slug, teamSlug),
   });
-
-  if (!team) {
-    return { hasAccess: false, team: null, role: null };
-  }
-
-  const { isMember, role } = await checkOrgMembership(
-    team.clerkOrgId,
-    userId,
-    requiredRoles,
-  );
-
-  return {
-    hasAccess: isMember,
-    team: isMember ? team : null,
-    role,
-  };
+  return verifyTeamAccess(team, userId, requiredRoles);
 }
 
 /**

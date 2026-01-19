@@ -12,6 +12,7 @@ import { api } from "@/trpc/react";
 import { formatBytes, formatNumber } from "@/lib/format";
 import { USAGE_LIMITS } from "@/lib/constants";
 import { UsageProgressBar } from "@/components/usage-progress-bar";
+import { StatCard } from "@/modules/project-detail/ui/components/stat-card";
 
 type TeamUsageProps = {
   readonly teamId: string;
@@ -114,28 +115,6 @@ export function TeamUsage({ teamId }: TeamUsageProps) {
         </Card>
       )}
     </div>
-  );
-}
-
-type StatCardProps = {
-  readonly title: string;
-  readonly value: string;
-  readonly subtitle: string;
-  readonly icon?: React.ReactNode;
-};
-
-function StatCard({ title, value, subtitle, icon }: StatCardProps) {
-  return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between pb-2">
-        <CardTitle className="text-sm font-medium">{title}</CardTitle>
-        {icon}
-      </CardHeader>
-      <CardContent>
-        <div className="text-2xl font-bold">{value}</div>
-        <p className="text-muted-foreground text-xs">{subtitle}</p>
-      </CardContent>
-    </Card>
   );
 }
 
