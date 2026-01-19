@@ -144,7 +144,6 @@ export const apiKeys = createTable(
   }),
   (t) => [
     index("api_key_project_idx").on(t.projectId),
-    index("api_key_hash_idx").on(t.keyHash),
     // Composite index for querying active keys by project
     index("api_key_project_active_idx").on(t.projectId, t.revokedAt),
   ],
@@ -177,8 +176,8 @@ export const usageRecords = createTable(
     createdAt: d.timestamp({ withTimezone: true }).defaultNow().notNull(),
   }),
   (t) => [
-    index("usage_project_idx").on(t.projectId),
-    index("usage_date_idx").on(t.date),
+    // Composite index for range queries: WHERE projectId = ? AND date BETWEEN ? AND ?
+    index("usage_project_date_idx").on(t.projectId, t.date),
     // Partial unique index for usage without API key (NULL apiKeyId)
     uniqueIndex("usage_project_date_null_apikey_unique")
       .on(t.projectId, t.date)
