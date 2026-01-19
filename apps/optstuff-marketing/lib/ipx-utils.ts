@@ -70,6 +70,54 @@ export function ensureProtocol(path: string): string {
 }
 
 /**
+ * Check if path is a local file (no domain/protocol)
+ *
+ * A local file path:
+ * - Does not contain a domain (no dots before first slash, or no slash at all with extension)
+ * - Examples: "demo-image.png", "images/photo.jpg"
+ *
+ * A remote URL path:
+ * - Contains a domain
+ * - Examples: "example.com/image.jpg", "cdn.site.com/photos/1.png"
+ */
+export function isLocalFilePath(path: string): boolean {
+  // If path contains protocol markers, it's remote
+  if (path.includes("://")) {
+    return false;
+  }
+
+  const firstSlashIndex = path.indexOf("/");
+
+  if (firstSlashIndex === -1) {
+    // No slash - check if it looks like a domain (has dot but doesn't look like file extension)
+    // "example.com" -> remote, "image.png" -> local
+    const lastDotIndex = path.lastIndexOf(".");
+    if (lastDotIndex === -1) {
+      // No dot at all, treat as local
+      return true;
+    }
+    // Check if the part after the last dot looks like a file extension (3-4 chars)
+    const extension = path.slice(lastDotIndex + 1);
+    const commonExtensions = [
+      "png",
+      "jpg",
+      "jpeg",
+      "gif",
+      "webp",
+      "avif",
+      "svg",
+      "ico",
+    ];
+    return commonExtensions.includes(extension.toLowerCase());
+  }
+
+  // Has slash - check if part before slash looks like a domain
+  const firstPart = path.slice(0, firstSlashIndex);
+  // If first part contains a dot, it's likely a domain
+  return !firstPart.includes(".");
+}
+
+/**
  * Resolve Content-Type based on image format
  */
 export function resolveContentType(format: string): string {

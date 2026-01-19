@@ -8,6 +8,7 @@ import {
   resolveContentType,
   parseIpxPath,
   parseOperationsString,
+  isLocalFilePath,
 } from "@/lib/ipx-utils";
 
 /**
@@ -16,10 +17,15 @@ import {
  * Uses IPX native URL format:
  * /api/optimize/{operations}/{image_path}
  *
- * @example
- * /api/optimize/w_200/localhost:3024/demo-image.png
+ * Supports both local files (from public directory) and remote URLs.
+ *
+ * @example Local files (from public directory)
+ * /api/optimize/w_200/demo-image.png
+ * /api/optimize/f_webp,q_80/images/photo.jpg
+ *
+ * @example Remote URLs
  * /api/optimize/w_200/example.com/image.jpg
- * /api/optimize/f_webp/example.com/image.jpg
+ * /api/optimize/f_webp/cdn.site.com/image.jpg
  * /api/optimize/embed,f_webp,s_200x200/example.com/image.jpg
  * /api/optimize/_/example.com/image.jpg
  */
@@ -55,7 +61,10 @@ export async function GET(
     imagePath = parsed.imagePath;
     const operations = parseOperationsString(parsed.operations);
 
-    finalImagePath = ensureProtocol(imagePath);
+    // Local files use "/" prefix for IPX file storage, remote URLs need protocol
+    finalImagePath = isLocalFilePath(imagePath)
+      ? `/${imagePath}`
+      : ensureProtocol(imagePath);
 
     const processedImage = await ipx(finalImagePath, operations).process();
     const imageData = ensureUint8Array(processedImage.data);
