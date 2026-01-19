@@ -1,9 +1,14 @@
 import { TRPCError } from "@trpc/server";
-import { eq, and, gte, lte, sql, desc } from "drizzle-orm";
+import { eq, and, gte, lte, sql, desc, inArray } from "drizzle-orm";
 import { z } from "zod";
 
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
-import { usageRecords, projects, teams, apiKeys } from "@/server/db/schema";
+import { usageRecords, projects, apiKeys } from "@/server/db/schema";
+import {
+  checkProjectAccess,
+  checkTeamAccess,
+  getUserTeams,
+} from "@/server/lib/team-access";
 
 export const usageRouter = createTRPCRouter({
   /**
@@ -20,13 +25,14 @@ export const usageRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      // Ownership guard: verify the caller owns the project
-      const project = await ctx.db.query.projects.findFirst({
-        where: eq(projects.id, input.projectId),
-        with: { team: true },
-      });
+      // Check project access via Clerk membership
+      const { hasAccess } = await checkProjectAccess(
+        ctx.db,
+        input.projectId,
+        ctx.userId,
+      );
 
-      if (!project || project.team.ownerId !== ctx.userId) {
+      if (!hasAccess) {
         throw new TRPCError({
           code: "FORBIDDEN",
           message:
@@ -106,14 +112,13 @@ export const usageRouter = createTRPCRouter({
       }),
     )
     .query(async ({ ctx, input }) => {
-      const project = await ctx.db.query.projects.findFirst({
-        where: eq(projects.id, input.projectId),
-        with: { team: true },
-      });
+      const { hasAccess } = await checkProjectAccess(
+        ctx.db,
+        input.projectId,
+        ctx.userId,
+      );
 
-      if (!project || project.team.ownerId !== ctx.userId) {
-        return [];
-      }
+      if (!hasAccess) return [];
 
       const records = await ctx.db.query.usageRecords.findMany({
         where: and(
@@ -158,14 +163,13 @@ export const usageRouter = createTRPCRouter({
       }),
     )
     .query(async ({ ctx, input }) => {
-      const project = await ctx.db.query.projects.findFirst({
-        where: eq(projects.id, input.projectId),
-        with: { team: true },
-      });
+      const { hasAccess } = await checkProjectAccess(
+        ctx.db,
+        input.projectId,
+        ctx.userId,
+      );
 
-      if (!project || project.team.ownerId !== ctx.userId) {
-        return null;
-      }
+      if (!hasAccess) return null;
 
       const startDate = `${input.year}-${String(input.month).padStart(2, "0")}-01`;
       const lastDay = new Date(input.year, input.month, 0).getDate();
@@ -197,14 +201,13 @@ export const usageRouter = createTRPCRouter({
   getSummary: protectedProcedure
     .input(z.object({ projectId: z.string().uuid() }))
     .query(async ({ ctx, input }) => {
-      const project = await ctx.db.query.projects.findFirst({
-        where: eq(projects.id, input.projectId),
-        with: { team: true },
-      });
+      const { hasAccess } = await checkProjectAccess(
+        ctx.db,
+        input.projectId,
+        ctx.userId,
+      );
 
-      if (!project || project.team.ownerId !== ctx.userId) {
-        return null;
-      }
+      if (!hasAccess) return null;
 
       const today = new Date();
       const thirtyDaysAgo = new Date(today);
@@ -247,14 +250,13 @@ export const usageRouter = createTRPCRouter({
       }),
     )
     .query(async ({ ctx, input }) => {
-      const project = await ctx.db.query.projects.findFirst({
-        where: eq(projects.id, input.projectId),
-        with: { team: true },
-      });
+      const { hasAccess } = await checkProjectAccess(
+        ctx.db,
+        input.projectId,
+        ctx.userId,
+      );
 
-      if (!project || project.team.ownerId !== ctx.userId) {
-        return [];
-      }
+      if (!hasAccess) return [];
 
       const records = await ctx.db.query.usageRecords.findMany({
         where: and(
@@ -303,16 +305,21 @@ export const usageRouter = createTRPCRouter({
 
   /**
    * Get overall usage summary for a team.
+   * Uses single query with inArray to avoid N+1 problem.
    */
   getTeamSummary: protectedProcedure
     .input(z.object({ teamId: z.string().uuid() }))
     .query(async ({ ctx, input }) => {
-      const team = await ctx.db.query.teams.findFirst({
-        where: and(eq(teams.id, input.teamId), eq(teams.ownerId, ctx.userId)),
-      });
+      // Check team access via Clerk membership
+      const { hasAccess } = await checkTeamAccess(
+        ctx.db,
+        input.teamId,
+        ctx.userId,
+      );
 
-      if (!team) return null;
+      if (!hasAccess) return null;
 
+      // Get all projects for this team
       const teamProjects = await ctx.db.query.projects.findMany({
         where: eq(projects.teamId, input.teamId),
       });
@@ -333,21 +340,18 @@ export const usageRouter = createTRPCRouter({
       const startDate = thirtyDaysAgo.toISOString().split("T")[0]!;
       const endDate = today.toISOString().split("T")[0]!;
 
-      let totalRequests = 0;
-      let totalBytes = 0;
+      // Single query with inArray to get all usage records - fixes N+1 problem
+      const projectIds = teamProjects.map((p) => p.id);
+      const records = await ctx.db.query.usageRecords.findMany({
+        where: and(
+          inArray(usageRecords.projectId, projectIds),
+          gte(usageRecords.date, startDate),
+          lte(usageRecords.date, endDate),
+        ),
+      });
 
-      for (const proj of teamProjects) {
-        const records = await ctx.db.query.usageRecords.findMany({
-          where: and(
-            eq(usageRecords.projectId, proj.id),
-            gte(usageRecords.date, startDate),
-            lte(usageRecords.date, endDate),
-          ),
-        });
-
-        totalRequests += records.reduce((sum, r) => sum + r.requestCount, 0);
-        totalBytes += records.reduce((sum, r) => sum + r.bytesProcessed, 0);
-      }
+      const totalRequests = records.reduce((sum, r) => sum + r.requestCount, 0);
+      const totalBytes = records.reduce((sum, r) => sum + r.bytesProcessed, 0);
 
       return {
         period: "last_30_days",
@@ -356,4 +360,67 @@ export const usageRouter = createTRPCRouter({
         projectCount: teamProjects.length,
       };
     }),
+
+  /**
+   * Get overall usage summary across all teams the user has access to.
+   */
+  getAllTeamsSummary: protectedProcedure.query(async ({ ctx }) => {
+    // Get all teams user has access to via Clerk
+    const userTeams = await getUserTeams(ctx.db, ctx.userId);
+
+    if (userTeams.length === 0) {
+      return {
+        period: "last_30_days",
+        totalRequests: 0,
+        totalBytes: 0,
+        teamCount: 0,
+        projectCount: 0,
+      };
+    }
+
+    const teamIds = userTeams.map((t) => t.id);
+
+    // Get all projects for these teams
+    const allProjects = await ctx.db.query.projects.findMany({
+      where: inArray(projects.teamId, teamIds),
+    });
+
+    if (allProjects.length === 0) {
+      return {
+        period: "last_30_days",
+        totalRequests: 0,
+        totalBytes: 0,
+        teamCount: userTeams.length,
+        projectCount: 0,
+      };
+    }
+
+    const today = new Date();
+    const thirtyDaysAgo = new Date(today);
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+    const startDate = thirtyDaysAgo.toISOString().split("T")[0]!;
+    const endDate = today.toISOString().split("T")[0]!;
+
+    // Single query with inArray
+    const projectIds = allProjects.map((p) => p.id);
+    const records = await ctx.db.query.usageRecords.findMany({
+      where: and(
+        inArray(usageRecords.projectId, projectIds),
+        gte(usageRecords.date, startDate),
+        lte(usageRecords.date, endDate),
+      ),
+    });
+
+    const totalRequests = records.reduce((sum, r) => sum + r.requestCount, 0);
+    const totalBytes = records.reduce((sum, r) => sum + r.bytesProcessed, 0);
+
+    return {
+      period: "last_30_days",
+      totalRequests,
+      totalBytes,
+      teamCount: userTeams.length,
+      projectCount: allProjects.length,
+    };
+  }),
 });

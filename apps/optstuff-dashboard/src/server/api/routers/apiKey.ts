@@ -1,20 +1,22 @@
-import { eq, and, isNull, desc } from "drizzle-orm";
+import { eq, and, isNull, desc, count } from "drizzle-orm";
 import { z } from "zod";
 
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
 import { apiKeys, projects } from "@/server/db/schema";
 import { generateApiKey } from "@/server/lib/api-key";
+import { checkProjectAccess } from "@/server/lib/team-access";
 import type { db as dbType } from "@/server/db";
 
-/** Helper to update project's API key count */
+/** Helper to update project's API key count using SQL count() */
 async function updateProjectApiKeyCount(db: typeof dbType, projectId: string) {
-  const count = await db.query.apiKeys.findMany({
-    where: and(eq(apiKeys.projectId, projectId), isNull(apiKeys.revokedAt)),
-  });
+  const [result] = await db
+    .select({ count: count() })
+    .from(apiKeys)
+    .where(and(eq(apiKeys.projectId, projectId), isNull(apiKeys.revokedAt)));
 
   await db
     .update(projects)
-    .set({ apiKeyCount: count.length })
+    .set({ apiKeyCount: result?.count ?? 0 })
     .where(eq(projects.id, projectId));
 }
 
@@ -33,12 +35,13 @@ export const apiKeyRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const project = await ctx.db.query.projects.findFirst({
-        where: eq(projects.id, input.projectId),
-        with: { team: true },
-      });
+      const { hasAccess } = await checkProjectAccess(
+        ctx.db,
+        input.projectId,
+        ctx.userId,
+      );
 
-      if (!project || project.team.ownerId !== ctx.userId) {
+      if (!hasAccess) {
         throw new Error("Project not found or access denied");
       }
 
@@ -51,6 +54,7 @@ export const apiKeyRouter = createTRPCRouter({
           name: input.name,
           keyPrefix,
           keyHash,
+          createdBy: ctx.userId,
           expiresAt: input.expiresAt,
           rateLimitPerMinute: input.rateLimitPerMinute ?? 60,
           rateLimitPerDay: input.rateLimitPerDay ?? 10000,
@@ -69,14 +73,13 @@ export const apiKeyRouter = createTRPCRouter({
   list: protectedProcedure
     .input(z.object({ projectId: z.string().uuid() }))
     .query(async ({ ctx, input }) => {
-      const project = await ctx.db.query.projects.findFirst({
-        where: eq(projects.id, input.projectId),
-        with: { team: true },
-      });
+      const { hasAccess } = await checkProjectAccess(
+        ctx.db,
+        input.projectId,
+        ctx.userId,
+      );
 
-      if (!project || project.team.ownerId !== ctx.userId) {
-        return [];
-      }
+      if (!hasAccess) return [];
 
       return ctx.db.query.apiKeys.findMany({
         where: and(
@@ -93,14 +96,13 @@ export const apiKeyRouter = createTRPCRouter({
   listAll: protectedProcedure
     .input(z.object({ projectId: z.string().uuid() }))
     .query(async ({ ctx, input }) => {
-      const project = await ctx.db.query.projects.findFirst({
-        where: eq(projects.id, input.projectId),
-        with: { team: true },
-      });
+      const { hasAccess } = await checkProjectAccess(
+        ctx.db,
+        input.projectId,
+        ctx.userId,
+      );
 
-      if (!project || project.team.ownerId !== ctx.userId) {
-        return [];
-      }
+      if (!hasAccess) return [];
 
       return ctx.db.query.apiKeys.findMany({
         where: eq(apiKeys.projectId, input.projectId),
@@ -116,12 +118,19 @@ export const apiKeyRouter = createTRPCRouter({
     .query(async ({ ctx, input }) => {
       const apiKey = await ctx.db.query.apiKeys.findFirst({
         where: eq(apiKeys.id, input.apiKeyId),
-        with: { project: { with: { team: true } } },
+        with: { project: true },
       });
 
-      if (!apiKey || apiKey.project.team.ownerId !== ctx.userId) {
-        return null;
-      }
+      if (!apiKey) return null;
+
+      // Check access to the project
+      const { hasAccess } = await checkProjectAccess(
+        ctx.db,
+        apiKey.projectId,
+        ctx.userId,
+      );
+
+      if (!hasAccess) return null;
 
       return apiKey;
     }),
@@ -134,10 +143,19 @@ export const apiKeyRouter = createTRPCRouter({
     .mutation(async ({ ctx, input }) => {
       const apiKey = await ctx.db.query.apiKeys.findFirst({
         where: eq(apiKeys.id, input.apiKeyId),
-        with: { project: { with: { team: true } } },
       });
 
-      if (!apiKey || apiKey.project.team.ownerId !== ctx.userId) {
+      if (!apiKey) {
+        throw new Error("API key not found");
+      }
+
+      const { hasAccess } = await checkProjectAccess(
+        ctx.db,
+        apiKey.projectId,
+        ctx.userId,
+      );
+
+      if (!hasAccess) {
         throw new Error("API key not found or access denied");
       }
 
@@ -161,10 +179,19 @@ export const apiKeyRouter = createTRPCRouter({
     .mutation(async ({ ctx, input }) => {
       const oldApiKey = await ctx.db.query.apiKeys.findFirst({
         where: eq(apiKeys.id, input.apiKeyId),
-        with: { project: { with: { team: true } } },
       });
 
-      if (!oldApiKey || oldApiKey.project.team.ownerId !== ctx.userId) {
+      if (!oldApiKey) {
+        throw new Error("API key not found");
+      }
+
+      const { hasAccess } = await checkProjectAccess(
+        ctx.db,
+        oldApiKey.projectId,
+        ctx.userId,
+      );
+
+      if (!hasAccess) {
         throw new Error("API key not found or access denied");
       }
 
@@ -183,6 +210,7 @@ export const apiKeyRouter = createTRPCRouter({
           name: oldApiKey.name,
           keyPrefix,
           keyHash,
+          createdBy: ctx.userId,
           expiresAt: oldApiKey.expiresAt,
           rateLimitPerMinute: oldApiKey.rateLimitPerMinute,
           rateLimitPerDay: oldApiKey.rateLimitPerDay,
@@ -210,10 +238,19 @@ export const apiKeyRouter = createTRPCRouter({
     .mutation(async ({ ctx, input }) => {
       const apiKey = await ctx.db.query.apiKeys.findFirst({
         where: eq(apiKeys.id, input.apiKeyId),
-        with: { project: { with: { team: true } } },
       });
 
-      if (!apiKey || apiKey.project.team.ownerId !== ctx.userId) {
+      if (!apiKey) {
+        throw new Error("API key not found");
+      }
+
+      const { hasAccess } = await checkProjectAccess(
+        ctx.db,
+        apiKey.projectId,
+        ctx.userId,
+      );
+
+      if (!hasAccess) {
         throw new Error("API key not found or access denied");
       }
 
@@ -252,10 +289,19 @@ export const apiKeyRouter = createTRPCRouter({
     .mutation(async ({ ctx, input }) => {
       const apiKey = await ctx.db.query.apiKeys.findFirst({
         where: eq(apiKeys.id, input.apiKeyId),
-        with: { project: { with: { team: true } } },
       });
 
-      if (!apiKey || apiKey.project.team.ownerId !== ctx.userId) {
+      if (!apiKey) {
+        throw new Error("API key not found");
+      }
+
+      const { hasAccess } = await checkProjectAccess(
+        ctx.db,
+        apiKey.projectId,
+        ctx.userId,
+      );
+
+      if (!hasAccess) {
         throw new Error("API key not found or access denied");
       }
 

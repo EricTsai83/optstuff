@@ -2,12 +2,20 @@ import { eq, and, desc, inArray } from "drizzle-orm";
 import { z } from "zod";
 
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
-import { projects, teams, pinnedProjects } from "@/server/db/schema";
+import { projects, pinnedProjects, apiKeys } from "@/server/db/schema";
 import { generateSlug, generateUniqueSlug } from "@/lib/slug";
+import { generateApiKey } from "@/server/lib/api-key";
+import {
+  checkTeamAccess,
+  checkTeamAccessBySlug,
+  checkProjectAccess,
+  getUserTeams,
+} from "@/server/lib/team-access";
 
 export const projectRouter = createTRPCRouter({
   /**
    * Create a new project under a team.
+   * Automatically creates a default API key for the project.
    */
   create: protectedProcedure
     .input(
@@ -18,17 +26,23 @@ export const projectRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const team = await ctx.db.query.teams.findFirst({
-        where: and(eq(teams.id, input.teamId), eq(teams.ownerId, ctx.userId)),
-      });
+      // Check team access via Clerk membership
+      const { hasAccess } = await checkTeamAccess(
+        ctx.db,
+        input.teamId,
+        ctx.userId,
+      );
 
-      if (!team) throw new Error("Team not found or access denied");
+      if (!hasAccess) {
+        throw new Error("Team not found or access denied");
+      }
 
       const slug = generateSlug(input.name);
       const existingProject = await ctx.db.query.projects.findFirst({
         where: and(eq(projects.teamId, input.teamId), eq(projects.slug, slug)),
       });
 
+      // Create the project
       const [newProject] = await ctx.db
         .insert(projects)
         .values({
@@ -36,10 +50,25 @@ export const projectRouter = createTRPCRouter({
           name: input.name,
           slug: existingProject ? generateUniqueSlug(input.name) : slug,
           description: input.description,
+          apiKeyCount: 1, // Will have one default key
         })
         .returning();
 
-      return newProject;
+      if (!newProject) {
+        throw new Error("Failed to create project");
+      }
+
+      // Create default API key
+      const { key, keyPrefix, keyHash } = generateApiKey();
+      await ctx.db.insert(apiKeys).values({
+        projectId: newProject.id,
+        name: "Default",
+        keyPrefix,
+        keyHash,
+        createdBy: ctx.userId,
+      });
+
+      return { ...newProject, defaultApiKey: key };
     }),
 
   /**
@@ -48,11 +77,14 @@ export const projectRouter = createTRPCRouter({
   list: protectedProcedure
     .input(z.object({ teamId: z.string().uuid() }))
     .query(async ({ ctx, input }) => {
-      const team = await ctx.db.query.teams.findFirst({
-        where: and(eq(teams.id, input.teamId), eq(teams.ownerId, ctx.userId)),
-      });
+      // Check team access via Clerk membership
+      const { hasAccess } = await checkTeamAccess(
+        ctx.db,
+        input.teamId,
+        ctx.userId,
+      );
 
-      if (!team) return [];
+      if (!hasAccess) return [];
 
       return ctx.db.query.projects.findMany({
         where: eq(projects.teamId, input.teamId),
@@ -61,27 +93,32 @@ export const projectRouter = createTRPCRouter({
     }),
 
   /**
-   * List all projects across all teams.
+   * List all projects across all teams the user has access to.
    */
   listAll: protectedProcedure.query(async ({ ctx }) => {
-    const userTeams = await ctx.db.query.teams.findMany({
-      where: eq(teams.ownerId, ctx.userId),
-      with: { projects: true },
+    // Get all teams user has access to via Clerk
+    const userTeams = await getUserTeams(ctx.db, ctx.userId);
+
+    if (userTeams.length === 0) return [];
+
+    const teamIds = userTeams.map((t) => t.id);
+    const teamMap = new Map(userTeams.map((t) => [t.id, t]));
+
+    // Get all projects for these teams
+    const allProjects = await ctx.db.query.projects.findMany({
+      where: inArray(projects.teamId, teamIds),
+      orderBy: [desc(projects.createdAt)],
     });
 
-    return userTeams
-      .flatMap((team) =>
-        team.projects.map((project) => ({
-          ...project,
-          teamName: team.name,
-          teamSlug: team.slug,
-          isPersonalTeam: team.isPersonal,
-        })),
-      )
-      .sort(
-        (a, b) =>
-          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-      );
+    return allProjects.map((project) => {
+      const team = teamMap.get(project.teamId)!;
+      return {
+        ...project,
+        teamName: team.name,
+        teamSlug: team.slug,
+        isPersonalTeam: team.isPersonal,
+      };
+    });
   }),
 
   /**
@@ -90,12 +127,13 @@ export const projectRouter = createTRPCRouter({
   get: protectedProcedure
     .input(z.object({ projectId: z.string().uuid() }))
     .query(async ({ ctx, input }) => {
-      const project = await ctx.db.query.projects.findFirst({
-        where: eq(projects.id, input.projectId),
-        with: { team: true },
-      });
+      const { hasAccess, project } = await checkProjectAccess(
+        ctx.db,
+        input.projectId,
+        ctx.userId,
+      );
 
-      if (!project || project.team.ownerId !== ctx.userId) return null;
+      if (!hasAccess) return null;
       return project;
     }),
 
@@ -105,14 +143,14 @@ export const projectRouter = createTRPCRouter({
   getBySlug: protectedProcedure
     .input(z.object({ teamSlug: z.string(), projectSlug: z.string() }))
     .query(async ({ ctx, input }) => {
-      const team = await ctx.db.query.teams.findFirst({
-        where: and(
-          eq(teams.slug, input.teamSlug),
-          eq(teams.ownerId, ctx.userId),
-        ),
-      });
+      // Check team access via Clerk membership
+      const { hasAccess, team } = await checkTeamAccessBySlug(
+        ctx.db,
+        input.teamSlug,
+        ctx.userId,
+      );
 
-      if (!team) return null;
+      if (!hasAccess || !team) return null;
 
       const project = await ctx.db.query.projects.findFirst({
         where: and(
@@ -136,12 +174,13 @@ export const projectRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const project = await ctx.db.query.projects.findFirst({
-        where: eq(projects.id, input.projectId),
-        with: { team: true },
-      });
+      const { hasAccess } = await checkProjectAccess(
+        ctx.db,
+        input.projectId,
+        ctx.userId,
+      );
 
-      if (!project || project.team.ownerId !== ctx.userId) {
+      if (!hasAccess) {
         throw new Error("Project not found or access denied");
       }
 
@@ -169,12 +208,15 @@ export const projectRouter = createTRPCRouter({
   delete: protectedProcedure
     .input(z.object({ projectId: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {
-      const project = await ctx.db.query.projects.findFirst({
-        where: eq(projects.id, input.projectId),
-        with: { team: true },
-      });
+      // Only admins can delete projects
+      const { hasAccess } = await checkProjectAccess(
+        ctx.db,
+        input.projectId,
+        ctx.userId,
+        ["org:admin"],
+      );
 
-      if (!project || project.team.ownerId !== ctx.userId) {
+      if (!hasAccess) {
         throw new Error("Project not found or access denied");
       }
 
@@ -188,12 +230,13 @@ export const projectRouter = createTRPCRouter({
   pin: protectedProcedure
     .input(z.object({ projectId: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {
-      const project = await ctx.db.query.projects.findFirst({
-        where: eq(projects.id, input.projectId),
-        with: { team: true },
-      });
+      const { hasAccess } = await checkProjectAccess(
+        ctx.db,
+        input.projectId,
+        ctx.userId,
+      );
 
-      if (!project || project.team.ownerId !== ctx.userId) {
+      if (!hasAccess) {
         throw new Error("Project not found or access denied");
       }
 
@@ -233,23 +276,33 @@ export const projectRouter = createTRPCRouter({
 
   /**
    * List all pinned projects.
+   * Only returns projects the user has access to via Clerk membership.
    */
   listPinned: protectedProcedure.query(async ({ ctx }) => {
+    // Get all teams user has access to
+    const userTeams = await getUserTeams(ctx.db, ctx.userId);
+    const teamIds = new Set(userTeams.map((t) => t.id));
+    const teamMap = new Map(userTeams.map((t) => [t.id, t]));
+
     const pins = await ctx.db.query.pinnedProjects.findMany({
       where: eq(pinnedProjects.userId, ctx.userId),
       orderBy: [desc(pinnedProjects.pinnedAt)],
       with: { project: { with: { team: true } } },
     });
 
+    // Filter to only projects in teams user has access to
     return pins
-      .filter((pin) => pin.project.team.ownerId === ctx.userId)
-      .map((pin) => ({
-        ...pin.project,
-        teamName: pin.project.team.name,
-        teamSlug: pin.project.team.slug,
-        isPersonalTeam: pin.project.team.isPersonal,
-        pinnedAt: pin.pinnedAt,
-      }));
+      .filter((pin) => teamIds.has(pin.project.teamId))
+      .map((pin) => {
+        const team = teamMap.get(pin.project.teamId)!;
+        return {
+          ...pin.project,
+          teamName: team.name,
+          teamSlug: team.slug,
+          isPersonalTeam: team.isPersonal,
+          pinnedAt: pin.pinnedAt,
+        };
+      });
   }),
 
   /**

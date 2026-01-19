@@ -27,7 +27,7 @@ export const teams = createTable(
   "team",
   (d) => ({
     id: d.uuid().primaryKey().defaultRandom(),
-    clerkOrgId: d.varchar({ length: 255 }).unique(), // All teams have clerkOrgId (including Personal)
+    clerkOrgId: d.varchar({ length: 255 }).notNull().unique(), // All teams have clerkOrgId (including Personal)
     ownerId: d.varchar({ length: 255 }).notNull(), // Clerk user ID
     name: d.varchar({ length: 255 }).notNull(),
     slug: d.varchar({ length: 255 }).notNull().unique(),
@@ -134,6 +134,7 @@ export const apiKeys = createTable(
     name: d.varchar({ length: 255 }).notNull(),
     keyPrefix: d.varchar({ length: 12 }).notNull(), // Display prefix "pk_abc123..."
     keyHash: d.varchar({ length: 64 }).notNull().unique(), // SHA256 hash
+    createdBy: d.varchar({ length: 255 }).notNull(), // Clerk user ID who created this key
     expiresAt: d.timestamp({ withTimezone: true }),
     rateLimitPerMinute: d.integer().default(60),
     rateLimitPerDay: d.integer().default(10000),
@@ -144,6 +145,8 @@ export const apiKeys = createTable(
   (t) => [
     index("api_key_project_idx").on(t.projectId),
     index("api_key_hash_idx").on(t.keyHash),
+    // Composite index for querying active keys by project
+    index("api_key_project_active_idx").on(t.projectId, t.revokedAt),
   ],
 );
 
