@@ -28,46 +28,72 @@ export default async function TeamPage({ params }: PageProps) {
     // Get all teams user has access to via Clerk
     const userTeams = await getUserTeams(db, userId);
 
-    // If no teams at all, create Clerk organization and personal team
+    // If no local teams, check Clerk for existing organizations first
     if (userTeams.length === 0) {
       const client = await clerkClient();
 
-      // Get user info to create username-based slug
+      // Check if user already has organizations in Clerk (Clerk is source of truth)
+      const clerkMemberships = await client.users.getOrganizationMembershipList(
+        {
+          userId,
+        },
+      );
+
+      if (clerkMemberships.data.length > 0) {
+        // User has Clerk orgs but no local teams - sync all orgs to local DB
+        for (const membership of clerkMemberships.data) {
+          const org = membership.organization;
+
+          await db
+            .insert(teams)
+            .values({
+              ownerId: userId,
+              clerkOrgId: org.id,
+              name: org.name,
+              slug: org.slug!,
+              isPersonal: false, // Existing Clerk orgs are not personal teams
+            })
+            .onConflictDoNothing();
+        }
+
+        // Redirect to first org
+        const firstOrg = clerkMemberships.data[0]!.organization;
+        redirect(`/${firstOrg.slug}`);
+      }
+
+      // No Clerk orgs exist - create new organization
       const user = await client.users.getUser(userId);
       const username =
         user.username ?? user.emailAddresses[0]?.emailAddress?.split("@")[0];
 
-      // Use username/email if available, otherwise use full ownerId (guaranteed unique)
       const personalSlug = username
         ? `${username.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-personal-team`
         : `${userId.replace("user_", "")}-personal-team`;
 
-      // Create Clerk organization with slug
       const org = await client.organizations.createOrganization({
         name: "Personal Team",
         slug: personalSlug,
         createdBy: userId,
       });
 
-      // Create personal team with Clerk org ID and our own slug
+      // Create personal team with Clerk org ID
       const [insertedTeam] = await db
         .insert(teams)
         .values({
           ownerId: userId,
           clerkOrgId: org.id,
           name: "Personal Team",
-          slug: personalSlug,
+          slug: org.slug!,
           isPersonal: true,
         })
         .onConflictDoNothing()
         .returning();
 
-      // If insert succeeded, redirect to new team
       if (insertedTeam) {
         redirect(`/${insertedTeam.slug}`);
       }
 
-      // If insert was skipped (conflict), fetch the existing personal team
+      // If insert was skipped (conflict), fetch existing
       const existingPersonalTeam = await db.query.teams.findFirst({
         where: and(eq(teams.ownerId, userId), eq(teams.isPersonal, true)),
       });

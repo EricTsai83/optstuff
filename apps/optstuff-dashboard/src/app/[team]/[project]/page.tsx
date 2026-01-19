@@ -1,11 +1,12 @@
 import { redirect, notFound } from "next/navigation";
 import { auth } from "@workspace/auth/server";
 import { db } from "@/server/db";
-import { teams, projects } from "@/server/db/schema";
+import { projects } from "@/server/db/schema";
 import { eq, and } from "drizzle-orm";
 import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
 import { ProjectDetailView } from "@/modules/project-detail";
+import { checkTeamAccessBySlug } from "@/server/lib/team-access";
 
 type PageProps = {
   params: Promise<{ team: string; project: string }>;
@@ -19,12 +20,10 @@ export default async function ProjectPage({ params }: PageProps) {
     redirect("/sign-in");
   }
 
-  // Get team by slug
-  const team = await db.query.teams.findFirst({
-    where: and(eq(teams.slug, teamSlug), eq(teams.ownerId, userId)),
-  });
+  // Check team access via Clerk membership (Clerk is source of truth)
+  const { hasAccess, team } = await checkTeamAccessBySlug(db, teamSlug, userId);
 
-  if (!team) {
+  if (!hasAccess || !team) {
     notFound();
   }
 
