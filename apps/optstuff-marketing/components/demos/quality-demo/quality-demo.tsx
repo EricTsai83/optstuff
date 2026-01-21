@@ -26,10 +26,7 @@ export function QualityDemo() {
   const savedPercentage = Math.round((1 - estimatedSize / baseSize) * 100);
 
   const optimizedImageUrl = useMemo(() => {
-    if (quality === 100) {
-      return `/api/optimize/q_100,f_webp,w_800/${QUALITY_DEMO_IMAGE}`;
-    }
-    return `/api/optimize/q_${quality},f_webp/${QUALITY_DEMO_IMAGE}`;
+    return `/api/optimize/q_${quality},f_webp,w_800/${QUALITY_DEMO_IMAGE}`;
   }, [quality]);
 
   const ipxSyntax = useMemo(() => `/q_${quality}/image.webp`, [quality]);

@@ -8,7 +8,7 @@ import {
 import { Label } from "@workspace/ui/components/label";
 import { Check, FileImage } from "lucide-react";
 import { CodeBlock } from "@workspace/ui/components/code-block";
-import { ORIGINAL_SIZE_KB, FORMAT_SIZES, DEMO_IMAGE_URL } from "./constants";
+import { ORIGINAL_SIZE_KB, FORMAT_SIZES, DEMO_IMAGE } from "./constants";
 import { DemoHeader, DemoLayout, ControlCard, ImagePreview } from "./layouts";
 
 const formats = [
@@ -88,7 +88,7 @@ export function FormatDemo() {
         </div>
 
         <ImagePreview
-          imageUrl={DEMO_IMAGE_URL}
+          imageUrl={`/${DEMO_IMAGE}`}
           imageAlt="Format conversion demo"
           containerClassName="flex-col"
           imageContainerClassName="bg-muted"

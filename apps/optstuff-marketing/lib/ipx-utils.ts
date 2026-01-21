@@ -30,17 +30,17 @@ export function restoreProtocolSlashes(path: string): string {
 }
 
 /**
- * Auto-complete protocol for URL path
+ * Auto-complete protocol for URL path (idempotent)
+ * - Already has http:// or https://: returns as-is
  * - localhost: adds http://
  * - other domains: adds https://
  *
- * @throws {Error} if path starts with https://, http://, or /
+ * @throws {Error} if path starts with / or has unsupported protocol
  */
 export function ensureProtocol(path: string): string {
+  // Already has http:// or https:// - return as-is (idempotent)
   if (path.startsWith("https://") || path.startsWith("http://")) {
-    throw new Error(
-      "Path cannot start with https:// or http://, please provide path without protocol",
-    );
+    return path;
   }
 
   if (path.startsWith("/")) {

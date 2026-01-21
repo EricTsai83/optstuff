@@ -25,33 +25,8 @@ export const FORMAT_SIZES = {
   avif: { size: "98 KB", savings: "81%" },
 } as const;
 
-/**
- * Get the base URL for image assets based on environment
- *
- * @param includeProtocol - Whether to include the protocol (http:// or https://)
- * @returns The domain with or without protocol
- */
-function getDomain(includeProtocol = false): string {
-  const domain =
-    process.env.NODE_ENV === "production"
-      ? "optstuff.vercel.app"
-      : "localhost:3024";
+/** Image filename for demos (local file in public directory) */
+export const DEMO_IMAGE = "demo-image.png";
 
-  if (!includeProtocol) {
-    return domain;
-  }
-
-  // localhost uses http://, other domains use https://
-  if (domain.startsWith("localhost")) {
-    return `http://${domain}`;
-  }
-
-  return `https://${domain}`;
-}
-
-/** Image path used in demos */
-export const DEMO_IMAGE = `${getDomain()}/demo-image.png`;
-
-export const DEMO_IMAGE_URL = `${getDomain(true)}/demo-image.png`;
-
-export const QUALITY_DEMO_IMAGE = `${getDomain()}/demo-image.webp`;
+/** Quality demo image filename (local file in public directory) */
+export const QUALITY_DEMO_IMAGE = "demo-image.webp";

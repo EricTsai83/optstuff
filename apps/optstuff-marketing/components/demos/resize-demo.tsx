@@ -90,7 +90,8 @@ export function ResizeDemo() {
 
   // Build image URL with resize parameters
   const resizedImageUrl = useMemo(() => {
-    const operations = [`s_${width}x${height}`, `fit_${fit}`];
+    const fitMode = FIT_MODES[fit];
+    const operations = [`s_${width}x${height}`, `fit_${fitMode}`];
     return `/api/optimize/${operations.join(",")}/${DEMO_IMAGE}`;
   }, [width, height, fit]);
 
@@ -184,7 +185,7 @@ export function ResizeDemo() {
 
           <ControlCard>
             <Label className="mb-2 text-sm font-medium">API URL</Label>
-            <CodeBlock content={`/s_${width}x${height},fit_${fit}/image.jpg`} />
+            <CodeBlock content={`/s_${width}x${height},fit_${FIT_MODES[fit]}/image.jpg`} />
           </ControlCard>
         </div>
 

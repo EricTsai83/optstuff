@@ -1,10 +1,8 @@
 import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
 
 import { ipx } from "@/lib/ipx-client";
 import {
   ensureUint8Array,
-  ensureProtocol,
   resolveContentType,
   parseIpxPath,
   parseOperationsString,
@@ -16,48 +14,44 @@ import {
  * Uses IPX native URL format:
  * /api/optimize/{operations}/{image_path}
  *
- * @example
- * /api/optimize/w_200/localhost:3024/demo-image.png
- * /api/optimize/w_200/example.com/image.jpg
- * /api/optimize/f_webp/example.com/image.jpg
- * /api/optimize/embed,f_webp,s_200x200/example.com/image.jpg
- * /api/optimize/_/example.com/image.jpg
+ * Only supports local files from the public directory.
+ * Remote URLs are rejected for security reasons.
+ *
+ * @example Local files (from public directory)
+ * /api/optimize/w_200/demo-image.png
+ * /api/optimize/f_webp,q_80/images/photo.jpg
  */
 
 export const dynamic = "force-dynamic";
 
 export async function GET(
-  request: NextRequest,
+  _: unknown,
   { params }: { params: Promise<{ path: string[] }> },
 ): Promise<Response> {
-  const resolvedParams = await params;
-  let imagePath: string | undefined;
-  let finalImagePath: string | undefined;
-
   try {
+    const resolvedParams = await params;
     const parsed = parseIpxPath(resolvedParams.path);
 
     if (!parsed) {
       return NextResponse.json(
         {
           error: "Invalid path format",
-          usage: "/api/optimize/{operations}/{image_url}",
+          usage: "/api/optimize/{operations}/{image_path}",
           examples: [
-            "/api/optimize/w_200/example.com/image.jpg",
-            "/api/optimize/f_webp,q_80/example.com/image.jpg",
-            "/api/optimize/_/example.com/image.jpg",
+            "/api/optimize/w_200/demo-image.png",
+            "/api/optimize/f_webp,q_80/images/photo.jpg",
+            "/api/optimize/_/logo.svg",
           ],
         },
         { status: 400 },
       );
     }
 
-    imagePath = parsed.imagePath;
     const operations = parseOperationsString(parsed.operations);
+    // Local files use "/" prefix for IPX file storage
+    const imagePath = `/${parsed.imagePath}`;
 
-    finalImagePath = ensureProtocol(imagePath);
-
-    const processedImage = await ipx(finalImagePath, operations).process();
+    const processedImage = await ipx(imagePath, operations).process();
     const imageData = ensureUint8Array(processedImage.data);
     const contentType = resolveContentType(processedImage.format ?? "webp");
 
@@ -70,10 +64,6 @@ export async function GET(
     });
   } catch (error) {
     console.error("Image processing error:", error);
-    console.error("Image path:", imagePath);
-    if (imagePath && finalImagePath !== imagePath) {
-      console.error("Resolved image path:", finalImagePath);
-    }
 
     const errorMessage = error instanceof Error ? error.message : String(error);
 
@@ -81,11 +71,6 @@ export async function GET(
       {
         error: "Image processing failed",
         details: errorMessage,
-        imagePath,
-        resolvedPath:
-          imagePath && finalImagePath !== imagePath
-            ? finalImagePath
-            : undefined,
       },
       { status: 500 },
     );
