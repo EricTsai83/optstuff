@@ -90,7 +90,8 @@ export function ResizeDemo() {
 
   // Build image URL with resize parameters
   const resizedImageUrl = useMemo(() => {
-    const operations = [`s_${width}x${height}`, `fit_${fit}`];
+    const fitMode = FIT_MODES[fit];
+    const operations = [`s_${width}x${height}`, `fit_${fitMode}`];
     return `/api/optimize/${operations.join(",")}/${DEMO_IMAGE}`;
   }, [width, height, fit]);
 
