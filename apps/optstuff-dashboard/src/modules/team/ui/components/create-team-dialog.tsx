@@ -35,12 +35,17 @@ export function CreateTeamDialog({
   const [slugError, setSlugError] = useState<string | null>(null);
   const utils = api.useUtils();
 
-  // Check slug availability
+  // Validate slug format using regex - must be lowercase letters, numbers, and hyphens only
+  // (no leading/trailing hyphens, no consecutive hyphens)
+  const slugRegex = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+  const isSlugFormatValid = slug.length >= 3 && slugRegex.test(slug);
+
+  // Check slug availability - only query when format is valid
   const { data: slugCheck, isFetching: isCheckingSlug } =
     api.team.checkSlugAvailable.useQuery(
       { slug },
       {
-        enabled: slug.length >= 3,
+        enabled: isSlugFormatValid,
         staleTime: 0,
       },
     );
@@ -105,14 +110,13 @@ export function CreateTeamDialog({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Validate slug format
-    if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) {
-      setSlugError("Slug must be lowercase letters, numbers, and hyphens only");
-      return;
-    }
-
-    if (slug.length < 3) {
-      setSlugError("Slug must be at least 3 characters");
+    // Validate slug format using the same regex
+    if (!isSlugFormatValid) {
+      if (slug.length < 3) {
+        setSlugError("Slug must be at least 3 characters");
+      } else {
+        setSlugError("Slug must be lowercase letters, numbers, and hyphens only");
+      }
       return;
     }
 
@@ -121,9 +125,11 @@ export function CreateTeamDialog({
     }
   };
 
-  const isSlugValid = slug.length >= 3 && slugCheck?.available && !slugError;
+  // isSlugValid now requires format validation in addition to availability
+  const isSlugValid = isSlugFormatValid && slugCheck?.available && !slugError;
   const isSlugInvalid =
-    slug.length >= 3 && (slugCheck?.available === false || slugError);
+    slug.length >= 3 &&
+    (!isSlugFormatValid || slugCheck?.available === false || !!slugError);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -206,6 +212,14 @@ export function CreateTeamDialog({
                   Slug must be at least 3 characters
                 </p>
               )}
+              {!slugError &&
+                slug.length >= 3 &&
+                !slugRegex.test(slug) && (
+                  <p className="text-destructive text-sm">
+                    Slug must start and end with a letter or number, and use
+                    single hyphens to separate words
+                  </p>
+                )}
             </div>
           </div>
           <DialogFooter>

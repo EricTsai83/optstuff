@@ -14,20 +14,13 @@ export function generateSlug(name: string): string {
 }
 
 /**
- * Generates a random hex string (works in both browser and Node.js).
+ * Generates a random hex string using Web Crypto API.
+ * Works in browsers and Node.js 15+.
  */
 function randomHex(bytes: number): string {
-  if (typeof crypto !== "undefined" && crypto.getRandomValues) {
-    // Browser environment
-    const array = new Uint8Array(bytes);
-    crypto.getRandomValues(array);
-    return Array.from(array, (b) => b.toString(16).padStart(2, "0")).join("");
-  } else {
-    // Node.js environment (fallback)
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { randomBytes } = require("crypto") as typeof import("crypto");
-    return randomBytes(bytes).toString("hex");
-  }
+  const array = new Uint8Array(bytes);
+  globalThis.crypto.getRandomValues(array);
+  return Array.from(array, (b) => b.toString(16).padStart(2, "0")).join("");
 }
 
 /**
