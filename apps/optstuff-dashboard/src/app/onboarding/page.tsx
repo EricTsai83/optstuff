@@ -1,4 +1,3 @@
-import { generateSlug } from "@/lib/slug";
 import { OnboardingForm } from "@/modules/onboarding/ui/components/onboarding-form";
 import { db } from "@/server/db";
 import { teams } from "@/server/db/schema";
@@ -30,11 +29,15 @@ export default async function OnboardingPage() {
     redirect(`/${existingPersonalTeam.slug}`);
   }
 
-  // Get user info from Clerk
+  // Get user info from Clerk to suggest team name
   const user = await currentUser();
-  const baseSlug = user?.username ? generateSlug(user.username) : "";
-  // Only use the slug if it's valid (at least 3 characters after conversion)
-  const suggestedSlug = baseSlug.length >= 3 ? `${baseSlug}-personal-team` : "";
+
+  // Build suggested name from user's profile
+  const suggestedName = user?.firstName
+    ? `${user.firstName}'s Team`
+    : user?.username
+      ? `${user.username}'s Team`
+      : "";
 
   return (
     <div className="bg-background flex min-h-screen items-center justify-center px-4">
@@ -49,7 +52,7 @@ export default async function OnboardingPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="px-6 py-4">
-          <OnboardingForm suggestedSlug={suggestedSlug} />
+          <OnboardingForm suggestedName={suggestedName} />
         </CardContent>
       </Card>
     </div>

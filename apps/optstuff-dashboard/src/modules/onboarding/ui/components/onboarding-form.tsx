@@ -1,82 +1,48 @@
 "use client";
 
+import { generateRandomSlug, generateSlug } from "@/lib/slug";
 import { api } from "@/trpc/react";
 import { Button } from "@workspace/ui/components/button";
 import { Input } from "@workspace/ui/components/input";
 import { Label } from "@workspace/ui/components/label";
-import { Check, Loader2, Shuffle, X } from "lucide-react";
+import { Check, Loader2, RefreshCw, X } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
-
-// Word lists for generating friendly random slugs
-const ADJECTIVES = [
-  "swift",
-  "bright",
-  "calm",
-  "clever",
-  "bold",
-  "gentle",
-  "happy",
-  "keen",
-  "lucky",
-  "neat",
-  "quick",
-  "smart",
-  "warm",
-  "wise",
-  "cool",
-  "fresh",
-  "kind",
-  "pure",
-  "safe",
-  "true",
-];
-
-const NOUNS = [
-  "fox",
-  "owl",
-  "wolf",
-  "bear",
-  "hawk",
-  "deer",
-  "hare",
-  "lynx",
-  "seal",
-  "crow",
-  "dove",
-  "frog",
-  "moth",
-  "swan",
-  "toad",
-  "wren",
-  "crab",
-  "duck",
-  "fish",
-  "goat",
-];
-
-function generateRandomSlug(): string {
-  const adjective = ADJECTIVES[Math.floor(Math.random() * ADJECTIVES.length)];
-  const noun = NOUNS[Math.floor(Math.random() * NOUNS.length)];
-  return `${adjective}-${noun}-personal-team`;
-}
+import { useEffect, useState } from "react";
 
 type OnboardingFormProps = {
-  readonly suggestedSlug: string;
+  readonly suggestedName?: string;
+  readonly suggestedSlug?: string;
 };
 
-export function OnboardingForm({ suggestedSlug }: OnboardingFormProps) {
+export function OnboardingForm({
+  suggestedName = "",
+  suggestedSlug = "",
+}: OnboardingFormProps) {
   const router = useRouter();
-  // If no suggested slug, generate a random one
-  const [slug, setSlug] = useState(() => suggestedSlug || generateRandomSlug());
+  const [name, setName] = useState(suggestedName);
+  const [slug, setSlug] = useState(
+    suggestedSlug || (suggestedName ? generateSlug(suggestedName) : ""),
+  );
+  const [slugTouched, setSlugTouched] = useState(false);
   const [slugError, setSlugError] = useState<string | null>(null);
   const [debouncedSlug, setDebouncedSlug] = useState(slug);
   const utils = api.useUtils();
 
-  const handleGenerateRandom = useCallback(() => {
-    const newSlug = generateRandomSlug();
-    setSlug(newSlug);
-  }, []);
+  // Validate slug format
+  const slugRegex = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+  const isSlugFormatValid = slug.length >= 3 && slugRegex.test(slug);
+
+  // Auto-generate slug from name if user hasn't manually edited it
+  useEffect(() => {
+    if (!slugTouched && name) {
+      setSlug(generateSlug(name));
+    }
+  }, [name, slugTouched]);
+
+  const handleGenerateRandomSlug = () => {
+    setSlug(generateRandomSlug());
+    setSlugTouched(true);
+  };
 
   // Debounce slug for availability check
   useEffect(() => {
@@ -86,12 +52,12 @@ export function OnboardingForm({ suggestedSlug }: OnboardingFormProps) {
     return () => clearTimeout(timer);
   }, [slug]);
 
-  // Check slug availability
+  // Check slug availability - only query when format is valid
   const { data: slugCheck, isFetching: isCheckingSlug } =
     api.team.checkSlugAvailable.useQuery(
       { slug: debouncedSlug },
       {
-        enabled: debouncedSlug.length >= 3,
+        enabled: isSlugFormatValid && debouncedSlug === slug,
         staleTime: 0,
       },
     );
@@ -125,21 +91,23 @@ export function OnboardingForm({ suggestedSlug }: OnboardingFormProps) {
     // Only allow lowercase letters, numbers, and hyphens
     const sanitized = value.toLowerCase().replace(/[^a-z0-9-]/g, "");
     setSlug(sanitized);
+    setSlugTouched(true);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Validate slug format
-    if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) {
-      setSlugError(
-        "Slug must be lowercase letters, numbers, and hyphens only (cannot start or end with hyphen)",
-      );
+    if (!name.trim()) {
       return;
     }
 
-    if (slug.length < 3) {
-      setSlugError("Slug must be at least 3 characters");
+    // Validate slug format
+    if (!isSlugFormatValid) {
+      if (slug.length < 3) {
+        setSlugError("Slug must be at least 3 characters");
+      } else {
+        setSlugError("Slug must be lowercase letters, numbers, and hyphens only");
+      }
       return;
     }
 
@@ -148,66 +116,84 @@ export function OnboardingForm({ suggestedSlug }: OnboardingFormProps) {
       return;
     }
 
-    createPersonalTeam({ slug });
+    createPersonalTeam({ name: name.trim(), slug });
   };
 
   const isSlugValid =
-    slug.length >= 3 &&
+    isSlugFormatValid &&
     slug === debouncedSlug &&
     slugCheck?.available &&
     !slugError;
   const isSlugInvalid =
     slug.length >= 3 &&
     slug === debouncedSlug &&
-    (slugCheck?.available === false || slugError);
+    (!isSlugFormatValid || slugCheck?.available === false || !!slugError);
 
   return (
     <>
       <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Team Name Input */}
         <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <Label htmlFor="team-slug">Team URL</Label>
+          <Label htmlFor="team-name">Team Name</Label>
+          <Input
+            id="team-name"
+            placeholder="My Personal Team"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            disabled={isPending}
+            autoFocus
+          />
+        </div>
+
+        {/* Team URL Input */}
+        <div className="space-y-2">
+          <Label htmlFor="team-slug">Team URL</Label>
+          <div className="flex gap-2">
+            <div className="relative flex-1">
+              <span className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-sm select-none">
+                /
+              </span>
+              <Input
+                id="team-slug"
+                placeholder="my-personal-team"
+                value={slug}
+                onChange={(e) => handleSlugChange(e.target.value)}
+                disabled={isPending}
+                className="pr-10 pl-6"
+              />
+              {slug.length >= 3 && (
+                <span className="absolute top-1/2 right-3 -translate-y-1/2">
+                  {isCheckingSlug || slug !== debouncedSlug ? (
+                    <Loader2 className="text-muted-foreground h-4 w-4 animate-spin" />
+                  ) : isSlugValid ? (
+                    <Check className="h-4 w-4 text-green-500" />
+                  ) : isSlugInvalid ? (
+                    <X className="h-4 w-4 text-red-500" />
+                  ) : null}
+                </span>
+              )}
+            </div>
             <Button
               type="button"
-              variant="ghost"
-              size="sm"
-              className="text-muted-foreground hover:text-foreground h-auto px-2 py-1 text-xs"
-              onClick={handleGenerateRandom}
+              variant="outline"
+              size="icon"
+              onClick={handleGenerateRandomSlug}
               disabled={isPending}
+              title="Generate random slug"
             >
-              <Shuffle className="mr-1 h-3 w-3" />
-              Random
+              <RefreshCw className="h-4 w-4" />
             </Button>
-          </div>
-          <div className="relative">
-            <span className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-sm select-none">
-              optstuff.com/
-            </span>
-            <Input
-              id="team-slug"
-              placeholder="your-team"
-              value={slug}
-              onChange={(e) => handleSlugChange(e.target.value)}
-              disabled={isPending}
-              className="pr-10 pl-[104px]"
-              autoFocus
-            />
-            {slug.length >= 3 && (
-              <span className="absolute top-1/2 right-3 -translate-y-1/2">
-                {isCheckingSlug || slug !== debouncedSlug ? (
-                  <Loader2 className="text-muted-foreground h-4 w-4 animate-spin" />
-                ) : isSlugValid ? (
-                  <Check className="h-4 w-4 text-green-500" />
-                ) : isSlugInvalid ? (
-                  <X className="h-4 w-4 text-red-500" />
-                ) : null}
-              </span>
-            )}
           </div>
           {/* Fixed height container to prevent layout shift */}
           <p className="h-5 text-sm">
             {slugError ? (
               <span className="text-destructive">{slugError}</span>
+            ) : !slugError &&
+              slug.length >= 3 &&
+              !slugRegex.test(slug) ? (
+              <span className="text-destructive">
+                Slug must start and end with a letter or number
+              </span>
             ) : !slugError &&
               slug.length >= 3 &&
               slug === debouncedSlug &&
@@ -224,11 +210,12 @@ export function OnboardingForm({ suggestedSlug }: OnboardingFormProps) {
             ) : null}
           </p>
         </div>
+
         <div className="py-2">
           <Button
             type="submit"
             className="w-full"
-            disabled={isPending || !isSlugValid}
+            disabled={isPending || !name.trim() || !isSlugValid}
           >
             {isPending ? (
               <>
