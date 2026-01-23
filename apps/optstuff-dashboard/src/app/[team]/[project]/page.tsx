@@ -1,4 +1,3 @@
-import { Footer } from "@/components/footer";
 import { Header } from "@/components/header";
 import { ProjectDetailView } from "@/modules/project-detail";
 import { db } from "@/server/db";
@@ -41,7 +40,6 @@ export default async function ProjectPage({ params }: PageProps) {
     <div className="bg-background flex min-h-screen flex-col">
       <Header teamSlug={teamSlug} />
       <ProjectDetailView project={project} team={team} />
-      <Footer />
     </div>
   );
 }

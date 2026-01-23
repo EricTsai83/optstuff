@@ -161,6 +161,7 @@ export function TeamSettings({
               <AlertDialog
                 open={isDeleteDialogOpen}
                 onOpenChange={(open) => {
+                  if (!open && isDeleting) return; // Prevent closing while deleting
                   setIsDeleteDialogOpen(open);
                   if (!open) setConfirmText("");
                 }}
