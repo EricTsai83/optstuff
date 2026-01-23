@@ -113,19 +113,7 @@ export const teamRouter = createTRPCRouter({
         });
       }
 
-      // Check if slug is available
-      const existingTeamWithSlug = await db.query.teams.findFirst({
-        where: eq(teams.slug, input.slug),
-      });
-
-      if (existingTeamWithSlug) {
-        throw new TRPCError({
-          code: "CONFLICT",
-          message: "This slug is already taken. Please choose a different one.",
-        });
-      }
-
-      // Create personal team with custom slug
+      // Create personal team with custom slug using onConflictDoNothing to handle race conditions
       const [newTeam] = await db
         .insert(teams)
         .values({
@@ -134,7 +122,15 @@ export const teamRouter = createTRPCRouter({
           slug: input.slug,
           isPersonal: true,
         })
+        .onConflictDoNothing()
         .returning();
+
+      if (!newTeam) {
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: "This slug is already taken. Please choose a different one.",
+        });
+      }
 
       return newTeam;
     }),
@@ -230,19 +226,7 @@ export const teamRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      // Check if slug already exists
-      const existingTeam = await ctx.db.query.teams.findFirst({
-        where: eq(teams.slug, input.slug),
-      });
-
-      if (existingTeam) {
-        throw new TRPCError({
-          code: "CONFLICT",
-          message: "This slug is already taken. Please choose a different one.",
-        });
-      }
-
-      // Create local team record
+      // Create local team record using onConflictDoNothing to handle race conditions
       const [newTeam] = await ctx.db
         .insert(teams)
         .values({
@@ -251,7 +235,15 @@ export const teamRouter = createTRPCRouter({
           slug: input.slug,
           isPersonal: false,
         })
+        .onConflictDoNothing()
         .returning();
+
+      if (!newTeam) {
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: "This slug is already taken. Please choose a different one.",
+        });
+      }
 
       return newTeam;
     }),
