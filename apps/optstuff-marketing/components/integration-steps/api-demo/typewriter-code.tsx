@@ -37,7 +37,7 @@ export function TypewriterCode({
       <pre className="scrollbar-hide overflow-x-auto">
         <code className="font-mono text-[10px] leading-relaxed sm:text-sm">
           <SyntaxHighlight code={displayedCode} isResponse={isResponse} />
-          <span className="animate-pulse text-accent">▊</span>
+          <span className="text-accent animate-pulse">▊</span>
         </code>
       </pre>
     </div>

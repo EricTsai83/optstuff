@@ -1,9 +1,5 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import Link from "next/link";
-import { Github } from "lucide-react";
-import { Button } from "@workspace/ui/components/button";
 import {
   ClerkLoaded,
   ClerkLoading,
@@ -11,7 +7,11 @@ import {
   SignedOut,
   SignOutButton,
 } from "@workspace/auth/client";
+import { Button } from "@workspace/ui/components/button";
 import { cn } from "@workspace/ui/lib/utils";
+import { Github } from "lucide-react";
+import Link from "next/link";
+import { useEffect, useState } from "react";
 
 type NavigationItem = {
   readonly href: string;
@@ -55,7 +55,7 @@ export function MobileSidebar({
       {/* Overlay backdrop */}
       <div
         className={cn(
-          "fixed inset-0 z-40 bg-background/80 backdrop-blur-sm transition-opacity duration-300",
+          "bg-background/80 fixed inset-0 z-40 backdrop-blur-sm transition-opacity duration-300",
           isOpen
             ? "pointer-events-auto opacity-100"
             : "pointer-events-none opacity-0",
@@ -67,8 +67,8 @@ export function MobileSidebar({
       {/* Sidebar panel */}
       <aside
         className={cn(
-          "fixed right-0 top-0 z-45 h-full w-[280px] bg-background/95 backdrop-blur-xl transition-transform duration-300 ease-out",
-          "border-l border-border/50 shadow-2xl",
+          "bg-background/95 fixed top-0 right-0 z-45 h-full w-[280px] backdrop-blur-xl transition-transform duration-300 ease-out",
+          "border-border/50 border-l shadow-2xl",
           isOpen ? "translate-x-0" : "translate-x-full",
         )}
         aria-label="Mobile navigation"
@@ -83,7 +83,7 @@ export function MobileSidebar({
                 href={item.href}
                 onClick={onClose}
                 className={cn(
-                  "group flex items-center justify-between border-b border-border/30 py-4 text-lg font-medium text-foreground transition-all hover:text-accent",
+                  "group border-border/30 text-foreground hover:text-accent flex items-center justify-between border-b py-4 text-lg font-medium transition-all",
                   "transform",
                   shouldAnimate
                     ? "translate-x-0 opacity-100"
@@ -106,7 +106,7 @@ export function MobileSidebar({
           {/* Bottom section: GitHub + Auth */}
           <div
             className={cn(
-              "mt-auto border-t border-border/30 p-6 transition-all duration-300",
+              "border-border/30 mt-auto border-t p-6 transition-all duration-300",
               shouldAnimate
                 ? "translate-y-0 opacity-100"
                 : "translate-y-4 opacity-0",
@@ -194,8 +194,8 @@ function MobileAuthButtons({ onNavClick }: MobileAuthButtonsProps) {
 function MobileAuthSkeleton() {
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex h-11 items-center justify-center rounded-lg border border-border bg-muted/50">
-        <div className="h-3 w-16 animate-pulse rounded bg-muted-foreground/20" />
+      <div className="border-border bg-muted/50 flex h-11 items-center justify-center rounded-lg border">
+        <div className="bg-muted-foreground/20 h-3 w-16 animate-pulse rounded" />
       </div>
     </div>
   );

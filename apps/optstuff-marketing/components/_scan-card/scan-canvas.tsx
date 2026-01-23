@@ -1,13 +1,13 @@
 "use client";
 
-import { useEffect, useRef, useCallback } from "react";
-import {
-  drawRoundedRect,
-  drawLandscape,
-  drawStatusBadge,
-  drawFileSizeDisplay,
-} from "./canvas-utils";
 import { useScanAnimation } from "@/components/_scan-card/use-scan-animation";
+import { useCallback, useEffect, useRef } from "react";
+import {
+  drawFileSizeDisplay,
+  drawLandscape,
+  drawRoundedRect,
+  drawStatusBadge,
+} from "./canvas-utils";
 
 type AnimationState = {
   readonly scanProgress: number;

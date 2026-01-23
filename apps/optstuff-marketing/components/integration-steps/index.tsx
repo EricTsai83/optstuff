@@ -1,16 +1,16 @@
 "use client";
 
-import { Terminal } from "lucide-react";
 import { cn } from "@workspace/ui/lib/utils";
+import { Terminal } from "lucide-react";
 
-import { STEPS } from "./constants";
+import { SectionHeader, SectionWrapper } from "@/components/ui/section";
 import { useIntersectionVisibility } from "@/hooks/use-intersection-visibility";
+import { STEPS } from "./constants";
 import {
   CreateProjectVisual,
-  SetupProjectVisual,
   OptimizeVisual,
+  SetupProjectVisual,
 } from "./step-visuals";
-import { SectionWrapper, SectionHeader } from "@/components/ui/section";
 
 export function IntegrationSteps() {
   const { visibleItems: visibleSteps, setItemRef: setStepRef } =
@@ -52,7 +52,7 @@ export function IntegrationSteps() {
               {!isLast && (
                 <div
                   className={cn(
-                    "absolute left-4 top-10 h-[calc(100%-2.5rem)] w-0.5 transition-all duration-1000 sm:left-5 sm:top-12 sm:h-[calc(100%-3rem)] md:left-6",
+                    "absolute top-10 left-4 h-[calc(100%-2.5rem)] w-0.5 transition-all duration-1000 sm:top-12 sm:left-5 sm:h-[calc(100%-3rem)] md:left-6",
                     isVisible ? "bg-accent/30" : "bg-border/30",
                   )}
                   style={{ transitionDelay: `${index * 200 + 300}ms` }}

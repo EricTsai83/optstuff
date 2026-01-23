@@ -1,31 +1,159 @@
-import { eq, and, inArray } from "drizzle-orm";
-import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { clerkClient, auth } from "@workspace/auth/server";
+import { and, desc, eq } from "drizzle-orm";
+import { z } from "zod";
 
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
 import { teams } from "@/server/db/schema";
-import { generateSlug } from "@/lib/slug";
-import { syncUserTeams } from "@/server/lib/team-sync";
+
+/**
+ * Generate a short random suffix for slug collision handling.
+ */
+function generateRandomSuffix(length = 4): string {
+  const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
+  let result = "";
+  for (let i = 0; i < length; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return result;
+}
+
+const MAX_SLUG_RETRIES = 5;
+
+/**
+ * Shared Zod schema for team slug validation.
+ * Reused across create, createPersonalTeam, and checkSlugAvailable procedures.
+ */
+const slugSchema = z
+  .string()
+  .min(3)
+  .max(50)
+  .regex(
+    /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
+    "Slug must be lowercase letters, numbers, and hyphens only",
+  );
 
 export const teamRouter = createTRPCRouter({
   /**
    * Get or create the user's personal team.
-   * Clerk is the source of truth - check Clerk first, then sync to local DB.
+   * Guarantees returning a team or throwing an error - never returns null.
    */
   ensurePersonalTeam: protectedProcedure.mutation(async ({ ctx }) => {
     const { userId, db } = ctx;
 
-    // Check local DB first
+    // Check if user already has a personal team
     const existingTeam = await db.query.teams.findFirst({
       where: and(eq(teams.ownerId, userId), eq(teams.isPersonal, true)),
     });
 
     if (existingTeam) return existingTeam;
 
-    // Sync from Clerk or create personal team
-    return syncUserTeams(db, userId);
+    // Try to create personal team with retry logic for slug collisions
+    const baseSlug = `${userId.replace("user_", "")}-personal`;
+
+    for (let attempt = 0; attempt < MAX_SLUG_RETRIES; attempt++) {
+      const personalSlug =
+        attempt === 0 ? baseSlug : `${baseSlug}-${generateRandomSuffix()}`;
+
+      const [newTeam] = await db
+        .insert(teams)
+        .values({
+          ownerId: userId,
+          name: "Personal Team",
+          slug: personalSlug,
+          isPersonal: true,
+        })
+        .onConflictDoNothing()
+        .returning();
+
+      if (newTeam) return newTeam;
+
+      // Check if another request already created the personal team for this user
+      // (conflict might be on ownerId+isPersonal constraint, not just slug)
+      const concurrentlyCreatedTeam = await db.query.teams.findFirst({
+        where: and(eq(teams.ownerId, userId), eq(teams.isPersonal, true)),
+      });
+
+      if (concurrentlyCreatedTeam) return concurrentlyCreatedTeam;
+
+      // Slug collision with another user's team, retry with new suffix
+    }
+
+    // Final fallback: query for existing personal team one more time
+    const fallbackTeam = await db.query.teams.findFirst({
+      where: and(eq(teams.ownerId, userId), eq(teams.isPersonal, true)),
+    });
+
+    if (fallbackTeam) return fallbackTeam;
+
+    // If we still can't create or find a personal team, throw an error
+    throw new TRPCError({
+      code: "INTERNAL_SERVER_ERROR",
+      message:
+        "Failed to create personal team after multiple attempts. Please try again.",
+    });
   }),
+
+  /**
+   * Create the user's personal team with a custom slug.
+   * Used during onboarding when user chooses their slug.
+   */
+  createPersonalTeam: protectedProcedure
+    .input(
+      z.object({
+        slug: slugSchema,
+        name: z.string().min(1).max(255).optional(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const { userId, db } = ctx;
+
+      // Check if user already has a personal team
+      const existingPersonalTeam = await db.query.teams.findFirst({
+        where: and(eq(teams.ownerId, userId), eq(teams.isPersonal, true)),
+      });
+
+      if (existingPersonalTeam) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "You already have a personal team.",
+        });
+      }
+
+      // Create personal team with custom slug using onConflictDoNothing to handle race conditions
+      const [newTeam] = await db
+        .insert(teams)
+        .values({
+          ownerId: userId,
+          name: input.name ?? "Personal Team",
+          slug: input.slug,
+          isPersonal: true,
+        })
+        .onConflictDoNothing()
+        .returning();
+
+      if (!newTeam) {
+        // Check if conflict was due to ownerId+isPersonal constraint (race condition)
+        // or due to slug collision
+        const concurrentlyCreatedTeam = await db.query.teams.findFirst({
+          where: and(eq(teams.ownerId, userId), eq(teams.isPersonal, true)),
+        });
+
+        if (concurrentlyCreatedTeam) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "You already have a personal team.",
+          });
+        }
+
+        // Slug collision with another team
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: "This slug is already taken. Please choose a different one.",
+        });
+      }
+
+      return newTeam;
+    }),
 
   /**
    * Get the user's personal team.
@@ -40,38 +168,18 @@ export const teamRouter = createTRPCRouter({
   }),
 
   /**
-   * List all teams the user has access to via Clerk memberships.
-   * Note: This requires Clerk API call as we need ALL teams, not just active one.
+   * List all teams the user owns.
    */
   list: protectedProcedure.query(async ({ ctx }) => {
-    const client = await clerkClient();
-
-    // Get all organization memberships for the user from Clerk
-    const memberships = await client.users.getOrganizationMembershipList({
-      userId: ctx.userId,
-    });
-
-    if (!memberships.data || memberships.data.length === 0) {
-      return [];
-    }
-
-    // Extract org IDs and create a map of orgId -> role
-    const orgRoleMap = new Map<string, string>();
-    for (const membership of memberships.data) {
-      orgRoleMap.set(membership.organization.id, membership.role);
-    }
-
-    const orgIds = Array.from(orgRoleMap.keys());
-
-    // Query local teams that match these Clerk org IDs
     const userTeams = await ctx.db.query.teams.findMany({
-      where: inArray(teams.clerkOrgId, orgIds),
+      where: eq(teams.ownerId, ctx.userId),
+      orderBy: [desc(teams.createdAt)],
     });
 
-    // Add role to each team and sort
+    // Add role to each team (owner for all since we only support single owner now)
     const teamsWithRole = userTeams.map((team) => ({
       ...team,
-      role: orgRoleMap.get(team.clerkOrgId) ?? "org:member",
+      role: "org:admin" as const,
     }));
 
     // Sort: personal teams first, then by createdAt descending
@@ -84,19 +192,17 @@ export const teamRouter = createTRPCRouter({
 
   /**
    * Get a specific team by ID.
-   * Uses session's orgId to verify access (no Clerk API call).
+   * Verifies the user owns the team.
    */
   get: protectedProcedure
     .input(z.object({ teamId: z.string().uuid() }))
     .query(async ({ ctx, input }) => {
-      const { orgId } = await auth();
-
       const team = await ctx.db.query.teams.findFirst({
         where: eq(teams.id, input.teamId),
       });
 
-      // Verify the team belongs to user's active organization
-      if (!team || team.clerkOrgId !== orgId) {
+      // Verify the user owns this team
+      if (!team || team.ownerId !== ctx.userId) {
         return null;
       }
 
@@ -105,24 +211,17 @@ export const teamRouter = createTRPCRouter({
 
   /**
    * Get a team by its slug.
-   * Uses session's orgSlug to verify access (no Clerk API call).
+   * Verifies the user owns the team.
    */
   getBySlug: protectedProcedure
     .input(z.object({ slug: z.string() }))
     .query(async ({ ctx, input }) => {
-      const { orgSlug, orgId } = await auth();
-
-      // Quick check: if slug doesn't match active org, deny access
-      if (orgSlug !== input.slug) {
-        return null;
-      }
-
       const team = await ctx.db.query.teams.findFirst({
         where: eq(teams.slug, input.slug),
       });
 
-      // Double-check orgId matches for security
-      if (!team || team.clerkOrgId !== orgId) {
+      // Verify the user owns this team
+      if (!team || team.ownerId !== ctx.userId) {
         return null;
       }
 
@@ -130,41 +229,53 @@ export const teamRouter = createTRPCRouter({
     }),
 
   /**
-   * Create a new team.
-   * Creates a Clerk Organization first (source of truth), then syncs to local database.
+   * Create a new team with custom slug.
    */
   create: protectedProcedure
-    .input(z.object({ name: z.string().min(1).max(255) }))
+    .input(
+      z.object({
+        name: z.string().min(1).max(255),
+        slug: slugSchema,
+      }),
+    )
     .mutation(async ({ ctx, input }) => {
-      // Generate a simple slug from the name
-      const slug = generateSlug(input.name);
-
-      // Create Clerk organization first (Clerk is source of truth)
-      const client = await clerkClient();
-      const org = await client.organizations.createOrganization({
-        name: input.name,
-        slug,
-        createdBy: ctx.userId,
-      });
-
-      // Create local team record using Clerk's slug
+      // Create local team record using onConflictDoNothing to handle race conditions
       const [newTeam] = await ctx.db
         .insert(teams)
         .values({
           ownerId: ctx.userId,
-          clerkOrgId: org.id,
           name: input.name,
-          slug: org.slug!,
+          slug: input.slug,
           isPersonal: false,
         })
+        .onConflictDoNothing()
         .returning();
+
+      if (!newTeam) {
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: "This slug is already taken. Please choose a different one.",
+        });
+      }
 
       return newTeam;
     }),
 
   /**
+   * Check if a slug is available.
+   */
+  checkSlugAvailable: protectedProcedure
+    .input(z.object({ slug: slugSchema }))
+    .query(async ({ ctx, input }) => {
+      const existingTeam = await ctx.db.query.teams.findFirst({
+        where: eq(teams.slug, input.slug),
+      });
+      return { available: !existingTeam };
+    }),
+
+  /**
    * Update a team's name.
-   * Only org:admin can update. Uses has() to check role.
+   * Only the owner can update.
    */
   update: protectedProcedure
     .input(
@@ -174,36 +285,19 @@ export const teamRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const { has, orgId } = await auth();
-
-      // Use has() to check admin role (reads from session token, no API call)
-      if (!has({ role: "org:admin" })) {
-        throw new TRPCError({
-          code: "FORBIDDEN",
-          message: "Admin role required",
-        });
-      }
-
-      // Verify team belongs to user's active organization
+      // Verify user owns this team
       const team = await ctx.db.query.teams.findFirst({
         where: eq(teams.id, input.teamId),
       });
 
-      if (!team || team.clerkOrgId !== orgId) {
+      if (!team || team.ownerId !== ctx.userId) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Team not found" });
       }
 
-      // Update Clerk organization first (source of truth)
-      const client = await clerkClient();
-      const updatedOrg = await client.organizations.updateOrganization(
-        team.clerkOrgId,
-        { name: input.name },
-      );
-
-      // Sync to local DB using Clerk's data
+      // Update local DB
       const [updatedTeam] = await ctx.db
         .update(teams)
-        .set({ name: updatedOrg.name })
+        .set({ name: input.name })
         .where(eq(teams.id, input.teamId))
         .returning();
 
@@ -211,109 +305,18 @@ export const teamRouter = createTRPCRouter({
     }),
 
   /**
-   * Sync a Clerk organization to the local database.
-   * Called when a new organization is detected via Clerk UI components.
-   * Clerk is the source of truth - local slug must match Clerk's slug.
-   */
-  syncFromClerk: protectedProcedure
-    .input(
-      z.object({
-        clerkOrgId: z.string().min(1),
-        name: z.string().min(1).max(255),
-        slug: z.string().min(1).max(255),
-      }),
-    )
-    .mutation(async ({ ctx, input }) => {
-      // Verify user has membership in the provided Clerk organization
-      const client = await clerkClient();
-      const memberships = await client.users.getOrganizationMembershipList({
-        userId: ctx.userId,
-      });
-
-      const hasAccess = memberships.data.some(
-        (membership) => membership.organization.id === input.clerkOrgId,
-      );
-
-      if (!hasAccess) {
-        throw new TRPCError({
-          code: "FORBIDDEN",
-          message: "You do not have access to this organization",
-        });
-      }
-
-      // Check if team already exists by clerkOrgId
-      const existingTeam = await ctx.db.query.teams.findFirst({
-        where: eq(teams.clerkOrgId, input.clerkOrgId),
-      });
-
-      if (existingTeam) {
-        // Update existing team to match Clerk's data
-        const [updatedTeam] = await ctx.db
-          .update(teams)
-          .set({ name: input.name, slug: input.slug })
-          .where(eq(teams.clerkOrgId, input.clerkOrgId))
-          .returning();
-
-        return updatedTeam;
-      }
-
-      // Check if a team with this slug already exists (orphaned record)
-      const orphanedTeam = await ctx.db.query.teams.findFirst({
-        where: eq(teams.slug, input.slug),
-      });
-
-      if (orphanedTeam) {
-        // Update orphaned team to link with this Clerk org
-        const [updatedTeam] = await ctx.db
-          .update(teams)
-          .set({
-            clerkOrgId: input.clerkOrgId,
-            name: input.name,
-          })
-          .where(eq(teams.id, orphanedTeam.id))
-          .returning();
-
-        return updatedTeam;
-      }
-
-      // Create new team record
-      const [newTeam] = await ctx.db
-        .insert(teams)
-        .values({
-          clerkOrgId: input.clerkOrgId,
-          ownerId: ctx.userId,
-          name: input.name,
-          slug: input.slug,
-          isPersonal: false,
-        })
-        .returning();
-
-      return newTeam;
-    }),
-
-  /**
    * Delete a team (non-personal only).
-   * Only org:admin can delete. Uses has() to check role.
+   * Only the owner can delete.
    */
   delete: protectedProcedure
     .input(z.object({ teamId: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {
-      const { has, orgId } = await auth();
-
-      // Use has() to check admin role (reads from session token, no API call)
-      if (!has({ role: "org:admin" })) {
-        throw new TRPCError({
-          code: "FORBIDDEN",
-          message: "Admin role required",
-        });
-      }
-
-      // Verify team belongs to user's active organization
+      // Verify user owns this team
       const team = await ctx.db.query.teams.findFirst({
         where: eq(teams.id, input.teamId),
       });
 
-      if (!team || team.clerkOrgId !== orgId) {
+      if (!team || team.ownerId !== ctx.userId) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Team not found" });
       }
 
@@ -324,11 +327,7 @@ export const teamRouter = createTRPCRouter({
         });
       }
 
-      // Delete from Clerk first (source of truth)
-      const client = await clerkClient();
-      await client.organizations.deleteOrganization(team.clerkOrgId);
-
-      // Only delete local record after Clerk deletion succeeds
+      // Delete local record
       await ctx.db.delete(teams).where(eq(teams.id, input.teamId));
       return { success: true };
     }),

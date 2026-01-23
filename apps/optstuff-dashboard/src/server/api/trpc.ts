@@ -10,8 +10,8 @@ import { initTRPC, TRPCError } from "@trpc/server";
 import superjson from "superjson";
 import { ZodError } from "zod";
 
-import { auth } from "@workspace/auth/server";
 import { db } from "@/server/db";
+import { auth } from "@workspace/auth/server";
 
 /**
  * 1. CONTEXT
@@ -110,10 +110,10 @@ export const publicProcedure = t.procedure.use(timingMiddleware);
  * Auth middleware for protected procedures.
  *
  * This middleware checks if the user is authenticated via Clerk and adds
- * the userId and orgId to the context.
+ * the userId to the context.
  */
 const authMiddleware = t.middleware(async ({ ctx, next }) => {
-  const { userId, orgId } = await auth();
+  const { userId } = await auth();
 
   if (!userId) {
     throw new TRPCError({ code: "UNAUTHORIZED" });
@@ -123,7 +123,6 @@ const authMiddleware = t.middleware(async ({ ctx, next }) => {
     ctx: {
       ...ctx,
       userId,
-      orgId: orgId ?? null,
     },
   });
 });

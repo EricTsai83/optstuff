@@ -1,5 +1,3 @@
-import { randomBytes } from "crypto";
-
 /**
  * Normalizes a slug by converting to lowercase and stripping leading/trailing hyphens.
  */
@@ -16,6 +14,16 @@ export function generateSlug(name: string): string {
 }
 
 /**
+ * Generates a random hex string using Web Crypto API.
+ * Works in browsers and Node.js 15+.
+ */
+function randomHex(bytes: number): string {
+  const array = new Uint8Array(bytes);
+  globalThis.crypto.getRandomValues(array);
+  return Array.from(array, (b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+/**
  * Generates a unique slug by appending a timestamp and a random suffix.
  * If the name produces an empty slug, uses "item" as a fallback.
  */
@@ -28,7 +36,16 @@ export function generateUniqueSlug(name: string): string {
   }
 
   const timestamp = Date.now().toString(36);
-  const randomSuffix = randomBytes(4).toString("hex");
+  const randomSuffix = randomHex(4);
 
   return normalizeSlug(`${baseSlug}-${timestamp}-${randomSuffix}`);
+}
+
+/**
+ * Generates a random slug with optional prefix.
+ * Useful for generating team slugs on the client side.
+ */
+export function generateRandomSlug(prefix = "team"): string {
+  const randomSuffix = randomHex(4);
+  return `${prefix}-${randomSuffix}`;
 }

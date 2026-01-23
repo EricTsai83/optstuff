@@ -1,8 +1,8 @@
 "use client";
 
+import { SCROLL_CONFIG } from "@/modules/team/constants";
 import { useScroll } from "@workspace/hooks/use-scroll";
 import { LogoIcon } from "@workspace/ui/components/logo";
-import { SCROLL_CONFIG } from "@/modules/team/constants";
 import { cn } from "@workspace/ui/lib/utils";
 
 export function AnimatedLogo() {

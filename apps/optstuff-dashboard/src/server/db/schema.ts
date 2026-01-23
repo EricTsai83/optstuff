@@ -19,28 +19,22 @@ export const createTable = pgTableCreator((name) => `optstuff_${name}`);
 // ============================================================================
 
 /**
- * Teams table - local cache synced with Clerk Organizations.
+ * Teams table - fully managed by the application.
  *
- * Clerk is the Single Source of Truth for:
- * - Organization membership (who can access)
- * - Organization name and slug
- * - Member roles (admin/member)
+ * Access control is based on ownerId. Future: TeamMembership table for invites.
  *
- * Local-only fields:
- * - ownerId: Tracks who created the team locally (for personal team lookup)
- * - isPersonal: App-level concept, not in Clerk
- *
- * Access control should ALWAYS use Clerk membership, NOT ownerId.
+ * Fields:
+ * - ownerId: User who created and owns the team (used for access control)
+ * - isPersonal: Whether this is the user's personal team
  */
 export const teams = createTable(
   "team",
   (d) => ({
     id: d.uuid().primaryKey().defaultRandom(),
-    clerkOrgId: d.varchar({ length: 255 }).notNull().unique(), // Links to Clerk Organization (source of truth)
-    ownerId: d.varchar({ length: 255 }).notNull(), // Clerk user ID who created this team locally (NOT for access control)
-    name: d.varchar({ length: 255 }).notNull(), // Cached from Clerk
-    slug: d.varchar({ length: 255 }).notNull().unique(), // Cached from Clerk
-    isPersonal: d.boolean().default(false).notNull(), // Local-only: is this user's personal team?
+    ownerId: d.varchar({ length: 255 }).notNull(), // User ID who owns this team (used for access control)
+    name: d.varchar({ length: 255 }).notNull(),
+    slug: d.varchar({ length: 255 }).notNull().unique(),
+    isPersonal: d.boolean().default(false).notNull(), // Is this user's personal team?
     createdAt: d.timestamp({ withTimezone: true }).defaultNow().notNull(),
     updatedAt: d.timestamp({ withTimezone: true }).$onUpdate(() => new Date()),
   }),

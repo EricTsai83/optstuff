@@ -1,11 +1,10 @@
-import { redirect, notFound } from "next/navigation";
-import { eq, and } from "drizzle-orm";
-import { auth } from "@workspace/auth/server";
-import { db } from "@/server/db";
-import { teams, projects } from "@/server/db/schema";
 import { Header } from "@/components/header";
-import { Footer } from "@/components/footer";
 import { ProjectDetailView } from "@/modules/project-detail";
+import { db } from "@/server/db";
+import { projects, teams } from "@/server/db/schema";
+import { auth } from "@workspace/auth/server";
+import { and, eq } from "drizzle-orm";
+import { notFound, redirect } from "next/navigation";
 
 type PageProps = {
   params: Promise<{ team: string; project: string }>;
@@ -13,23 +12,18 @@ type PageProps = {
 
 export default async function ProjectPage({ params }: PageProps) {
   const { team: teamSlug, project: projectSlug } = await params;
-  const { userId, orgSlug, orgId } = await auth();
+  const { userId } = await auth();
 
   if (!userId) {
     redirect("/sign-in");
   }
 
-  // Use session's orgSlug to verify access (no Clerk API call needed)
-  if (orgSlug !== teamSlug) {
-    notFound();
-  }
-
-  // Get team by slug and verify it matches the user's active org
+  // Get team by slug and verify user owns it
   const team = await db.query.teams.findFirst({
     where: eq(teams.slug, teamSlug),
   });
 
-  if (!team || team.clerkOrgId !== orgId) {
+  if (!team || team.ownerId !== userId) {
     notFound();
   }
 
@@ -46,7 +40,6 @@ export default async function ProjectPage({ params }: PageProps) {
     <div className="bg-background flex min-h-screen flex-col">
       <Header teamSlug={teamSlug} />
       <ProjectDetailView project={project} team={team} />
-      <Footer />
     </div>
   );
 }

@@ -1,6 +1,5 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
 import { cn } from "@workspace/ui/lib/utils";
 import {
   Calculator,
@@ -10,6 +9,7 @@ import {
   TrendingDown,
   Wifi,
 } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 
 type SavingsVisualizerProps = {
   readonly savedPercentage: number;

@@ -1,8 +1,8 @@
 "use client";
 
-import { Search, X } from "lucide-react";
 import { Button } from "@workspace/ui/components/button";
 import { Input } from "@workspace/ui/components/input";
+import { Search, X } from "lucide-react";
 import { CreateProjectDialog } from "./create-project-dialog";
 
 type SearchToolbarProps = {

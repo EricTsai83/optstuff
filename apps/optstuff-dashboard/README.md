@@ -38,15 +38,15 @@ bun run dev
 
 ### Common Operations
 
-| Operation | Description | Example |
-|-----------|-------------|---------|
-| `w_{n}` | Width | `w_800` |
-| `h_{n}` | Height | `h_600` |
-| `s_{w}x{h}` | Resize | `s_800x600` |
-| `q_{n}` | Quality | `q_80` |
-| `f_{format}` | Format | `f_webp`, `f_avif` |
-| `fit_{mode}` | Fit mode | `fit_cover` |
-| `_` | No operation | `_` |
+| Operation    | Description  | Example            |
+| ------------ | ------------ | ------------------ |
+| `w_{n}`      | Width        | `w_800`            |
+| `h_{n}`      | Height       | `h_600`            |
+| `s_{w}x{h}`  | Resize       | `s_800x600`        |
+| `q_{n}`      | Quality      | `q_80`             |
+| `f_{format}` | Format       | `f_webp`, `f_avif` |
+| `fit_{mode}` | Fit mode     | `fit_cover`        |
+| `_`          | No operation | `_`                |
 
 ### Full Documentation
 

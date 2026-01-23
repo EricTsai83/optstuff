@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useCallback } from "react";
 import { cn } from "@workspace/ui/lib/utils";
+import { useCallback, useState } from "react";
 import { ScanCanvas } from "./_scan-card/scan-canvas";
 import { ScanSkeleton } from "./_scan-card/scan-skeleton";
 

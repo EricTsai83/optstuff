@@ -1,6 +1,6 @@
-import path from "path";
-import { createIPX, ipxFSStorage, ipxHttpStorage } from "ipx";
 import { getVercelProjectUrl } from "@/lib/utils";
+import { createIPX, ipxFSStorage, ipxHttpStorage } from "ipx";
+import path from "path";
 
 /**
  * IPX image processing instance

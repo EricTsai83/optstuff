@@ -1,13 +1,13 @@
 "use client";
 
-import { useState } from "react";
-import { ExternalLink } from "lucide-react";
 import {
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
 } from "@workspace/ui/components/tabs";
+import { ExternalLink } from "lucide-react";
+import { useState } from "react";
 import { CopyButton } from "./copy-button";
 
 type Tab = "curl" | "node" | "python";

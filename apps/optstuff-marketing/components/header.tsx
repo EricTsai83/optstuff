@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import Link from "next/link";
-import { Github, Menu, X } from "lucide-react";
-import { Button } from "@workspace/ui/components/button";
-import { Logo } from "@workspace/ui/components/logo";
-import { ThemeToggleButton } from "@workspace/ui/components/theme-toggle-button";
+import { MobileSidebar } from "@/components/mobile-sidebar";
+import {
+  calculateBackgroundOpacity,
+  calculateBorderOpacity,
+  useScrollPercent,
+} from "@/hooks/use-scroll-percent";
 import {
   ClerkLoaded,
   ClerkLoading,
@@ -13,14 +13,14 @@ import {
   SignedOut,
   SignOutButton,
 } from "@workspace/auth/client";
-import { cn } from "@workspace/ui/lib/utils";
 import { useIsMobile } from "@workspace/hooks/use-mobile";
-import { MobileSidebar } from "@/components/mobile-sidebar";
-import {
-  useScrollPercent,
-  calculateBackgroundOpacity,
-  calculateBorderOpacity,
-} from "@/hooks/use-scroll-percent";
+import { Button } from "@workspace/ui/components/button";
+import { Logo } from "@workspace/ui/components/logo";
+import { ThemeToggleButton } from "@workspace/ui/components/theme-toggle-button";
+import { cn } from "@workspace/ui/lib/utils";
+import { Github, Menu, X } from "lucide-react";
+import Link from "next/link";
+import { useEffect, useState } from "react";
 
 type NavigationItem = {
   readonly href: string;
@@ -91,7 +91,7 @@ export function Header() {
               <Link
                 key={item.href}
                 href={item.href}
-                className="text-muted-foreground hover:text-foreground dark:text-foreground relative text-sm font-medium transition-colors after:absolute after:bottom-0 after:left-0 after:h-px after:w-0 after:bg-foreground after:transition-all after:duration-300 hover:after:w-full"
+                className="text-muted-foreground hover:text-foreground dark:text-foreground after:bg-foreground relative text-sm font-medium transition-colors after:absolute after:bottom-0 after:left-0 after:h-px after:w-0 after:transition-all after:duration-300 hover:after:w-full"
               >
                 {item.label}
               </Link>
@@ -104,7 +104,7 @@ export function Header() {
             {isMobile && (
               <button
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                className="relative flex h-9 w-9 items-center justify-center rounded-md text-foreground transition-colors hover:bg-muted"
+                className="text-foreground hover:bg-muted relative flex h-9 w-9 items-center justify-center rounded-md transition-colors"
                 aria-label={isMobileMenuOpen ? "Close menu" : "Open menu"}
                 aria-expanded={isMobileMenuOpen}
               >
@@ -112,16 +112,16 @@ export function Header() {
                   className={cn(
                     "absolute h-5 w-5 transition-all duration-300",
                     isMobileMenuOpen
-                      ? "rotate-90 scale-0 opacity-0"
-                      : "rotate-0 scale-100 opacity-100",
+                      ? "scale-0 rotate-90 opacity-0"
+                      : "scale-100 rotate-0 opacity-100",
                   )}
                 />
                 <X
                   className={cn(
                     "absolute h-5 w-5 transition-all duration-300",
                     isMobileMenuOpen
-                      ? "rotate-0 scale-100 opacity-100"
-                      : "-rotate-90 scale-0 opacity-0",
+                      ? "scale-100 rotate-0 opacity-100"
+                      : "scale-0 -rotate-90 opacity-0",
                   )}
                 />
               </button>

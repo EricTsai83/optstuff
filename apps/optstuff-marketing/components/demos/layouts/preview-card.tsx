@@ -1,6 +1,6 @@
-import type { ReactNode } from "react";
 import { Badge } from "@workspace/ui/components/badge";
 import { cn } from "@workspace/ui/lib/utils";
+import type { ReactNode } from "react";
 
 type PreviewCardProps = {
   readonly children: ReactNode;

@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
-import { Check, Copy } from "lucide-react";
 import { cn } from "@workspace/ui/lib/utils";
+import { Check, Copy } from "lucide-react";
+import { useState } from "react";
 
 type CopyButtonProps = {
   readonly text: string;

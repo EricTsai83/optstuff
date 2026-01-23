@@ -1,7 +1,12 @@
 "use client";
 
-import { useState } from "react";
-import { ChevronDown, ChevronUp, Zap } from "lucide-react";
+import {
+  UsageProgressBar,
+  UsageProgressBarSkeleton,
+} from "@/components/usage-progress-bar";
+import { USAGE_LIMITS } from "@/lib/constants";
+import { formatBytes, formatNumber } from "@/lib/format";
+import { api } from "@/trpc/react";
 import { Button } from "@workspace/ui/components/button";
 import {
   Card,
@@ -10,13 +15,8 @@ import {
   CardTitle,
 } from "@workspace/ui/components/card";
 import { Separator } from "@workspace/ui/components/separator";
-import { api } from "@/trpc/react";
-import { formatBytes, formatNumber } from "@/lib/format";
-import { USAGE_LIMITS } from "@/lib/constants";
-import {
-  UsageProgressBar,
-  UsageProgressBarSkeleton,
-} from "@/components/usage-progress-bar";
+import { ChevronDown, ChevronUp, Zap } from "lucide-react";
+import { useState } from "react";
 
 type UsageSidebarProps = {
   readonly teamId: string;

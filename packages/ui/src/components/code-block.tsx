@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
-import { cn } from "@workspace/ui/lib/utils";
 import { CopyButton } from "@workspace/ui/components/copy-button";
 import { RevealButton } from "@workspace/ui/components/reveal-button";
+import { cn } from "@workspace/ui/lib/utils";
+import { useState } from "react";
 
 /**
  * Base props shared by all CodeBlock variants

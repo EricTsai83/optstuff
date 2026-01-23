@@ -1,5 +1,8 @@
 "use client";
 
+import { SectionHeader, SectionWrapper } from "@/components/ui/section";
+import { useIntersectionVisibility } from "@/hooks/use-intersection-visibility";
+import { cn } from "@workspace/ui/lib/utils";
 import type { LucideIcon } from "lucide-react";
 import {
   Code,
@@ -11,9 +14,6 @@ import {
   Zap,
 } from "lucide-react";
 import { useCallback, useState } from "react";
-import { cn } from "@workspace/ui/lib/utils";
-import { useIntersectionVisibility } from "@/hooks/use-intersection-visibility";
-import { SectionWrapper, SectionHeader } from "@/components/ui/section";
 
 type Feature = {
   readonly icon: LucideIcon;

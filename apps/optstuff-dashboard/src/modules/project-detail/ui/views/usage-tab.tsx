@@ -1,5 +1,7 @@
 "use client";
 
+import { formatBytes, formatNumber } from "@/lib/format";
+import { api } from "@/trpc/react";
 import {
   Card,
   CardContent,
@@ -7,8 +9,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@workspace/ui/components/card";
-import { api } from "@/trpc/react";
-import { formatBytes, formatNumber } from "@/lib/format";
 import { StatCard } from "../components/stat-card";
 
 type UsageTabProps = {

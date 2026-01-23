@@ -1,26 +1,30 @@
 "use client";
 
-import { Activity, FolderOpen } from "lucide-react";
+import {
+  UsageProgressBar,
+  UsageProgressBarSkeleton,
+} from "@/components/usage-progress-bar";
+import { USAGE_LIMITS } from "@/lib/constants";
+import { formatBytes, formatNumber } from "@/lib/format";
+import { api } from "@/trpc/react";
 import {
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
 } from "@workspace/ui/components/tabs";
-import { api } from "@/trpc/react";
-import { formatBytes, formatNumber } from "@/lib/format";
-import { USAGE_LIMITS } from "@/lib/constants";
-import {
-  UsageProgressBar,
-  UsageProgressBarSkeleton,
-} from "@/components/usage-progress-bar";
+import { Activity, FolderOpen } from "lucide-react";
 
 type MobileTabsProps = {
   readonly teamId: string;
 };
 
 const TABS = [
-  { id: "projects", label: "Projects", icon: <FolderOpen className="h-4 w-4" /> },
+  {
+    id: "projects",
+    label: "Projects",
+    icon: <FolderOpen className="h-4 w-4" />,
+  },
   { id: "usage", label: "Usage", icon: <Activity className="h-4 w-4" /> },
 ] as const;
 

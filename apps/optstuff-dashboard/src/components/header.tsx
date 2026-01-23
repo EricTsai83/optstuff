@@ -1,12 +1,12 @@
 "use client";
 
-import { Search, Bell, Menu, BookOpen, Sun, Moon } from "lucide-react";
-import { Button } from "@workspace/ui/components/button";
-import { Input } from "@workspace/ui/components/input";
-import { ClerkLoaded, ClerkLoading, UserButton } from "@workspace/auth/client";
-import { UserButtonSkeleton } from "@workspace/auth/components/user-button-skeleton";
 import { AnimatedLogo } from "@/components/animated-logo";
 import { TeamSwitcher } from "@/modules/team";
+import { ClerkLoaded, ClerkLoading, UserButton } from "@workspace/auth/client";
+import { UserButtonSkeleton } from "@workspace/auth/components/user-button-skeleton";
+import { Button } from "@workspace/ui/components/button";
+import { Input } from "@workspace/ui/components/input";
+import { Bell, BookOpen, Menu, Moon, Search, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
 
 type HeaderProps = {

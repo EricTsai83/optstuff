@@ -1,10 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { Check, ChevronDown, Plus } from "lucide-react";
-import { Button } from "@workspace/ui/components/button";
+import { api } from "@/trpc/react";
 import { Badge } from "@workspace/ui/components/badge";
+import { Button } from "@workspace/ui/components/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,9 +10,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@workspace/ui/components/dropdown-menu";
-import { api } from "@/trpc/react";
-import { CreateTeamDialog } from "./create-team-dialog";
+import { Check, ChevronDown, Plus } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 import type { Team } from "../../types";
+import { CreateTeamDialog } from "./create-team-dialog";
 
 type TeamSwitcherProps = {
   readonly currentTeamSlug?: string;
@@ -24,17 +24,8 @@ export function TeamSwitcher({ currentTeamSlug }: TeamSwitcherProps) {
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
 
-  // Ensure personal team exists and get all teams
-  const { mutate: ensurePersonalTeam } =
-    api.team.ensurePersonalTeam.useMutation();
-  const { data: teams, isLoading, isSuccess } = api.team.list.useQuery();
-
-  // Ensure personal team exists on first successful load
-  useEffect(() => {
-    if (isSuccess) {
-      ensurePersonalTeam();
-    }
-  }, [isSuccess, ensurePersonalTeam]);
+  // Get all teams the user owns
+  const { data: teams, isLoading } = api.team.list.useQuery();
 
   const currentTeam =
     teams?.find((t: Team) => t.slug === currentTeamSlug) ?? teams?.[0];

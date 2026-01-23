@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { cn } from "@workspace/ui/lib/utils";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 /**
  * Character set for generating scrambled text effect - tech-style characters

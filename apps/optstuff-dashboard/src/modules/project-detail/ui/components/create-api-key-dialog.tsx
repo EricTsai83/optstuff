@@ -1,10 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { Plus, Shield } from "lucide-react";
+import { api } from "@/trpc/react";
 import { Button } from "@workspace/ui/components/button";
-import { Input } from "@workspace/ui/components/input";
-import { Label } from "@workspace/ui/components/label";
 import {
   Dialog,
   DialogContent,
@@ -14,9 +11,12 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@workspace/ui/components/dialog";
-import { api } from "@/trpc/react";
-import { CopyButton } from "./copy-button";
+import { Input } from "@workspace/ui/components/input";
+import { Label } from "@workspace/ui/components/label";
+import { Plus, Shield } from "lucide-react";
+import { useState } from "react";
 import { ApiCodeExamples, DocsLink } from "./api-code-examples";
+import { CopyButton } from "./copy-button";
 
 type CreateApiKeyDialogProps = {
   readonly projectId: string;

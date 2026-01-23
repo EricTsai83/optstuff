@@ -1,25 +1,25 @@
 "use client";
 
-import {
-  useState,
-  useRef,
-  useLayoutEffect,
-  useCallback,
-  useEffect,
-} from "react";
-import { TvMinimal } from "lucide-react";
-import { cn } from "@workspace/ui/lib/utils";
-import {
-  Tabs,
-  TabsList,
-  TabsTrigger,
-  TabsContent,
-} from "@workspace/ui/components/tabs";
-import { ResizeDemo } from "@/components/demos/resize-demo";
+import { EffectsDemo } from "@/components/demos/effects-demo";
 import { FormatDemo } from "@/components/demos/format-demo";
 import { QualityDemo } from "@/components/demos/quality-demo";
-import { EffectsDemo } from "@/components/demos/effects-demo";
-import { SectionWrapper, SectionHeader } from "@/components/ui/section";
+import { ResizeDemo } from "@/components/demos/resize-demo";
+import { SectionHeader, SectionWrapper } from "@/components/ui/section";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@workspace/ui/components/tabs";
+import { cn } from "@workspace/ui/lib/utils";
+import { TvMinimal } from "lucide-react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 
 export function ImageOptimizationDemo() {
   const tabsListRef = useRef<HTMLDivElement>(null);
@@ -46,10 +46,10 @@ export function ImageOptimizationDemo() {
           className="w-full"
         >
           {/* Tabs navigation - scrollable on mobile, sticky when scrolling */}
-          <div className="sticky top-[72px] z-40 -mx-4 mb-6 flex justify-center bg-background/95 px-4 py-3 backdrop-blur-sm sm:-mx-6 sm:px-6 md:static md:mx-0 md:mb-8 md:bg-transparent md:px-0 md:py-0 md:backdrop-blur-none">
+          <div className="bg-background/95 sticky top-[72px] z-40 -mx-4 mb-6 flex justify-center px-4 py-3 backdrop-blur-sm sm:-mx-6 sm:px-6 md:static md:mx-0 md:mb-8 md:bg-transparent md:px-0 md:py-0 md:backdrop-blur-none">
             <TabsList
               ref={tabsListRef}
-              className="bg-muted text-muted-foreground relative h-10 w-full max-w-[calc(100vw-2rem)] overflow-x-auto rounded-full p-1 scrollbar-hide sm:h-11 sm:w-auto"
+              className="bg-muted text-muted-foreground scrollbar-hide relative h-10 w-full max-w-[calc(100vw-2rem)] overflow-x-auto rounded-full p-1 sm:h-11 sm:w-auto"
             >
               {/* Sliding indicator with squash-and-stretch effect */}
               <div
@@ -177,15 +177,16 @@ function useIndicatorPosition(
   const prevTabRef = useRef<DemoKey>(activeTab);
 
   useLayoutEffect(() => {
+    const container = containerRef.current;
+
     const updateIndicator = (): void => {
-      const container = containerRef.current;
       const activeButton = tabRefs.current?.get(activeTab);
       if (!container || !activeButton) return;
 
       const containerRect = container.getBoundingClientRect();
       const buttonRect = activeButton.getBoundingClientRect();
       setStyle({
-        left: buttonRect.left - containerRect.left,
+        left: buttonRect.left - containerRect.left + container.scrollLeft,
         width: buttonRect.width,
       });
     };
@@ -203,7 +204,11 @@ function useIndicatorPosition(
 
     updateIndicator();
     window.addEventListener("resize", updateIndicator);
-    return () => window.removeEventListener("resize", updateIndicator);
+    container?.addEventListener("scroll", updateIndicator);
+    return () => {
+      window.removeEventListener("resize", updateIndicator);
+      container?.removeEventListener("scroll", updateIndicator);
+    };
   }, [tabRefs, containerRef, activeTab]);
 
   return { ...style, isSquashing };

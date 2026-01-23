@@ -1,16 +1,8 @@
 "use client";
 
-import Link from "next/link";
-import { formatDistanceToNow } from "date-fns";
-import {
-  MoreHorizontal,
-  FolderOpen,
-  Key,
-  Activity,
-  Pin,
-  PinOff,
-  Clock,
-} from "lucide-react";
+import { formatBytes, formatNumber } from "@/lib/format";
+import type { Project } from "@/lib/types";
+import { api } from "@/trpc/react";
 import { Button } from "@workspace/ui/components/button";
 import {
   DropdownMenu,
@@ -19,11 +11,19 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@workspace/ui/components/dropdown-menu";
-import { api } from "@/trpc/react";
+import { formatDistanceToNow } from "date-fns";
+import {
+  Activity,
+  Clock,
+  FolderOpen,
+  Key,
+  MoreHorizontal,
+  Pin,
+  PinOff,
+} from "lucide-react";
+import Link from "next/link";
 import { getProjectColor } from "../../constants";
-import { formatNumber, formatBytes } from "@/lib/format";
 import { CreateProjectDialog } from "./create-project-dialog";
-import type { Project } from "@/lib/types";
 
 type ProjectListProps = {
   readonly teamId: string;

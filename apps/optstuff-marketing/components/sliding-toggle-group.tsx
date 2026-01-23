@@ -1,11 +1,11 @@
 "use client";
 
-import { useRef, useLayoutEffect, useState } from "react";
 import {
   ToggleGroup,
   ToggleGroupItem,
 } from "@workspace/ui/components/toggle-group";
 import { cn } from "@workspace/ui/lib/utils";
+import { useLayoutEffect, useRef, useState } from "react";
 
 type SlidingToggleGroupOption<TValue extends string> = {
   readonly value: TValue;
