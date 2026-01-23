@@ -45,6 +45,65 @@ export const teamRouter = createTRPCRouter({
   }),
 
   /**
+   * Create the user's personal team with a custom slug.
+   * Used during onboarding when user chooses their slug.
+   */
+  createPersonalTeam: protectedProcedure
+    .input(
+      z.object({
+        slug: z
+          .string()
+          .min(3)
+          .max(50)
+          .regex(
+            /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
+            "Slug must be lowercase letters, numbers, and hyphens only",
+          ),
+        name: z.string().min(1).max(255).optional(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const { userId, db } = ctx;
+
+      // Check if user already has a personal team
+      const existingPersonalTeam = await db.query.teams.findFirst({
+        where: and(eq(teams.ownerId, userId), eq(teams.isPersonal, true)),
+      });
+
+      if (existingPersonalTeam) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "You already have a personal team.",
+        });
+      }
+
+      // Check if slug is available
+      const existingTeamWithSlug = await db.query.teams.findFirst({
+        where: eq(teams.slug, input.slug),
+      });
+
+      if (existingTeamWithSlug) {
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: "This slug is already taken. Please choose a different one.",
+        });
+      }
+
+      // Create personal team with custom slug
+      const [newTeam] = await db
+        .insert(teams)
+        .values({
+          ownerId: userId,
+          name: input.name ?? "Personal Team",
+          slug: input.slug,
+          isPersonal: true,
+        })
+        .returning();
+
+      return newTeam;
+    }),
+
+  /**
    * Get the user's personal team.
    */
   getPersonalTeam: protectedProcedure.query(async ({ ctx }) => {

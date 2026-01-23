@@ -1,5 +1,5 @@
 import { redirect, notFound } from "next/navigation";
-import { eq, and } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { auth } from "@workspace/auth/server";
 import { db } from "@/server/db";
 import { teams } from "@/server/db/schema";
@@ -44,38 +44,14 @@ export default async function TeamPage({ params }: PageProps) {
   }
 
   // Team not found or user doesn't own it
-  // Check if user has any teams, if not, create a personal team
+  // Check if user has any teams
   const userTeams = await db.query.teams.findMany({
     where: eq(teams.ownerId, userId),
   });
 
+  // New user with no teams - redirect to onboarding
   if (userTeams.length === 0) {
-    // Create personal team for new user
-    const personalSlug = `${userId.replace("user_", "")}-personal-team`;
-
-    const [newTeam] = await db
-      .insert(teams)
-      .values({
-        ownerId: userId,
-        name: "Personal Team",
-        slug: personalSlug,
-        isPersonal: true,
-      })
-      .onConflictDoNothing()
-      .returning();
-
-    if (newTeam) {
-      redirect(`/${newTeam.slug}`);
-    }
-
-    // If conflict, find the existing personal team
-    const existingPersonalTeam = await db.query.teams.findFirst({
-      where: and(eq(teams.ownerId, userId), eq(teams.isPersonal, true)),
-    });
-
-    if (existingPersonalTeam) {
-      redirect(`/${existingPersonalTeam.slug}`);
-    }
+    redirect("/onboarding");
   }
 
   // User has teams but is trying to access one they don't own
