@@ -177,15 +177,16 @@ function useIndicatorPosition(
   const prevTabRef = useRef<DemoKey>(activeTab);
 
   useLayoutEffect(() => {
+    const container = containerRef.current;
+
     const updateIndicator = (): void => {
-      const container = containerRef.current;
       const activeButton = tabRefs.current?.get(activeTab);
       if (!container || !activeButton) return;
 
       const containerRect = container.getBoundingClientRect();
       const buttonRect = activeButton.getBoundingClientRect();
       setStyle({
-        left: buttonRect.left - containerRect.left,
+        left: buttonRect.left - containerRect.left + container.scrollLeft,
         width: buttonRect.width,
       });
     };
@@ -203,7 +204,11 @@ function useIndicatorPosition(
 
     updateIndicator();
     window.addEventListener("resize", updateIndicator);
-    return () => window.removeEventListener("resize", updateIndicator);
+    container?.addEventListener("scroll", updateIndicator);
+    return () => {
+      window.removeEventListener("resize", updateIndicator);
+      container?.removeEventListener("scroll", updateIndicator);
+    };
   }, [tabRefs, containerRef, activeTab]);
 
   return { ...style, isSquashing };
