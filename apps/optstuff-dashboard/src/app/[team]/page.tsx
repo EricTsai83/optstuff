@@ -51,7 +51,7 @@ export default async function TeamPage({ params }: PageProps) {
 
   if (userTeams.length === 0) {
     // Create personal team for new user
-    const personalSlug = `${userId.replace("user_", "")}-projects`;
+    const personalSlug = `${userId.replace("user_", "")}-personal-team`;
 
     const [newTeam] = await db
       .insert(teams)
