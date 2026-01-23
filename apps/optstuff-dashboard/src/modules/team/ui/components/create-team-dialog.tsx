@@ -110,19 +110,18 @@ export function CreateTeamDialog({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Validate slug format using the same regex
-    if (!isSlugFormatValid) {
+    // Use the same validity check as the submit button
+    if (!name.trim() || !isSlugValid) {
       if (slug.length < 3) {
         setSlugError("Slug must be at least 3 characters");
-      } else {
+      } else if (!isSlugFormatValid) {
         setSlugError("Slug must be lowercase letters, numbers, and hyphens only");
       }
+      // If it's an availability issue, error message is already shown in UI
       return;
     }
 
-    if (name.trim() && slug) {
-      createTeam({ name: name.trim(), slug });
-    }
+    createTeam({ name: name.trim(), slug });
   };
 
   // isSlugValid now requires format validation in addition to availability
