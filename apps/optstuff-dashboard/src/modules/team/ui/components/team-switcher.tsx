@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Check, ChevronDown, Plus } from "lucide-react";
 import { Button } from "@workspace/ui/components/button";
@@ -24,17 +24,8 @@ export function TeamSwitcher({ currentTeamSlug }: TeamSwitcherProps) {
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
 
-  // Ensure personal team exists and get all teams
-  const { mutate: ensurePersonalTeam } =
-    api.team.ensurePersonalTeam.useMutation();
-  const { data: teams, isLoading, isSuccess } = api.team.list.useQuery();
-
-  // Ensure personal team exists on first successful load
-  useEffect(() => {
-    if (isSuccess) {
-      ensurePersonalTeam();
-    }
-  }, [isSuccess, ensurePersonalTeam]);
+  // Get all teams the user owns
+  const { data: teams, isLoading } = api.team.list.useQuery();
 
   const currentTeam =
     teams?.find((t: Team) => t.slug === currentTeamSlug) ?? teams?.[0];

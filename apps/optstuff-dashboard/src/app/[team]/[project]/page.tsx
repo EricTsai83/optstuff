@@ -13,23 +13,18 @@ type PageProps = {
 
 export default async function ProjectPage({ params }: PageProps) {
   const { team: teamSlug, project: projectSlug } = await params;
-  const { userId, orgSlug, orgId } = await auth();
+  const { userId } = await auth();
 
   if (!userId) {
     redirect("/sign-in");
   }
 
-  // Use session's orgSlug to verify access (no Clerk API call needed)
-  if (orgSlug !== teamSlug) {
-    notFound();
-  }
-
-  // Get team by slug and verify it matches the user's active org
+  // Get team by slug and verify user owns it
   const team = await db.query.teams.findFirst({
     where: eq(teams.slug, teamSlug),
   });
 
-  if (!team || team.clerkOrgId !== orgId) {
+  if (!team || team.ownerId !== userId) {
     notFound();
   }
 

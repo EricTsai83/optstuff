@@ -1,30 +1,47 @@
-import { eq, and, inArray } from "drizzle-orm";
+import { eq, and, desc } from "drizzle-orm";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { clerkClient, auth } from "@workspace/auth/server";
 
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
 import { teams } from "@/server/db/schema";
-import { generateSlug } from "@/lib/slug";
-import { syncUserTeams } from "@/server/lib/team-sync";
+import { generateSlug, generateUniqueSlug } from "@/lib/slug";
 
 export const teamRouter = createTRPCRouter({
   /**
    * Get or create the user's personal team.
-   * Clerk is the source of truth - check Clerk first, then sync to local DB.
    */
   ensurePersonalTeam: protectedProcedure.mutation(async ({ ctx }) => {
     const { userId, db } = ctx;
 
-    // Check local DB first
+    // Check if user already has a personal team
     const existingTeam = await db.query.teams.findFirst({
       where: and(eq(teams.ownerId, userId), eq(teams.isPersonal, true)),
     });
 
     if (existingTeam) return existingTeam;
 
-    // Sync from Clerk or create personal team
-    return syncUserTeams(db, userId);
+    // Create personal team
+    const personalSlug = `${userId.replace("user_", "")}-personal`;
+
+    const [newTeam] = await db
+      .insert(teams)
+      .values({
+        ownerId: userId,
+        name: "Personal Team",
+        slug: personalSlug,
+        isPersonal: true,
+      })
+      .onConflictDoNothing()
+      .returning();
+
+    if (newTeam) return newTeam;
+
+    // If conflict, find existing personal team
+    return (
+      (await db.query.teams.findFirst({
+        where: and(eq(teams.ownerId, userId), eq(teams.isPersonal, true)),
+      })) ?? null
+    );
   }),
 
   /**
@@ -40,38 +57,18 @@ export const teamRouter = createTRPCRouter({
   }),
 
   /**
-   * List all teams the user has access to via Clerk memberships.
-   * Note: This requires Clerk API call as we need ALL teams, not just active one.
+   * List all teams the user owns.
    */
   list: protectedProcedure.query(async ({ ctx }) => {
-    const client = await clerkClient();
-
-    // Get all organization memberships for the user from Clerk
-    const memberships = await client.users.getOrganizationMembershipList({
-      userId: ctx.userId,
-    });
-
-    if (!memberships.data || memberships.data.length === 0) {
-      return [];
-    }
-
-    // Extract org IDs and create a map of orgId -> role
-    const orgRoleMap = new Map<string, string>();
-    for (const membership of memberships.data) {
-      orgRoleMap.set(membership.organization.id, membership.role);
-    }
-
-    const orgIds = Array.from(orgRoleMap.keys());
-
-    // Query local teams that match these Clerk org IDs
     const userTeams = await ctx.db.query.teams.findMany({
-      where: inArray(teams.clerkOrgId, orgIds),
+      where: eq(teams.ownerId, ctx.userId),
+      orderBy: [desc(teams.createdAt)],
     });
 
-    // Add role to each team and sort
+    // Add role to each team (owner for all since we only support single owner now)
     const teamsWithRole = userTeams.map((team) => ({
       ...team,
-      role: orgRoleMap.get(team.clerkOrgId) ?? "org:member",
+      role: "org:admin" as const,
     }));
 
     // Sort: personal teams first, then by createdAt descending
@@ -84,19 +81,17 @@ export const teamRouter = createTRPCRouter({
 
   /**
    * Get a specific team by ID.
-   * Uses session's orgId to verify access (no Clerk API call).
+   * Verifies the user owns the team.
    */
   get: protectedProcedure
     .input(z.object({ teamId: z.string().uuid() }))
     .query(async ({ ctx, input }) => {
-      const { orgId } = await auth();
-
       const team = await ctx.db.query.teams.findFirst({
         where: eq(teams.id, input.teamId),
       });
 
-      // Verify the team belongs to user's active organization
-      if (!team || team.clerkOrgId !== orgId) {
+      // Verify the user owns this team
+      if (!team || team.ownerId !== ctx.userId) {
         return null;
       }
 
@@ -105,24 +100,17 @@ export const teamRouter = createTRPCRouter({
 
   /**
    * Get a team by its slug.
-   * Uses session's orgSlug to verify access (no Clerk API call).
+   * Verifies the user owns the team.
    */
   getBySlug: protectedProcedure
     .input(z.object({ slug: z.string() }))
     .query(async ({ ctx, input }) => {
-      const { orgSlug, orgId } = await auth();
-
-      // Quick check: if slug doesn't match active org, deny access
-      if (orgSlug !== input.slug) {
-        return null;
-      }
-
       const team = await ctx.db.query.teams.findFirst({
         where: eq(teams.slug, input.slug),
       });
 
-      // Double-check orgId matches for security
-      if (!team || team.clerkOrgId !== orgId) {
+      // Verify the user owns this team
+      if (!team || team.ownerId !== ctx.userId) {
         return null;
       }
 
@@ -130,157 +118,39 @@ export const teamRouter = createTRPCRouter({
     }),
 
   /**
-   * Create a new team.
-   * Creates a Clerk Organization first (source of truth), then syncs to local database.
+   * Create a new team with custom slug.
    */
   create: protectedProcedure
-    .input(z.object({ name: z.string().min(1).max(255) }))
-    .mutation(async ({ ctx, input }) => {
-      // Generate a simple slug from the name
-      const slug = generateSlug(input.name);
-
-      // Create Clerk organization first (Clerk is source of truth)
-      const client = await clerkClient();
-      const org = await client.organizations.createOrganization({
-        name: input.name,
-        slug,
-        createdBy: ctx.userId,
-      });
-
-      // Create local team record using Clerk's slug
-      const [newTeam] = await ctx.db
-        .insert(teams)
-        .values({
-          ownerId: ctx.userId,
-          clerkOrgId: org.id,
-          name: input.name,
-          slug: org.slug!,
-          isPersonal: false,
-        })
-        .returning();
-
-      return newTeam;
-    }),
-
-  /**
-   * Update a team's name.
-   * Only org:admin can update. Uses has() to check role.
-   */
-  update: protectedProcedure
     .input(
       z.object({
-        teamId: z.string().uuid(),
         name: z.string().min(1).max(255),
+        slug: z
+          .string()
+          .min(3)
+          .max(50)
+          .regex(
+            /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
+            "Slug must be lowercase letters, numbers, and hyphens only",
+          ),
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const { has, orgId } = await auth();
-
-      // Use has() to check admin role (reads from session token, no API call)
-      if (!has({ role: "org:admin" })) {
-        throw new TRPCError({
-          code: "FORBIDDEN",
-          message: "Admin role required",
-        });
-      }
-
-      // Verify team belongs to user's active organization
-      const team = await ctx.db.query.teams.findFirst({
-        where: eq(teams.id, input.teamId),
-      });
-
-      if (!team || team.clerkOrgId !== orgId) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Team not found" });
-      }
-
-      // Update Clerk organization first (source of truth)
-      const client = await clerkClient();
-      const updatedOrg = await client.organizations.updateOrganization(
-        team.clerkOrgId,
-        { name: input.name },
-      );
-
-      // Sync to local DB using Clerk's data
-      const [updatedTeam] = await ctx.db
-        .update(teams)
-        .set({ name: updatedOrg.name })
-        .where(eq(teams.id, input.teamId))
-        .returning();
-
-      return updatedTeam ?? null;
-    }),
-
-  /**
-   * Sync a Clerk organization to the local database.
-   * Called when a new organization is detected via Clerk UI components.
-   * Clerk is the source of truth - local slug must match Clerk's slug.
-   */
-  syncFromClerk: protectedProcedure
-    .input(
-      z.object({
-        clerkOrgId: z.string().min(1),
-        name: z.string().min(1).max(255),
-        slug: z.string().min(1).max(255),
-      }),
-    )
-    .mutation(async ({ ctx, input }) => {
-      // Verify user has membership in the provided Clerk organization
-      const client = await clerkClient();
-      const memberships = await client.users.getOrganizationMembershipList({
-        userId: ctx.userId,
-      });
-
-      const hasAccess = memberships.data.some(
-        (membership) => membership.organization.id === input.clerkOrgId,
-      );
-
-      if (!hasAccess) {
-        throw new TRPCError({
-          code: "FORBIDDEN",
-          message: "You do not have access to this organization",
-        });
-      }
-
-      // Check if team already exists by clerkOrgId
+      // Check if slug already exists
       const existingTeam = await ctx.db.query.teams.findFirst({
-        where: eq(teams.clerkOrgId, input.clerkOrgId),
-      });
-
-      if (existingTeam) {
-        // Update existing team to match Clerk's data
-        const [updatedTeam] = await ctx.db
-          .update(teams)
-          .set({ name: input.name, slug: input.slug })
-          .where(eq(teams.clerkOrgId, input.clerkOrgId))
-          .returning();
-
-        return updatedTeam;
-      }
-
-      // Check if a team with this slug already exists (orphaned record)
-      const orphanedTeam = await ctx.db.query.teams.findFirst({
         where: eq(teams.slug, input.slug),
       });
 
-      if (orphanedTeam) {
-        // Update orphaned team to link with this Clerk org
-        const [updatedTeam] = await ctx.db
-          .update(teams)
-          .set({
-            clerkOrgId: input.clerkOrgId,
-            name: input.name,
-          })
-          .where(eq(teams.id, orphanedTeam.id))
-          .returning();
-
-        return updatedTeam;
+      if (existingTeam) {
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: "This slug is already taken. Please choose a different one.",
+        });
       }
 
-      // Create new team record
+      // Create local team record
       const [newTeam] = await ctx.db
         .insert(teams)
         .values({
-          clerkOrgId: input.clerkOrgId,
           ownerId: ctx.userId,
           name: input.name,
           slug: input.slug,
@@ -292,28 +162,61 @@ export const teamRouter = createTRPCRouter({
     }),
 
   /**
-   * Delete a team (non-personal only).
-   * Only org:admin can delete. Uses has() to check role.
+   * Check if a slug is available.
    */
-  delete: protectedProcedure
-    .input(z.object({ teamId: z.string().uuid() }))
+  checkSlugAvailable: protectedProcedure
+    .input(z.object({ slug: z.string() }))
+    .query(async ({ ctx, input }) => {
+      const existingTeam = await ctx.db.query.teams.findFirst({
+        where: eq(teams.slug, input.slug),
+      });
+      return { available: !existingTeam };
+    }),
+
+  /**
+   * Update a team's name.
+   * Only the owner can update.
+   */
+  update: protectedProcedure
+    .input(
+      z.object({
+        teamId: z.string().uuid(),
+        name: z.string().min(1).max(255),
+      }),
+    )
     .mutation(async ({ ctx, input }) => {
-      const { has, orgId } = await auth();
-
-      // Use has() to check admin role (reads from session token, no API call)
-      if (!has({ role: "org:admin" })) {
-        throw new TRPCError({
-          code: "FORBIDDEN",
-          message: "Admin role required",
-        });
-      }
-
-      // Verify team belongs to user's active organization
+      // Verify user owns this team
       const team = await ctx.db.query.teams.findFirst({
         where: eq(teams.id, input.teamId),
       });
 
-      if (!team || team.clerkOrgId !== orgId) {
+      if (!team || team.ownerId !== ctx.userId) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Team not found" });
+      }
+
+      // Update local DB
+      const [updatedTeam] = await ctx.db
+        .update(teams)
+        .set({ name: input.name })
+        .where(eq(teams.id, input.teamId))
+        .returning();
+
+      return updatedTeam ?? null;
+    }),
+
+  /**
+   * Delete a team (non-personal only).
+   * Only the owner can delete.
+   */
+  delete: protectedProcedure
+    .input(z.object({ teamId: z.string().uuid() }))
+    .mutation(async ({ ctx, input }) => {
+      // Verify user owns this team
+      const team = await ctx.db.query.teams.findFirst({
+        where: eq(teams.id, input.teamId),
+      });
+
+      if (!team || team.ownerId !== ctx.userId) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Team not found" });
       }
 
@@ -324,11 +227,7 @@ export const teamRouter = createTRPCRouter({
         });
       }
 
-      // Delete from Clerk first (source of truth)
-      const client = await clerkClient();
-      await client.organizations.deleteOrganization(team.clerkOrgId);
-
-      // Only delete local record after Clerk deletion succeeds
+      // Delete local record
       await ctx.db.delete(teams).where(eq(teams.id, input.teamId));
       return { success: true };
     }),

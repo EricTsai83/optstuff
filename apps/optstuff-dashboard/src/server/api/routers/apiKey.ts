@@ -1,7 +1,6 @@
 import { eq, and, isNull, desc, count } from "drizzle-orm";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { auth } from "@workspace/auth/server";
 
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
 import { apiKeys, projects } from "@/server/db/schema";
@@ -22,18 +21,20 @@ async function updateProjectApiKeyCount(db: typeof dbType, projectId: string) {
 }
 
 /**
- * Helper to check project access using session's orgId.
+ * Helper to check project access using ownerId.
  * Returns the project with team if access is granted, null otherwise.
  */
-async function verifyProjectAccess(db: typeof dbType, projectId: string) {
-  const { orgId } = await auth();
-
+async function verifyProjectAccess(
+  db: typeof dbType,
+  projectId: string,
+  userId: string,
+) {
   const project = await db.query.projects.findFirst({
     where: eq(projects.id, projectId),
     with: { team: true },
   });
 
-  if (!project || project.team.clerkOrgId !== orgId) {
+  if (!project || project.team.ownerId !== userId) {
     return null;
   }
 
@@ -55,7 +56,11 @@ export const apiKeyRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const project = await verifyProjectAccess(ctx.db, input.projectId);
+      const project = await verifyProjectAccess(
+        ctx.db,
+        input.projectId,
+        ctx.userId,
+      );
 
       if (!project) {
         throw new TRPCError({
@@ -92,7 +97,11 @@ export const apiKeyRouter = createTRPCRouter({
   list: protectedProcedure
     .input(z.object({ projectId: z.string().uuid() }))
     .query(async ({ ctx, input }) => {
-      const project = await verifyProjectAccess(ctx.db, input.projectId);
+      const project = await verifyProjectAccess(
+        ctx.db,
+        input.projectId,
+        ctx.userId,
+      );
 
       if (!project) return [];
 
@@ -111,7 +120,11 @@ export const apiKeyRouter = createTRPCRouter({
   listAll: protectedProcedure
     .input(z.object({ projectId: z.string().uuid() }))
     .query(async ({ ctx, input }) => {
-      const project = await verifyProjectAccess(ctx.db, input.projectId);
+      const project = await verifyProjectAccess(
+        ctx.db,
+        input.projectId,
+        ctx.userId,
+      );
 
       if (!project) return [];
 
@@ -135,7 +148,11 @@ export const apiKeyRouter = createTRPCRouter({
       if (!apiKey) return null;
 
       // Check access to the project
-      const project = await verifyProjectAccess(ctx.db, apiKey.projectId);
+      const project = await verifyProjectAccess(
+        ctx.db,
+        apiKey.projectId,
+        ctx.userId,
+      );
 
       if (!project) return null;
 
@@ -159,7 +176,11 @@ export const apiKeyRouter = createTRPCRouter({
         });
       }
 
-      const project = await verifyProjectAccess(ctx.db, apiKey.projectId);
+      const project = await verifyProjectAccess(
+        ctx.db,
+        apiKey.projectId,
+        ctx.userId,
+      );
 
       if (!project) {
         throw new TRPCError({
@@ -197,7 +218,11 @@ export const apiKeyRouter = createTRPCRouter({
         });
       }
 
-      const project = await verifyProjectAccess(ctx.db, oldApiKey.projectId);
+      const project = await verifyProjectAccess(
+        ctx.db,
+        oldApiKey.projectId,
+        ctx.userId,
+      );
 
       if (!project) {
         throw new TRPCError({
@@ -258,7 +283,11 @@ export const apiKeyRouter = createTRPCRouter({
         });
       }
 
-      const project = await verifyProjectAccess(ctx.db, apiKey.projectId);
+      const project = await verifyProjectAccess(
+        ctx.db,
+        apiKey.projectId,
+        ctx.userId,
+      );
 
       if (!project) {
         throw new TRPCError({
@@ -314,7 +343,11 @@ export const apiKeyRouter = createTRPCRouter({
         });
       }
 
-      const project = await verifyProjectAccess(ctx.db, apiKey.projectId);
+      const project = await verifyProjectAccess(
+        ctx.db,
+        apiKey.projectId,
+        ctx.userId,
+      );
 
       if (!project) {
         throw new TRPCError({
