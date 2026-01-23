@@ -5,9 +5,24 @@ import { z } from "zod";
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
 import { teams } from "@/server/db/schema";
 
+/**
+ * Generate a short random suffix for slug collision handling.
+ */
+function generateRandomSuffix(length = 4): string {
+  const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
+  let result = "";
+  for (let i = 0; i < length; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return result;
+}
+
+const MAX_SLUG_RETRIES = 5;
+
 export const teamRouter = createTRPCRouter({
   /**
    * Get or create the user's personal team.
+   * Guarantees returning a team or throwing an error - never returns null.
    */
   ensurePersonalTeam: protectedProcedure.mutation(async ({ ctx }) => {
     const { userId, db } = ctx;
@@ -19,28 +34,50 @@ export const teamRouter = createTRPCRouter({
 
     if (existingTeam) return existingTeam;
 
-    // Create personal team
-    const personalSlug = `${userId.replace("user_", "")}-personal`;
+    // Try to create personal team with retry logic for slug collisions
+    const baseSlug = `${userId.replace("user_", "")}-personal`;
 
-    const [newTeam] = await db
-      .insert(teams)
-      .values({
-        ownerId: userId,
-        name: "Personal Team",
-        slug: personalSlug,
-        isPersonal: true,
-      })
-      .onConflictDoNothing()
-      .returning();
+    for (let attempt = 0; attempt < MAX_SLUG_RETRIES; attempt++) {
+      const personalSlug =
+        attempt === 0 ? baseSlug : `${baseSlug}-${generateRandomSuffix()}`;
 
-    if (newTeam) return newTeam;
+      const [newTeam] = await db
+        .insert(teams)
+        .values({
+          ownerId: userId,
+          name: "Personal Team",
+          slug: personalSlug,
+          isPersonal: true,
+        })
+        .onConflictDoNothing()
+        .returning();
 
-    // If conflict, find existing personal team
-    return (
-      (await db.query.teams.findFirst({
+      if (newTeam) return newTeam;
+
+      // Check if another request already created the personal team for this user
+      // (conflict might be on ownerId+isPersonal constraint, not just slug)
+      const concurrentlyCreatedTeam = await db.query.teams.findFirst({
         where: and(eq(teams.ownerId, userId), eq(teams.isPersonal, true)),
-      })) ?? null
-    );
+      });
+
+      if (concurrentlyCreatedTeam) return concurrentlyCreatedTeam;
+
+      // Slug collision with another user's team, retry with new suffix
+    }
+
+    // Final fallback: query for existing personal team one more time
+    const fallbackTeam = await db.query.teams.findFirst({
+      where: and(eq(teams.ownerId, userId), eq(teams.isPersonal, true)),
+    });
+
+    if (fallbackTeam) return fallbackTeam;
+
+    // If we still can't create or find a personal team, throw an error
+    throw new TRPCError({
+      code: "INTERNAL_SERVER_ERROR",
+      message:
+        "Failed to create personal team after multiple attempts. Please try again.",
+    });
   }),
 
   /**
