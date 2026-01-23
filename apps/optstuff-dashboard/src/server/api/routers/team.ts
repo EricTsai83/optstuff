@@ -132,6 +132,20 @@ export const teamRouter = createTRPCRouter({
         .returning();
 
       if (!newTeam) {
+        // Check if conflict was due to ownerId+isPersonal constraint (race condition)
+        // or due to slug collision
+        const concurrentlyCreatedTeam = await db.query.teams.findFirst({
+          where: and(eq(teams.ownerId, userId), eq(teams.isPersonal, true)),
+        });
+
+        if (concurrentlyCreatedTeam) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "You already have a personal team.",
+          });
+        }
+
+        // Slug collision with another team
         throw new TRPCError({
           code: "CONFLICT",
           message: "This slug is already taken. Please choose a different one.",
