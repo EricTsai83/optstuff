@@ -19,6 +19,19 @@ function generateRandomSuffix(length = 4): string {
 
 const MAX_SLUG_RETRIES = 5;
 
+/**
+ * Shared Zod schema for team slug validation.
+ * Reused across create, createPersonalTeam, and checkSlugAvailable procedures.
+ */
+const slugSchema = z
+  .string()
+  .min(3)
+  .max(50)
+  .regex(
+    /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
+    "Slug must be lowercase letters, numbers, and hyphens only",
+  );
+
 export const teamRouter = createTRPCRouter({
   /**
    * Get or create the user's personal team.
@@ -87,14 +100,7 @@ export const teamRouter = createTRPCRouter({
   createPersonalTeam: protectedProcedure
     .input(
       z.object({
-        slug: z
-          .string()
-          .min(3)
-          .max(50)
-          .regex(
-            /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
-            "Slug must be lowercase letters, numbers, and hyphens only",
-          ),
+        slug: slugSchema,
         name: z.string().min(1).max(255).optional(),
       }),
     )
@@ -215,14 +221,7 @@ export const teamRouter = createTRPCRouter({
     .input(
       z.object({
         name: z.string().min(1).max(255),
-        slug: z
-          .string()
-          .min(3)
-          .max(50)
-          .regex(
-            /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
-            "Slug must be lowercase letters, numbers, and hyphens only",
-          ),
+        slug: slugSchema,
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -252,7 +251,7 @@ export const teamRouter = createTRPCRouter({
    * Check if a slug is available.
    */
   checkSlugAvailable: protectedProcedure
-    .input(z.object({ slug: z.string() }))
+    .input(z.object({ slug: slugSchema }))
     .query(async ({ ctx, input }) => {
       const existingTeam = await ctx.db.query.teams.findFirst({
         where: eq(teams.slug, input.slug),
