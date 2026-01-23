@@ -13,16 +13,17 @@ type PageProps = {
 
 function renderTeamPage(team: typeof teams.$inferSelect) {
   return (
-    <div className="bg-background flex min-h-screen flex-col">
+    <>
       <Header teamSlug={team.slug} />
-      <TeamContent
-        teamId={team.id}
-        teamSlug={team.slug}
-        teamName={team.name}
-        isPersonal={team.isPersonal}
-      />
-      <Footer />
-    </div>
+      <div className="pb-24">
+        <TeamContent
+          teamId={team.id}
+          teamSlug={team.slug}
+          teamName={team.name}
+          isPersonal={team.isPersonal}
+        />
+      </div>
+    </>
   );
 }
 
