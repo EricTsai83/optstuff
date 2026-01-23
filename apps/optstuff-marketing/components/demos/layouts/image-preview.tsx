@@ -1,9 +1,9 @@
 "use client";
 
-import Image from "next/image";
-import { AspectRatio } from "@workspace/ui/components/aspect-ratio";
 import { useFlashOnChange } from "@/hooks/use-flash-on-change";
+import { AspectRatio } from "@workspace/ui/components/aspect-ratio";
 import { cn } from "@workspace/ui/lib/utils";
+import Image from "next/image";
 
 type ImagePreviewProps = {
   readonly imageUrl: string;

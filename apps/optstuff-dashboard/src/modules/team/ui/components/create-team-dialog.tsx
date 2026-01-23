@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { useRouter } from "next/navigation";
-import { Loader2, RefreshCw, Check, X } from "lucide-react";
+import { generateRandomSlug, generateSlug } from "@/lib/slug";
+import { api } from "@/trpc/react";
+import { Button } from "@workspace/ui/components/button";
 import {
   Dialog,
   DialogContent,
@@ -12,11 +12,11 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@workspace/ui/components/dialog";
-import { Button } from "@workspace/ui/components/button";
 import { Input } from "@workspace/ui/components/input";
 import { Label } from "@workspace/ui/components/label";
-import { api } from "@/trpc/react";
-import { generateSlug, generateRandomSlug } from "@/lib/slug";
+import { Check, Loader2, RefreshCw, X } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useState } from "react";
 
 type CreateTeamDialogProps = {
   readonly trigger: React.ReactNode;
@@ -166,7 +166,7 @@ export function CreateTeamDialog({
                     value={slug}
                     onChange={(e) => handleSlugChange(e.target.value)}
                     disabled={isPending}
-                    className="pl-6 pr-8"
+                    className="pr-8 pl-6"
                   />
                   {slug.length >= 3 && (
                     <span className="absolute top-1/2 right-3 -translate-y-1/2">
@@ -194,11 +194,13 @@ export function CreateTeamDialog({
               {slugError && (
                 <p className="text-destructive text-sm">{slugError}</p>
               )}
-              {!slugError && slug.length >= 3 && slugCheck?.available === false && (
-                <p className="text-destructive text-sm">
-                  This slug is already taken
-                </p>
-              )}
+              {!slugError &&
+                slug.length >= 3 &&
+                slugCheck?.available === false && (
+                  <p className="text-destructive text-sm">
+                    This slug is already taken
+                  </p>
+                )}
               {!slugError && slug.length > 0 && slug.length < 3 && (
                 <p className="text-muted-foreground text-sm">
                   Slug must be at least 3 characters

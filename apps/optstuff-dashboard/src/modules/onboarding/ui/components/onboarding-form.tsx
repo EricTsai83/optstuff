@@ -1,12 +1,12 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { useRouter } from "next/navigation";
-import { Loader2, Check, X, Shuffle } from "lucide-react";
+import { api } from "@/trpc/react";
 import { Button } from "@workspace/ui/components/button";
 import { Input } from "@workspace/ui/components/input";
 import { Label } from "@workspace/ui/components/label";
-import { api } from "@/trpc/react";
+import { Check, Loader2, Shuffle, X } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useState } from "react";
 
 // Word lists for generating friendly random slugs
 const ADJECTIVES = [
@@ -68,9 +68,7 @@ type OnboardingFormProps = {
 export function OnboardingForm({ suggestedSlug }: OnboardingFormProps) {
   const router = useRouter();
   // If no suggested slug, generate a random one
-  const [slug, setSlug] = useState(() =>
-    suggestedSlug || generateRandomSlug()
-  );
+  const [slug, setSlug] = useState(() => suggestedSlug || generateRandomSlug());
   const [slugError, setSlugError] = useState<string | null>(null);
   const [debouncedSlug, setDebouncedSlug] = useState(slug);
   const utils = api.useUtils();
@@ -182,7 +180,7 @@ export function OnboardingForm({ suggestedSlug }: OnboardingFormProps) {
             </Button>
           </div>
           <div className="relative">
-            <span className="text-muted-foreground pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 select-none text-sm">
+            <span className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-sm select-none">
               optstuff.com/
             </span>
             <Input
@@ -191,11 +189,11 @@ export function OnboardingForm({ suggestedSlug }: OnboardingFormProps) {
               value={slug}
               onChange={(e) => handleSlugChange(e.target.value)}
               disabled={isPending}
-              className="pl-[104px] pr-10"
+              className="pr-10 pl-[104px]"
               autoFocus
             />
             {slug.length >= 3 && (
-              <span className="absolute right-3 top-1/2 -translate-y-1/2">
+              <span className="absolute top-1/2 right-3 -translate-y-1/2">
                 {isCheckingSlug || slug !== debouncedSlug ? (
                   <Loader2 className="text-muted-foreground h-4 w-4 animate-spin" />
                 ) : isSlugValid ? (
@@ -214,7 +212,9 @@ export function OnboardingForm({ suggestedSlug }: OnboardingFormProps) {
               slug.length >= 3 &&
               slug === debouncedSlug &&
               slugCheck?.available === false ? (
-              <span className="text-destructive">This URL is already taken</span>
+              <span className="text-destructive">
+                This URL is already taken
+              </span>
             ) : !slugError && slug.length > 0 && slug.length < 3 ? (
               <span className="text-muted-foreground">
                 Must be at least 3 characters
@@ -240,7 +240,6 @@ export function OnboardingForm({ suggestedSlug }: OnboardingFormProps) {
             )}
           </Button>
         </div>
-
       </form>
 
       <p className="text-muted-foreground mt-4 text-center text-xs">

@@ -1,2 +1,2 @@
 // Re-export from shared types
-export type { Team, NavTab } from "@/lib/types";
+export type { NavTab, Team } from "@/lib/types";

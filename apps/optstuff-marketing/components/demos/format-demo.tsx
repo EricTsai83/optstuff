@@ -1,15 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { CodeBlock } from "@workspace/ui/components/code-block";
+import { Label } from "@workspace/ui/components/label";
 import {
   RadioGroup,
   RadioGroupItem,
 } from "@workspace/ui/components/radio-group";
-import { Label } from "@workspace/ui/components/label";
 import { Check, FileImage } from "lucide-react";
-import { CodeBlock } from "@workspace/ui/components/code-block";
-import { ORIGINAL_SIZE_KB, FORMAT_SIZES, DEMO_IMAGE } from "./constants";
-import { DemoHeader, DemoLayout, ControlCard, ImagePreview } from "./layouts";
+import { useState } from "react";
+import { DEMO_IMAGE, FORMAT_SIZES, ORIGINAL_SIZE_KB } from "./constants";
+import { ControlCard, DemoHeader, DemoLayout, ImagePreview } from "./layouts";
 
 const formats = [
   { value: "webp", label: "WebP", ...FORMAT_SIZES.webp, supported: true },

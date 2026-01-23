@@ -1,11 +1,11 @@
-import { Header } from "@/components/header";
-import { HeroIntro } from "@/components/hero-intro";
-import { ImageOptimizationDemo } from "@/components/image-optimization-demo";
-import { IntegrationSteps } from "@/components/integration-steps";
 import { ApiDemo } from "@/components/api-demo";
 import { Features } from "@/components/features";
 import { Footer } from "@/components/footer";
+import { Header } from "@/components/header";
 import { HeroBackground } from "@/components/hero-background";
+import { HeroIntro } from "@/components/hero-intro";
+import { ImageOptimizationDemo } from "@/components/image-optimization-demo";
+import { IntegrationSteps } from "@/components/integration-steps";
 
 export default async function Home() {
   return (

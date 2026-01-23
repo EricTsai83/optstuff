@@ -1,6 +1,6 @@
-import { teamRouter } from "@/server/api/routers/team";
-import { projectRouter } from "@/server/api/routers/project";
 import { apiKeyRouter } from "@/server/api/routers/apiKey";
+import { projectRouter } from "@/server/api/routers/project";
+import { teamRouter } from "@/server/api/routers/team";
 import { usageRouter } from "@/server/api/routers/usage";
 import { createCallerFactory, createTRPCRouter } from "@/server/api/trpc";
 

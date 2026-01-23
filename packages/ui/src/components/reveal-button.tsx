@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
-import { Eye, EyeOff } from "lucide-react";
 import { cn } from "@workspace/ui/lib/utils";
+import { Eye, EyeOff } from "lucide-react";
+import { useState } from "react";
 
 type RevealButtonProps = {
   readonly revealed?: boolean;

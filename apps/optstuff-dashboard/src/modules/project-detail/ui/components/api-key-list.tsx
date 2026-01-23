@@ -1,10 +1,8 @@
 "use client";
 
-import { useState } from "react";
-import { formatDistanceToNow } from "date-fns";
-import { Key, MoreHorizontal, Trash2, RotateCcw, Shield } from "lucide-react";
-import { Button } from "@workspace/ui/components/button";
+import { api } from "@/trpc/react";
 import { Badge } from "@workspace/ui/components/badge";
+import { Button } from "@workspace/ui/components/button";
 import {
   Card,
   CardContent,
@@ -27,9 +25,11 @@ import {
   DropdownMenuTrigger,
 } from "@workspace/ui/components/dropdown-menu";
 import { Label } from "@workspace/ui/components/label";
-import { api } from "@/trpc/react";
-import { CopyButton, CopyIcon } from "./copy-button";
+import { formatDistanceToNow } from "date-fns";
+import { Key, MoreHorizontal, RotateCcw, Shield, Trash2 } from "lucide-react";
+import { useState } from "react";
 import { ApiCodeExamples, DocsLink } from "./api-code-examples";
+import { CopyButton, CopyIcon } from "./copy-button";
 import { CreateApiKeyDialog } from "./create-api-key-dialog";
 
 type ApiKeyListProps = {

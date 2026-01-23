@@ -1,8 +1,8 @@
 "use client";
 
-import { useTheme } from "next-themes";
-import { Moon, Sun } from "lucide-react";
 import { cn } from "@workspace/ui/lib/utils";
+import { Moon, Sun } from "lucide-react";
+import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
 
 export function ThemeToggleButton() {
@@ -40,7 +40,7 @@ export function ThemeToggleButton() {
       type="button"
       aria-label={isDark ? "toggle to light mode" : "toggle to dark mode"}
       className={cn(
-        "border-border bg-secondary hover:border-accent hover:bg-accent/10 hover:text-accent focus-visible:ring-ring focus-visible:ring-offset-background relative flex h-8 w-8 cursor-pointer items-center justify-center overflow-hidden rounded-full border  focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none",
+        "border-border bg-secondary hover:border-accent hover:bg-accent/10 hover:text-accent focus-visible:ring-ring focus-visible:ring-offset-background relative flex h-8 w-8 cursor-pointer items-center justify-center overflow-hidden rounded-full border focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none",
         isDark
           ? "text-accent-foreground"
           : "text-muted-foreground dark:text-accent-foreground",
@@ -54,7 +54,7 @@ export function ThemeToggleButton() {
             (isDark
               ? "animate-theme-toggle-icon-out"
               : "animate-theme-toggle-icon-in"),
-          !hasToggled && isDark && "opacity-0 scale-0",
+          !hasToggled && isDark && "scale-0 opacity-0",
         )}
       />
       <Moon
@@ -64,7 +64,7 @@ export function ThemeToggleButton() {
             (isDark
               ? "animate-theme-toggle-icon-in"
               : "animate-theme-toggle-icon-out"),
-          !hasToggled && !isDark && "opacity-0 scale-0",
+          !hasToggled && !isDark && "scale-0 opacity-0",
         )}
       />
     </button>

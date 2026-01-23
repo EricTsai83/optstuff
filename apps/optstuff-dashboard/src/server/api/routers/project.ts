@@ -1,12 +1,12 @@
-import { eq, and, desc, inArray } from "drizzle-orm";
-import { z } from "zod";
 import { TRPCError } from "@trpc/server";
+import { and, desc, eq, inArray } from "drizzle-orm";
+import { z } from "zod";
 
-import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
-import { projects, pinnedProjects, apiKeys, teams } from "@/server/db/schema";
 import { generateSlug, generateUniqueSlug } from "@/lib/slug";
-import { generateApiKey } from "@/server/lib/api-key";
+import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
 import type { db as dbType } from "@/server/db";
+import { apiKeys, pinnedProjects, projects, teams } from "@/server/db/schema";
+import { generateApiKey } from "@/server/lib/api-key";
 
 /**
  * Helper to verify user owns the team.

@@ -1,10 +1,8 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { Check, ChevronDown, Plus } from "lucide-react";
-import { Button } from "@workspace/ui/components/button";
+import { api } from "@/trpc/react";
 import { Badge } from "@workspace/ui/components/badge";
+import { Button } from "@workspace/ui/components/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,9 +10,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@workspace/ui/components/dropdown-menu";
-import { api } from "@/trpc/react";
-import { CreateTeamDialog } from "./create-team-dialog";
+import { Check, ChevronDown, Plus } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 import type { Team } from "../../types";
+import { CreateTeamDialog } from "./create-team-dialog";
 
 type TeamSwitcherProps = {
   readonly currentTeamSlug?: string;

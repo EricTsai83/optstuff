@@ -1,6 +1,6 @@
-import Link from "next/link";
 import { Logo } from "@workspace/ui/components/logo";
 import { Github } from "lucide-react";
+import Link from "next/link";
 
 const FOOTER_NAVIGATION = {
   product: [
@@ -51,7 +51,7 @@ export function Footer() {
                   href={item.href}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-muted-foreground hover:text-foreground dark:text-foreground flex h-9 w-9 items-center justify-center rounded-lg transition-colors hover:bg-muted"
+                  className="text-muted-foreground hover:text-foreground dark:text-foreground hover:bg-muted flex h-9 w-9 items-center justify-center rounded-lg transition-colors"
                   aria-label={item.label}
                 >
                   <Icon className="h-5 w-5" />

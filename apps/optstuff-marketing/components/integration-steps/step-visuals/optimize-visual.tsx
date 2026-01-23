@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Check } from "lucide-react";
 import { cn } from "@workspace/ui/lib/utils";
+import { Check } from "lucide-react";
+import { useEffect, useState } from "react";
 
 /** Simple arrow SVG pointing right */
 function ArrowRight({ active, color }: { active: boolean; color: string }) {
@@ -183,9 +183,9 @@ export function OptimizeVisual() {
   return (
     <div className="flex h-full flex-row items-stretch gap-2 sm:gap-3">
       {/* Left: Website */}
-      <div className="flex flex-[1.2] flex-col overflow-hidden rounded-lg border border-border/50 bg-card sm:flex-[1.5] sm:rounded-xl">
+      <div className="border-border/50 bg-card flex flex-[1.2] flex-col overflow-hidden rounded-lg border sm:flex-[1.5] sm:rounded-xl">
         {/* Mac window header */}
-        <div className="flex items-center justify-center gap-1 border-b border-border/50 bg-muted/50 px-2 py-1.5 sm:justify-start sm:gap-1.5 sm:px-4 sm:py-2">
+        <div className="border-border/50 bg-muted/50 flex items-center justify-center gap-1 border-b px-2 py-1.5 sm:justify-start sm:gap-1.5 sm:px-4 sm:py-2">
           <div className="hidden h-2.5 w-2.5 rounded-full bg-[#ff5f57] sm:block" />
           <div className="hidden h-2.5 w-2.5 rounded-full bg-[#febc2e] sm:block" />
           <div className="hidden h-2.5 w-2.5 rounded-full bg-[#28c840] sm:block" />
@@ -272,14 +272,14 @@ export function OptimizeVisual() {
             )}
           >
             {isOptStuffActive && (
-              <div className="animate-soft-pulse absolute inset-0 rounded-xl bg-accent/40 sm:rounded-2xl" />
+              <div className="animate-soft-pulse bg-accent/40 absolute inset-0 rounded-xl sm:rounded-2xl" />
             )}
 
             <div className="relative">
               {isOptStuffActive ? (
                 <span className="text-xl sm:text-3xl">⚡</span>
               ) : step >= 3 ? (
-                <Check className="h-6 w-6 text-emerald-600 dark:text-green-400 sm:h-8 sm:w-8" />
+                <Check className="h-6 w-6 text-emerald-600 sm:h-8 sm:w-8 dark:text-green-400" />
               ) : (
                 <span className="text-xl sm:text-3xl">📦</span>
               )}

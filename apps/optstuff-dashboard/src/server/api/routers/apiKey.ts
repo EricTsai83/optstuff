@@ -1,11 +1,11 @@
-import { eq, and, isNull, desc, count } from "drizzle-orm";
-import { z } from "zod";
 import { TRPCError } from "@trpc/server";
+import { and, count, desc, eq, isNull } from "drizzle-orm";
+import { z } from "zod";
 
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
+import type { db as dbType } from "@/server/db";
 import { apiKeys, projects } from "@/server/db/schema";
 import { generateApiKey } from "@/server/lib/api-key";
-import type { db as dbType } from "@/server/db";
 
 /** Helper to update project's API key count using SQL count() */
 async function updateProjectApiKeyCount(db: typeof dbType, projectId: string) {

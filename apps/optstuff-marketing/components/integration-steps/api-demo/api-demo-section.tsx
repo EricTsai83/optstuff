@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
-import { Check, Copy } from "lucide-react";
 import { cn } from "@workspace/ui/lib/utils";
-import type { CodeTab } from "../types";
+import { Check, Copy } from "lucide-react";
+import { useState } from "react";
 import { CODE_EXAMPLES } from "../constants";
+import type { CodeTab } from "../types";
 import { TypewriterCode } from "./typewriter-code";
 
 /** API Demo Section */
@@ -74,7 +74,7 @@ export function ApiDemoSection() {
         {/* Copy Button */}
         <button
           onClick={handleCopy}
-          className="absolute right-2 top-2 flex items-center gap-1 rounded-md bg-white/10 px-2 py-1 text-[10px] font-medium text-white/80 backdrop-blur-sm transition-all hover:bg-white/20 hover:text-white sm:right-4 sm:top-4 sm:gap-1.5 sm:rounded-lg sm:px-3 sm:py-1.5 sm:text-xs"
+          className="absolute top-2 right-2 flex items-center gap-1 rounded-md bg-white/10 px-2 py-1 text-[10px] font-medium text-white/80 backdrop-blur-sm transition-all hover:bg-white/20 hover:text-white sm:top-4 sm:right-4 sm:gap-1.5 sm:rounded-lg sm:px-3 sm:py-1.5 sm:text-xs"
         >
           {copied ? (
             <>

@@ -1,8 +1,5 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useTheme } from "next-themes";
-import { ChevronDown, Monitor, Sun, Moon } from "lucide-react";
 import { Button } from "@workspace/ui/components/button";
 import {
   DropdownMenu,
@@ -12,6 +9,9 @@ import {
 } from "@workspace/ui/components/dropdown-menu";
 import { LogoIcon } from "@workspace/ui/components/logo";
 import { cn } from "@workspace/ui/lib/utils";
+import { ChevronDown, Monitor, Moon, Sun } from "lucide-react";
+import { useTheme } from "next-themes";
+import { useEffect, useState } from "react";
 
 const FOOTER_LINKS = [
   { name: "Home", href: "/" },

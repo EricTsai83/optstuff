@@ -1,8 +1,8 @@
 // Types
-export type { Team, NavTab } from "./types";
+export type { NavTab, Team } from "./types";
 
 // Constants
-export { SCROLL_CONFIG, NAV_TABS } from "./constants";
+export { NAV_TABS, SCROLL_CONFIG } from "./constants";
 
 // Components
 export {

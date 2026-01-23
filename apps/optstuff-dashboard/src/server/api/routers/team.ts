@@ -1,10 +1,9 @@
-import { eq, and, desc } from "drizzle-orm";
-import { z } from "zod";
 import { TRPCError } from "@trpc/server";
+import { and, desc, eq } from "drizzle-orm";
+import { z } from "zod";
 
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
 import { teams } from "@/server/db/schema";
-import { generateSlug, generateUniqueSlug } from "@/lib/slug";
 
 export const teamRouter = createTRPCRouter({
   /**

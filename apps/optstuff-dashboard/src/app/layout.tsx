@@ -1,9 +1,9 @@
 import "@/styles/globals.css";
+import { TRPCReactProvider } from "@/trpc/react";
+import { AuthProvider } from "@workspace/auth/provider";
+import { ThemeProvider } from "@workspace/ui/components/theme-provider";
 import { type Metadata } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
-import { TRPCReactProvider } from "@/trpc/react";
-import { ThemeProvider } from "@workspace/ui/components/theme-provider";
-import { AuthProvider } from "@workspace/auth/provider";
 
 export const metadata: Metadata = {
   title: "OptStuff - High Performance Image Optimization",

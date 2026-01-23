@@ -1,11 +1,11 @@
 import { TRPCError } from "@trpc/server";
-import { eq, and, gte, lte, sql, desc, inArray } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, lte, sql } from "drizzle-orm";
 import { z } from "zod";
 
-import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
-import { usageRecords, projects, apiKeys, teams } from "@/server/db/schema";
 import { getDateRange, getToday } from "@/lib/format";
+import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
 import type { db as dbType } from "@/server/db";
+import { apiKeys, projects, teams, usageRecords } from "@/server/db/schema";
 
 /**
  * Helper to check project access using ownerId.

@@ -1,19 +1,19 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import Image from "next/image";
-import { Slider } from "@workspace/ui/components/slider";
-import { Label } from "@workspace/ui/components/label";
 import { SlidingToggleGroup } from "@/components/sliding-toggle-group";
 import { CodeBlock } from "@workspace/ui/components/code-block";
+import { Label } from "@workspace/ui/components/label";
+import { Slider } from "@workspace/ui/components/slider";
 import { Maximize2 } from "lucide-react";
+import Image from "next/image";
+import { useMemo, useState } from "react";
 import {
-  ORIGINAL_WIDTH,
+  DEMO_IMAGE,
   ORIGINAL_HEIGHT,
   ORIGINAL_SIZE_KB,
-  DEMO_IMAGE,
+  ORIGINAL_WIDTH,
 } from "./constants";
-import { DemoHeader, DemoLayout, ControlCard } from "./layouts";
+import { ControlCard, DemoHeader, DemoLayout } from "./layouts";
 
 const FIT_MODES = {
   cover: "cover",
@@ -185,7 +185,9 @@ export function ResizeDemo() {
 
           <ControlCard>
             <Label className="mb-2 text-sm font-medium">API URL</Label>
-            <CodeBlock content={`/s_${width}x${height},fit_${FIT_MODES[fit]}/image.jpg`} />
+            <CodeBlock
+              content={`/s_${width}x${height},fit_${FIT_MODES[fit]}/image.jpg`}
+            />
           </ControlCard>
         </div>
 
@@ -214,7 +216,7 @@ export function ResizeDemo() {
                   alt="Sample resized image"
                   fill
                   unoptimized
-                  className="pointer-events-none select-none transition-all duration-300"
+                  className="pointer-events-none transition-all duration-300 select-none"
                   style={{
                     objectFit: getObjectFit(
                       fit,

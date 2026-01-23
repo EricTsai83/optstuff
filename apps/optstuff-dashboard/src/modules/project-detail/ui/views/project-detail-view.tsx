@@ -1,27 +1,27 @@
 "use client";
 
-import Link from "next/link";
-import { formatDistanceToNow } from "date-fns";
-import {
-  ArrowLeft,
-  Settings,
-  Key,
-  Activity,
-  LayoutDashboard,
-} from "lucide-react";
-import { Button } from "@workspace/ui/components/button";
 import { Badge } from "@workspace/ui/components/badge";
+import { Button } from "@workspace/ui/components/button";
 import {
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
 } from "@workspace/ui/components/tabs";
+import { formatDistanceToNow } from "date-fns";
+import {
+  Activity,
+  ArrowLeft,
+  Key,
+  LayoutDashboard,
+  Settings,
+} from "lucide-react";
+import Link from "next/link";
+import type { Project, Team } from "../../types";
 import { ApiKeyList } from "../components/api-key-list";
 import { OverviewTab } from "./overview-tab";
-import { UsageTab } from "./usage-tab";
 import { SettingsTab } from "./settings-tab";
-import type { Project, Team } from "../../types";
+import { UsageTab } from "./usage-tab";
 
 type ProjectDetailViewProps = {
   readonly project: Project;

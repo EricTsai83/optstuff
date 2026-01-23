@@ -1,13 +1,13 @@
 "use client";
 
-import { useMemo, useState, useRef, useCallback } from "react";
-import { Slider } from "@workspace/ui/components/slider";
-import { Label } from "@workspace/ui/components/label";
 import { CodeBlock } from "@workspace/ui/components/code-block";
-import { ORIGINAL_SIZE_KB, QUALITY_DEMO_IMAGE } from "../constants";
+import { Label } from "@workspace/ui/components/label";
+import { Slider } from "@workspace/ui/components/slider";
 import { ImageIcon, Sparkles, TrendingDown } from "lucide-react";
-import { DemoHeader, ControlCard, DemoLayout, PreviewCard } from "../layouts";
 import Image from "next/image";
+import { useCallback, useMemo, useRef, useState } from "react";
+import { ORIGINAL_SIZE_KB, QUALITY_DEMO_IMAGE } from "../constants";
+import { ControlCard, DemoHeader, DemoLayout, PreviewCard } from "../layouts";
 import { ComparisonMagnifier } from "./comparison-magnifier";
 import { SavingsVisualizer } from "./savings-visualizer";
 import { StatCard } from "./stat-card";

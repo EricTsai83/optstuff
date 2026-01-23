@@ -1,11 +1,11 @@
-import { redirect, notFound } from "next/navigation";
-import { eq, and } from "drizzle-orm";
-import { auth } from "@workspace/auth/server";
-import { db } from "@/server/db";
-import { teams, projects } from "@/server/db/schema";
-import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
+import { Header } from "@/components/header";
 import { ProjectDetailView } from "@/modules/project-detail";
+import { db } from "@/server/db";
+import { projects, teams } from "@/server/db/schema";
+import { auth } from "@workspace/auth/server";
+import { and, eq } from "drizzle-orm";
+import { notFound, redirect } from "next/navigation";
 
 type PageProps = {
   params: Promise<{ team: string; project: string }>;

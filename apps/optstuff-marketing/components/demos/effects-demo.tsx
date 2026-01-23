@@ -1,15 +1,15 @@
 "use client";
 
-import { useState } from "react";
-import { Slider } from "@workspace/ui/components/slider";
-import { Label } from "@workspace/ui/components/label";
-import { Switch } from "@workspace/ui/components/switch";
-import { RotateCcw, Wand2 } from "lucide-react";
 import { Button } from "@workspace/ui/components/button";
 import { CodeBlock } from "@workspace/ui/components/code-block";
-import { DEMO_IMAGE } from "./constants";
-import { DemoHeader, DemoLayout, ControlCard, ImagePreview } from "./layouts";
+import { Label } from "@workspace/ui/components/label";
+import { Slider } from "@workspace/ui/components/slider";
+import { Switch } from "@workspace/ui/components/switch";
 import { cn } from "@workspace/ui/lib/utils";
+import { RotateCcw, Wand2 } from "lucide-react";
+import { useState } from "react";
+import { DEMO_IMAGE } from "./constants";
+import { ControlCard, DemoHeader, DemoLayout, ImagePreview } from "./layouts";
 
 type SliderControlProps = {
   label: string;

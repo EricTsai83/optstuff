@@ -1,8 +1,8 @@
-import { ArrowRight } from "lucide-react";
-import { Button } from "@workspace/ui/components/button";
-import { AnimatedLink } from "@/components/ui/animated-link";
-import Link from "next/link";
 import { HeroAnimation } from "@/components/hero-animation";
+import { AnimatedLink } from "@/components/ui/animated-link";
+import { Button } from "@workspace/ui/components/button";
+import { ArrowRight } from "lucide-react";
+import Link from "next/link";
 
 export function HeroIntro() {
   return (
@@ -30,7 +30,7 @@ export function HeroIntro() {
       <div className="flex flex-col items-center gap-8 md:flex-row md:items-center md:justify-between md:gap-12">
         {/* Text content */}
         <div className="flex flex-col items-center md:items-start md:justify-center">
-          <h1 className="animate-fade-in-up animation-delay-100 mb-4 text-center text-3xl font-bold leading-[1.15] tracking-tight sm:text-4xl md:mb-6 md:text-left md:text-5xl md:leading-[1.1] lg:text-6xl lg:text-nowrap xl:text-7xl">
+          <h1 className="animate-fade-in-up animation-delay-100 mb-4 text-center text-3xl leading-[1.15] font-bold tracking-tight sm:text-4xl md:mb-6 md:text-left md:text-5xl md:leading-[1.1] lg:text-6xl lg:text-nowrap xl:text-7xl">
             Image optimization <br className="hidden sm:block" />
             <span className="text-muted-foreground">that just works</span>
           </h1>

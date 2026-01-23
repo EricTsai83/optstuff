@@ -1,11 +1,8 @@
-import { redirect } from "next/navigation";
-import { eq, and } from "drizzle-orm";
-import { auth, currentUser } from "@workspace/auth/server";
-import { db } from "@/server/db";
-import { teams } from "@/server/db/schema";
 import { generateSlug } from "@/lib/slug";
 import { OnboardingForm } from "@/modules/onboarding/ui/components/onboarding-form";
-import { LogoIcon } from "@workspace/ui/components/logo";
+import { db } from "@/server/db";
+import { teams } from "@/server/db/schema";
+import { auth, currentUser } from "@workspace/auth/server";
 import {
   Card,
   CardContent,
@@ -13,6 +10,9 @@ import {
   CardHeader,
   CardTitle,
 } from "@workspace/ui/components/card";
+import { LogoIcon } from "@workspace/ui/components/logo";
+import { and, eq } from "drizzle-orm";
+import { redirect } from "next/navigation";
 
 export default async function OnboardingPage() {
   const { userId } = await auth();
@@ -34,8 +34,7 @@ export default async function OnboardingPage() {
   const user = await currentUser();
   const baseSlug = user?.username ? generateSlug(user.username) : "";
   // Only use the slug if it's valid (at least 3 characters after conversion)
-  const suggestedSlug =
-    baseSlug.length >= 3 ? `${baseSlug}-personal-team` : "";
+  const suggestedSlug = baseSlug.length >= 3 ? `${baseSlug}-personal-team` : "";
 
   return (
     <div className="bg-background flex min-h-screen items-center justify-center px-4">
@@ -45,7 +44,9 @@ export default async function OnboardingPage() {
             <LogoIcon size={48} />
           </div>
           <CardTitle className="text-2xl">Welcome to OptStuff</CardTitle>
-          <CardDescription>Let&apos;s set up your personal team</CardDescription>
+          <CardDescription>
+            Let&apos;s set up your personal team
+          </CardDescription>
         </CardHeader>
         <CardContent className="px-6 py-4">
           <OnboardingForm suggestedSlug={suggestedSlug} />

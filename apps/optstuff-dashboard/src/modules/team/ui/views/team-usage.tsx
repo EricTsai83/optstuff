@@ -1,6 +1,10 @@
 "use client";
 
-import { Activity } from "lucide-react";
+import { UsageProgressBar } from "@/components/usage-progress-bar";
+import { USAGE_LIMITS } from "@/lib/constants";
+import { formatBytes, formatNumber } from "@/lib/format";
+import { StatCard } from "@/modules/project-detail/ui/components/stat-card";
+import { api } from "@/trpc/react";
 import {
   Card,
   CardContent,
@@ -8,11 +12,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@workspace/ui/components/card";
-import { api } from "@/trpc/react";
-import { formatBytes, formatNumber } from "@/lib/format";
-import { USAGE_LIMITS } from "@/lib/constants";
-import { UsageProgressBar } from "@/components/usage-progress-bar";
-import { StatCard } from "@/modules/project-detail/ui/components/stat-card";
+import { Activity } from "lucide-react";
 
 type TeamUsageProps = {
   readonly teamId: string;

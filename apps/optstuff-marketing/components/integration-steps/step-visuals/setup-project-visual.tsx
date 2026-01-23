@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Eye, EyeOff } from "lucide-react";
 import { cn } from "@workspace/ui/lib/utils";
+import { Eye, EyeOff } from "lucide-react";
+import { useEffect, useState } from "react";
 
 /** Step 2: API Key list */
 export function SetupProjectVisual() {
@@ -22,9 +22,9 @@ export function SetupProjectVisual() {
   const isRevealed = step === 2;
 
   return (
-    <div className="bg-card flex h-full flex-col overflow-hidden rounded-lg border border-border/50 sm:rounded-xl">
+    <div className="bg-card border-border/50 flex h-full flex-col overflow-hidden rounded-lg border sm:rounded-xl">
       {/* Mac window header */}
-      <div className="bg-muted/50 flex items-center gap-1 border-b border-border/50 px-2 py-1 sm:gap-1.5 sm:px-4 sm:py-2">
+      <div className="bg-muted/50 border-border/50 flex items-center gap-1 border-b px-2 py-1 sm:gap-1.5 sm:px-4 sm:py-2">
         <div className="h-1.5 w-1.5 rounded-full bg-[#ff5f57] sm:h-2.5 sm:w-2.5" />
         <div className="h-1.5 w-1.5 rounded-full bg-[#febc2e] sm:h-2.5 sm:w-2.5" />
         <div className="h-1.5 w-1.5 rounded-full bg-[#28c840] sm:h-2.5 sm:w-2.5" />
@@ -42,7 +42,7 @@ export function SetupProjectVisual() {
         </div>
 
         {/* Key row */}
-        <div className="bg-muted/30 flex items-center gap-1.5 rounded border border-border/50 px-2 py-1.5 sm:gap-3 sm:rounded-lg sm:px-4 sm:py-3">
+        <div className="bg-muted/30 border-border/50 flex items-center gap-1.5 rounded border px-2 py-1.5 sm:gap-3 sm:rounded-lg sm:px-4 sm:py-3">
           <div className="text-foreground/70 shrink-0 text-[8px] sm:text-xs">
             Secret
           </div>
@@ -62,7 +62,7 @@ export function SetupProjectVisual() {
               className={cn(
                 "shrink-0 rounded p-0.5 transition-all duration-300 sm:rounded-lg sm:p-1.5",
                 isEyeHighlighted
-                  ? "bg-accent/20 text-accent ring-2 ring-accent/40"
+                  ? "bg-accent/20 text-accent ring-accent/40 ring-2"
                   : isRevealed
                     ? "bg-accent/10 text-accent"
                     : "text-muted-foreground hover:text-foreground",

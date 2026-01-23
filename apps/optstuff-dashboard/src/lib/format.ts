@@ -38,7 +38,10 @@ export function formatNumber(num: number): string {
 /**
  * Get date range for last N days
  */
-export function getDateRange(days: number): { startDate: string; endDate: string } {
+export function getDateRange(days: number): {
+  startDate: string;
+  endDate: string;
+} {
   const today = new Date();
   const startDay = new Date(today);
   startDay.setDate(startDay.getDate() - days);

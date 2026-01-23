@@ -1,6 +1,6 @@
+import { SectionHeader, SectionWrapper } from "@/components/ui/section";
 import { Code2 } from "lucide-react";
 import { ApiDemoSection } from "./integration-steps/api-demo";
-import { SectionWrapper, SectionHeader } from "@/components/ui/section";
 
 export function ApiDemo() {
   return (

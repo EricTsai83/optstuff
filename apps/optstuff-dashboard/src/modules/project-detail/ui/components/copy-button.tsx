@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
-import { Copy, Check, X } from "lucide-react";
-import { Button } from "@workspace/ui/components/button";
 import { copyToClipboard } from "@/lib/clipboard";
+import { Button } from "@workspace/ui/components/button";
+import { Check, Copy, X } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 
 type CopyStatus = "idle" | "copied" | "error";
 

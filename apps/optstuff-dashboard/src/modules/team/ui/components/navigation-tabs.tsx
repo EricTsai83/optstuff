@@ -1,9 +1,9 @@
 "use client";
 
-import { useScroll } from "@workspace/hooks/use-scroll";
 import { useIsMobile } from "@workspace/hooks/use-mobile";
+import { useScroll } from "@workspace/hooks/use-scroll";
 import { Tabs, TabsList, TabsTrigger } from "@workspace/ui/components/tabs";
-import { SCROLL_CONFIG, NAV_TABS } from "../../constants";
+import { NAV_TABS, SCROLL_CONFIG } from "../../constants";
 import type { NavTab } from "../../types";
 
 type NavigationTabsProps = {
