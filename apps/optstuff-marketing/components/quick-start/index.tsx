@@ -34,6 +34,8 @@ export function QuickStart() {
         {STEPS.map((step, index) => {
           const isVisible = visibleSteps.has(index);
           const isLast = index === STEPS.length - 1;
+          // 連接線應該在下一個步驟區域可見時才出現
+          const shouldShowLine = !isLast && visibleSteps.has(index + 1);
 
           return (
             <div
@@ -46,17 +48,25 @@ export function QuickStart() {
                   : "translate-y-12 opacity-0",
                 !isLast && "pb-12 sm:pb-16",
               )}
-              style={{ transitionDelay: `${index * 200}ms` }}
             >
-              {/* Connecting line */}
+              {/* Connecting line - 當下一個步驟區域進入視野時才延伸 */}
               {!isLast && (
                 <div
-                  className={cn(
-                    "absolute top-10 left-4 h-[calc(100%-2.5rem)] w-0.5 transition-all duration-1000 sm:top-12 sm:left-5 sm:h-[calc(100%-3rem)] md:left-6",
-                    isVisible ? "bg-accent/30" : "bg-border/30",
-                  )}
-                  style={{ transitionDelay: `${index * 200 + 300}ms` }}
-                />
+                  className="absolute top-10 left-4 w-0.5 overflow-hidden sm:top-12 sm:left-5 md:left-6"
+                  style={{
+                    height: "calc(100% - 2.5rem)",
+                  }}
+                >
+                  <div
+                    className={cn(
+                      "w-full origin-top bg-accent/30 transition-transform duration-500 ease-out",
+                    )}
+                    style={{
+                      height: "100%",
+                      transform: shouldShowLine ? "scaleY(1)" : "scaleY(0)",
+                    }}
+                  />
+                </div>
               )}
 
               {/* Step content */}
@@ -69,7 +79,6 @@ export function QuickStart() {
                       isVisible ? "scale-100" : "scale-0",
                     )}
                     style={{
-                      transitionDelay: `${index * 200 + 100}ms`,
                       boxShadow: isVisible
                         ? "0 0 30px hsl(var(--accent) / 0.3)"
                         : "none",
@@ -103,7 +112,6 @@ export function QuickStart() {
                         ? "translate-x-0 opacity-100"
                         : "translate-x-8 opacity-0",
                     )}
-                    style={{ transitionDelay: `${index * 200 + 200}ms` }}
                   >
                     <div className="h-full p-2 sm:p-4 md:p-5">
                       {index === 0 && <CreateProjectVisual />}
