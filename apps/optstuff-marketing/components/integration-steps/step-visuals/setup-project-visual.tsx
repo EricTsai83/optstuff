@@ -7,7 +7,7 @@ import { useEffect, useState } from "react";
 /** Step 2: API Key list */
 export function SetupProjectVisual() {
   const [step, setStep] = useState(0);
-  const apiKey = "sk_live_a1b2...";
+  const apiKey = "sk_live_yc8Xjnqedn88pA2MpeHa3ERORvdNkWZxN51aMR4K3k";
   const maskedKey = "sk_live_****";
 
   useEffect(() => {
