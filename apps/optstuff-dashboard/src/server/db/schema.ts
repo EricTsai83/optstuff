@@ -66,6 +66,9 @@ export const projects = createTable(
     name: d.varchar({ length: 255 }).notNull(),
     slug: d.varchar({ length: 255 }).notNull(),
     description: d.text(),
+    // Domain whitelist settings for IPX service
+    allowedSourceDomains: d.text().array(), // Image source domain whitelist
+    allowedRefererDomains: d.text().array(), // Request referer domain whitelist
     // Cached statistics (updated on API key/usage changes)
     apiKeyCount: d.integer().default(0).notNull(),
     totalRequests: d.bigint({ mode: "number" }).default(0).notNull(),
@@ -88,6 +91,7 @@ export const projectsRelations = relations(projects, ({ one, many }) => ({
   apiKeys: many(apiKeys),
   usageRecords: many(usageRecords),
   pinnedBy: many(pinnedProjects),
+  requestLogs: many(requestLogs),
 }));
 
 // ============================================================================
@@ -200,5 +204,45 @@ export const usageRecordsRelations = relations(usageRecords, ({ one }) => ({
   apiKey: one(apiKeys, {
     fields: [usageRecords.apiKeyId],
     references: [apiKeys.id],
+  }),
+}));
+
+// ============================================================================
+// Request Logs (for IPX service monitoring)
+// ============================================================================
+
+/**
+ * Request Logs table - stores individual IPX request logs.
+ * Used for:
+ * - Real-time request log display (last 20 requests)
+ * - Top images statistics
+ * - Bandwidth savings calculation
+ */
+export const requestLogs = createTable(
+  "request_log",
+  (d) => ({
+    id: d.uuid().primaryKey().defaultRandom(),
+    projectId: d
+      .uuid()
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
+    sourceUrl: d.text().notNull(),
+    status: d.varchar({ length: 20 }).notNull(), // success, error, forbidden
+    processingTimeMs: d.integer(),
+    originalSize: d.bigint({ mode: "number" }),
+    optimizedSize: d.bigint({ mode: "number" }),
+    createdAt: d.timestamp({ withTimezone: true }).defaultNow().notNull(),
+  }),
+  (t) => [
+    index("request_log_project_idx").on(t.projectId),
+    index("request_log_project_created_idx").on(t.projectId, t.createdAt),
+    index("request_log_source_url_idx").on(t.sourceUrl),
+  ],
+);
+
+export const requestLogsRelations = relations(requestLogs, ({ one }) => ({
+  project: one(projects, {
+    fields: [requestLogs.projectId],
+    references: [projects.id],
   }),
 }));

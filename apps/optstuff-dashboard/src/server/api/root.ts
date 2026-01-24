@@ -1,5 +1,6 @@
 import { apiKeyRouter } from "@/server/api/routers/apiKey";
 import { projectRouter } from "@/server/api/routers/project";
+import { requestLogRouter } from "@/server/api/routers/requestLog";
 import { teamRouter } from "@/server/api/routers/team";
 import { usageRouter } from "@/server/api/routers/usage";
 import { createCallerFactory, createTRPCRouter } from "@/server/api/trpc";
@@ -14,6 +15,7 @@ export const appRouter = createTRPCRouter({
   project: projectRouter,
   apiKey: apiKeyRouter,
   usage: usageRouter,
+  requestLog: requestLogRouter,
 });
 
 // export type definition of API

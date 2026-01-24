@@ -23,8 +23,9 @@ import { Input } from "@workspace/ui/components/input";
 import { Label } from "@workspace/ui/components/label";
 import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { Project, Team } from "../../types";
+import { DomainListInput } from "../components/domain-list-input";
 import { InfoField } from "../components/info-field";
 
 type SettingsTabProps = {
@@ -37,7 +38,55 @@ export function SettingsTab({ project, team }: SettingsTabProps) {
   const [confirmText, setConfirmText] = useState("");
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
+  // Authorization settings state
+  const [sourceDomains, setSourceDomains] = useState<string[]>([]);
+  const [refererDomains, setRefererDomains] = useState<string[]>([]);
+  const [hasChanges, setHasChanges] = useState(false);
+
   const utils = api.useUtils();
+
+  // Fetch current settings
+  const { data: settings, isLoading: isLoadingSettings } =
+    api.project.getSettings.useQuery({ projectId: project.id });
+
+  // Initialize state when settings are loaded
+  useEffect(() => {
+    if (settings) {
+      setSourceDomains(settings.allowedSourceDomains);
+      setRefererDomains(settings.allowedRefererDomains);
+      setHasChanges(false);
+    }
+  }, [settings]);
+
+  // Track changes
+  useEffect(() => {
+    if (!settings) return;
+    const sourceChanged =
+      JSON.stringify(sourceDomains) !==
+      JSON.stringify(settings.allowedSourceDomains);
+    const refererChanged =
+      JSON.stringify(refererDomains) !==
+      JSON.stringify(settings.allowedRefererDomains);
+    setHasChanges(sourceChanged || refererChanged);
+  }, [sourceDomains, refererDomains, settings]);
+
+  // Update settings mutation
+  const { mutate: updateSettings, isPending: isUpdating } =
+    api.project.updateSettings.useMutation({
+      onSuccess: () => {
+        utils.project.getSettings.invalidate({ projectId: project.id });
+        setHasChanges(false);
+      },
+    });
+
+  const handleSaveSettings = () => {
+    updateSettings({
+      projectId: project.id,
+      allowedSourceDomains: sourceDomains,
+      allowedRefererDomains: refererDomains,
+    });
+  };
+
   const { mutate: deleteProject, isPending: isDeleting } =
     api.project.delete.useMutation({
       onSuccess: () => {
@@ -75,6 +124,64 @@ export function SettingsTab({ project, team }: SettingsTabProps) {
               )
             }
           />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Authorization Settings</CardTitle>
+          <CardDescription>
+            Configure domain whitelists for your IPX image optimization service
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {isLoadingSettings ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-6 w-6 animate-spin" />
+            </div>
+          ) : (
+            <>
+              <div className="space-y-2">
+                <Label>Allowed Source Domains</Label>
+                <p className="text-muted-foreground text-sm">
+                  Define which domains your service can fetch images from. Leave
+                  empty to allow all domains.
+                </p>
+                <DomainListInput
+                  value={sourceDomains}
+                  onChange={setSourceDomains}
+                  placeholder="images.example.com"
+                  disabled={isUpdating}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Allowed Referer Domains</Label>
+                <p className="text-muted-foreground text-sm">
+                  Define which websites can display optimized images. Leave
+                  empty to allow all referers.
+                </p>
+                <DomainListInput
+                  value={refererDomains}
+                  onChange={setRefererDomains}
+                  placeholder="myapp.com"
+                  disabled={isUpdating}
+                />
+              </div>
+
+              <div className="flex justify-end">
+                <Button
+                  onClick={handleSaveSettings}
+                  disabled={!hasChanges || isUpdating}
+                >
+                  {isUpdating && (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  )}
+                  Save Settings
+                </Button>
+              </div>
+            </>
+          )}
         </CardContent>
       </Card>
 

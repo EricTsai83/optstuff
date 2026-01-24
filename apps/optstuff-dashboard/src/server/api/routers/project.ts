@@ -7,6 +7,7 @@ import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
 import type { db as dbType } from "@/server/db";
 import { apiKeys, pinnedProjects, projects, teams } from "@/server/db/schema";
 import { generateApiKey } from "@/server/lib/api-key";
+import { invalidateProjectCache } from "@/server/lib/project-cache";
 
 /**
  * Helper to verify user owns the team.
@@ -256,6 +257,92 @@ export const projectRouter = createTRPCRouter({
         .returning();
 
       return updatedProject;
+    }),
+
+  /**
+   * Update project authorization settings (domain whitelists).
+   */
+  updateSettings: protectedProcedure
+    .input(
+      z.object({
+        projectId: z.string().uuid(),
+        allowedSourceDomains: z.array(z.string()).optional(),
+        allowedRefererDomains: z.array(z.string()).optional(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const project = await verifyProjectAccess(
+        ctx.db,
+        input.projectId,
+        ctx.userId,
+      );
+
+      if (!project) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Project not found or access denied",
+        });
+      }
+
+      const updateData: {
+        allowedSourceDomains?: string[];
+        allowedRefererDomains?: string[];
+      } = {};
+
+      if (input.allowedSourceDomains !== undefined) {
+        // Clean up domain entries (trim, lowercase, remove empty)
+        updateData.allowedSourceDomains = input.allowedSourceDomains
+          .map((d) => d.trim().toLowerCase())
+          .filter((d) => d.length > 0);
+      }
+
+      if (input.allowedRefererDomains !== undefined) {
+        updateData.allowedRefererDomains = input.allowedRefererDomains
+          .map((d) => d.trim().toLowerCase())
+          .filter((d) => d.length > 0);
+      }
+
+      if (Object.keys(updateData).length === 0) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "No settings to update",
+        });
+      }
+
+      const [updatedProject] = await ctx.db
+        .update(projects)
+        .set(updateData)
+        .where(eq(projects.id, input.projectId))
+        .returning();
+
+      // Invalidate cache so IPX service picks up new settings
+      if (updatedProject) {
+        invalidateProjectCache(updatedProject.slug);
+      }
+
+      return updatedProject;
+    }),
+
+  /**
+   * Get project settings (domain whitelists).
+   */
+  getSettings: protectedProcedure
+    .input(z.object({ projectId: z.string().uuid() }))
+    .query(async ({ ctx, input }) => {
+      const project = await verifyProjectAccess(
+        ctx.db,
+        input.projectId,
+        ctx.userId,
+      );
+
+      if (!project) {
+        return null;
+      }
+
+      return {
+        allowedSourceDomains: project.allowedSourceDomains ?? [],
+        allowedRefererDomains: project.allowedRefererDomains ?? [],
+      };
     }),
 
   /**

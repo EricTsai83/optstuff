@@ -12,6 +12,7 @@ import { formatDistanceToNow } from "date-fns";
 import {
   Activity,
   ArrowLeft,
+  Code,
   Key,
   LayoutDashboard,
   Settings,
@@ -19,6 +20,7 @@ import {
 import Link from "next/link";
 import type { Project, Team } from "../../types";
 import { ApiKeyList } from "../components/api-key-list";
+import { DeveloperTab } from "./developer-tab";
 import { OverviewTab } from "./overview-tab";
 import { SettingsTab } from "./settings-tab";
 import { UsageTab } from "./usage-tab";
@@ -85,6 +87,13 @@ export function ProjectDetailView({ project, team }: ProjectDetailViewProps) {
               Usage
             </TabsTrigger>
             <TabsTrigger
+              value="developer"
+              className="data-[state=active]:border-foreground text-muted-foreground data-[state=active]:text-foreground rounded-none border-b-2 border-transparent px-4 py-3 shadow-none data-[state=active]:bg-transparent data-[state=active]:shadow-none"
+            >
+              <Code className="h-4 w-4" />
+              Developer
+            </TabsTrigger>
+            <TabsTrigger
               value="settings"
               className="data-[state=active]:border-foreground text-muted-foreground data-[state=active]:text-foreground rounded-none border-b-2 border-transparent px-4 py-3 shadow-none data-[state=active]:bg-transparent data-[state=active]:shadow-none"
             >
@@ -105,6 +114,9 @@ export function ProjectDetailView({ project, team }: ProjectDetailViewProps) {
         </TabsContent>
         <TabsContent value="usage" className="mt-0">
           <UsageTab projectId={project.id} />
+        </TabsContent>
+        <TabsContent value="developer" className="mt-0">
+          <DeveloperTab project={project} />
         </TabsContent>
         <TabsContent value="settings" className="mt-0">
           <SettingsTab project={project} team={team} />

@@ -2,23 +2,24 @@
 
 import { formatBytes, formatNumber } from "@/lib/format";
 import { api } from "@/trpc/react";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@workspace/ui/components/card";
+import { Card, CardContent } from "@workspace/ui/components/card";
+import { BandwidthSavingsCard } from "../components/bandwidth-savings-card";
+import { RequestLogsTable } from "../components/request-logs-table";
 import { StatCard } from "../components/stat-card";
+import { TopImagesList } from "../components/top-images-list";
+import { UsageChart } from "../components/usage-chart";
 
 type UsageTabProps = {
   readonly projectId: string;
 };
 
 export function UsageTab({ projectId }: UsageTabProps) {
+  // Usage summary
   const { data: usageSummary, isLoading } = api.usage.getSummary.useQuery({
     projectId,
   });
+
+  // Daily usage for chart
   const { data: dailyUsage, isLoading: isDailyLoading } =
     api.usage.getDailyUsage.useQuery({
       projectId,
@@ -27,6 +28,18 @@ export function UsageTab({ projectId }: UsageTabProps) {
         .split("T")[0]!,
       endDate: new Date().toISOString().split("T")[0]!,
     });
+
+  // Bandwidth savings
+  const { data: bandwidthSavings, isLoading: isBandwidthLoading } =
+    api.requestLog.getBandwidthSavings.useQuery({ projectId });
+
+  // Top images
+  const { data: topImages, isLoading: isTopImagesLoading } =
+    api.requestLog.getTopImages.useQuery({ projectId, limit: 10 });
+
+  // Recent logs
+  const { data: recentLogs, isLoading: isLogsLoading } =
+    api.requestLog.getRecentLogs.useQuery({ projectId, limit: 20 });
 
   if (isLoading) {
     return (
@@ -44,6 +57,7 @@ export function UsageTab({ projectId }: UsageTabProps) {
 
   return (
     <div className="space-y-6">
+      {/* Summary Stats */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         <StatCard
           title="Total Requests"
@@ -63,53 +77,26 @@ export function UsageTab({ projectId }: UsageTabProps) {
         />
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Daily Usage</CardTitle>
-          <CardDescription>Last 30 days of API usage</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {isDailyLoading ? (
-            <div className="space-y-2">
-              {[1, 2, 3].map((i) => (
-                <div
-                  key={i}
-                  className="bg-muted/50 flex items-center justify-between rounded-lg px-4 py-2"
-                >
-                  <div className="bg-muted h-4 w-24 animate-pulse rounded" />
-                  <div className="flex items-center gap-6">
-                    <div className="bg-muted h-4 w-20 animate-pulse rounded" />
-                    <div className="bg-muted h-4 w-16 animate-pulse rounded" />
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : !dailyUsage?.length ? (
-            <div className="text-muted-foreground py-8 text-center">
-              No usage data yet
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {dailyUsage.slice(0, 10).map((day) => (
-                <div
-                  key={day.date}
-                  className="bg-muted/50 flex items-center justify-between rounded-lg px-4 py-2"
-                >
-                  <span className="text-sm">{day.date}</span>
-                  <div className="flex items-center gap-6">
-                    <span className="text-muted-foreground text-sm">
-                      {formatNumber(day.requestCount)} requests
-                    </span>
-                    <span className="text-muted-foreground text-sm">
-                      {formatBytes(day.bytesProcessed)}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      {/* Chart */}
+      <UsageChart data={dailyUsage ?? []} isLoading={isDailyLoading} />
+
+      {/* Bandwidth Savings and Top Images */}
+      <div className="grid gap-6 lg:grid-cols-2">
+        <BandwidthSavingsCard
+          totalOriginalSize={bandwidthSavings?.totalOriginalSize ?? 0}
+          totalOptimizedSize={bandwidthSavings?.totalOptimizedSize ?? 0}
+          bandwidthSaved={bandwidthSavings?.bandwidthSaved ?? 0}
+          savingsPercentage={bandwidthSavings?.savingsPercentage ?? 0}
+          isLoading={isBandwidthLoading}
+        />
+        <TopImagesList
+          images={topImages ?? []}
+          isLoading={isTopImagesLoading}
+        />
+      </div>
+
+      {/* Recent Logs */}
+      <RequestLogsTable logs={recentLogs ?? []} isLoading={isLogsLoading} />
     </div>
   );
 }

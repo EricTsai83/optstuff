@@ -1,5 +1,6 @@
 "use client";
 
+import { env } from "@/env";
 import { formatBytes, formatNumber } from "@/lib/format";
 import { api } from "@/trpc/react";
 import {
@@ -9,13 +10,18 @@ import {
   CardHeader,
   CardTitle,
 } from "@workspace/ui/components/card";
-import { Activity, Key } from "lucide-react";
+import { Activity, Globe, Key } from "lucide-react";
 import type { Project } from "../../types";
+import { CopyButton } from "../components/copy-button";
 import { StatCard } from "../components/stat-card";
 
 type OverviewTabProps = {
   readonly project: Project;
 };
+
+// API endpoint
+const API_ENDPOINT =
+  env.NEXT_PUBLIC_API_ENDPOINT ?? "https://api.optstuff.dev/api/v1";
 
 export function OverviewTab({ project }: OverviewTabProps) {
   const { data: apiKeys } = api.apiKey.list.useQuery({ projectId: project.id });
@@ -23,8 +29,37 @@ export function OverviewTab({ project }: OverviewTabProps) {
     projectId: project.id,
   });
 
+  const projectEndpoint = `${API_ENDPOINT}/${project.slug}`;
+
   return (
     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+      {/* Endpoint Info */}
+      <Card className="md:col-span-2 lg:col-span-3">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Globe className="h-5 w-5" />
+            API Endpoint
+          </CardTitle>
+          <CardDescription>
+            Use this endpoint to optimize images for this project
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="bg-muted flex items-center gap-2 rounded-lg p-4">
+            <code className="flex-1 truncate font-mono text-sm">
+              {projectEndpoint}
+            </code>
+            <CopyButton text={projectEndpoint} variant="secondary" />
+          </div>
+          <p className="text-muted-foreground mt-3 text-sm">
+            <strong>URL Format:</strong>{" "}
+            <code className="bg-muted rounded px-1">
+              {projectEndpoint}/&#123;operations&#125;/&#123;imageUrl&#125;
+            </code>
+          </p>
+        </CardContent>
+      </Card>
+
       <StatCard
         title="API Keys"
         value={String(apiKeys?.length ?? 0)}
