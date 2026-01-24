@@ -12,7 +12,7 @@ import {
   SetupProjectVisual,
 } from "./step-visuals";
 
-export function IntegrationSteps() {
+export function QuickStart() {
   const { visibleItems: visibleSteps, setItemRef: setStepRef } =
     useIntersectionVisibility<HTMLDivElement>(STEPS.length, {
       threshold: 0.2,
