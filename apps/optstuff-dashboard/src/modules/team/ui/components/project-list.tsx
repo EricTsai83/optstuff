@@ -15,11 +15,14 @@ import { formatDistanceToNow } from "date-fns";
 import {
   Activity,
   Clock,
+  Code,
   FolderOpen,
   Key,
+  LayoutDashboard,
   MoreHorizontal,
   Pin,
   PinOff,
+  Settings,
 } from "lucide-react";
 import Link from "next/link";
 import { getProjectColor } from "../../constants";
@@ -50,7 +53,7 @@ export function ProjectList({
   const filteredProjects = projects?.filter((p) =>
     normalizedQuery
       ? p.name.toLowerCase().includes(normalizedQuery) ||
-        p.description?.toLowerCase().includes(normalizedQuery)
+      p.description?.toLowerCase().includes(normalizedQuery)
       : true,
   );
 
@@ -60,7 +63,7 @@ export function ProjectList({
         projects?.some((proj) => proj.id === p.id) &&
         (normalizedQuery
           ? p.name.toLowerCase().includes(normalizedQuery) ||
-            p.description?.toLowerCase().includes(normalizedQuery)
+          p.description?.toLowerCase().includes(normalizedQuery)
           : true),
     ) ?? [];
 
@@ -155,14 +158,6 @@ function ProjectItem({
   isPinned = false,
 }: ProjectItemProps) {
   const utils = api.useUtils();
-
-  const { mutate: deleteProject } = api.project.delete.useMutation({
-    onSuccess: () => {
-      utils.project.list.invalidate();
-      utils.project.listPinned.invalidate();
-      utils.project.listAll.invalidate();
-    },
-  });
 
   const { mutate: pinProject, isPending: isPinning } =
     api.project.pin.useMutation({
@@ -276,11 +271,10 @@ function ProjectItem({
       <Button
         variant="ghost"
         size="icon"
-        className={`h-8 w-8 transition-opacity duration-200 ${
-          isPinned
+        className={`h-8 w-8 transition-opacity duration-200 ${isPinned
             ? "text-amber-500 opacity-100 hover:text-amber-600"
             : "opacity-0 group-hover:opacity-100"
-        }`}
+          }`}
         onClick={handlePinToggle}
         disabled={isPinning || isUnpinning}
       >
@@ -304,8 +298,36 @@ function ProjectItem({
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
           <DropdownMenuItem asChild>
-            <Link href={`/${teamSlug}/${project.slug}`}>View Project</Link>
+            <Link href={`/${teamSlug}/${project.slug}`}>
+              <LayoutDashboard className="mr-2 h-4 w-4" />
+              Overview
+            </Link>
           </DropdownMenuItem>
+          <DropdownMenuItem asChild>
+            <Link href={`/${teamSlug}/${project.slug}?tab=api-keys`}>
+              <Key className="mr-2 h-4 w-4" />
+              API Keys
+            </Link>
+          </DropdownMenuItem>
+          <DropdownMenuItem asChild>
+            <Link href={`/${teamSlug}/${project.slug}?tab=usage`}>
+              <Activity className="mr-2 h-4 w-4" />
+              Usage
+            </Link>
+          </DropdownMenuItem>
+          <DropdownMenuItem asChild>
+            <Link href={`/${teamSlug}/${project.slug}?tab=developer`}>
+              <Code className="mr-2 h-4 w-4" />
+              Developer
+            </Link>
+          </DropdownMenuItem>
+          <DropdownMenuItem asChild>
+            <Link href={`/${teamSlug}/${project.slug}?tab=settings`}>
+              <Settings className="mr-2 h-4 w-4" />
+              Settings
+            </Link>
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
           <DropdownMenuItem onClick={handlePinToggle} disabled={isMutating}>
             {isPinned ? (
               <>
@@ -318,18 +340,6 @@ function ProjectItem({
                 Pin Project
               </>
             )}
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem
-            onClick={(e) => {
-              e.preventDefault();
-              if (confirm("Are you sure you want to delete this project?")) {
-                deleteProject({ projectId: project.id });
-              }
-            }}
-            className="text-destructive focus:text-destructive"
-          >
-            Delete Project
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

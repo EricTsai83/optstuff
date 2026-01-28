@@ -28,18 +28,19 @@ import { Label } from "@workspace/ui/components/label";
 import { formatDistanceToNow } from "date-fns";
 import { Key, MoreHorizontal, RotateCcw, Shield, Trash2 } from "lucide-react";
 import { useState } from "react";
-import { ApiCodeExamples, DocsLink } from "./api-code-examples";
 import { CopyButton, CopyIcon } from "./copy-button";
 import { CreateApiKeyDialog } from "./create-api-key-dialog";
 
 type ApiKeyListProps = {
   readonly projectId: string;
+  readonly projectSlug: string;
 };
 
-export function ApiKeyList({ projectId }: ApiKeyListProps) {
+export function ApiKeyList({ projectId, projectSlug }: ApiKeyListProps) {
   const { data: apiKeys, isLoading } = api.apiKey.list.useQuery({ projectId });
   const [rotatedKey, setRotatedKey] = useState<{
     key: string;
+    secretKey: string;
     name: string;
   } | null>(null);
   const utils = api.useUtils();
@@ -53,8 +54,12 @@ export function ApiKeyList({ projectId }: ApiKeyListProps) {
     api.apiKey.rotate.useMutation({
       onSuccess: (result) => {
         utils.apiKey.list.invalidate();
-        if (result?.key && result?.name) {
-          setRotatedKey({ key: result.key, name: result.name });
+        if (result?.key && result?.secretKey && result?.name) {
+          setRotatedKey({
+            key: result.key,
+            secretKey: result.secretKey,
+            name: result.name,
+          });
         }
       },
     });
@@ -90,7 +95,7 @@ export function ApiKeyList({ projectId }: ApiKeyListProps) {
             </CardTitle>
             <CardDescription>Manage API keys for this project</CardDescription>
           </div>
-          <CreateApiKeyDialog projectId={projectId} />
+          <CreateApiKeyDialog projectId={projectId} projectSlug={projectSlug} />
         </CardHeader>
         <CardContent>
           {!apiKeys?.length ? (
@@ -219,14 +224,14 @@ function ApiKeyItem({
 }
 
 type RotatedKeyDialogProps = {
-  readonly rotatedKey: { key: string; name: string } | null;
+  readonly rotatedKey: { key: string; secretKey: string; name: string } | null;
   readonly onClose: () => void;
 };
 
 function RotatedKeyDialog({ rotatedKey, onClose }: RotatedKeyDialogProps) {
   return (
     <Dialog open={!!rotatedKey} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-[480px]">
+      <DialogContent className="sm:max-w-[520px]">
         <div className="flex flex-col">
           {/* Success Header */}
           <div className="flex items-center gap-3 pb-4">
@@ -243,11 +248,12 @@ function RotatedKeyDialog({ rotatedKey, onClose }: RotatedKeyDialogProps) {
 
           {/* Content */}
           <div className="space-y-4">
-            {/* API Key Display */}
+            {/* Secret Key Display */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <Label className="text-muted-foreground text-xs tracking-wider uppercase">
-                  Your New API Key
+                <Label className="text-muted-foreground flex items-center gap-1.5 text-xs tracking-wider uppercase">
+                  <Key className="h-3 w-3" />
+                  New Secret Key (for signing URLs)
                 </Label>
                 <div className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400">
                   <Shield className="h-3 w-3" />
@@ -256,11 +262,11 @@ function RotatedKeyDialog({ rotatedKey, onClose }: RotatedKeyDialogProps) {
               </div>
               <div className="bg-muted/50 border-border group relative rounded-lg border p-3">
                 <code className="block pr-10 font-mono text-sm break-all">
-                  {rotatedKey?.key}
+                  {rotatedKey?.secretKey}
                 </code>
                 <div className="absolute top-2 right-2">
                   <CopyButton
-                    text={rotatedKey?.key ?? ""}
+                    text={rotatedKey?.secretKey ?? ""}
                     variant="secondary"
                     size="icon"
                     className="h-8 w-8 shadow-sm"
@@ -268,16 +274,30 @@ function RotatedKeyDialog({ rotatedKey, onClose }: RotatedKeyDialogProps) {
                 </div>
               </div>
               <p className="text-muted-foreground text-xs">
-                The old key is now invalid. Update your applications with this
-                new key.
+                The old key is now invalid. Update your backend with this new
+                secret key.
               </p>
             </div>
 
-            {/* Code Examples */}
-            {rotatedKey && <ApiCodeExamples apiKey={rotatedKey.key} />}
-
-            {/* Docs Link */}
-            <DocsLink />
+            {/* Key Prefix Display */}
+            <div className="space-y-2">
+              <Label className="text-muted-foreground text-xs tracking-wider uppercase">
+                New Key Prefix (for URL parameter)
+              </Label>
+              <div className="bg-muted/50 border-border group relative rounded-lg border p-3">
+                <code className="block pr-10 font-mono text-sm">
+                  {rotatedKey?.key.substring(0, 12)}
+                </code>
+                <div className="absolute top-2 right-2">
+                  <CopyButton
+                    text={rotatedKey?.key.substring(0, 12) ?? ""}
+                    variant="secondary"
+                    size="icon"
+                    className="h-8 w-8 shadow-sm"
+                  />
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Footer */}

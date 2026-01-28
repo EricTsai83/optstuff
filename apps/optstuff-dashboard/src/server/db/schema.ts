@@ -66,9 +66,8 @@ export const projects = createTable(
     name: d.varchar({ length: 255 }).notNull(),
     slug: d.varchar({ length: 255 }).notNull(),
     description: d.text(),
-    // Domain whitelist settings for IPX service
-    allowedSourceDomains: d.text().array(), // Image source domain whitelist
-    allowedRefererDomains: d.text().array(), // Request referer domain whitelist
+    // Referer whitelist - controls which websites can use this project's service
+    allowedRefererDomains: d.text().array(),
     // Cached statistics (updated on API key/usage changes)
     apiKeyCount: d.integer().default(0).notNull(),
     totalRequests: d.bigint({ mode: "number" }).default(0).notNull(),
@@ -140,7 +139,10 @@ export const apiKeys = createTable(
       .references(() => projects.id, { onDelete: "cascade" }),
     name: d.varchar({ length: 255 }).notNull(),
     keyPrefix: d.varchar({ length: 12 }).notNull(), // Display prefix "pk_abc123..."
-    keyHash: d.varchar({ length: 64 }).notNull().unique(), // SHA256 hash
+    keyHash: d.varchar({ length: 64 }).notNull().unique(), // SHA256 hash for API key verification
+    secretKey: d.varchar({ length: 70 }).notNull(), // Secret for signing URLs (stored in DB, shown once to user) - sk_ prefix (3) + 64 hex chars = 67
+    // Domain whitelist - controls which image sources this key can access
+    allowedSourceDomains: d.text().array(),
     createdBy: d.varchar({ length: 255 }).notNull(), // Clerk user ID who created this key
     expiresAt: d.timestamp({ withTimezone: true }),
     rateLimitPerMinute: d.integer().default(60),
@@ -153,6 +155,8 @@ export const apiKeys = createTable(
     index("api_key_project_idx").on(t.projectId),
     // Composite index for querying active keys by project
     index("api_key_project_active_idx").on(t.projectId, t.revokedAt),
+    // Index for looking up keys by prefix (used in signature verification)
+    index("api_key_prefix_idx").on(t.keyPrefix),
   ],
 );
 

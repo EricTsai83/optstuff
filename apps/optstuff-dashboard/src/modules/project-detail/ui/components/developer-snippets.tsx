@@ -24,58 +24,90 @@ export function DeveloperSnippets({
   projectSlug,
   apiEndpoint,
 }: DeveloperSnippetsProps) {
-  const envExample = `# Add to your .env or .env.local file
+  const envExample = `# Add to your .env file (server-side only - keep secret!)
+IPX_SECRET_KEY="sk_your_secret_key_here"  # From API Key creation
+IPX_KEY_PREFIX="pk_abc123..."              # From API Key creation
+
+# Public config
 NEXT_PUBLIC_IPX_PROJECT_SLUG="${projectSlug}"
 NEXT_PUBLIC_IPX_ENDPOINT="${apiEndpoint}"`;
 
-  const loaderExample = `// lib/image-loader.ts
-import type { ImageLoaderProps } from "next/image";
+  const loaderExample = `// lib/ipx-signer.ts (SERVER-SIDE ONLY)
+import crypto from "crypto";
 
+const SECRET_KEY = process.env.IPX_SECRET_KEY!;
+const KEY_PREFIX = process.env.IPX_KEY_PREFIX!;
 const IPX_ENDPOINT = process.env.NEXT_PUBLIC_IPX_ENDPOINT || "${apiEndpoint}";
 const PROJECT_SLUG = process.env.NEXT_PUBLIC_IPX_PROJECT_SLUG || "${projectSlug}";
 
 /**
- * Custom image loader for Next.js that uses IPX optimization service
+ * Sign an IPX URL with HMAC-SHA256
+ * Call this from your API route or server component
  */
-export function ipxLoader({ src, width, quality }: ImageLoaderProps): string {
-  // Build operations string
-  const operations = [];
-  if (width) operations.push(\`w_\${width}\`);
-  if (quality) operations.push(\`q_\${quality}\`);
-  operations.push("f_webp"); // Auto format to WebP
+export function signIpxUrl(
+  imagePath: string,
+  operations: string = "_",
+  expiresIn?: number // seconds from now
+): string {
+  const path = \`\${operations}/\${imagePath}\`;
+  const exp = expiresIn ? Math.floor(Date.now() / 1000) + expiresIn : undefined;
   
-  const opsString = operations.length > 0 ? operations.join(",") : "_";
+  const payload = exp ? \`\${path}?exp=\${exp}\` : path;
+  const sig = crypto
+    .createHmac("sha256", SECRET_KEY)
+    .update(payload)
+    .digest("base64url")
+    .substring(0, 32);
   
-  // Remove protocol from src if present
-  const imagePath = src.replace(/^https?:\\/\\//, "");
+  let url = \`\${IPX_ENDPOINT}/\${PROJECT_SLUG}/\${path}?key=\${KEY_PREFIX}&sig=\${sig}\`;
+  if (exp) url += \`&exp=\${exp}\`;
   
-  return \`\${IPX_ENDPOINT}/\${PROJECT_SLUG}/\${opsString}/\${imagePath}\`;
+  return url;
+}
+
+// Example usage in API route:
+// GET /api/image-url?src=images.example.com/photo.jpg&w=800
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const src = searchParams.get("src")!;
+  const width = searchParams.get("w");
+  
+  const ops = width ? \`w_\${width},f_webp\` : "f_webp";
+  const signedUrl = signIpxUrl(src, ops, 3600); // 1 hour expiry
+  
+  return Response.json({ url: signedUrl });
 }`;
 
-  const usageExample = `// Using the loader in Next.js
-import Image from "next/image";
-import { ipxLoader } from "@/lib/image-loader";
+  const usageExample = `// Using signed URLs in Next.js
+// Option 1: Server Component (recommended)
+import { signIpxUrl } from "@/lib/ipx-signer";
 
-export function MyImage() {
-  return (
-    <Image
-      loader={ipxLoader}
-      src="images.example.com/photo.jpg"
-      width={800}
-      height={600}
-      alt="Optimized image"
-    />
+export default function MyPage() {
+  // Sign URL on server
+  const imageUrl = signIpxUrl(
+    "images.example.com/photo.jpg",
+    "w_800,f_webp",
+    3600 // 1 hour
   );
-}`;
 
-  const directUrlExample = `<!-- Direct URL usage in HTML -->
-<img 
-  src="${apiEndpoint}/${projectSlug}/w_800,f_webp,q_80/images.example.com/photo.jpg" 
-  alt="Optimized image"
-/>
+  return <img src={imageUrl} alt="Optimized image" />;
+}
 
-<!-- URL Format -->
-${apiEndpoint}/{projectSlug}/{operations}/{imageUrl}
+// Option 2: API Route + Client Fetch
+// Create /api/image-url route, then fetch from client:
+const response = await fetch(\`/api/image-url?src=\${imageSrc}&w=800\`);
+const { url } = await response.json();`;
+
+  const directUrlExample = `<!-- Signed URL Format -->
+${apiEndpoint}/${projectSlug}/{operations}/{imageUrl}?key={keyPrefix}&sig={signature}&exp={expiry}
+
+<!-- Example Signed URL -->
+${apiEndpoint}/${projectSlug}/w_800,f_webp/images.example.com/photo.jpg?key=pk_abc123&sig=xyz789&exp=1706500000
+
+<!-- URL Parameters -->
+key      → API Key prefix (from dashboard)
+sig      → HMAC-SHA256 signature
+exp      → (optional) Expiration timestamp
 
 <!-- Operations Examples -->
 w_800        → Width 800px
@@ -84,7 +116,7 @@ s_800x600    → Size 800x600
 q_80         → Quality 80%
 f_webp       → Format WebP
 f_avif       → Format AVIF
-_            → No operations (passthrough)`;
+_            → No operations`;
 
   return (
     <div className="space-y-6">
