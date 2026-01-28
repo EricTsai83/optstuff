@@ -127,12 +127,12 @@ export async function getProjectConfigByTeamAndSlug(
     return null;
   }
 
-  // Find project within team
+  // Find project within team using composite key
   const project = await db.query.projects.findFirst({
-    where: eq(projects.slug, projectSlug),
+    where: and(eq(projects.teamId, team.id), eq(projects.slug, projectSlug)),
   });
 
-  if (!project || project.teamId !== team.id) {
+  if (!project) {
     return null;
   }
 
