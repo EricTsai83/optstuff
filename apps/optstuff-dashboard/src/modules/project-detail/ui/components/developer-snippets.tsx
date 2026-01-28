@@ -30,14 +30,14 @@ IPX_KEY_PREFIX="pk_abc123..."              # From API Key creation
 
 # Public config
 NEXT_PUBLIC_IPX_PROJECT_SLUG="${projectSlug}"
-NEXT_PUBLIC_IPX_ENDPOINT="${apiEndpoint}"`;
+NEXT_PUBLIC_IPX_ENDPOINT="${apiEndpoint}"  # Your deployment URL`;
 
   const loaderExample = `// lib/ipx-signer.ts (SERVER-SIDE ONLY)
 import crypto from "crypto";
 
 const SECRET_KEY = process.env.IPX_SECRET_KEY!;
 const KEY_PREFIX = process.env.IPX_KEY_PREFIX!;
-const IPX_ENDPOINT = process.env.NEXT_PUBLIC_IPX_ENDPOINT || "${apiEndpoint}";
+const IPX_ENDPOINT = process.env.NEXT_PUBLIC_IPX_ENDPOINT!; // Your deployment URL + /api/v1
 const PROJECT_SLUG = process.env.NEXT_PUBLIC_IPX_PROJECT_SLUG || "${projectSlug}";
 
 /**
