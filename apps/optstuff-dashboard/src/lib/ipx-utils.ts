@@ -101,7 +101,13 @@ export function parseIpxPath(pathSegments: string[]): {
   const operations = pathSegments[0]!;
   let imagePath = pathSegments.slice(1).join("/");
 
-  imagePath = decodeURIComponent(imagePath);
+  try {
+    imagePath = decodeURIComponent(imagePath);
+  } catch {
+    // Malformed URI encoding (e.g., incomplete percent-encoding)
+    return null;
+  }
+
   imagePath = restoreProtocolSlashes(imagePath);
 
   return { operations, imagePath };
