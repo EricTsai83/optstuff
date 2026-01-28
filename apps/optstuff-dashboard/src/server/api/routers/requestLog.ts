@@ -157,7 +157,8 @@ export const requestLogRouter = createTRPCRouter({
 
       const originalSize = Number(stats.totalOriginalSize);
       const optimizedSize = Number(stats.totalOptimizedSize);
-      const bandwidthSaved = originalSize - optimizedSize;
+      // Clamp to non-negative to handle cases where optimized > original
+      const bandwidthSaved = Math.max(0, originalSize - optimizedSize);
       const savingsPercentage =
         originalSize > 0 ? (bandwidthSaved / originalSize) * 100 : 0;
 

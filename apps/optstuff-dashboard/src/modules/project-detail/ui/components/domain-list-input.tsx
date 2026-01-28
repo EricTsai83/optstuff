@@ -3,7 +3,7 @@
 import { Badge } from "@workspace/ui/components/badge";
 import { Button } from "@workspace/ui/components/button";
 import { Input } from "@workspace/ui/components/input";
-import { X } from "lucide-react";
+import { AlertTriangle, X } from "lucide-react";
 import { useState } from "react";
 
 type DomainListInputProps = {
@@ -11,6 +11,9 @@ type DomainListInputProps = {
   readonly onChange: (domains: string[]) => void;
   readonly placeholder?: string;
   readonly disabled?: boolean;
+  readonly emptyMessage?: string;
+  /** "source" shows warning style when empty, "referer" shows neutral style */
+  readonly variant?: "source" | "referer";
 };
 
 /**
@@ -23,6 +26,8 @@ export function DomainListInput({
   onChange,
   placeholder = "example.com",
   disabled = false,
+  emptyMessage = "No domains configured.",
+  variant = "referer",
 }: DomainListInputProps) {
   const [inputValue, setInputValue] = useState("");
 
@@ -31,7 +36,11 @@ export function DomainListInput({
     if (!domain) return;
 
     // Basic domain validation
-    if (!/^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)*$/.test(domain)) {
+    if (
+      !/^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)*$/.test(
+        domain,
+      )
+    ) {
       return;
     }
 
@@ -55,6 +64,9 @@ export function DomainListInput({
       addDomain();
     }
   };
+
+  // Show warning style for source domains when empty (will reject all requests)
+  const showWarning = variant === "source" && value.length === 0;
 
   return (
     <div className="space-y-3">
@@ -100,8 +112,12 @@ export function DomainListInput({
       )}
 
       {value.length === 0 && (
-        <p className="text-muted-foreground text-sm">
-          No domains configured. All domains will be allowed.
+        <p
+          className={`flex items-center gap-2 text-sm ${showWarning ? "text-amber-600 dark:text-amber-500" : "text-muted-foreground"
+            }`}
+        >
+          {showWarning && <AlertTriangle className="h-4 w-4 shrink-0" />}
+          {emptyMessage}
         </p>
       )}
     </div>

@@ -28,11 +28,21 @@ import { UsageTab } from "./usage-tab";
 type ProjectDetailViewProps = {
   readonly project: Project;
   readonly team: Team;
+  readonly defaultTab?: string;
 };
 
-export function ProjectDetailView({ project, team }: ProjectDetailViewProps) {
+const VALID_TABS = ["overview", "api-keys", "usage", "developer", "settings"];
+
+export function ProjectDetailView({
+  project,
+  team,
+  defaultTab,
+}: ProjectDetailViewProps) {
+  const initialTab =
+    defaultTab && VALID_TABS.includes(defaultTab) ? defaultTab : "overview";
+
   return (
-    <Tabs defaultValue="overview" className="flex flex-1 flex-col">
+    <Tabs defaultValue={initialTab} className="flex flex-1 flex-col">
       {/* Project Header */}
       <div className="border-border border-b">
         <div className="container mx-auto px-4 py-4">
@@ -110,7 +120,7 @@ export function ProjectDetailView({ project, team }: ProjectDetailViewProps) {
           <OverviewTab project={project} />
         </TabsContent>
         <TabsContent value="api-keys" className="mt-0">
-          <ApiKeyList projectId={project.id} />
+          <ApiKeyList projectId={project.id} projectSlug={project.slug} />
         </TabsContent>
         <TabsContent value="usage" className="mt-0">
           <UsageTab projectId={project.id} />

@@ -68,28 +68,28 @@
 
 .dark {
   /* Core colors */
-  --background: oklch(0.1 0.01 260);
+  --background: oklch(0.105 0.015 260);
   --foreground: oklch(0.97 0 0);
 
   /* Card colors */
-  --card: oklch(0.14 0.01 260);
+  --card: oklch(0.15 0.02 260);
   --card-foreground: oklch(0.97 0 0);
 
   /* Popover colors */
-  --popover: oklch(0.14 0.01 260);
+  --popover: oklch(0.15 0.02 260);
   --popover-foreground: oklch(0.97 0 0);
 
   /* Primary colors */
   --primary: oklch(0.97 0 0);
-  --primary-foreground: oklch(0.1 0.01 260);
+  --primary-foreground: oklch(0.105 0.015 260);
 
   /* Secondary colors */
-  --secondary: oklch(0.2 0.01 260);
+  --secondary: oklch(0.21 0.025 260);
   --secondary-foreground: oklch(0.97 0 0);
 
   /* Muted colors */
-  --muted: oklch(0.2 0.01 260);
-  --muted-foreground: oklch(0.7 0.01 260);
+  --muted: oklch(0.21 0.025 260);
+  --muted-foreground: oklch(0.63 0.04 260);
 
   /* Accent colors */
   --accent: oklch(0.7 0.18 160);
@@ -100,8 +100,8 @@
   --destructive-foreground: oklch(0.637 0.237 25.331);
 
   /* Border & input colors */
-  --border: oklch(0.25 0.01 260);
-  --input: oklch(0.25 0.01 260);
+  --border: oklch(0.31 0.03 260);
+  --input: oklch(0.28 0.025 260);
   --ring: oklch(0.7 0.18 160);
 
   /* Chart colors */
@@ -112,14 +112,14 @@
   --chart-5: oklch(0.6 0.2 30);
 
   /* Sidebar colors */
-  --sidebar: oklch(0.205 0 0);
+  --sidebar: oklch(0.18 0.02 260);
   --sidebar-foreground: oklch(0.985 0 0);
   --sidebar-primary: oklch(0.488 0.243 264.376);
   --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
+  --sidebar-accent: oklch(0.26 0.025 260);
   --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(0.269 0 0);
-  --sidebar-ring: oklch(0.439 0 0);
+  --sidebar-border: oklch(0.31 0.03 260);
+  --sidebar-ring: oklch(0.46 0.04 260);
 }
 
 @theme inline {

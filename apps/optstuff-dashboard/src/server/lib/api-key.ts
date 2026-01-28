@@ -1,7 +1,9 @@
-import { createHash, randomBytes, timingSafeEqual } from "crypto";
+import { createHash, createHmac, randomBytes, timingSafeEqual } from "crypto";
 
 const API_KEY_PREFIX = "pk_";
+const SECRET_KEY_PREFIX = "sk_";
 const API_KEY_LENGTH = 32; // 32 bytes = 64 hex chars
+const SECRET_KEY_LENGTH = 32; // 32 bytes = 64 hex chars
 
 /**
  * Generates a new API key with a prefix for identification.
@@ -11,11 +13,13 @@ const API_KEY_LENGTH = 32; // 32 bytes = 64 hex chars
  *   - key: The full API key to show to the user (only shown once)
  *   - keyPrefix: The first 12 chars of the key for display purposes
  *   - keyHash: SHA256 hash of the key to store in database
+ *   - secretKey: Secret key for signing URLs (shown once, stored in DB)
  */
 export function generateApiKey(): {
   key: string;
   keyPrefix: string;
   keyHash: string;
+  secretKey: string;
 } {
   // Generate random bytes and convert to hex
   const randomPart = randomBytes(API_KEY_LENGTH).toString("hex");
@@ -27,7 +31,10 @@ export function generateApiKey(): {
   // Hash the key for storage
   const keyHash = hashApiKey(key);
 
-  return { key, keyPrefix, keyHash };
+  // Generate secret key for URL signing
+  const secretKey = `${SECRET_KEY_PREFIX}${randomBytes(SECRET_KEY_LENGTH).toString("hex")}`;
+
+  return { key, keyPrefix, keyHash, secretKey };
 }
 
 /**
@@ -61,4 +68,57 @@ export function verifyApiKey(key: string, storedHash: string): boolean {
   }
 
   return timingSafeEqual(keyHashBuffer, storedHashBuffer);
+}
+
+/**
+ * Creates a signature for a URL path using HMAC-SHA256.
+ *
+ * @param secretKey - The secret key for signing
+ * @param path - The path to sign (operations + image URL)
+ * @param expiresAt - Optional expiration timestamp
+ * @returns Base64URL encoded signature
+ */
+export function createUrlSignature(
+  secretKey: string,
+  path: string,
+  expiresAt?: number,
+): string {
+  const payload = expiresAt ? `${path}?exp=${expiresAt}` : path;
+  const signature = createHmac("sha256", secretKey).update(payload).digest();
+  // Use base64url encoding for URL-safe signatures
+  return signature.toString("base64url").substring(0, 32); // Truncate for shorter URLs
+}
+
+/**
+ * Verifies a URL signature.
+ * Uses constant-time comparison to prevent timing attacks.
+ *
+ * @param secretKey - The secret key used for signing
+ * @param path - The path that was signed
+ * @param signature - The signature to verify
+ * @param expiresAt - Optional expiration timestamp
+ * @returns true if signature is valid
+ */
+export function verifyUrlSignature(
+  secretKey: string,
+  path: string,
+  signature: string,
+  expiresAt?: number,
+): boolean {
+  // Check expiration first
+  if (expiresAt && Date.now() > expiresAt * 1000) {
+    return false;
+  }
+
+  const expectedSignature = createUrlSignature(secretKey, path, expiresAt);
+
+  // Use constant-time comparison
+  const sigBuffer = Buffer.from(signature);
+  const expectedBuffer = Buffer.from(expectedSignature);
+
+  if (sigBuffer.length !== expectedBuffer.length) {
+    return false;
+  }
+
+  return timingSafeEqual(sigBuffer, expectedBuffer);
 }

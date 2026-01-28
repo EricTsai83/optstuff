@@ -38,8 +38,8 @@ export function restoreProtocolSlashes(path: string): string {
  * @throws {Error} if path starts with / or has unsupported protocol
  */
 export function ensureProtocol(path: string): string {
-  // Already has http:// or https:// - return as-is (idempotent)
-  if (path.startsWith("https://") || path.startsWith("http://")) {
+  // Already has http:// or https:// - return as-is (idempotent, case-insensitive)
+  if (/^https?:\/\//i.test(path)) {
     return path;
   }
 
@@ -52,6 +52,10 @@ export function ensureProtocol(path: string): string {
   const protocolMatch = path.match(/^([a-zA-Z][a-zA-Z0-9+.-]*):\/\//);
   if (protocolMatch) {
     const protocol = protocolMatch[1]!.toLowerCase();
+    // Defense-in-depth: allow http/https even if somehow missed above
+    if (protocol === "http" || protocol === "https") {
+      return path;
+    }
     throw new Error(
       `Unsupported protocol: ${protocol}://. Only http:// or https:// are allowed`,
     );
@@ -97,7 +101,13 @@ export function parseIpxPath(pathSegments: string[]): {
   const operations = pathSegments[0]!;
   let imagePath = pathSegments.slice(1).join("/");
 
-  imagePath = decodeURIComponent(imagePath);
+  try {
+    imagePath = decodeURIComponent(imagePath);
+  } catch {
+    // Malformed URI encoding (e.g., incomplete percent-encoding)
+    return null;
+  }
+
   imagePath = restoreProtocolSlashes(imagePath);
 
   return { operations, imagePath };

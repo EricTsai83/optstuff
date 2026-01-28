@@ -6,6 +6,7 @@ import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
 import type { db as dbType } from "@/server/db";
 import { apiKeys, projects } from "@/server/db/schema";
 import { generateApiKey } from "@/server/lib/api-key";
+import { invalidateApiKeyCache } from "@/server/lib/project-cache";
 
 /** Helper to update project's API key count using SQL count() */
 async function updateProjectApiKeyCount(db: typeof dbType, projectId: string) {
@@ -50,6 +51,7 @@ export const apiKeyRouter = createTRPCRouter({
       z.object({
         projectId: z.string().uuid(),
         name: z.string().min(1).max(255),
+        allowedSourceDomains: z.array(z.string()).optional(),
         expiresAt: z.date().optional(),
         rateLimitPerMinute: z.number().int().min(1).max(10000).optional(),
         rateLimitPerDay: z.number().int().min(1).max(1000000).optional(),
@@ -69,7 +71,12 @@ export const apiKeyRouter = createTRPCRouter({
         });
       }
 
-      const { key, keyPrefix, keyHash } = generateApiKey();
+      const { key, keyPrefix, keyHash, secretKey } = generateApiKey();
+
+      // Clean up domain entries
+      const allowedSourceDomains = input.allowedSourceDomains
+        ?.map((d) => d.trim().toLowerCase())
+        .filter((d) => d.length > 0);
 
       const [newApiKey] = await ctx.db
         .insert(apiKeys)
@@ -78,6 +85,11 @@ export const apiKeyRouter = createTRPCRouter({
           name: input.name,
           keyPrefix,
           keyHash,
+          secretKey,
+          allowedSourceDomains:
+            allowedSourceDomains && allowedSourceDomains.length > 0
+              ? allowedSourceDomains
+              : null,
           createdBy: ctx.userId,
           expiresAt: input.expiresAt,
           rateLimitPerMinute: input.rateLimitPerMinute ?? 60,
@@ -88,7 +100,8 @@ export const apiKeyRouter = createTRPCRouter({
       // Update project's API key count
       await updateProjectApiKeyCount(ctx.db, input.projectId);
 
-      return { ...newApiKey, key };
+      // Return the API key and secret key (only shown once!)
+      return { ...newApiKey, key, secretKey };
     }),
 
   /**
@@ -195,14 +208,16 @@ export const apiKeyRouter = createTRPCRouter({
         .where(eq(apiKeys.id, input.apiKeyId))
         .returning();
 
-      // Update project's API key count
+      // Update project's API key count and invalidate cache
       await updateProjectApiKeyCount(ctx.db, apiKey.projectId);
+      invalidateApiKeyCache(apiKey.keyPrefix);
 
       return revokedKey;
     }),
 
   /**
    * Rotate an API key - revoke the old one and create a new one.
+   * Preserves the allowed source domains from the old key.
    */
   rotate: protectedProcedure
     .input(z.object({ apiKeyId: z.string().uuid() }))
@@ -231,13 +246,14 @@ export const apiKeyRouter = createTRPCRouter({
         });
       }
 
-      // Revoke the old key
+      // Revoke the old key and invalidate cache
       await ctx.db
         .update(apiKeys)
         .set({ revokedAt: new Date() })
         .where(eq(apiKeys.id, input.apiKeyId));
+      invalidateApiKeyCache(oldApiKey.keyPrefix);
 
-      const { key, keyPrefix, keyHash } = generateApiKey();
+      const { key, keyPrefix, keyHash, secretKey } = generateApiKey();
 
       const [newApiKey] = await ctx.db
         .insert(apiKeys)
@@ -246,6 +262,8 @@ export const apiKeyRouter = createTRPCRouter({
           name: oldApiKey.name,
           keyPrefix,
           keyHash,
+          secretKey,
+          allowedSourceDomains: oldApiKey.allowedSourceDomains,
           createdBy: ctx.userId,
           expiresAt: oldApiKey.expiresAt,
           rateLimitPerMinute: oldApiKey.rateLimitPerMinute,
@@ -255,7 +273,7 @@ export const apiKeyRouter = createTRPCRouter({
 
       // Count doesn't change on rotation (one revoked, one created)
 
-      return { ...newApiKey, key };
+      return { ...newApiKey, key, secretKey };
     }),
 
   /**
@@ -266,6 +284,7 @@ export const apiKeyRouter = createTRPCRouter({
       z.object({
         apiKeyId: z.string().uuid(),
         name: z.string().min(1).max(255).optional(),
+        allowedSourceDomains: z.array(z.string()).optional(),
         expiresAt: z.date().nullable().optional(),
         rateLimitPerMinute: z.number().int().min(1).max(10000).optional(),
         rateLimitPerDay: z.number().int().min(1).max(1000000).optional(),
@@ -298,12 +317,19 @@ export const apiKeyRouter = createTRPCRouter({
 
       const updateData: {
         name?: string;
+        allowedSourceDomains?: string[] | null;
         expiresAt?: Date | null;
         rateLimitPerMinute?: number;
         rateLimitPerDay?: number;
       } = {};
 
       if (input.name !== undefined) updateData.name = input.name;
+      if (input.allowedSourceDomains !== undefined) {
+        const cleaned = input.allowedSourceDomains
+          .map((d) => d.trim().toLowerCase())
+          .filter((d) => d.length > 0);
+        updateData.allowedSourceDomains = cleaned.length > 0 ? cleaned : null;
+      }
       if (input.expiresAt !== undefined) updateData.expiresAt = input.expiresAt;
       if (input.rateLimitPerMinute !== undefined)
         updateData.rateLimitPerMinute = input.rateLimitPerMinute;
@@ -322,6 +348,9 @@ export const apiKeyRouter = createTRPCRouter({
         .set(updateData)
         .where(eq(apiKeys.id, input.apiKeyId))
         .returning();
+
+      // Invalidate cache
+      invalidateApiKeyCache(apiKey.keyPrefix);
 
       return updatedKey;
     }),
