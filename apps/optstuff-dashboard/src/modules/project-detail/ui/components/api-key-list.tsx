@@ -15,6 +15,7 @@ import {
   DialogContent,
   DialogDescription,
   DialogFooter,
+  DialogHeader,
   DialogTitle,
 } from "@workspace/ui/components/dialog";
 import {
@@ -26,10 +27,11 @@ import {
 } from "@workspace/ui/components/dropdown-menu";
 import { Label } from "@workspace/ui/components/label";
 import { formatDistanceToNow } from "date-fns";
-import { Key, MoreHorizontal, RotateCcw, Shield, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { Globe, Key, MoreHorizontal, Pencil, RotateCcw, Shield, Trash2 } from "lucide-react";
+import { useEffect, useState } from "react";
 import { CopyButton, CopyIcon } from "./copy-button";
 import { CreateApiKeyDialog } from "./create-api-key-dialog";
+import { DomainListInput } from "./domain-list-input";
 
 type ApiKeyListProps = {
   readonly projectId: string;
@@ -42,6 +44,11 @@ export function ApiKeyList({ projectId, projectSlug }: ApiKeyListProps) {
     key: string;
     secretKey: string;
     name: string;
+  } | null>(null);
+  const [editingKey, setEditingKey] = useState<{
+    id: string;
+    name: string;
+    allowedSourceDomains: string[] | null;
   } | null>(null);
   const utils = api.useUtils();
 
@@ -61,6 +68,14 @@ export function ApiKeyList({ projectId, projectSlug }: ApiKeyListProps) {
             name: result.name,
           });
         }
+      },
+    });
+
+  const { mutate: updateKey, isPending: isUpdating } =
+    api.apiKey.update.useMutation({
+      onSuccess: () => {
+        utils.apiKey.list.invalidate();
+        setEditingKey(null);
       },
     });
 
@@ -114,6 +129,11 @@ export function ApiKeyList({ projectId, projectSlug }: ApiKeyListProps) {
                   apiKey={key}
                   onRevoke={() => revokeKey({ apiKeyId: key.id })}
                   onRotate={() => rotateKey({ apiKeyId: key.id })}
+                  onEdit={() => setEditingKey({
+                    id: key.id,
+                    name: key.name,
+                    allowedSourceDomains: key.allowedSourceDomains,
+                  })}
                   isRevoking={isRevoking}
                   isRotating={isRotating}
                 />
@@ -127,6 +147,20 @@ export function ApiKeyList({ projectId, projectSlug }: ApiKeyListProps) {
         rotatedKey={rotatedKey}
         onClose={() => setRotatedKey(null)}
       />
+
+      <EditApiKeyDialog
+        editingKey={editingKey}
+        onClose={() => setEditingKey(null)}
+        onSave={(domains) => {
+          if (editingKey) {
+            updateKey({
+              apiKeyId: editingKey.id,
+              allowedSourceDomains: domains,
+            });
+          }
+        }}
+        isUpdating={isUpdating}
+      />
     </>
   );
 }
@@ -139,9 +173,11 @@ type ApiKeyItemProps = {
     createdAt: Date;
     lastUsedAt: Date | null;
     expiresAt: Date | null;
+    allowedSourceDomains: string[] | null;
   };
   readonly onRevoke: () => void;
   readonly onRotate: () => void;
+  readonly onEdit: () => void;
   readonly isRevoking: boolean;
   readonly isRotating: boolean;
 };
@@ -150,10 +186,12 @@ function ApiKeyItem({
   apiKey,
   onRevoke,
   onRotate,
+  onEdit,
   isRevoking,
   isRotating,
 }: ApiKeyItemProps) {
   const isExpired = apiKey.expiresAt && new Date(apiKey.expiresAt) < new Date();
+  const domainCount = apiKey.allowedSourceDomains?.length ?? 0;
 
   return (
     <div className="bg-muted/50 hover:bg-muted/80 flex items-center justify-between rounded-lg p-4 transition-colors">
@@ -161,7 +199,7 @@ function ApiKeyItem({
         <div className="bg-primary/10 text-primary flex h-10 w-10 items-center justify-center rounded-lg">
           <Key className="h-5 w-5" />
         </div>
-        <div>
+        <div className="space-y-1">
           <div className="flex items-center gap-2">
             <span className="font-medium">{apiKey.name}</span>
             {isExpired && (
@@ -194,6 +232,35 @@ function ApiKeyItem({
               </>
             )}
           </div>
+          {/* Display allowed domains */}
+          <div className="flex items-center gap-2 text-sm">
+            {domainCount > 0 ? (
+              <>
+                <Globe className="text-muted-foreground h-3.5 w-3.5" />
+                <div className="flex flex-wrap items-center gap-1.5">
+                  {apiKey.allowedSourceDomains!.slice(0, 3).map((domain) => (
+                    <Badge
+                      key={domain}
+                      variant="outline"
+                      className="font-mono text-xs"
+                    >
+                      {domain}
+                    </Badge>
+                  ))}
+                  {domainCount > 3 && (
+                    <span className="text-muted-foreground text-xs">
+                      +{domainCount - 3} more
+                    </span>
+                  )}
+                </div>
+              </>
+            ) : (
+              <span className="flex items-center gap-1.5 text-xs font-medium text-amber-600 dark:text-amber-500">
+                <Globe className="h-3.5 w-3.5" />
+                No domains configured
+              </span>
+            )}
+          </div>
         </div>
       </div>
 
@@ -204,6 +271,10 @@ function ApiKeyItem({
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
+          <DropdownMenuItem onClick={onEdit}>
+            <Pencil className="mr-2 h-4 w-4" />
+            Edit Domains
+          </DropdownMenuItem>
           <DropdownMenuItem onClick={onRotate} disabled={isRotating}>
             <RotateCcw className="mr-2 h-4 w-4" />
             Rotate Key
@@ -307,6 +378,84 @@ function RotatedKeyDialog({ rotatedKey, onClose }: RotatedKeyDialogProps) {
             </Button>
           </DialogFooter>
         </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+type EditApiKeyDialogProps = {
+  readonly editingKey: {
+    id: string;
+    name: string;
+    allowedSourceDomains: string[] | null;
+  } | null;
+  readonly onClose: () => void;
+  readonly onSave: (domains: string[]) => void;
+  readonly isUpdating: boolean;
+};
+
+function EditApiKeyDialog({
+  editingKey,
+  onClose,
+  onSave,
+  isUpdating,
+}: EditApiKeyDialogProps) {
+  const [domains, setDomains] = useState<string[]>([]);
+
+  // Initialize domains when editingKey changes
+  useEffect(() => {
+    if (editingKey) {
+      setDomains(editingKey.allowedSourceDomains ?? []);
+    }
+  }, [editingKey]);
+
+  const handleOpenChange = (open: boolean) => {
+    if (!open) {
+      onClose();
+    }
+  };
+
+  const handleSave = () => {
+    onSave(domains);
+  };
+
+  return (
+    <Dialog open={!!editingKey} onOpenChange={handleOpenChange}>
+      <DialogContent className="sm:max-w-[520px]">
+        <DialogHeader>
+          <DialogTitle>Edit API Key</DialogTitle>
+          <DialogDescription>
+            Update the allowed source domains for{" "}
+            <strong>{editingKey?.name}</strong>
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="grid gap-4 py-4">
+          <div className="grid gap-2">
+            <Label>Allowed Source Domains</Label>
+            <p className="text-muted-foreground text-xs">
+              Which image sources can this key access? Subdomains are
+              automatically included.
+            </p>
+            <DomainListInput
+              value={domains}
+              onChange={setDomains}
+              placeholder="images.example.com"
+              disabled={isUpdating}
+              emptyMessage="Add at least one domain to enable this API key."
+              variant="source"
+            />
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose} disabled={isUpdating}>
+            Cancel
+          </Button>
+          <Button onClick={handleSave} disabled={isUpdating}>
+            {isUpdating ? "Saving..." : "Save Changes"}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
