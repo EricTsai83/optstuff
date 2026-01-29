@@ -63,19 +63,28 @@ export function validateSourceDomain(
 }
 
 /**
+ * Safely parse a Unix timestamp, returning undefined for invalid values.
+ * Only accepts finite positive integers.
+ */
+function safeParseTimestamp(value: string | null): number | undefined {
+  if (!value) return undefined;
+  const parsed = parseInt(value, 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : undefined;
+}
+
+/**
  * Parse signature parameters from URL search params.
  *
  * @param searchParams - URL search params
  * @returns Parsed signature params or null if missing required params
  */
 export function parseSignatureParams(searchParams: URLSearchParams): {
-  keyPrefix: string;
-  signature: string;
-  expiresAt?: number;
+  readonly keyPrefix: string;
+  readonly signature: string;
+  readonly expiresAt?: number;
 } | null {
   const keyPrefix = searchParams.get("key");
   const signature = searchParams.get("sig");
-  const expStr = searchParams.get("exp");
 
   if (!keyPrefix || !signature) {
     return null;
@@ -84,6 +93,6 @@ export function parseSignatureParams(searchParams: URLSearchParams): {
   return {
     keyPrefix,
     signature,
-    expiresAt: expStr ? parseInt(expStr, 10) : undefined,
+    expiresAt: safeParseTimestamp(searchParams.get("exp")),
   };
 }
