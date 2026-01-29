@@ -8,7 +8,6 @@ import {
   TabsList,
   TabsTrigger,
 } from "@workspace/ui/components/tabs";
-import { formatDistanceToNow } from "date-fns";
 import {
   Activity,
   ArrowLeft,
@@ -62,12 +61,6 @@ export function ProjectDetailView({
                   {project.description}
                 </p>
               )}
-            </div>
-            <div className="text-muted-foreground hidden text-sm md:block">
-              Created{" "}
-              {formatDistanceToNow(new Date(project.createdAt), {
-                addSuffix: true,
-              })}
             </div>
           </div>
         </div>

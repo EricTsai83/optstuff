@@ -30,8 +30,14 @@ export function DomainListInput({
   variant = "referer",
 }: DomainListInputProps) {
   const [inputValue, setInputValue] = useState("");
+  const [error, setError] = useState<string | null>(null);
 
-  const addDomain = () => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
+    setInputValue(e.target.value);
+    if (error) setError(null);
+  };
+
+  const addDomain = (): void => {
     const domain = inputValue.trim().toLowerCase();
     if (!domain) return;
 
@@ -41,17 +47,20 @@ export function DomainListInput({
         domain,
       )
     ) {
+      setError("Invalid domain format. Use format like: example.com");
       return;
     }
 
     // Don't add duplicates
     if (value.includes(domain)) {
+      setError("This domain has already been added");
       setInputValue("");
       return;
     }
 
     onChange([...value, domain]);
     setInputValue("");
+    setError(null);
   };
 
   const removeDomain = (domainToRemove: string) => {
@@ -70,23 +79,32 @@ export function DomainListInput({
 
   return (
     <div className="space-y-3">
-      <div className="flex gap-2">
-        <Input
-          value={inputValue}
-          onChange={(e) => setInputValue(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder={placeholder}
-          disabled={disabled}
-          className="flex-1"
-        />
-        <Button
-          type="button"
-          variant="secondary"
-          onClick={addDomain}
-          disabled={disabled || !inputValue.trim()}
-        >
-          Add
-        </Button>
+      <div className="space-y-1">
+        <div className="flex gap-2">
+          <Input
+            value={inputValue}
+            onChange={handleInputChange}
+            onKeyDown={handleKeyDown}
+            placeholder={placeholder}
+            disabled={disabled}
+            className={`flex-1 ${error ? "border-destructive" : ""}`}
+            aria-invalid={!!error}
+            aria-describedby={error ? "domain-error" : undefined}
+          />
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={addDomain}
+            disabled={disabled || !inputValue.trim()}
+          >
+            Add
+          </Button>
+        </div>
+        {error && (
+          <p id="domain-error" className="text-destructive text-sm">
+            {error}
+          </p>
+        )}
       </div>
 
       {value.length > 0 && (

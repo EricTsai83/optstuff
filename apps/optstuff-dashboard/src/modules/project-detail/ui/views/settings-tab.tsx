@@ -21,6 +21,7 @@ import {
 } from "@workspace/ui/components/card";
 import { Input } from "@workspace/ui/components/input";
 import { Label } from "@workspace/ui/components/label";
+import { format } from "date-fns";
 import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -38,11 +39,25 @@ export function SettingsTab({ project, team }: SettingsTabProps) {
   const [confirmText, setConfirmText] = useState("");
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
+  // Project information state
+  const [projectName, setProjectName] = useState(project.name);
+  const [projectDescription, setProjectDescription] = useState(
+    project.description ?? "",
+  );
+  const [hasProjectInfoChanges, setHasProjectInfoChanges] = useState(false);
+
   // Authorization settings state (only referer domains at project level)
   const [refererDomains, setRefererDomains] = useState<string[]>([]);
-  const [hasChanges, setHasChanges] = useState(false);
+  const [hasSettingsChanges, setHasSettingsChanges] = useState(false);
 
   const utils = api.useUtils();
+
+  // Track project info changes
+  useEffect(() => {
+    const nameChanged = projectName !== project.name;
+    const descChanged = projectDescription !== (project.description ?? "");
+    setHasProjectInfoChanges(nameChanged || descChanged);
+  }, [projectName, projectDescription, project.name, project.description]);
 
   // Fetch current settings
   const { data: settings, isLoading: isLoadingSettings } =
@@ -52,29 +67,49 @@ export function SettingsTab({ project, team }: SettingsTabProps) {
   useEffect(() => {
     if (settings) {
       setRefererDomains(settings.allowedRefererDomains);
-      setHasChanges(false);
+      setHasSettingsChanges(false);
     }
   }, [settings]);
 
-  // Track changes
+  // Track authorization settings changes
   useEffect(() => {
     if (!settings) return;
     const refererChanged =
       JSON.stringify(refererDomains) !==
       JSON.stringify(settings.allowedRefererDomains);
-    setHasChanges(refererChanged);
+    setHasSettingsChanges(refererChanged);
   }, [refererDomains, settings]);
 
-  // Update settings mutation
-  const { mutate: updateSettings, isPending: isUpdating } =
-    api.project.updateSettings.useMutation({
+  // Update project info mutation
+  const { mutate: updateProject, isPending: isUpdatingProject } =
+    api.project.update.useMutation({
       onSuccess: () => {
-        utils.project.getSettings.invalidate({ projectId: project.id });
-        setHasChanges(false);
+        utils.project.getBySlug.invalidate({
+          teamSlug: team.slug,
+          projectSlug: project.slug,
+        });
+        setHasProjectInfoChanges(false);
       },
     });
 
-  const handleSaveSettings = () => {
+  const handleSaveProjectInfo = (): void => {
+    updateProject({
+      projectId: project.id,
+      name: projectName,
+      description: projectDescription || undefined,
+    });
+  };
+
+  // Update settings mutation
+  const { mutate: updateSettings, isPending: isUpdatingSettings } =
+    api.project.updateSettings.useMutation({
+      onSuccess: () => {
+        utils.project.getSettings.invalidate({ projectId: project.id });
+        setHasSettingsChanges(false);
+      },
+    });
+
+  const handleSaveSettings = (): void => {
     updateSettings({
       projectId: project.id,
       allowedRefererDomains: refererDomains,
@@ -106,18 +141,43 @@ export function SettingsTab({ project, team }: SettingsTabProps) {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <InfoField label="Project Name" value={project.name} />
+          <div className="space-y-2">
+            <Label htmlFor="project-name">Project Name</Label>
+            <Input
+              id="project-name"
+              value={projectName}
+              onChange={(e) => setProjectName(e.target.value)}
+              disabled={isUpdatingProject}
+              maxLength={255}
+            />
+          </div>
           <InfoField label="Project Slug" value={project.slug} mono />
+          <div className="space-y-2">
+            <Label htmlFor="project-description">Description</Label>
+            <Input
+              id="project-description"
+              value={projectDescription}
+              onChange={(e) => setProjectDescription(e.target.value)}
+              disabled={isUpdatingProject}
+              placeholder="Enter a description for this project"
+              maxLength={1000}
+            />
+          </div>
           <InfoField
-            label="Description"
-            value={
-              project.description || (
-                <span className="text-muted-foreground italic">
-                  No description
-                </span>
-              )
-            }
+            label="Created"
+            value={format(new Date(project.createdAt), "PPP")}
           />
+          <div className="flex justify-end">
+            <Button
+              onClick={handleSaveProjectInfo}
+              disabled={!hasProjectInfoChanges || isUpdatingProject || !projectName.trim()}
+            >
+              {isUpdatingProject && (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              )}
+              Save
+            </Button>
+          </div>
         </CardContent>
       </Card>
 
@@ -146,7 +206,7 @@ export function SettingsTab({ project, team }: SettingsTabProps) {
                   value={refererDomains}
                   onChange={setRefererDomains}
                   placeholder="myapp.com"
-                  disabled={isUpdating}
+                  disabled={isUpdatingSettings}
                   emptyMessage="No domains configured. All referers will be allowed."
                   variant="referer"
                 />
@@ -155,9 +215,9 @@ export function SettingsTab({ project, team }: SettingsTabProps) {
               <div className="flex justify-end">
                 <Button
                   onClick={handleSaveSettings}
-                  disabled={!hasChanges || isUpdating}
+                  disabled={!hasSettingsChanges || isUpdatingSettings}
                 >
-                  {isUpdating && (
+                  {isUpdatingSettings && (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   )}
                   Save Settings
