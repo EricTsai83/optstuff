@@ -10,7 +10,9 @@ type DeveloperTabProps = {
 };
 
 export function DeveloperTab({ project }: DeveloperTabProps) {
-  const apiEndpoint = `${env.NEXT_PUBLIC_APP_URL}/api/v1`;
+  // Remove trailing slashes to prevent double slashes in URL construction
+  const baseUrl = env.NEXT_PUBLIC_APP_URL.replace(/\/+$/, "");
+  const apiEndpoint = `${baseUrl}/api/v1`;
 
   return (
     <div className="space-y-6">
