@@ -1,5 +1,6 @@
 "use client";
 
+import { env } from "@/env";
 import { formatBytes, formatNumber } from "@/lib/format";
 import { api } from "@/trpc/react";
 import {
@@ -18,20 +19,13 @@ type OverviewTabProps = {
   readonly project: Project;
 };
 
-/** Get the API base URL - uses current origin on client, empty string during SSR */
-function getApiBase(): string {
-  if (typeof window === "undefined") return "";
-  return window.location.origin;
-}
-
 export function OverviewTab({ project }: OverviewTabProps) {
   const { data: apiKeys } = api.apiKey.list.useQuery({ projectId: project.id });
   const { data: usageSummary } = api.usage.getSummary.useQuery({
     projectId: project.id,
   });
 
-  const apiBase = getApiBase();
-  const projectEndpoint = `${apiBase}/api/v1/${project.slug}`;
+  const projectEndpoint = `${env.NEXT_PUBLIC_APP_URL}/api/v1/${project.slug}`;
 
   return (
     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
