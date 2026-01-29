@@ -48,8 +48,8 @@ export function ProjectDetailView({
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center gap-4">
             <Link href={`/${team.slug}`}>
-              <Button variant="ghost" size="icon" className="h-8 w-8">
-                <ArrowLeft className="h-4 w-4" />
+              <Button variant="ghost" className="w-12">
+                <ArrowLeft className="size-5" />
               </Button>
             </Link>
             <div className="flex-1">
