@@ -17,6 +17,7 @@ import { Key, Plus, Shield } from "lucide-react";
 import { useState } from "react";
 import { CopyButton } from "./copy-button";
 import { DomainListInput } from "./domain-list-input";
+import { ExpirationSelect } from "./expiration-select";
 
 type CreateApiKeyDialogProps = {
   readonly projectId: string;
@@ -31,6 +32,7 @@ export function CreateApiKeyDialog({
   const [step, setStep] = useState<"form" | "success">("form");
   const [name, setName] = useState("");
   const [sourceDomains, setSourceDomains] = useState<string[]>([]);
+  const [expiresAt, setExpiresAt] = useState<Date | undefined>(undefined);
   const [createdKey, setCreatedKey] = useState<string | null>(null);
   const [createdSecretKey, setCreatedSecretKey] = useState<string | null>(null);
 
@@ -54,6 +56,7 @@ export function CreateApiKeyDialog({
       projectId,
       name: name.trim(),
       allowedSourceDomains: sourceDomains,
+      expiresAt: expiresAt,
     });
   };
 
@@ -64,6 +67,7 @@ export function CreateApiKeyDialog({
       setStep("form");
       setName("");
       setSourceDomains([]);
+      setExpiresAt(undefined);
       setCreatedKey(null);
       setCreatedSecretKey(null);
     }, 150);
@@ -117,6 +121,12 @@ export function CreateApiKeyDialog({
                   variant="source"
                 />
               </div>
+
+              <ExpirationSelect
+                value={expiresAt}
+                onChange={setExpiresAt}
+                disabled={isPending}
+              />
             </div>
             <DialogFooter>
               <Button

@@ -26,12 +26,13 @@ import {
   DropdownMenuTrigger,
 } from "@workspace/ui/components/dropdown-menu";
 import { Label } from "@workspace/ui/components/label";
-import { formatDistanceToNow } from "date-fns";
-import { Globe, Key, MoreHorizontal, Pencil, RotateCcw, Shield, Trash2 } from "lucide-react";
+import { differenceInDays, format, formatDistanceToNow } from "date-fns";
+import { AlertTriangle, Clock, Globe, Key, MoreHorizontal, Pencil, RotateCcw, Shield, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { CopyButton, CopyIcon } from "./copy-button";
 import { CreateApiKeyDialog } from "./create-api-key-dialog";
 import { DomainListInput } from "./domain-list-input";
+import { ExpirationSelect } from "./expiration-select";
 
 type ApiKeyListProps = {
   readonly projectId: string;
@@ -49,6 +50,7 @@ export function ApiKeyList({ projectId, projectSlug }: ApiKeyListProps) {
     id: string;
     name: string;
     allowedSourceDomains: string[] | null;
+    expiresAt: Date | null;
   } | null>(null);
   const utils = api.useUtils();
 
@@ -133,6 +135,7 @@ export function ApiKeyList({ projectId, projectSlug }: ApiKeyListProps) {
                     id: key.id,
                     name: key.name,
                     allowedSourceDomains: key.allowedSourceDomains,
+                    expiresAt: key.expiresAt,
                   })}
                   isRevoking={isRevoking}
                   isRotating={isRotating}
@@ -151,11 +154,12 @@ export function ApiKeyList({ projectId, projectSlug }: ApiKeyListProps) {
       <EditApiKeyDialog
         editingKey={editingKey}
         onClose={() => setEditingKey(null)}
-        onSave={(domains) => {
+        onSave={(domains, expiresAt) => {
           if (editingKey) {
             updateKey({
               apiKeyId: editingKey.id,
               allowedSourceDomains: domains,
+              expiresAt: expiresAt,
             });
           }
         }}
@@ -182,6 +186,29 @@ type ApiKeyItemProps = {
   readonly isRotating: boolean;
 };
 
+/**
+ * Calculate expiration status for an API key
+ */
+function getExpirationStatus(expiresAt: Date | null): {
+  readonly isExpired: boolean;
+  readonly isExpiringSoon: boolean;
+  readonly daysUntilExpiry: number | null;
+} {
+  if (!expiresAt) {
+    return { isExpired: false, isExpiringSoon: false, daysUntilExpiry: null };
+  }
+
+  const now = new Date();
+  const expiryDate = new Date(expiresAt);
+  const daysUntilExpiry = differenceInDays(expiryDate, now);
+
+  return {
+    isExpired: daysUntilExpiry < 0,
+    isExpiringSoon: daysUntilExpiry >= 0 && daysUntilExpiry <= 7,
+    daysUntilExpiry,
+  };
+}
+
 function ApiKeyItem({
   apiKey,
   onRevoke,
@@ -190,25 +217,71 @@ function ApiKeyItem({
   isRevoking,
   isRotating,
 }: ApiKeyItemProps) {
-  const isExpired = apiKey.expiresAt && new Date(apiKey.expiresAt) < new Date();
+  const { isExpired, isExpiringSoon, daysUntilExpiry } = getExpirationStatus(apiKey.expiresAt);
   const domainCount = apiKey.allowedSourceDomains?.length ?? 0;
+
+  // Render expiration badge based on status
+  const renderExpirationBadge = (): React.ReactNode => {
+    if (isExpired) {
+      return (
+        <Badge variant="destructive" className="text-xs">
+          <AlertTriangle className="mr-1 h-3 w-3" />
+          Expired
+        </Badge>
+      );
+    }
+    if (isExpiringSoon && daysUntilExpiry !== null) {
+      return (
+        <Badge variant="secondary" className="border-amber-500/50 bg-amber-500/10 text-xs text-amber-600 dark:text-amber-400">
+          <Clock className="mr-1 h-3 w-3" />
+          {daysUntilExpiry === 0 ? "Expires today" : `Expires in ${daysUntilExpiry} day${daysUntilExpiry === 1 ? "" : "s"}`}
+        </Badge>
+      );
+    }
+    return null;
+  };
+
+  // Render expiration info text
+  const renderExpirationInfo = (): React.ReactNode => {
+    if (!apiKey.expiresAt) {
+      return (
+        <span className="text-muted-foreground flex items-center gap-1 text-xs">
+          <Clock className="h-3 w-3" />
+          No expiration
+        </span>
+      );
+    }
+
+    const expiryDate = new Date(apiKey.expiresAt);
+    if (isExpired) {
+      return (
+        <span className="flex items-center gap-1 text-xs text-red-600 dark:text-red-400">
+          <Clock className="h-3 w-3" />
+          Expired on {format(expiryDate, "MMM d, yyyy")}
+        </span>
+      );
+    }
+
+    return (
+      <span className={`flex items-center gap-1 text-xs ${isExpiringSoon ? "text-amber-600 dark:text-amber-400" : "text-muted-foreground"}`}>
+        <Clock className="h-3 w-3" />
+        Expires on {format(expiryDate, "MMM d, yyyy")}
+      </span>
+    );
+  };
 
   return (
     <div className="bg-muted/50 hover:bg-muted/80 flex items-center justify-between rounded-lg p-4 transition-colors">
       <div className="flex items-center gap-4">
-        <div className="bg-primary/10 text-primary flex h-10 w-10 items-center justify-center rounded-lg">
+        <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${isExpired ? "bg-red-500/10 text-red-500" : "bg-primary/10 text-primary"}`}>
           <Key className="h-5 w-5" />
         </div>
         <div className="space-y-1">
           <div className="flex items-center gap-2">
             <span className="font-medium">{apiKey.name}</span>
-            {isExpired && (
-              <Badge variant="destructive" className="text-xs">
-                Expired
-              </Badge>
-            )}
+            {renderExpirationBadge()}
           </div>
-          <div className="text-muted-foreground flex items-center gap-2 text-sm">
+          <div className="text-muted-foreground flex flex-wrap items-center gap-2 text-sm">
             <code className="bg-background rounded px-1.5 py-0.5 font-mono text-xs">
               {apiKey.keyPrefix}...
             </code>
@@ -232,10 +305,12 @@ function ApiKeyItem({
               </>
             )}
           </div>
-          {/* Display allowed domains */}
-          <div className="flex items-center gap-2 text-sm">
+          {/* Display expiration info */}
+          <div className="flex flex-wrap items-center gap-3 text-sm">
+            {renderExpirationInfo()}
+            {/* Display allowed domains */}
             {domainCount > 0 ? (
-              <>
+              <span className="flex items-center gap-1.5">
                 <Globe className="text-muted-foreground h-3.5 w-3.5" />
                 <div className="flex flex-wrap items-center gap-1.5">
                   {apiKey.allowedSourceDomains!.slice(0, 3).map((domain) => (
@@ -253,7 +328,7 @@ function ApiKeyItem({
                     </span>
                   )}
                 </div>
-              </>
+              </span>
             ) : (
               <span className="flex items-center gap-1.5 text-xs font-medium text-amber-600 dark:text-amber-500">
                 <Globe className="h-3.5 w-3.5" />
@@ -273,7 +348,7 @@ function ApiKeyItem({
         <DropdownMenuContent align="end">
           <DropdownMenuItem onClick={onEdit}>
             <Pencil className="mr-2 h-4 w-4" />
-            Edit Domains
+            Edit
           </DropdownMenuItem>
           <DropdownMenuItem onClick={onRotate} disabled={isRotating}>
             <RotateCcw className="mr-2 h-4 w-4" />
@@ -388,9 +463,10 @@ type EditApiKeyDialogProps = {
     id: string;
     name: string;
     allowedSourceDomains: string[] | null;
+    expiresAt: Date | null;
   } | null;
   readonly onClose: () => void;
-  readonly onSave: (domains: string[]) => void;
+  readonly onSave: (domains: string[], expiresAt: Date | undefined) => void;
   readonly isUpdating: boolean;
 };
 
@@ -401,11 +477,13 @@ function EditApiKeyDialog({
   isUpdating,
 }: EditApiKeyDialogProps) {
   const [domains, setDomains] = useState<string[]>([]);
+  const [expiresAt, setExpiresAt] = useState<Date | undefined>(undefined);
 
-  // Initialize domains when editingKey changes
+  // Initialize domains and expiresAt when editingKey changes
   useEffect(() => {
     if (editingKey) {
       setDomains(editingKey.allowedSourceDomains ?? []);
+      setExpiresAt(editingKey.expiresAt ?? undefined);
     }
   }, [editingKey]);
 
@@ -416,7 +494,7 @@ function EditApiKeyDialog({
   };
 
   const handleSave = () => {
-    onSave(domains);
+    onSave(domains, expiresAt);
   };
 
   return (
@@ -425,8 +503,7 @@ function EditApiKeyDialog({
         <DialogHeader>
           <DialogTitle>Edit API Key</DialogTitle>
           <DialogDescription>
-            Update the allowed source domains for{" "}
-            <strong>{editingKey?.name}</strong>
+            Update the settings for <strong>{editingKey?.name}</strong>
           </DialogDescription>
         </DialogHeader>
 
@@ -446,6 +523,12 @@ function EditApiKeyDialog({
               variant="source"
             />
           </div>
+
+          <ExpirationSelect
+            value={expiresAt}
+            onChange={setExpiresAt}
+            disabled={isUpdating}
+          />
         </div>
 
         <DialogFooter>

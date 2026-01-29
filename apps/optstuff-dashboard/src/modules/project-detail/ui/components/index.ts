@@ -5,6 +5,7 @@ export { CopyButton, CopyIcon } from "./copy-button";
 export { CreateApiKeyDialog } from "./create-api-key-dialog";
 export { DeveloperSnippets } from "./developer-snippets";
 export { DomainListInput } from "./domain-list-input";
+export { ExpirationSelect } from "./expiration-select";
 export { InfoField } from "./info-field";
 export { RequestLogsTable } from "./request-logs-table";
 export { StatCard } from "./stat-card";
