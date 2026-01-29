@@ -14,7 +14,7 @@ export function HeroBackground() {
             height="20"
             patternUnits="userSpaceOnUse"
           >
-            <rect width="1" height="1" className="fill-emerald-300/40" />
+            <rect width="1" height="1" className="fill-emerald-300/45" />
           </pattern>
 
           <pattern
@@ -24,7 +24,7 @@ export function HeroBackground() {
             patternUnits="userSpaceOnUse"
           >
             <rect width="80" height="80" fill="url(#smallGrid-dark)" />
-            <rect width="2" height="2" className="fill-emerald-300/55" />
+            <rect width="2" height="2" className="fill-emerald-300/65" />
           </pattern>
 
           <radialGradient id="fadeGradient-dark" cx="50%" cy="0%" r="70%">
@@ -37,7 +37,14 @@ export function HeroBackground() {
           </mask>
 
           <radialGradient id="glowGradient-dark" cx="50%" cy="17%" r="50%">
-            <stop offset="0%" stopColor="#6ee7b7" stopOpacity="0.2" />
+            <stop offset="0%" stopColor="#6ee7b7" stopOpacity="0.15">
+              <animate
+                attributeName="stop-color"
+                values="#4ade80;#86efac;#4ade80"
+                dur="4s"
+                repeatCount="indefinite"
+              />
+            </stop>
             <stop offset="100%" stopColor="transparent" />
           </radialGradient>
         </defs>
@@ -82,7 +89,14 @@ export function HeroBackground() {
       >
         <defs>
           <radialGradient id="glow-light" cx="50%" cy="0%" r="60%">
-            <stop offset="0%" stopColor="#059669" stopOpacity="0.12" />
+            <stop offset="0%" stopColor="#059669" stopOpacity="0.15">
+              <animate
+                attributeName="stop-color"
+                values="#059669;#10b981;#059669"
+                dur="4s"
+                repeatCount="indefinite"
+              />
+            </stop>
             <stop offset="100%" stopColor="transparent" />
           </radialGradient>
         </defs>
