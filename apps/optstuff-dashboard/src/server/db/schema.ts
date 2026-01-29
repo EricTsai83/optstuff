@@ -241,6 +241,8 @@ export const requestLogs = createTable(
     index("request_log_project_idx").on(t.projectId),
     index("request_log_project_created_idx").on(t.projectId, t.createdAt),
     index("request_log_source_url_idx").on(t.sourceUrl),
+    // Single-column index for cleanup queries that filter only on createdAt
+    index("request_log_created_at_idx").on(t.createdAt),
   ],
 );
 
