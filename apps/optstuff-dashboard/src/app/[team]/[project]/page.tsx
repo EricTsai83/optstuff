@@ -8,10 +8,12 @@ import { notFound, redirect } from "next/navigation";
 
 type PageProps = {
   params: Promise<{ team: string; project: string }>;
+  searchParams: Promise<{ tab?: string }>;
 };
 
-export default async function ProjectPage({ params }: PageProps) {
+export default async function ProjectPage({ params, searchParams }: PageProps) {
   const { team: teamSlug, project: projectSlug } = await params;
+  const { tab } = await searchParams;
   const { userId } = await auth();
 
   if (!userId) {
@@ -39,7 +41,7 @@ export default async function ProjectPage({ params }: PageProps) {
   return (
     <div className="bg-background flex min-h-screen flex-col">
       <Header teamSlug={teamSlug} />
-      <ProjectDetailView project={project} team={team} />
+      <ProjectDetailView project={project} team={team} defaultTab={tab} />
     </div>
   );
 }

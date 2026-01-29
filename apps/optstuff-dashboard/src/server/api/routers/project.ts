@@ -99,16 +99,17 @@ export const projectRouter = createTRPCRouter({
       }
 
       // Create default API key
-      const { key, keyPrefix, keyHash } = generateApiKey();
+      const { key, keyPrefix, keyHash, secretKey } = generateApiKey();
       await ctx.db.insert(apiKeys).values({
         projectId: newProject.id,
         name: "Default",
         keyPrefix,
         keyHash,
+        secretKey,
         createdBy: ctx.userId,
       });
 
-      return { ...newProject, defaultApiKey: key };
+      return { ...newProject, defaultApiKey: key, defaultSecretKey: secretKey };
     }),
 
   /**
@@ -260,13 +261,13 @@ export const projectRouter = createTRPCRouter({
     }),
 
   /**
-   * Update project authorization settings (domain whitelists).
+   * Update project authorization settings (referer domain whitelist).
+   * Note: Source domain restrictions are now configured per API key.
    */
   updateSettings: protectedProcedure
     .input(
       z.object({
         projectId: z.string().uuid(),
-        allowedSourceDomains: z.array(z.string()).optional(),
         allowedRefererDomains: z.array(z.string()).optional(),
       }),
     )
@@ -285,16 +286,8 @@ export const projectRouter = createTRPCRouter({
       }
 
       const updateData: {
-        allowedSourceDomains?: string[];
         allowedRefererDomains?: string[];
       } = {};
-
-      if (input.allowedSourceDomains !== undefined) {
-        // Clean up domain entries (trim, lowercase, remove empty)
-        updateData.allowedSourceDomains = input.allowedSourceDomains
-          .map((d) => d.trim().toLowerCase())
-          .filter((d) => d.length > 0);
-      }
 
       if (input.allowedRefererDomains !== undefined) {
         updateData.allowedRefererDomains = input.allowedRefererDomains
@@ -324,7 +317,8 @@ export const projectRouter = createTRPCRouter({
     }),
 
   /**
-   * Get project settings (domain whitelists).
+   * Get project settings (referer domain whitelist).
+   * Note: Source domain restrictions are now configured per API key.
    */
   getSettings: protectedProcedure
     .input(z.object({ projectId: z.string().uuid() }))
@@ -340,7 +334,6 @@ export const projectRouter = createTRPCRouter({
       }
 
       return {
-        allowedSourceDomains: project.allowedSourceDomains ?? [],
         allowedRefererDomains: project.allowedRefererDomains ?? [],
       };
     }),

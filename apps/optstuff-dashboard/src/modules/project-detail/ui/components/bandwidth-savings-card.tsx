@@ -69,10 +69,10 @@ export function BandwidthSavingsCard({
           <div className="bg-muted rounded-lg p-4 text-center">
             <p className="text-muted-foreground text-sm">Total Saved</p>
             <p className="text-3xl font-bold text-green-500">
-              {formatBytes(bandwidthSaved)}
+              {formatBytes(Math.max(0, bandwidthSaved))}
             </p>
             <p className="text-muted-foreground text-sm">
-              {savingsPercentage}% reduction
+              {Math.max(0, savingsPercentage)}% reduction
             </p>
           </div>
         </div>

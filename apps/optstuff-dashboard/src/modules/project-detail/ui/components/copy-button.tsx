@@ -12,6 +12,7 @@ type CopyButtonProps = {
   readonly variant?: "default" | "outline" | "ghost" | "secondary";
   readonly size?: "default" | "sm" | "lg" | "icon";
   readonly className?: string;
+  readonly disabled?: boolean;
 };
 
 export function CopyButton({
@@ -19,6 +20,7 @@ export function CopyButton({
   variant = "outline",
   size = "icon",
   className,
+  disabled = false,
 }: CopyButtonProps) {
   const [status, setStatus] = useState<CopyStatus>("idle");
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -32,6 +34,7 @@ export function CopyButton({
   }, []);
 
   const handleCopy = async () => {
+    if (disabled) return;
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
     }
@@ -53,6 +56,7 @@ export function CopyButton({
       size={size}
       onClick={handleCopy}
       className={className}
+      disabled={disabled}
     >
       {status === "copied" ? (
         <Check className="h-4 w-4 text-green-500" />

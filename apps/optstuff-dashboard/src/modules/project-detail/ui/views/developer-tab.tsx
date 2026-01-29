@@ -9,15 +9,15 @@ type DeveloperTabProps = {
   readonly project: Project;
 };
 
-// API endpoint - in production this would come from env or be configured
-const API_ENDPOINT =
-  env.NEXT_PUBLIC_API_ENDPOINT ?? "https://api.optstuff.dev/api/v1";
-
 export function DeveloperTab({ project }: DeveloperTabProps) {
+  // Remove trailing slashes to prevent double slashes in URL construction
+  const baseUrl = env.NEXT_PUBLIC_APP_URL.replace(/\/+$/, "");
+  const apiEndpoint = `${baseUrl}/api/v1`;
+
   return (
     <div className="space-y-6">
-      <DeveloperSnippets projectSlug={project.slug} apiEndpoint={API_ENDPOINT} />
-      <UrlTester projectSlug={project.slug} apiEndpoint={API_ENDPOINT} />
+      <DeveloperSnippets projectSlug={project.slug} apiEndpoint={apiEndpoint} />
+      <UrlTester projectSlug={project.slug} apiEndpoint={apiEndpoint} />
     </div>
   );
 }

@@ -19,17 +19,13 @@ type OverviewTabProps = {
   readonly project: Project;
 };
 
-// API endpoint
-const API_ENDPOINT =
-  env.NEXT_PUBLIC_API_ENDPOINT ?? "https://api.optstuff.dev/api/v1";
-
 export function OverviewTab({ project }: OverviewTabProps) {
   const { data: apiKeys } = api.apiKey.list.useQuery({ projectId: project.id });
   const { data: usageSummary } = api.usage.getSummary.useQuery({
     projectId: project.id,
   });
 
-  const projectEndpoint = `${API_ENDPOINT}/${project.slug}`;
+  const projectEndpoint = `${env.NEXT_PUBLIC_APP_URL}/api/v1/${project.slug}`;
 
   return (
     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">

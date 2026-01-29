@@ -38,8 +38,7 @@ export function SettingsTab({ project, team }: SettingsTabProps) {
   const [confirmText, setConfirmText] = useState("");
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
-  // Authorization settings state
-  const [sourceDomains, setSourceDomains] = useState<string[]>([]);
+  // Authorization settings state (only referer domains at project level)
   const [refererDomains, setRefererDomains] = useState<string[]>([]);
   const [hasChanges, setHasChanges] = useState(false);
 
@@ -52,7 +51,6 @@ export function SettingsTab({ project, team }: SettingsTabProps) {
   // Initialize state when settings are loaded
   useEffect(() => {
     if (settings) {
-      setSourceDomains(settings.allowedSourceDomains);
       setRefererDomains(settings.allowedRefererDomains);
       setHasChanges(false);
     }
@@ -61,14 +59,11 @@ export function SettingsTab({ project, team }: SettingsTabProps) {
   // Track changes
   useEffect(() => {
     if (!settings) return;
-    const sourceChanged =
-      JSON.stringify(sourceDomains) !==
-      JSON.stringify(settings.allowedSourceDomains);
     const refererChanged =
       JSON.stringify(refererDomains) !==
       JSON.stringify(settings.allowedRefererDomains);
-    setHasChanges(sourceChanged || refererChanged);
-  }, [sourceDomains, refererDomains, settings]);
+    setHasChanges(refererChanged);
+  }, [refererDomains, settings]);
 
   // Update settings mutation
   const { mutate: updateSettings, isPending: isUpdating } =
@@ -82,7 +77,6 @@ export function SettingsTab({ project, team }: SettingsTabProps) {
   const handleSaveSettings = () => {
     updateSettings({
       projectId: project.id,
-      allowedSourceDomains: sourceDomains,
       allowedRefererDomains: refererDomains,
     });
   };
@@ -131,7 +125,8 @@ export function SettingsTab({ project, team }: SettingsTabProps) {
         <CardHeader>
           <CardTitle>Authorization Settings</CardTitle>
           <CardDescription>
-            Configure domain whitelists for your IPX image optimization service
+            Control which websites can use your image optimization service.
+            Source domain restrictions are configured per API key.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -141,20 +136,6 @@ export function SettingsTab({ project, team }: SettingsTabProps) {
             </div>
           ) : (
             <>
-              <div className="space-y-2">
-                <Label>Allowed Source Domains</Label>
-                <p className="text-muted-foreground text-sm">
-                  Define which domains your service can fetch images from. Leave
-                  empty to allow all domains.
-                </p>
-                <DomainListInput
-                  value={sourceDomains}
-                  onChange={setSourceDomains}
-                  placeholder="images.example.com"
-                  disabled={isUpdating}
-                />
-              </div>
-
               <div className="space-y-2">
                 <Label>Allowed Referer Domains</Label>
                 <p className="text-muted-foreground text-sm">
@@ -166,6 +147,8 @@ export function SettingsTab({ project, team }: SettingsTabProps) {
                   onChange={setRefererDomains}
                   placeholder="myapp.com"
                   disabled={isUpdating}
+                  emptyMessage="No domains configured. All referers will be allowed."
+                  variant="referer"
                 />
               </div>
 
@@ -220,9 +203,9 @@ export function SettingsTab({ project, team }: SettingsTabProps) {
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <div className="py-4">
-                  <Label htmlFor={`confirm-delete-${project.id}`}>
-                    Type <strong>{project.name}</strong> to confirm
-                  </Label>
+                  <p className="text-sm font-medium">
+                    Type <strong className="select-all">{project.name}</strong> to confirm
+                  </p>
                   <Input
                     id={`confirm-delete-${project.id}`}
                     className="mt-2"
