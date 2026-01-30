@@ -5,7 +5,11 @@ import { z } from "zod";
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
 import type { db as dbType } from "@/server/db";
 import { apiKeys, projects } from "@/server/db/schema";
-import { generateApiKey } from "@/server/lib/api-key";
+import {
+  decryptApiKey,
+  encryptApiKey,
+  generateApiKey,
+} from "@/server/lib/api-key";
 import { invalidateApiKeyCache } from "@/server/lib/project-cache";
 
 /** Helper to update project's API key count using SQL count() */
@@ -73,6 +77,10 @@ export const apiKeyRouter = createTRPCRouter({
 
       const { key, keyPrefix, secretKey } = generateApiKey();
 
+      // Encrypt keys before storing
+      const encryptedKeyFull = encryptApiKey(key);
+      const encryptedSecretKey = encryptApiKey(secretKey);
+
       // Clean up domain entries
       const allowedSourceDomains = input.allowedSourceDomains
         ?.map((d) => d.trim().toLowerCase())
@@ -84,8 +92,8 @@ export const apiKeyRouter = createTRPCRouter({
           projectId: input.projectId,
           name: input.name,
           keyPrefix,
-          keyFull: key,
-          secretKey,
+          keyFull: encryptedKeyFull,
+          secretKey: encryptedSecretKey,
           allowedSourceDomains:
             allowedSourceDomains && allowedSourceDomains.length > 0
               ? allowedSourceDomains
@@ -100,8 +108,8 @@ export const apiKeyRouter = createTRPCRouter({
       // Update project's API key count
       await updateProjectApiKeyCount(ctx.db, input.projectId);
 
-      // Return the API key and secret key
-      return { ...newApiKey, key, secretKey };
+      // Return the plaintext API key and secret key (only shown once!)
+      return { ...newApiKey, key, secretKey, keyFull: key };
     }),
 
   /**
@@ -118,13 +126,20 @@ export const apiKeyRouter = createTRPCRouter({
 
       if (!project) return [];
 
-      return ctx.db.query.apiKeys.findMany({
+      const keys = await ctx.db.query.apiKeys.findMany({
         where: and(
           eq(apiKeys.projectId, input.projectId),
           isNull(apiKeys.revokedAt),
         ),
         orderBy: [desc(apiKeys.createdAt)],
       });
+
+      // Decrypt keyFull and secretKey before returning
+      return keys.map((key) => ({
+        ...key,
+        keyFull: decryptApiKey(key.keyFull),
+        secretKey: decryptApiKey(key.secretKey),
+      }));
     }),
 
   /**
@@ -141,10 +156,17 @@ export const apiKeyRouter = createTRPCRouter({
 
       if (!project) return [];
 
-      return ctx.db.query.apiKeys.findMany({
+      const keys = await ctx.db.query.apiKeys.findMany({
         where: eq(apiKeys.projectId, input.projectId),
         orderBy: [desc(apiKeys.createdAt)],
       });
+
+      // Decrypt keyFull and secretKey before returning
+      return keys.map((key) => ({
+        ...key,
+        keyFull: decryptApiKey(key.keyFull),
+        secretKey: decryptApiKey(key.secretKey),
+      }));
     }),
 
   /**
@@ -169,7 +191,12 @@ export const apiKeyRouter = createTRPCRouter({
 
       if (!project) return null;
 
-      return apiKey;
+      // Decrypt keyFull and secretKey before returning
+      return {
+        ...apiKey,
+        keyFull: decryptApiKey(apiKey.keyFull),
+        secretKey: decryptApiKey(apiKey.secretKey),
+      };
     }),
 
   /**
@@ -255,14 +282,18 @@ export const apiKeyRouter = createTRPCRouter({
 
       const { key, keyPrefix, secretKey } = generateApiKey();
 
+      // Encrypt keys before storing
+      const encryptedKeyFull = encryptApiKey(key);
+      const encryptedSecretKey = encryptApiKey(secretKey);
+
       const [newApiKey] = await ctx.db
         .insert(apiKeys)
         .values({
           projectId: oldApiKey.projectId,
           name: oldApiKey.name,
           keyPrefix,
-          keyFull: key,
-          secretKey,
+          keyFull: encryptedKeyFull,
+          secretKey: encryptedSecretKey,
           allowedSourceDomains: oldApiKey.allowedSourceDomains,
           createdBy: ctx.userId,
           expiresAt: oldApiKey.expiresAt,
@@ -273,7 +304,8 @@ export const apiKeyRouter = createTRPCRouter({
 
       // Count doesn't change on rotation (one revoked, one created)
 
-      return { ...newApiKey, key, secretKey };
+      // Return the plaintext API key and secret key
+      return { ...newApiKey, key, secretKey, keyFull: key };
     }),
 
   /**

@@ -1,9 +1,92 @@
-import { createHmac, randomBytes, timingSafeEqual } from "crypto";
+import {
+  createCipheriv,
+  createDecipheriv,
+  createHash,
+  createHmac,
+  randomBytes,
+  timingSafeEqual,
+} from "crypto";
+
+import { env } from "@/env";
 
 const API_KEY_PREFIX = "pk_";
 const SECRET_KEY_PREFIX = "sk_";
 const API_KEY_LENGTH = 32; // 32 bytes = 64 hex chars
 const SECRET_KEY_LENGTH = 32; // 32 bytes = 64 hex chars
+
+// AES-256-GCM encryption constants
+const ENCRYPTION_ALGORITHM = "aes-256-gcm";
+const IV_LENGTH = 12; // 96 bits recommended for GCM
+const AUTH_TAG_LENGTH = 16; // 128 bits
+
+/**
+ * Derives a 32-byte encryption key from the secret using SHA-256.
+ */
+function getEncryptionKey(): Buffer {
+  return createHash("sha256").update(env.API_KEY_ENCRYPTION_SECRET).digest();
+}
+
+/**
+ * Encrypts a plaintext string using AES-256-GCM.
+ *
+ * @param plaintext - The string to encrypt
+ * @returns Encrypted string in format: iv:authTag:ciphertext (all base64 encoded)
+ */
+export function encryptApiKey(plaintext: string): string {
+  const iv = randomBytes(IV_LENGTH);
+  const key = getEncryptionKey();
+
+  const cipher = createCipheriv(ENCRYPTION_ALGORITHM, key, iv, {
+    authTagLength: AUTH_TAG_LENGTH,
+  });
+
+  const encrypted = Buffer.concat([
+    cipher.update(plaintext, "utf8"),
+    cipher.final(),
+  ]);
+
+  const authTag = cipher.getAuthTag();
+
+  // Format: iv:authTag:ciphertext (all base64 encoded)
+  return `${iv.toString("base64")}:${authTag.toString("base64")}:${encrypted.toString("base64")}`;
+}
+
+/**
+ * Decrypts an encrypted string using AES-256-GCM.
+ *
+ * @param encrypted - The encrypted string in format: iv:authTag:ciphertext
+ * @returns Decrypted plaintext string
+ * @throws Error if decryption fails (invalid format, tampered data, etc.)
+ */
+export function decryptApiKey(encrypted: string): string {
+  const parts = encrypted.split(":");
+  if (parts.length !== 3) {
+    throw new Error("Invalid encrypted format");
+  }
+
+  const [ivBase64, authTagBase64, ciphertextBase64] = parts;
+  if (!ivBase64 || !authTagBase64 || !ciphertextBase64) {
+    throw new Error("Invalid encrypted format: missing parts");
+  }
+
+  const iv = Buffer.from(ivBase64, "base64");
+  const authTag = Buffer.from(authTagBase64, "base64");
+  const ciphertext = Buffer.from(ciphertextBase64, "base64");
+  const key = getEncryptionKey();
+
+  const decipher = createDecipheriv(ENCRYPTION_ALGORITHM, key, iv, {
+    authTagLength: AUTH_TAG_LENGTH,
+  });
+
+  decipher.setAuthTag(authTag);
+
+  const decrypted = Buffer.concat([
+    decipher.update(ciphertext),
+    decipher.final(),
+  ]);
+
+  return decrypted.toString("utf8");
+}
 
 /**
  * Generates a new API key with a prefix for identification.

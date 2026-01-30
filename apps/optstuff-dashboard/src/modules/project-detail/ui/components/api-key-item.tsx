@@ -181,19 +181,13 @@ function StatusIcon({
   return (
     <div
       className={cn(
-        "relative flex h-12 w-12 shrink-0 items-center justify-center rounded-xl",
+        "flex h-12 w-12 shrink-0 items-center justify-center rounded-xl",
         colors.background,
         colors.text
       )}
     >
       <Key className="h-6 w-6" />
-      <span
-        className={cn(
-          "absolute -right-0.5 -top-0.5 h-3.5 w-3.5 rounded-full border-2 border-background",
-          colors.dot
-        )}
-        aria-label={statusLabel}
-      />
+
     </div>
   );
 }
@@ -269,7 +263,7 @@ export function ApiKeyItem({
         : "Active";
 
   // Masked version: pk_abc12345••••••••••••
-  const maskedKey = `${apiKey.keyPrefix}${"•".repeat(12)}`;
+  const maskedKey = `${apiKey.keyPrefix}${"•".repeat(20)}`;
 
   return (
     <div className="rounded-xl border bg-card p-5 transition-colors hover:bg-muted/30">
@@ -284,7 +278,8 @@ export function ApiKeyItem({
           <div className="space-y-1">
             <h3 className="text-base font-semibold">{apiKey.name}</h3>
             <div className="flex items-center gap-1 text-sm text-muted-foreground">
-              <code className="max-w-[200px] truncate rounded bg-muted px-2 py-0.5 font-mono text-xs">
+              {/* Fixed width container to prevent layout shift when toggling visibility */}
+              <code className="w-[200px] truncate rounded bg-muted px-2 py-0.5 font-mono text-xs">
                 {isKeyVisible ? apiKey.keyFull : maskedKey}
               </code>
               <Button
