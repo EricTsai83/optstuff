@@ -466,7 +466,7 @@ type EditApiKeyDialogProps = {
     expiresAt: Date | null;
   } | null;
   readonly onClose: () => void;
-  readonly onSave: (domains: string[], expiresAt: Date | undefined) => void;
+  readonly onSave: (domains: string[], expiresAt: Date | null) => void;
   readonly isUpdating: boolean;
 };
 
@@ -477,13 +477,13 @@ function EditApiKeyDialog({
   isUpdating,
 }: EditApiKeyDialogProps) {
   const [domains, setDomains] = useState<string[]>([]);
-  const [expiresAt, setExpiresAt] = useState<Date | undefined>(undefined);
+  const [expiresAt, setExpiresAt] = useState<Date | null>(null);
 
   // Initialize domains and expiresAt when editingKey changes
   useEffect(() => {
     if (editingKey) {
       setDomains(editingKey.allowedSourceDomains ?? []);
-      setExpiresAt(editingKey.expiresAt ?? undefined);
+      setExpiresAt(editingKey.expiresAt);
     }
   }, [editingKey]);
 
@@ -525,8 +525,8 @@ function EditApiKeyDialog({
           </div>
 
           <ExpirationSelect
-            value={expiresAt}
-            onChange={setExpiresAt}
+            value={expiresAt ?? undefined}
+            onChange={(date) => setExpiresAt(date ?? null)}
             disabled={isUpdating}
           />
         </div>
