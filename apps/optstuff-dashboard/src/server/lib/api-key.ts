@@ -1,4 +1,4 @@
-import { createHash, createHmac, randomBytes, timingSafeEqual } from "crypto";
+import { createHmac, randomBytes, timingSafeEqual } from "crypto";
 
 const API_KEY_PREFIX = "pk_";
 const SECRET_KEY_PREFIX = "sk_";
@@ -7,18 +7,15 @@ const SECRET_KEY_LENGTH = 32; // 32 bytes = 64 hex chars
 
 /**
  * Generates a new API key with a prefix for identification.
- * Returns both the full key (to show to user once) and the hash (to store in DB).
  *
  * @returns Object containing:
- *   - key: The full API key to show to the user (only shown once)
+ *   - key: The full API key (stored in DB and shown to user)
  *   - keyPrefix: The first 12 chars of the key for display purposes
- *   - keyHash: SHA256 hash of the key to store in database
- *   - secretKey: Secret key for signing URLs (shown once, stored in DB)
+ *   - secretKey: Secret key for signing URLs
  */
 export function generateApiKey(): {
   key: string;
   keyPrefix: string;
-  keyHash: string;
   secretKey: string;
 } {
   // Generate random bytes and convert to hex
@@ -28,46 +25,10 @@ export function generateApiKey(): {
   // Extract prefix for display (e.g., "pk_abc123...")
   const keyPrefix = key.substring(0, 12);
 
-  // Hash the key for storage
-  const keyHash = hashApiKey(key);
-
   // Generate secret key for URL signing
   const secretKey = `${SECRET_KEY_PREFIX}${randomBytes(SECRET_KEY_LENGTH).toString("hex")}`;
 
-  return { key, keyPrefix, keyHash, secretKey };
-}
-
-/**
- * Hashes an API key using SHA256.
- * This is used for both storing and verifying keys.
- *
- * @param key - The full API key to hash
- * @returns SHA256 hash of the key
- */
-export function hashApiKey(key: string): string {
-  return createHash("sha256").update(key).digest("hex");
-}
-
-/**
- * Verifies if a provided API key matches a stored hash.
- * Uses constant-time comparison to prevent timing attacks.
- *
- * @param key - The API key to verify
- * @param storedHash - The hash stored in the database
- * @returns true if the key matches the hash
- */
-export function verifyApiKey(key: string, storedHash: string): boolean {
-  const keyHash = hashApiKey(key);
-
-  const keyHashBuffer = Buffer.from(keyHash, "hex");
-  const storedHashBuffer = Buffer.from(storedHash, "hex");
-
-  // Length mismatch - return false without leaking timing info
-  if (keyHashBuffer.length !== storedHashBuffer.length) {
-    return false;
-  }
-
-  return timingSafeEqual(keyHashBuffer, storedHashBuffer);
+  return { key, keyPrefix, secretKey };
 }
 
 /**

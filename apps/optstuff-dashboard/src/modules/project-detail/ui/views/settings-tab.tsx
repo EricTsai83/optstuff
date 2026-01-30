@@ -207,8 +207,6 @@ export function SettingsTab({ project, team }: SettingsTabProps) {
                   onChange={setRefererDomains}
                   placeholder="myapp.com"
                   disabled={isUpdatingSettings}
-                  emptyMessage="No domains configured. All referers will be allowed."
-                  variant="referer"
                 />
               </div>
 

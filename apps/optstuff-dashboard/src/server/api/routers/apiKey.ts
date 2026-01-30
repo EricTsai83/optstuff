@@ -71,7 +71,7 @@ export const apiKeyRouter = createTRPCRouter({
         });
       }
 
-      const { key, keyPrefix, keyHash, secretKey } = generateApiKey();
+      const { key, keyPrefix, secretKey } = generateApiKey();
 
       // Clean up domain entries
       const allowedSourceDomains = input.allowedSourceDomains
@@ -84,7 +84,7 @@ export const apiKeyRouter = createTRPCRouter({
           projectId: input.projectId,
           name: input.name,
           keyPrefix,
-          keyHash,
+          keyFull: key,
           secretKey,
           allowedSourceDomains:
             allowedSourceDomains && allowedSourceDomains.length > 0
@@ -100,7 +100,7 @@ export const apiKeyRouter = createTRPCRouter({
       // Update project's API key count
       await updateProjectApiKeyCount(ctx.db, input.projectId);
 
-      // Return the API key and secret key (only shown once!)
+      // Return the API key and secret key
       return { ...newApiKey, key, secretKey };
     }),
 
@@ -253,7 +253,7 @@ export const apiKeyRouter = createTRPCRouter({
         .where(eq(apiKeys.id, input.apiKeyId));
       invalidateApiKeyCache(oldApiKey.keyPrefix);
 
-      const { key, keyPrefix, keyHash, secretKey } = generateApiKey();
+      const { key, keyPrefix, secretKey } = generateApiKey();
 
       const [newApiKey] = await ctx.db
         .insert(apiKeys)
@@ -261,7 +261,7 @@ export const apiKeyRouter = createTRPCRouter({
           projectId: oldApiKey.projectId,
           name: oldApiKey.name,
           keyPrefix,
-          keyHash,
+          keyFull: key,
           secretKey,
           allowedSourceDomains: oldApiKey.allowedSourceDomains,
           createdBy: ctx.userId,

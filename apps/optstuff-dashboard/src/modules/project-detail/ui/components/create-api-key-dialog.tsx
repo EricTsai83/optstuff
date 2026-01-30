@@ -15,8 +15,9 @@ import { Input } from "@workspace/ui/components/input";
 import { Label } from "@workspace/ui/components/label";
 import { Key, Plus, Shield } from "lucide-react";
 import { useState } from "react";
-import { CopyButton } from "./copy-button";
+import { CopyButton } from "@workspace/ui/components/copy-button";
 import { DomainListInput } from "./domain-list-input";
+import { ExpirationSelect } from "./expiration-select";
 
 type CreateApiKeyDialogProps = {
   readonly projectId: string;
@@ -31,6 +32,7 @@ export function CreateApiKeyDialog({
   const [step, setStep] = useState<"form" | "success">("form");
   const [name, setName] = useState("");
   const [sourceDomains, setSourceDomains] = useState<string[]>([]);
+  const [expiresAt, setExpiresAt] = useState<Date | undefined>(undefined);
   const [createdKey, setCreatedKey] = useState<string | null>(null);
   const [createdSecretKey, setCreatedSecretKey] = useState<string | null>(null);
 
@@ -54,6 +56,7 @@ export function CreateApiKeyDialog({
       projectId,
       name: name.trim(),
       allowedSourceDomains: sourceDomains,
+      expiresAt: expiresAt,
     });
   };
 
@@ -64,6 +67,7 @@ export function CreateApiKeyDialog({
       setStep("form");
       setName("");
       setSourceDomains([]);
+      setExpiresAt(undefined);
       setCreatedKey(null);
       setCreatedSecretKey(null);
     }, 150);
@@ -113,10 +117,14 @@ export function CreateApiKeyDialog({
                   onChange={setSourceDomains}
                   placeholder="images.example.com"
                   disabled={isPending}
-                  emptyMessage="Add at least one domain to enable this API key."
-                  variant="source"
                 />
               </div>
+
+              <ExpirationSelect
+                value={expiresAt}
+                onChange={setExpiresAt}
+                disabled={isPending}
+              />
             </div>
             <DialogFooter>
               <Button
@@ -171,9 +179,7 @@ export function CreateApiKeyDialog({
                   <div className="absolute top-2 right-2">
                     <CopyButton
                       text={createdSecretKey ?? ""}
-                      variant="secondary"
-                      size="icon"
-                      className="h-8 w-8 shadow-sm"
+                      className="h-8 w-8 rounded-md bg-secondary shadow-sm"
                     />
                   </div>
                 </div>
@@ -195,9 +201,7 @@ export function CreateApiKeyDialog({
                   <div className="absolute top-2 right-2">
                     <CopyButton
                       text={createdKey?.substring(0, 12) ?? ""}
-                      variant="secondary"
-                      size="icon"
-                      className="h-8 w-8 shadow-sm"
+                      className="h-8 w-8 rounded-md bg-secondary shadow-sm"
                     />
                   </div>
                 </div>

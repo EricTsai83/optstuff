@@ -13,7 +13,7 @@ import {
   TabsList,
   TabsTrigger,
 } from "@workspace/ui/components/tabs";
-import { CopyButton } from "./copy-button";
+import { CopyButton } from "@workspace/ui/components/copy-button";
 
 type DeveloperSnippetsProps = {
   readonly projectSlug: string;
@@ -142,7 +142,7 @@ _            → No operations`;
                   <code>{envExample}</code>
                 </pre>
                 <div className="absolute top-2 right-2">
-                  <CopyButton text={envExample} variant="secondary" size="sm" />
+                  <CopyButton text={envExample} className="h-8 w-8 rounded-md bg-secondary" />
                 </div>
               </div>
             </TabsContent>
@@ -153,11 +153,7 @@ _            → No operations`;
                   <code>{loaderExample}</code>
                 </pre>
                 <div className="absolute top-2 right-2">
-                  <CopyButton
-                    text={loaderExample}
-                    variant="secondary"
-                    size="sm"
-                  />
+                  <CopyButton text={loaderExample} className="h-8 w-8 rounded-md bg-secondary" />
                 </div>
               </div>
             </TabsContent>
@@ -168,11 +164,7 @@ _            → No operations`;
                   <code>{usageExample}</code>
                 </pre>
                 <div className="absolute top-2 right-2">
-                  <CopyButton
-                    text={usageExample}
-                    variant="secondary"
-                    size="sm"
-                  />
+                  <CopyButton text={usageExample} className="h-8 w-8 rounded-md bg-secondary" />
                 </div>
               </div>
             </TabsContent>
@@ -183,11 +175,7 @@ _            → No operations`;
                   <code>{directUrlExample}</code>
                 </pre>
                 <div className="absolute top-2 right-2">
-                  <CopyButton
-                    text={directUrlExample}
-                    variant="secondary"
-                    size="sm"
-                  />
+                  <CopyButton text={directUrlExample} className="h-8 w-8 rounded-md bg-secondary" />
                 </div>
               </div>
             </TabsContent>

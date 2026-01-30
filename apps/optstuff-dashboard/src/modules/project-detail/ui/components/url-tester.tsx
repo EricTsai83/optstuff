@@ -20,7 +20,7 @@ import {
 import { Slider } from "@workspace/ui/components/slider";
 import { ExternalLink, ImageIcon, Loader2 } from "lucide-react";
 import { useState } from "react";
-import { CopyButton } from "./copy-button";
+import { CopyButton } from "@workspace/ui/components/copy-button";
 
 type UrlTesterProps = {
   readonly projectSlug: string;
@@ -146,7 +146,7 @@ export function UrlTester({ projectSlug, apiEndpoint }: UrlTesterProps) {
             <Label>Generated URL</Label>
             <div className="bg-muted flex items-center gap-2 rounded-lg p-3">
               <code className="flex-1 truncate text-sm">{optimizedUrl}</code>
-              <CopyButton text={optimizedUrl} variant="secondary" size="sm" />
+              <CopyButton text={optimizedUrl} className="h-8 w-8 rounded-md bg-secondary" />
               <Button
                 variant="secondary"
                 size="sm"
