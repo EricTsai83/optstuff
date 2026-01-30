@@ -17,7 +17,7 @@ import {
 } from "@workspace/ui/components/select";
 import { addDays, addYears, format, startOfDay } from "date-fns";
 import { CalendarIcon } from "lucide-react";
-import { useState } from "react";
+import { useId, useState } from "react";
 
 type ExpirationSelectProps = {
   readonly value: Date | undefined;
@@ -66,6 +66,7 @@ export function ExpirationSelect({
   disabled = false,
   label = "Expiration",
 }: ExpirationSelectProps) {
+  const selectId = useId();
   const [calendarOpen, setCalendarOpen] = useState(false);
 
   const handlePresetChange = (presetValue: PresetValue): void => {
@@ -103,14 +104,14 @@ export function ExpirationSelect({
 
   return (
     <div className="grid gap-2">
-      <Label>{label}</Label>
+      <Label htmlFor={selectId}>{label}</Label>
       <div className="flex gap-2">
         <Select
           value={selectValue}
           onValueChange={(val) => handlePresetChange(val as PresetValue)}
           disabled={disabled}
         >
-          <SelectTrigger className="flex-1">
+          <SelectTrigger id={selectId} className="flex-1">
             <SelectValue placeholder="Select expiration">
               {getDisplayLabel()}
             </SelectValue>

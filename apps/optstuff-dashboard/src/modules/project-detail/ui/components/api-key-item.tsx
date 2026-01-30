@@ -15,6 +15,8 @@ import { format, formatDistanceToNow } from "date-fns";
 import {
   AlertTriangle,
   Clock,
+  Eye,
+  EyeOff,
   Globe,
   Key,
   MoreHorizontal,
@@ -22,6 +24,7 @@ import {
   RotateCcw,
   Trash2,
 } from "lucide-react";
+import { useState } from "react";
 import type { ApiKeyData, ExpirationStatus } from "./api-key-types";
 import {
   getExpirationStatus,
@@ -250,6 +253,7 @@ export function ApiKeyItem({
   isRevoking,
   isRotating,
 }: ApiKeyItemProps) {
+  const [isKeyVisible, setIsKeyVisible] = useState(false);
   const { isExpired, isExpiringSoon, daysUntilExpiry } = getExpirationStatus(
     apiKey.expiresAt
   );
@@ -264,6 +268,9 @@ export function ApiKeyItem({
         ? "Expiring soon"
         : "Active";
 
+  // Masked version: pk_abc12345••••••••••••
+  const maskedKey = `${apiKey.keyPrefix}${"•".repeat(12)}`;
+
   return (
     <div className="rounded-xl border bg-card p-5 transition-colors hover:bg-muted/30">
       {/* Header row: [Icon] [Content] [Actions] */}
@@ -277,10 +284,23 @@ export function ApiKeyItem({
           <div className="space-y-1">
             <h3 className="text-base font-semibold">{apiKey.name}</h3>
             <div className="flex items-center gap-1 text-sm text-muted-foreground">
-              <code className="rounded bg-muted px-2 py-0.5 font-mono text-xs">
-                {apiKey.keyPrefix}...
+              <code className="max-w-[200px] truncate rounded bg-muted px-2 py-0.5 font-mono text-xs">
+                {isKeyVisible ? apiKey.keyFull : maskedKey}
               </code>
-              <CopyButton text={apiKey.keyPrefix} className="h-7 w-7" />
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 shrink-0"
+                onClick={() => setIsKeyVisible(!isKeyVisible)}
+                aria-label={isKeyVisible ? "Hide key" : "Show key"}
+              >
+                {isKeyVisible ? (
+                  <EyeOff className="h-4 w-4" />
+                ) : (
+                  <Eye className="h-4 w-4" />
+                )}
+              </Button>
+              <CopyButton text={apiKey.keyFull} className="h-7 w-7 shrink-0" />
             </div>
           </div>
 

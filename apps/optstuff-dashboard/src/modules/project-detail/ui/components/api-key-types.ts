@@ -8,6 +8,7 @@ export type ApiKeyData = {
   readonly id: string;
   readonly name: string;
   readonly keyPrefix: string;
+  readonly keyFull: string;
   readonly createdAt: Date;
   readonly lastUsedAt: Date | null;
   readonly expiresAt: Date | null;
@@ -47,10 +48,10 @@ export function getExpirationStatus(expiresAt: Date | null): ExpirationStatus {
 
   const now = new Date();
   const expiryDate = new Date(expiresAt);
-  const isExpired = now.getTime() > expiryDate.getTime();
+  const isExpired = now.getTime() >= expiryDate.getTime();
   const daysUntilExpiry = differenceInDays(expiryDate, now);
   const isExpiringSoon =
-    !isExpired && daysUntilExpiry >= 0 && daysUntilExpiry <= 30;
+    !isExpired && daysUntilExpiry > 0 && daysUntilExpiry <= 7;
 
   return { isExpired, isExpiringSoon, daysUntilExpiry };
 }
@@ -61,7 +62,7 @@ export function getExpirationStatus(expiresAt: Date | null): ExpirationStatus {
 export function getStatusColorScheme(
   isExpired: boolean,
   isExpiringSoon: boolean,
-  hasDomains: boolean
+  hasDomains: boolean,
 ): "danger" | "warning" | "success" {
   if (isExpired || !hasDomains) {
     return "danger";

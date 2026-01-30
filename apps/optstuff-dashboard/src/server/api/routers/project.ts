@@ -99,12 +99,12 @@ export const projectRouter = createTRPCRouter({
       }
 
       // Create default API key
-      const { key, keyPrefix, keyHash, secretKey } = generateApiKey();
+      const { key, keyPrefix, secretKey } = generateApiKey();
       await ctx.db.insert(apiKeys).values({
         projectId: newProject.id,
         name: "Default",
         keyPrefix,
-        keyHash,
+        keyFull: key,
         secretKey,
         createdBy: ctx.userId,
       });
