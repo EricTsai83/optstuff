@@ -27,11 +27,11 @@ type ExpirationSelectProps = {
 };
 
 const PRESET_OPTIONS = [
-  { value: "never", label: "Never expires", days: null },
   { value: "7d", label: "7 days", days: 7 },
   { value: "30d", label: "30 days", days: 30 },
   { value: "90d", label: "90 days", days: 90 },
   { value: "1y", label: "1 year", days: 365 },
+  { value: "never", label: "Never expires", days: null },
 ] as const;
 
 type PresetValue = (typeof PRESET_OPTIONS)[number]["value"] | "custom";
@@ -121,6 +121,7 @@ export function ExpirationSelect({
                 {preset.label}
               </SelectItem>
             ))}
+            <SelectItem value="custom">Custom</SelectItem>
           </SelectContent>
         </Select>
 
