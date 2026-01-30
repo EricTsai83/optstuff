@@ -115,13 +115,15 @@ export function ExpirationSelect({
               {getDisplayLabel()}
             </SelectValue>
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent position="popper">
             {PRESET_OPTIONS.map((preset) => (
               <SelectItem key={preset.value} value={preset.value}>
                 {preset.label}
               </SelectItem>
             ))}
-            <SelectItem value="custom">Custom</SelectItem>
+            <SelectItem value="custom" className="hidden">
+              Custom
+            </SelectItem>
           </SelectContent>
         </Select>
 
