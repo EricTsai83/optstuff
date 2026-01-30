@@ -200,11 +200,13 @@ function getExpirationStatus(expiresAt: Date | null): {
 
   const now = new Date();
   const expiryDate = new Date(expiresAt);
+  const isExpired = now.getTime() > expiryDate.getTime();
   const daysUntilExpiry = differenceInDays(expiryDate, now);
+  const isExpiringSoon = !isExpired && daysUntilExpiry >= 0 && daysUntilExpiry <= 7;
 
   return {
-    isExpired: daysUntilExpiry < 0,
-    isExpiringSoon: daysUntilExpiry >= 0 && daysUntilExpiry <= 7,
+    isExpired,
+    isExpiringSoon,
     daysUntilExpiry,
   };
 }
