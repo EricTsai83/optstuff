@@ -12,7 +12,7 @@ import {
 } from "@workspace/ui/components/card";
 import { Activity, Globe, Key } from "lucide-react";
 import type { Project } from "../../types";
-import { CopyButton } from "../components/copy-button";
+import { CopyButton } from "@workspace/ui/components/copy-button";
 import { StatCard } from "../components/stat-card";
 
 type OverviewTabProps = {
@@ -45,7 +45,7 @@ export function OverviewTab({ project }: OverviewTabProps) {
             <code className="flex-1 truncate font-mono text-sm">
               {projectEndpoint}
             </code>
-            <CopyButton text={projectEndpoint} variant="secondary" />
+            <CopyButton text={projectEndpoint} className="bg-secondary" />
           </div>
           <p className="text-muted-foreground mt-3 text-sm">
             <strong>URL Format:</strong>{" "}

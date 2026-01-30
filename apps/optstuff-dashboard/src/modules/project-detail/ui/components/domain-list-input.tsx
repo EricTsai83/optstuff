@@ -3,7 +3,7 @@
 import { Badge } from "@workspace/ui/components/badge";
 import { Button } from "@workspace/ui/components/button";
 import { Input } from "@workspace/ui/components/input";
-import { AlertTriangle, X } from "lucide-react";
+import { X } from "lucide-react";
 import { useState } from "react";
 
 type DomainListInputProps = {
@@ -11,9 +11,6 @@ type DomainListInputProps = {
   readonly onChange: (domains: string[]) => void;
   readonly placeholder?: string;
   readonly disabled?: boolean;
-  readonly emptyMessage?: string;
-  /** "source" shows warning style when empty, "referer" shows neutral style */
-  readonly variant?: "source" | "referer";
 };
 
 /**
@@ -26,8 +23,6 @@ export function DomainListInput({
   onChange,
   placeholder = "example.com",
   disabled = false,
-  emptyMessage = "No domains configured.",
-  variant = "referer",
 }: DomainListInputProps) {
   const [inputValue, setInputValue] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -41,13 +36,23 @@ export function DomainListInput({
     const domain = inputValue.trim().toLowerCase();
     if (!domain) return;
 
-    // Basic domain validation
-    if (
-      !/^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)*$/.test(
-        domain,
-      )
-    ) {
-      setError("Invalid domain format. Use format like: example.com");
+    // Domain validation:
+    // - Optional wildcard prefix (*.)
+    // - Must have at least one dot (e.g., example.com, not just "example")
+    // - TLD must be at least 2 characters
+    // - Each segment can contain letters, numbers, and hyphens (but not start/end with hyphen)
+    const domainRegex = /^(\*\.)?[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$/;
+
+    if (!domainRegex.test(domain)) {
+      setError("Invalid domain format. Use format like: example.com or *.example.com");
+      return;
+    }
+
+    // Validate TLD is at least 2 characters
+    const parts = domain.replace(/^\*\./, "").split(".");
+    const tld = parts[parts.length - 1];
+    if (!tld || tld.length < 2) {
+      setError("Invalid TLD. Domain must end with a valid TLD (e.g., .com, .org, .io)");
       return;
     }
 
@@ -73,9 +78,6 @@ export function DomainListInput({
       addDomain();
     }
   };
-
-  // Show warning style for source domains when empty (will reject all requests)
-  const showWarning = variant === "source" && value.length === 0;
 
   return (
     <div className="space-y-3">
@@ -129,15 +131,6 @@ export function DomainListInput({
         </div>
       )}
 
-      {value.length === 0 && (
-        <p
-          className={`flex items-center gap-2 text-sm ${showWarning ? "text-amber-600 dark:text-amber-500" : "text-muted-foreground"
-            }`}
-        >
-          {showWarning && <AlertTriangle className="h-4 w-4 shrink-0" />}
-          {emptyMessage}
-        </p>
-      )}
     </div>
   );
 }

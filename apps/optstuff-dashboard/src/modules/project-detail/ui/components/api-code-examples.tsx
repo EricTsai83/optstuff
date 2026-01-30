@@ -8,7 +8,7 @@ import {
 } from "@workspace/ui/components/tabs";
 import { ExternalLink } from "lucide-react";
 import { useState } from "react";
-import { CopyButton } from "./copy-button";
+import { CopyButton } from "@workspace/ui/components/copy-button";
 
 type Tab = "curl" | "node" | "python";
 
@@ -67,9 +67,7 @@ response = requests.get(
             <div className="absolute top-2 right-2">
               <CopyButton
                 text={codeExamples[tab.id]}
-                variant="secondary"
-                size="icon"
-                className="h-7 w-7 opacity-0 shadow-sm transition-opacity group-hover:opacity-100"
+                className="h-7 w-7 rounded-md bg-secondary opacity-0 shadow-sm transition-opacity group-hover:opacity-100"
               />
             </div>
           </div>
