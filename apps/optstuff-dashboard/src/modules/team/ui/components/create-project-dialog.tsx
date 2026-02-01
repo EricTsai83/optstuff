@@ -39,9 +39,6 @@ export function CreateProjectDialog({
     onSuccess: (project) => {
       utils.project.list.invalidate();
       utils.project.listAll.invalidate();
-      // setOpen(false);
-      // setName("");
-      // setDescription("");
       router.push(`/${teamSlug}/${project?.slug}`);
     },
   });
