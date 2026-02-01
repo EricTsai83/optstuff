@@ -1,8 +1,8 @@
 import {
   createCipheriv,
   createDecipheriv,
-  createHash,
   createHmac,
+  hkdfSync,
   randomBytes,
   timingSafeEqual,
 } from "crypto";
@@ -18,12 +18,31 @@ const SECRET_KEY_LENGTH = 32; // 32 bytes = 64 hex chars
 const ENCRYPTION_ALGORITHM = "aes-256-gcm";
 const IV_LENGTH = 12; // 96 bits recommended for GCM
 const AUTH_TAG_LENGTH = 16; // 128 bits
+const ENCRYPTION_KEY_LENGTH = 32; // 256 bits for AES-256
+
+// HKDF constants (RFC 5869)
+const HKDF_ALGORITHM = "sha256"; // 底層 hash 算法
+const HKDF_SALT = "optstuff-api-key-v1"; // Versioned salt for future key rotation
+const HKDF_INFO_ENCRYPTION = "api-key-encryption"; // Context for encryption key derivation
 
 /**
- * Derives a 32-byte encryption key from the secret using SHA-256.
+ * Derives a 32-byte encryption key from the master secret using HKDF (RFC 5869).
+ *
+ * HKDF provides better key derivation than simple hashing:
+ * - Separates key material extraction from expansion
+ * - Allows deriving multiple independent keys via different `info` values
+ * - Industry standard for cryptographic key derivation
  */
 function getEncryptionKey(): Buffer {
-  return createHash("sha256").update(env.API_KEY_ENCRYPTION_SECRET).digest();
+  return Buffer.from(
+    hkdfSync(
+      HKDF_ALGORITHM,
+      env.API_KEY_ENCRYPTION_SECRET,
+      HKDF_SALT,
+      HKDF_INFO_ENCRYPTION,
+      ENCRYPTION_KEY_LENGTH,
+    ),
+  );
 }
 
 /**
