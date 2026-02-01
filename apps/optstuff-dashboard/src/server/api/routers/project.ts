@@ -6,7 +6,7 @@ import { generateSlug, generateUniqueSlug } from "@/lib/slug";
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
 import type { db as dbType } from "@/server/db";
 import { apiKeys, pinnedProjects, projects, teams } from "@/server/db/schema";
-import { generateApiKey } from "@/server/lib/api-key";
+import { encryptApiKey, generateApiKey } from "@/server/lib/api-key";
 import { invalidateProjectCache } from "@/server/lib/project-cache";
 
 /**
@@ -100,12 +100,17 @@ export const projectRouter = createTRPCRouter({
 
       // Create default API key
       const { key, keyPrefix, secretKey } = generateApiKey();
+
+      // Encrypt keys before storing
+      const encryptedKeyFull = encryptApiKey(key);
+      const encryptedSecretKey = encryptApiKey(secretKey);
+
       await ctx.db.insert(apiKeys).values({
         projectId: newProject.id,
         name: "Default",
         keyPrefix,
-        keyFull: key,
-        secretKey,
+        keyFull: encryptedKeyFull,
+        secretKey: encryptedSecretKey,
         createdBy: ctx.userId,
       });
 

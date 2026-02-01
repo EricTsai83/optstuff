@@ -13,7 +13,7 @@ import {
 } from "@workspace/ui/components/dialog";
 import { Input } from "@workspace/ui/components/input";
 import { Label } from "@workspace/ui/components/label";
-import { Loader2 } from "lucide-react";
+import { LoadingButton } from "@workspace/ui/components/loading-button";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
@@ -39,9 +39,6 @@ export function CreateProjectDialog({
     onSuccess: (project) => {
       utils.project.list.invalidate();
       utils.project.listAll.invalidate();
-      setOpen(false);
-      setName("");
-      setDescription("");
       router.push(`/${teamSlug}/${project?.slug}`);
     },
   });
@@ -105,10 +102,13 @@ export function CreateProjectDialog({
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={isPending || !name.trim()}>
-              {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            <LoadingButton
+              type="submit"
+              loading={isPending}
+              disabled={!name.trim()}
+            >
               Create Project
-            </Button>
+            </LoadingButton>
           </DialogFooter>
         </form>
       </DialogContent>

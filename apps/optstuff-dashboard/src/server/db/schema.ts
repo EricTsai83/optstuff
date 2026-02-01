@@ -139,8 +139,8 @@ export const apiKeys = createTable(
       .references(() => projects.id, { onDelete: "cascade" }),
     name: d.varchar({ length: 255 }).notNull(),
     keyPrefix: d.varchar({ length: 12 }).notNull(), // Display prefix "pk_abc123..."
-    keyFull: d.varchar({ length: 70 }).notNull().unique(), // Full API key - pk_ prefix (3) + 64 hex chars = 67
-    secretKey: d.varchar({ length: 70 }).notNull(), // Secret for signing URLs - sk_ prefix (3) + 64 hex chars = 67
+    keyFull: d.varchar({ length: 255 }).notNull().unique(), // Encrypted API key (AES-256-GCM format: iv:authTag:ciphertext)
+    secretKey: d.varchar({ length: 255 }).notNull(), // Encrypted secret key (AES-256-GCM format: iv:authTag:ciphertext)
     // Domain whitelist - controls which image sources this key can access
     allowedSourceDomains: d.text().array(),
     createdBy: d.varchar({ length: 255 }).notNull(), // Clerk user ID who created this key
