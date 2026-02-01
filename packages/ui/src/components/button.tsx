@@ -1,6 +1,5 @@
-import { Slot, Slottable } from "@radix-ui/react-slot";
+import { Slot } from "@radix-ui/react-slot";
 import { cva, type VariantProps } from "class-variance-authority";
-import { Loader2 } from "lucide-react";
 import * as React from "react";
 
 import { cn } from "@workspace/ui/lib/utils";
@@ -40,8 +39,6 @@ const buttonVariants = cva(
 type ButtonProps = React.ComponentProps<"button"> &
   VariantProps<typeof buttonVariants> & {
     readonly asChild?: boolean;
-    /** 顯示 loading spinner 並自動禁用按鈕 */
-    readonly loading?: boolean;
   };
 
 function Button({
@@ -49,26 +46,18 @@ function Button({
   variant = "default",
   size = "default",
   asChild = false,
-  loading = false,
-  disabled,
-  children,
   ...props
 }: ButtonProps) {
   const Comp = asChild ? Slot : "button";
-  const isDisabled = disabled || loading;
 
   return (
     <Comp
       data-slot="button"
       data-variant={variant}
       data-size={size}
-      disabled={isDisabled}
       className={cn(buttonVariants({ variant, size, className }))}
       {...props}
-    >
-      {loading && <Loader2 className="animate-spin" />}
-      <Slottable>{children}</Slottable>
-    </Comp>
+    />
   );
 }
 
