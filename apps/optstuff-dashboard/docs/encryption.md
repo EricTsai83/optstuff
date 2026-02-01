@@ -4,7 +4,7 @@
 
 ## 加密演算法
 
-```
+```text
 演算法: AES-256-GCM (Authenticated Encryption)
 
 特性:
@@ -18,14 +18,14 @@
 
 HKDF (HMAC-based Extract-and-Expand Key Derivation Function) 用於從 master secret 安全地派生加密密鑰。
 
-```
+```text
 演算法: HKDF (HMAC-based Extract-and-Expand Key Derivation Function)
 標準: RFC 5869
 ```
 
 ### HKDF 流程
 
-```
+```text
                     Input Key Material (IKM)
                     API_KEY_ENCRYPTION_SECRET
                               │
@@ -51,7 +51,7 @@ HKDF (HMAC-based Extract-and-Expand Key Derivation Function) 用於從 master se
 ### HKDF 優勢
 
 | 特性 | 說明 |
-|------|------|
+| ------ | ------ |
 | 標準化 | RFC 5869 業界公認標準 |
 | 可擴展 | 可從同一 master key 安全派生多個不同用途的密鑰 |
 | 版本化 | Salt 包含版本號，便於未來 key rotation |
@@ -59,7 +59,7 @@ HKDF (HMAC-based Extract-and-Expand Key Derivation Function) 用於從 master se
 
 ## 加密格式
 
-```
+```text
 加密後格式: {iv}:{authTag}:{ciphertext}
 
 各部分:
