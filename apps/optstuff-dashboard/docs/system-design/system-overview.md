@@ -91,7 +91,7 @@ Each API key consists of a dual-key system:
 |----------|--------|---------|------------|
 | Public Key | `pk_<43 base64url chars>` | Request identification | Safe to expose in URLs |
 | Secret Key | `sk_<43 base64url chars>` | URL signature generation | **Must be kept secret** |
-| Key Prefix | `pk_<8 chars>` | Quick lookup and display | Stored in plaintext |
+| Key Prefix | `pk_<9 base64url chars>` | Quick lookup and display | Stored in plaintext |
 
 ### 4. Image Processing Engine
 
