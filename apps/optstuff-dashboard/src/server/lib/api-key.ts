@@ -11,8 +11,8 @@ import { env } from "@/env";
 
 const API_KEY_PREFIX = "pk_";
 const SECRET_KEY_PREFIX = "sk_";
-const API_KEY_LENGTH = 32; // 32 bytes = 64 hex chars
-const SECRET_KEY_LENGTH = 32; // 32 bytes = 64 hex chars
+const API_KEY_LENGTH = 32; // 32 bytes → ~43 base64url chars (no padding)
+const SECRET_KEY_LENGTH = 32; // 32 bytes → ~43 base64url chars (no padding)
 
 // AES-256-GCM encryption constants
 const ENCRYPTION_ALGORITHM = "aes-256-gcm";
@@ -116,15 +116,15 @@ export function decryptApiKey(encrypted: string) {
  *   - secretKey: Secret key for signing URLs
  */
 export function generateApiKey() {
-  // Generate random bytes and convert to hex
-  const randomPart = randomBytes(API_KEY_LENGTH).toString("hex");
+  // Generate random bytes and convert to base64url (e.g., "wGqLzyZob...")
+  const randomPart = randomBytes(API_KEY_LENGTH).toString("base64url");
   const key = `${API_KEY_PREFIX}${randomPart}`;
 
-  // Extract prefix for display (e.g., "pk_abc123...")
+  // Extract prefix for display (e.g., "pk_wGqLzy...")
   const keyPrefix = key.substring(0, 12);
 
-  // Generate secret key for URL signing
-  const secretKey = `${SECRET_KEY_PREFIX}${randomBytes(SECRET_KEY_LENGTH).toString("hex")}`;
+  // Generate secret key for URL signing (e.g., "sk_xYzAbC...")
+  const secretKey = `${SECRET_KEY_PREFIX}${randomBytes(SECRET_KEY_LENGTH).toString("base64url")}`;
 
   return { key, keyPrefix, secretKey };
 }
