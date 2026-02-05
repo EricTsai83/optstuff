@@ -20,7 +20,7 @@ const isDevelopment = process.env.NODE_ENV === "development";
 export function validateReferer(
   referer: string | null,
   allowedDomains: string[] | null,
-): boolean {
+) {
   // If no whitelist is set, allow all
   if (!allowedDomains || allowedDomains.length === 0) return true;
   if (!referer) return false;
@@ -28,8 +28,7 @@ export function validateReferer(
   try {
     const refererHost = new URL(referer).hostname;
     return allowedDomains.some(
-      (domain) =>
-        refererHost === domain || refererHost.endsWith(`.${domain}`),
+      (domain) => refererHost === domain || refererHost.endsWith(`.${domain}`),
     );
   } catch {
     return false;
@@ -50,7 +49,7 @@ export function validateReferer(
 export function validateSourceDomain(
   sourceHost: string,
   allowedDomains: string[] | null,
-): boolean {
+) {
   // Empty allowlist: reject all in production, allow all in development
   if (!allowedDomains || allowedDomains.length === 0) {
     return isDevelopment;
@@ -66,7 +65,7 @@ export function validateSourceDomain(
  * Safely parse a Unix timestamp, returning undefined for invalid values.
  * Only accepts finite positive integers.
  */
-function safeParseTimestamp(value: string | null): number | undefined {
+function safeParseTimestamp(value: string | null) {
   if (!value) return undefined;
   const parsed = parseInt(value, 10);
   return Number.isFinite(parsed) && parsed > 0 ? parsed : undefined;
@@ -78,11 +77,7 @@ function safeParseTimestamp(value: string | null): number | undefined {
  * @param searchParams - URL search params
  * @returns Parsed signature params or null if missing required params
  */
-export function parseSignatureParams(searchParams: URLSearchParams): {
-  readonly keyPrefix: string;
-  readonly signature: string;
-  readonly expiresAt?: number;
-} | null {
+export function parseSignatureParams(searchParams: URLSearchParams) {
   const keyPrefix = searchParams.get("key");
   const signature = searchParams.get("sig");
 

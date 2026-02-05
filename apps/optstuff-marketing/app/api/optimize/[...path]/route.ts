@@ -27,7 +27,7 @@ export const dynamic = "force-dynamic";
 export async function GET(
   _: unknown,
   { params }: { params: Promise<{ path: string[] }> },
-): Promise<Response> {
+) {
   try {
     const resolvedParams = await params;
     const parsed = parseIpxPath(resolvedParams.path);

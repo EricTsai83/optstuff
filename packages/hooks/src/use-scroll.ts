@@ -4,11 +4,11 @@ import { useEffect, useState } from "react";
  * Hook to track page scroll position
  * @returns Current scroll position in pixels
  */
-export function useScroll(): number {
+export function useScroll() {
   const [scrollY, setScrollY] = useState(0);
 
   useEffect(() => {
-    const handleScroll = (): void => {
+    const handleScroll = () => {
       setScrollY(window.scrollY);
     };
 

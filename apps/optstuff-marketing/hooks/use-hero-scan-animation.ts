@@ -31,9 +31,7 @@ type UseHeroScanAnimationResult = {
  * Manages the requestAnimationFrame loop and exposes a declarative API
  * for the UI component.
  */
-export function useHeroScanAnimation(
-  isEnabled: boolean = true,
-): UseHeroScanAnimationResult {
+export function useHeroScanAnimation(isEnabled: boolean = true) {
   const [scanProgress, setScanProgress] = useState(0);
   const [isOptimized, setIsOptimized] = useState(false);
   const [shouldStartDecode, setShouldStartDecode] = useState(false);
@@ -43,7 +41,7 @@ export function useHeroScanAnimation(
   const startTimeRef = useRef<number | null>(null);
   const animationRef = useRef<number | null>(null);
 
-  const restart = useCallback((): void => {
+  const restart = useCallback(() => {
     if (animationRef.current !== null) {
       cancelAnimationFrame(animationRef.current);
       animationRef.current = null;
@@ -67,7 +65,7 @@ export function useHeroScanAnimation(
       return;
     }
 
-    const animate = (timestamp: number): void => {
+    const animate = (timestamp: number) => {
       if (startTimeRef.current === null) {
         startTimeRef.current = timestamp;
         // Mark animation as started on first frame

@@ -5,7 +5,7 @@
 /**
  * Format bytes to human readable string
  */
-export function formatBytes(bytes: number): string {
+export function formatBytes(bytes: number) {
   if (bytes === 0) return "0 B";
   const k = 1024;
   const sizes = ["B", "KB", "MB", "GB", "TB", "PB"];
@@ -19,7 +19,7 @@ export function formatBytes(bytes: number): string {
 /**
  * Format number with K, M, B, T suffix
  */
-export function formatNumber(num: number): string {
+export function formatNumber(num: number) {
   if (num >= 1_000_000_000_000) {
     return (num / 1_000_000_000_000).toFixed(1) + "T";
   }
@@ -38,10 +38,7 @@ export function formatNumber(num: number): string {
 /**
  * Get date range for last N days
  */
-export function getDateRange(days: number): {
-  startDate: string;
-  endDate: string;
-} {
+export function getDateRange(days: number) {
   const today = new Date();
   const startDay = new Date(today);
   startDay.setDate(startDay.getDate() - days);
@@ -55,6 +52,6 @@ export function getDateRange(days: number): {
 /**
  * Get today's date as ISO string (YYYY-MM-DD)
  */
-export function getToday(): string {
+export function getToday() {
   return new Date().toISOString().split("T")[0]!;
 }

@@ -50,7 +50,7 @@ const RANDOM_PRECISION = 3;
  * Rounds a number to a fixed precision to avoid hydration mismatch
  * between server and client due to floating-point differences.
  */
-function roundToPrecision(value: number, decimals: number): number {
+function roundToPrecision(value: number, decimals: number) {
   const factor = Math.pow(10, decimals);
   return Math.round(value * factor) / factor;
 }
@@ -58,7 +58,7 @@ function roundToPrecision(value: number, decimals: number): number {
 /**
  * Deterministic pseudo-random generator for stable visuals.
  */
-function getPseudoRandom(seed: number, offset: number): number {
+function getPseudoRandom(seed: number, offset: number) {
   const x = Math.sin(seed * 9999 + offset) * 10000;
   return x - Math.floor(x);
 }
@@ -66,7 +66,7 @@ function getPseudoRandom(seed: number, offset: number): number {
 /**
  * Generates a rounded pseudo-random value.
  */
-function getRoundedRandom(seed: number, offset: number): number {
+function getRoundedRandom(seed: number, offset: number) {
   return roundToPrecision(getPseudoRandom(seed, offset), RANDOM_PRECISION);
 }
 
@@ -77,7 +77,7 @@ function getRoundedRandom(seed: number, offset: number): number {
 /**
  * Creates a single pixel block for the given grid position.
  */
-function createPixelBlock(row: number, col: number): PixelBlock {
+function createPixelBlock(row: number, col: number) {
   const seed = row * GRID_COLS + col;
 
   // Pattern flags
@@ -136,7 +136,7 @@ function createPixelBlock(row: number, col: number): PixelBlock {
 /**
  * Generates all pixel blocks with stable random variations.
  */
-function generatePixelBlocks(): readonly PixelBlock[] {
+function generatePixelBlocks() {
   const blocks: PixelBlock[] = [];
 
   for (let row = 0; row < GRID_ROWS; row++) {

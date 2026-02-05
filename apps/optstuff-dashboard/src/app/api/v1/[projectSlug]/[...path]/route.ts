@@ -37,7 +37,7 @@ export const dynamic = "force-dynamic";
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ projectSlug: string; path: string[] }> },
-): Promise<Response> {
+) {
   const startTime = Date.now();
   const resolvedParams = await params;
   const { projectSlug, path } = resolvedParams;
@@ -67,10 +67,7 @@ export async function GET(
     // 3. Get API key configuration
     const apiKey = await getApiKeyConfig(sigParams.keyPrefix);
     if (!apiKey) {
-      return NextResponse.json(
-        { error: "Invalid API key" },
-        { status: 401 },
-      );
+      return NextResponse.json({ error: "Invalid API key" }, { status: 401 });
     }
 
     // Verify API key belongs to this project
@@ -207,8 +204,7 @@ export async function GET(
   } catch (error) {
     console.error("Image processing error:", error);
 
-    const errorMessage =
-      error instanceof Error ? error.message : String(error);
+    const errorMessage = error instanceof Error ? error.message : String(error);
 
     // Log error (fire-and-forget)
     try {

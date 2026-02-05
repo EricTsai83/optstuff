@@ -8,7 +8,7 @@ import { teams } from "@/server/db/schema";
 /**
  * Generate a short random suffix for slug collision handling.
  */
-function generateRandomSuffix(length = 4): string {
+function generateRandomSuffix(length = 4) {
   const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
   let result = "";
   for (let i = 0; i < length; i++) {

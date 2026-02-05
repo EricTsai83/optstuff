@@ -14,7 +14,7 @@ export const drawRoundedRect = (
   w: number,
   h: number,
   r: number,
-): void => {
+) => {
   ctx.beginPath();
   ctx.moveTo(x + r, y);
   ctx.lineTo(x + w - r, y);
@@ -49,7 +49,7 @@ export const drawLandscape = ({
   imgH,
   baseOpacity,
   blurLevel,
-}: DrawLandscapeParams): void => {
+}: DrawLandscapeParams) => {
   // Sky gradient
   const skyGradient = ctx.createLinearGradient(
     imgX,
@@ -263,7 +263,7 @@ export const drawStatusBadge = ({
   width,
   height,
   opacity,
-}: DrawStatusBadgeParams): void => {
+}: DrawStatusBadgeParams) => {
   // Background
   ctx.fillStyle = `rgba(16, 185, 129, ${opacity * 0.2})`;
   drawRoundedRect(ctx, x, y, width, height, 3);
@@ -296,7 +296,7 @@ export const drawFileSizeDisplay = ({
   currentSize,
   isOptimized,
   savingsPercent,
-}: DrawFileSizeDisplayParams): void => {
+}: DrawFileSizeDisplayParams) => {
   const circleRadius = 55;
 
   // Background circle
