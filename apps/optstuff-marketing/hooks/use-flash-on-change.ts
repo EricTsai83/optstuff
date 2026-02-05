@@ -20,7 +20,7 @@ type AnimationRefs = {
 /**
  * Clears all active animations and timers
  */
-function clearAnimations(refs: AnimationRefs): void {
+function clearAnimations(refs: AnimationRefs) {
   if (refs.animation.current !== null) {
     cancelAnimationFrame(refs.animation.current);
     refs.animation.current = null;
@@ -38,8 +38,8 @@ function createFadeAnimation(
   refs: AnimationRefs,
   fadeDurationMs: number,
   setIntensity: React.Dispatch<React.SetStateAction<number>>,
-): (now: number) => void {
-  return function animate(now: number): void {
+) {
+  return function animate(now: number) {
     if (refs.fadeStartTime.current === null) return;
 
     const elapsed = now - refs.fadeStartTime.current;
@@ -72,7 +72,7 @@ export function useFlashOnChange<T>({
   fadeDurationMs = 400,
   debounceMs = 150,
   glowColor = "34, 197, 94",
-}: UseFlashOnChangeOptions<T>): React.CSSProperties {
+}: UseFlashOnChangeOptions<T>) {
   const [flashIntensity, setFlashIntensity] = useState(0);
 
   const animationRef = useRef<number | null>(null);

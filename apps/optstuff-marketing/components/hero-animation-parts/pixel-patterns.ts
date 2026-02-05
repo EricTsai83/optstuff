@@ -7,14 +7,14 @@ const PATTERN_HEIGHT = 11;
 /**
  * Helper to pad pattern lines to exact width.
  */
-function pad(value: string): string {
+function pad(value: string) {
   return value.padEnd(PATTERN_WIDTH, " ");
 }
 
 /**
  * Pad a string to a fixed width (for letter blocks).
  */
-function padToWidth(value: string, width: number): string {
+function padToWidth(value: string, width: number) {
   return value.padEnd(width, " ");
 }
 
@@ -44,7 +44,7 @@ export const SCRAMBLE_PATTERN: readonly string[] = buildScramblePattern();
 /**
  * Build a 32×11 pattern for "JPEG" with symmetric whitespace.
  */
-function buildJpegPattern(): readonly string[] {
+function buildJpegPattern() {
   const J_WIDTH = 6;
   const P_WIDTH = 6;
   const E_WIDTH = 6;
@@ -121,7 +121,7 @@ function buildJpegPattern(): readonly string[] {
 /**
  * Build a 32×11 pattern for "WebP" with symmetric whitespace and a shared baseline.
  */
-function buildWebpPattern(): readonly string[] {
+function buildWebpPattern() {
   const W_WIDTH = 7;
   const E_WIDTH = 5;
   const B_WIDTH = 6;
@@ -195,7 +195,7 @@ function buildWebpPattern(): readonly string[] {
   return rows;
 }
 
-function buildScramblePattern(): readonly string[] {
+function buildScramblePattern() {
   const rows: string[] = [];
   for (let row = 0; row < PATTERN_HEIGHT; row++) {
     let line = "";
@@ -219,7 +219,7 @@ export function isPatternFilled(
   col: number,
   gridRowCount: number,
   gridColCount: number,
-): boolean {
+) {
   // Use fixed dimensions for consistent centering
   const patternRows = PATTERN_HEIGHT;
   const patternCols = PATTERN_WIDTH;

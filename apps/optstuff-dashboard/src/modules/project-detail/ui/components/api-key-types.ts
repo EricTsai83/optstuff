@@ -41,7 +41,7 @@ export type EditingKeyData = {
 /**
  * Calculate expiration status for an API key
  */
-export function getExpirationStatus(expiresAt: Date | null): ExpirationStatus {
+export function getExpirationStatus(expiresAt: Date | null) {
   if (!expiresAt) {
     return { isExpired: false, isExpiringSoon: false, daysUntilExpiry: null };
   }
@@ -63,7 +63,7 @@ export function getStatusColorScheme(
   isExpired: boolean,
   isExpiringSoon: boolean,
   hasDomains: boolean,
-): "danger" | "warning" | "success" {
+) {
   if (isExpired || !hasDomains) {
     return "danger";
   }

@@ -26,7 +26,7 @@ const OPTIMIZED_FORMAT = ".webp" as const;
  * @param isOptimized - Whether optimization is complete
  * @returns Current format string (e.g., ".jpeg", ".webp")
  */
-export function useFormatCycle(isOptimized: boolean): string {
+export function useFormatCycle(isOptimized: boolean) {
   const [formatIndex, setFormatIndex] = useState(0);
 
   // Cycle through formats while not optimized
@@ -54,7 +54,7 @@ export function useFormatCycle(isOptimized: boolean): string {
   return getFormatAtIndex(formatIndex);
 }
 
-function getFormatAtIndex(index: number): ImageFormat {
+function getFormatAtIndex(index: number) {
   const format = IMAGE_FORMATS[index];
   // Fallback to first format if index is out of bounds
   return format ?? IMAGE_FORMATS[0];

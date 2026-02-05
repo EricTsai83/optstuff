@@ -37,7 +37,7 @@ export const PROJECT_COLORS = [
 ] as const;
 
 /** Generate a consistent color based on project name */
-export function getProjectColor(name: string): (typeof PROJECT_COLORS)[number] {
+export function getProjectColor(name: string) {
   let hash = 0;
   for (let i = 0; i < name.length; i++) {
     hash = name.charCodeAt(i) + ((hash << 5) - hash);

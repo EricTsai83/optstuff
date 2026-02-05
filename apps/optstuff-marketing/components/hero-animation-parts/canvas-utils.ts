@@ -26,7 +26,7 @@ export type TextRowBounds = {
 export function getCanvasLayout(
   containerWidth: number,
   containerHeight: number,
-): CanvasLayout {
+) {
   const padding = 8;
   const gap = 1;
   const cellWidth =
@@ -46,7 +46,7 @@ export function syncCanvasToContainer(
   containerWidth: number,
   containerHeight: number,
   dpr: number,
-): void {
+) {
   // Set canvas size with device pixel ratio for sharpness
   if (
     canvas.width !== containerWidth * dpr ||
@@ -71,7 +71,7 @@ export function syncCanvasToContainer(
 /**
  * Clamps a value between 0 and 1.
  */
-export function clamp01(value: number): number {
+export function clamp01(value: number) {
   if (value <= 0) return 0;
   if (value >= 1) return 1;
   return value;
@@ -90,7 +90,7 @@ type GlowRectOptions = {
 /**
  * Draws a filled rectangle with a shadow/glow effect.
  */
-export function drawGlowRect(options: GlowRectOptions): void {
+export function drawGlowRect(options: GlowRectOptions) {
   const { ctx, x, y, width, height, color, blur } = options;
   ctx.shadowColor = color;
   ctx.shadowBlur = blur;
@@ -111,7 +111,7 @@ type WebpGlowOptions = {
  *
  * Uses inset rendering to prevent glow bleeding into adjacent cells.
  */
-export function drawWebpGlow(options: WebpGlowOptions): void {
+export function drawWebpGlow(options: WebpGlowOptions) {
   const intensity = clamp01(options.flashIntensity);
   if (intensity <= 0.001) return;
 
@@ -176,7 +176,7 @@ type DrawScanBeamOptions = {
 /**
  * Draws the scanning beam (gradient band + bright line + glow).
  */
-export function drawScanBeam(options: DrawScanBeamOptions): void {
+export function drawScanBeam(options: DrawScanBeamOptions) {
   const { ctx, containerWidth, containerHeight, scanProgress } = options;
 
   // Map scan progress to the full container height

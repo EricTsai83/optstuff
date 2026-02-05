@@ -25,7 +25,7 @@ const FLASH_CONFIG = {
 /**
  * Clamps a value between 0 and 1.
  */
-function clamp01(value: number): number {
+function clamp01(value: number) {
   if (value <= 0) return 0;
   if (value >= 1) return 1;
   return value;
@@ -34,7 +34,7 @@ function clamp01(value: number): number {
 /**
  * Calculates the base flash intensity during the main flash segment.
  */
-function getMainFlashIntensity(mainProgress01: number): number {
+function getMainFlashIntensity(mainProgress01: number) {
   const progress01 = clamp01(mainProgress01);
 
   if (progress01 <= FLASH_CONFIG.PEAK_PERCENT) {
@@ -57,7 +57,7 @@ function getMainFlashIntensity(mainProgress01: number): number {
 /**
  * Calculates the flash intensity for a given elapsed time (ms).
  */
-function getFlashIntensityForElapsedMs(elapsedMs: number): number {
+function getFlashIntensityForElapsedMs(elapsedMs: number) {
   if (elapsedMs <= 0) return 0;
 
   const mainProgress = elapsedMs / FLASH_CONFIG.DURATION_MS;
@@ -96,7 +96,7 @@ export function useFlashAnimation({
   isTriggered,
   delayMs,
   onFrame,
-}: UseFlashAnimationOptions): void {
+}: UseFlashAnimationOptions) {
   const prevTriggeredRef = useRef(isTriggered);
   const flashStartTimeRef = useRef<number | null>(null);
   const rafIdRef = useRef<number | null>(null);
@@ -112,7 +112,7 @@ export function useFlashAnimation({
       delayTimerRef.current = setTimeout(() => {
         flashStartTimeRef.current = performance.now();
 
-        const animateFlash = (now: number): void => {
+        const animateFlash = (now: number) => {
           const elapsed = now - (flashStartTimeRef.current ?? now);
           const linearProgress = elapsed / FLASH_CONFIG.DURATION_MS;
           const intensity = getFlashIntensityForElapsedMs(elapsed);

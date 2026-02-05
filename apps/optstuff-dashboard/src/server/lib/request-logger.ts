@@ -33,7 +33,7 @@ const CLEANUP_PROBABILITY = 0.01;
  * sanitizeUrl("https://example.com/images/photo.jpg?token=abc&size=large#section")
  * // Returns: "https://example.com/images/photo.jpg"
  */
-export function sanitizeUrl(url: string): string {
+export function sanitizeUrl(url: string) {
   try {
     const parsed = new URL(url);
     // Keep only origin + pathname (removes query string and hash)
@@ -52,7 +52,7 @@ export function sanitizeUrl(url: string): string {
  * Probabilistic cleanup - runs cleanup with a small probability on each call.
  * This distributes the cleanup work across requests.
  */
-async function maybeCleanupOldLogs(): Promise<void> {
+async function maybeCleanupOldLogs() {
   // Only run cleanup ~1% of the time
   if (Math.random() > CLEANUP_PROBABILITY) {
     return;
@@ -85,10 +85,7 @@ async function maybeCleanupOldLogs(): Promise<void> {
  * @param projectId - Project ID
  * @param data - Request log data
  */
-export async function logRequest(
-  projectId: string,
-  data: RequestLogData,
-): Promise<void> {
+export async function logRequest(projectId: string, data: RequestLogData) {
   try {
     // Sanitize URL before storing (remove query string and hash)
     const sanitizedUrl = sanitizeUrl(data.sourceUrl);

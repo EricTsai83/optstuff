@@ -34,6 +34,6 @@ const authEnv = createEnv({
   emptyStringAsUndefined: true,
 });
 
-export function keys(): typeof authEnv {
+export function keys() {
   return authEnv;
 }

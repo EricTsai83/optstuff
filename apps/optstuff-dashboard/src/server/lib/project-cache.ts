@@ -58,9 +58,7 @@ const CACHE_TTL = 60 * 1000;
  * @param slug - Project slug (unique per team, but we use global slug for API)
  * @returns Project configuration or null if not found
  */
-export async function getProjectConfig(
-  slug: string,
-): Promise<ProjectConfig | null> {
+export async function getProjectConfig(slug: string) {
   const now = Date.now();
 
   // Check cache first
@@ -108,7 +106,7 @@ export async function getProjectConfig(
 export async function getProjectConfigByTeamAndSlug(
   teamSlug: string,
   projectSlug: string,
-): Promise<ProjectConfig | null> {
+) {
   const cacheKey = `${teamSlug}/${projectSlug}`;
   const now = Date.now();
 
@@ -158,9 +156,7 @@ export async function getProjectConfigByTeamAndSlug(
  * @param keyPrefix - The key prefix (e.g., "pk_abc123...")
  * @returns API key configuration or null if not found/invalid
  */
-export async function getApiKeyConfig(
-  keyPrefix: string,
-): Promise<ApiKeyConfig | null> {
+export async function getApiKeyConfig(keyPrefix: string) {
   const now = Date.now();
 
   // Check cache first
@@ -204,7 +200,7 @@ export async function getApiKeyConfig(
  *
  * @param slug - Project slug to invalidate
  */
-export function invalidateProjectCache(slug: string): void {
+export function invalidateProjectCache(slug: string) {
   // Invalidate both possible cache keys
   projectCache.delete(slug);
   // Also clear any team/project combo keys that might include this slug
@@ -220,20 +216,20 @@ export function invalidateProjectCache(slug: string): void {
  *
  * @param keyPrefix - API key prefix to invalidate
  */
-export function invalidateApiKeyCache(keyPrefix: string): void {
+export function invalidateApiKeyCache(keyPrefix: string) {
   apiKeyCache.delete(keyPrefix);
 }
 
 /**
  * Clear all cached project configurations
  */
-export function clearProjectCache(): void {
+export function clearProjectCache() {
   projectCache.clear();
 }
 
 /**
  * Clear all cached API key configurations
  */
-export function clearApiKeyCache(): void {
+export function clearApiKeyCache() {
   apiKeyCache.clear();
 }

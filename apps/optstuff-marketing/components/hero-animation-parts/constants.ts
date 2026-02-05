@@ -63,6 +63,6 @@ const ACCENT_B = 129;
 /**
  * Formats an RGBA string for the shared accent color.
  */
-export function accentRgba(alpha: number): string {
+export function accentRgba(alpha: number) {
   return `rgba(${ACCENT_R}, ${ACCENT_G}, ${ACCENT_B}, ${alpha})`;
 }

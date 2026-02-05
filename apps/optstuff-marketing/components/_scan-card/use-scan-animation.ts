@@ -25,7 +25,7 @@ export const useScanAnimation = ({
   scanDuration,
   pauseDuration,
   onFrame,
-}: UseScanAnimationParams): void => {
+}: UseScanAnimationParams) => {
   const animationFrameIdRef = useRef<number | undefined>(undefined);
   const scanProgressRef = useRef(0);
   const isOptimizedRef = useRef(false);
@@ -41,7 +41,7 @@ export const useScanAnimation = ({
   }, [onFrame]);
 
   useEffect(() => {
-    const animate = (): void => {
+    const animate = () => {
       const now = Date.now();
 
       // === State machine ===

@@ -33,7 +33,7 @@ const HKDF_INFO_ENCRYPTION = "api-key-encryption"; // Context for encryption key
  * - Allows deriving multiple independent keys via different `info` values
  * - Industry standard for cryptographic key derivation
  */
-function getEncryptionKey(): Buffer {
+function getEncryptionKey() {
   return Buffer.from(
     hkdfSync(
       HKDF_ALGORITHM,
@@ -51,7 +51,7 @@ function getEncryptionKey(): Buffer {
  * @param plaintext - The string to encrypt
  * @returns Encrypted string in format: iv:authTag:ciphertext (all base64 encoded)
  */
-export function encryptApiKey(plaintext: string): string {
+export function encryptApiKey(plaintext: string) {
   const iv = randomBytes(IV_LENGTH);
   const key = getEncryptionKey();
 
@@ -77,7 +77,7 @@ export function encryptApiKey(plaintext: string): string {
  * @returns Decrypted plaintext string
  * @throws Error if decryption fails (invalid format, tampered data, etc.)
  */
-export function decryptApiKey(encrypted: string): string {
+export function decryptApiKey(encrypted: string) {
   const parts = encrypted.split(":");
   if (parts.length !== 3) {
     throw new Error("Invalid encrypted format");
@@ -115,11 +115,7 @@ export function decryptApiKey(encrypted: string): string {
  *   - keyPrefix: The first 12 chars of the key for display purposes
  *   - secretKey: Secret key for signing URLs
  */
-export function generateApiKey(): {
-  key: string;
-  keyPrefix: string;
-  secretKey: string;
-} {
+export function generateApiKey() {
   // Generate random bytes and convert to hex
   const randomPart = randomBytes(API_KEY_LENGTH).toString("hex");
   const key = `${API_KEY_PREFIX}${randomPart}`;
@@ -145,7 +141,7 @@ export function createUrlSignature(
   secretKey: string,
   path: string,
   expiresAt?: number,
-): string {
+) {
   const payload = expiresAt ? `${path}?exp=${expiresAt}` : path;
   const signature = createHmac("sha256", secretKey).update(payload).digest();
   // Use base64url encoding for URL-safe signatures
@@ -167,7 +163,7 @@ export function verifyUrlSignature(
   path: string,
   signature: string,
   expiresAt?: number,
-): boolean {
+) {
   // Check expiration first
   if (expiresAt && Date.now() > expiresAt * 1000) {
     return false;

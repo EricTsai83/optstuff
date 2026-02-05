@@ -44,10 +44,7 @@ const DEFAULT_THRESHOLD = 0.2;
  */
 export function useIntersectionVisibility<
   T extends HTMLElement = HTMLDivElement,
->(
-  itemCount: number,
-  options: UseIntersectionVisibilityOptions = {},
-): UseIntersectionVisibilityReturn<T> {
+>(itemCount: number, options: UseIntersectionVisibilityOptions = {}) {
   const { threshold = DEFAULT_THRESHOLD, once = true } = options;
 
   const [visibleItems, setVisibleItems] = useState<ReadonlySet<number>>(

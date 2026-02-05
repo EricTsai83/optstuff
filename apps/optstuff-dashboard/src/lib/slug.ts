@@ -1,14 +1,14 @@
 /**
  * Normalizes a slug by converting to lowercase and stripping leading/trailing hyphens.
  */
-function normalizeSlug(slug: string): string {
+function normalizeSlug(slug: string) {
   return slug.toLowerCase().replace(/^-+|-+$/g, "");
 }
 
 /**
  * Generates a URL-friendly slug from a name.
  */
-export function generateSlug(name: string): string {
+export function generateSlug(name: string) {
   const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, "-");
   return normalizeSlug(slug);
 }
@@ -17,7 +17,7 @@ export function generateSlug(name: string): string {
  * Generates a random hex string using Web Crypto API.
  * Works in browsers and Node.js 15+.
  */
-function randomHex(bytes: number): string {
+function randomHex(bytes: number) {
   const array = new Uint8Array(bytes);
   globalThis.crypto.getRandomValues(array);
   return Array.from(array, (b) => b.toString(16).padStart(2, "0")).join("");
@@ -27,7 +27,7 @@ function randomHex(bytes: number): string {
  * Generates a unique slug by appending a timestamp and a random suffix.
  * If the name produces an empty slug, uses "item" as a fallback.
  */
-export function generateUniqueSlug(name: string): string {
+export function generateUniqueSlug(name: string) {
   let baseSlug = generateSlug(name);
 
   // Fallback to "item" if the slug is empty
@@ -45,7 +45,7 @@ export function generateUniqueSlug(name: string): string {
  * Generates a random slug with optional prefix.
  * Useful for generating team slugs on the client side.
  */
-export function generateRandomSlug(prefix = "team"): string {
+export function generateRandomSlug(prefix = "team") {
   const randomSuffix = randomHex(4);
   return `${prefix}-${randomSuffix}`;
 }

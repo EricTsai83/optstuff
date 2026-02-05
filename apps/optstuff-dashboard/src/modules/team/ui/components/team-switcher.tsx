@@ -47,7 +47,7 @@ export function TeamSwitcher({ currentTeamSlug }: TeamSwitcherProps) {
   const teamColor = currentTeam?.isPersonal ? "bg-orange-500" : "bg-blue-500";
 
   return (
-    <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
+    <DropdownMenu open={isOpen} onOpenChange={setIsOpen} modal={false}>
       <DropdownMenuTrigger asChild>
         <Button
           variant="ghost"
@@ -80,9 +80,8 @@ export function TeamSwitcher({ currentTeamSlug }: TeamSwitcherProps) {
           >
             <div className="flex items-center gap-2">
               <div
-                className={`h-4 w-4 rounded-full ${
-                  team.isPersonal ? "bg-orange-500" : "bg-blue-500"
-                }`}
+                className={`h-4 w-4 rounded-full ${team.isPersonal ? "bg-orange-500" : "bg-blue-500"
+                  }`}
               />
               <span className="truncate">{team.name}</span>
               {team.isPersonal && (

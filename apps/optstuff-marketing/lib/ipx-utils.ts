@@ -5,7 +5,7 @@
 /**
  * Ensure data is in Uint8Array format
  */
-export function ensureUint8Array(data: unknown): Uint8Array {
+export function ensureUint8Array(data: unknown) {
   if (data instanceof Uint8Array) {
     return data;
   }
@@ -25,7 +25,7 @@ export function ensureUint8Array(data: unknown): Uint8Array {
  * - "https:/example.com" -> "https://example.com"
  * - "http:/localhost" -> "http://localhost"
  */
-export function restoreProtocolSlashes(path: string): string {
+export function restoreProtocolSlashes(path: string) {
   return path.replace(/^(https?:\/)(?!\/)/, "$1/");
 }
 
@@ -37,9 +37,9 @@ export function restoreProtocolSlashes(path: string): string {
  *
  * @throws {Error} if path starts with / or has unsupported protocol
  */
-export function ensureProtocol(path: string): string {
-  // Already has http:// or https:// - return as-is (idempotent)
-  if (path.startsWith("https://") || path.startsWith("http://")) {
+export function ensureProtocol(path: string) {
+  // Already has http:// or https:// - return as-is (idempotent, case-insensitive)
+  if (/^https?:\/\//i.test(path)) {
     return path;
   }
 
@@ -52,6 +52,10 @@ export function ensureProtocol(path: string): string {
   const protocolMatch = path.match(/^([a-zA-Z][a-zA-Z0-9+.-]*):\/\//);
   if (protocolMatch) {
     const protocol = protocolMatch[1]!.toLowerCase();
+    // Defense-in-depth: allow http/https even if somehow missed above
+    if (protocol === "http" || protocol === "https") {
+      return path;
+    }
     throw new Error(
       `Unsupported protocol: ${protocol}://. Only http:// or https:// are allowed`,
     );
@@ -72,7 +76,7 @@ export function ensureProtocol(path: string): string {
 /**
  * Resolve Content-Type based on image format
  */
-export function resolveContentType(format: string): string {
+export function resolveContentType(format: string) {
   return format === "jpg" || format === "jpeg"
     ? "image/jpeg"
     : `image/${format}`;
@@ -86,10 +90,7 @@ export function resolveContentType(format: string): string {
  * @example
  * - ["w_200", "example.com/image.jpg"] => { operations: "w_200", imagePath: "example.com/image.jpg" }
  */
-export function parseIpxPath(pathSegments: string[]): {
-  readonly operations: string;
-  readonly imagePath: string;
-} | null {
+export function parseIpxPath(pathSegments: string[]) {
   if (pathSegments.length < 2) {
     return null;
   }
@@ -97,7 +98,13 @@ export function parseIpxPath(pathSegments: string[]): {
   const operations = pathSegments[0]!;
   let imagePath = pathSegments.slice(1).join("/");
 
-  imagePath = decodeURIComponent(imagePath);
+  try {
+    imagePath = decodeURIComponent(imagePath);
+  } catch {
+    // Malformed URI encoding (e.g., incomplete percent-encoding)
+    return null;
+  }
+
   imagePath = restoreProtocolSlashes(imagePath);
 
   return { operations, imagePath };
@@ -114,9 +121,7 @@ export function parseIpxPath(pathSegments: string[]): {
  * - "embed,f_webp,s_200x200" => { embed: true, f: "webp", s: "200x200" }
  * - "_" => {}
  */
-export function parseOperationsString(
-  operationsStr: string,
-): Record<string, string | boolean> {
+export function parseOperationsString(operationsStr: string) {
   if (operationsStr === "_") {
     return {};
   }
