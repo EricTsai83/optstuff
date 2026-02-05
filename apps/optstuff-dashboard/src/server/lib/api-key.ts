@@ -11,8 +11,8 @@ import { env } from "@/env";
 
 const API_KEY_PREFIX = "pk_";
 const SECRET_KEY_PREFIX = "sk_";
-const API_KEY_LENGTH = 32; // 32 bytes => 43 base64url chars (no padding)
-const SECRET_KEY_LENGTH = 32; // 32 bytes => 43 base64url chars (no padding)
+const API_KEY_LENGTH = 32; // 32 bytes → ~43 base64url chars (no padding)
+const SECRET_KEY_LENGTH = 32; // 32 bytes → ~43 base64url chars (no padding)
 
 // AES-256-GCM encryption constants
 const ENCRYPTION_ALGORITHM = "aes-256-gcm";

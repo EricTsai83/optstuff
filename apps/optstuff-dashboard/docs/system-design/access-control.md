@@ -6,7 +6,7 @@ This document describes the multi-layer permission architecture and configuratio
 
 OptStuff implements a four-layer permission model to provide fine-grained access control:
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────────────────┐
 │ Level 1: User Layer (Clerk Authentication)                              │
 │                                                                         │
@@ -69,7 +69,7 @@ OptStuff implements a four-layer permission model to provide fine-grained access
 
 The system provides two layers of domain whitelisting, each serving different purposes:
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────────────────┐
 │                    Domain Whitelist Architecture                        │
 └─────────────────────────────────────────────────────────────────────────┘
@@ -123,7 +123,7 @@ The system provides two layers of domain whitelisting, each serving different pu
 
 ### Practical Use Case
 
-```
+```text
 Scenario: You have multiple websites, each using different image CDNs
 
 ┌─────────────────────────────────────────────────────────────────────────┐
@@ -170,7 +170,7 @@ Each API key consists of two parts:
 
 All image requests must be signed with the secret key using HMAC-SHA256:
 
-```
+```text
 Request URL structure:
 /api/v1/{projectSlug}/{operations}/{imageUrl}?key={keyPrefix}&sig={signature}&exp={expiration}
 
@@ -264,8 +264,7 @@ Rate limits can be configured at the API Key level:
 
 ## Related Documentation
 
-- [Service Overview](./service-overview.md) - Complete service overview
-- [Integration Guide](./integration-guide.md) - Step-by-step integration tutorial
-- [Authentication](./authentication.md) - Request validation and error handling
-- [Security Best Practices](./security-best-practices.md) - Detailed security recommendations
-- [Design Decisions](./design-decisions.md) - Why two layers of domain whitelists
+- [Service Overview](../service-overview.md) - Complete service overview
+- [Integration Guide](../service/integration-guide.md) - Step-by-step integration tutorial
+- [Authentication](../service/authentication.md) - Request validation and error handling
+- [Security](../security-qa/security.md) - Detailed security recommendations

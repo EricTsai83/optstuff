@@ -8,7 +8,7 @@ When a new user signs up for OptStuff, they must create a **personal team** befo
 
 ## Flow Diagram
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                           USER ONBOARDING FLOW                              │
 └─────────────────────────────────────────────────────────────────────────────┘
@@ -148,6 +148,5 @@ The `teams` table enforces:
 
 ## Related Documentation
 
-- [Authentication](./authentication.md) — Request authentication flow
-- [Architecture](./architecture.md) — System architecture overview
-- [Permissions](./permissions.md) — Team and project permissions
+- [Authentication](../service/authentication.md) — Request authentication flow
+- [Access Control](../system-design/access-control.md) — Team and project permissions

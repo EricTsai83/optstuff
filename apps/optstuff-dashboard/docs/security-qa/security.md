@@ -21,7 +21,7 @@ We believe security is not a single feature but a layered approach. Even if one 
 | **Key Derivation** | HKDF (RFC 5869) with SHA-256 |
 | **Encryption Key Storage** | Stored separately in environment variables, not in the database |
 
-```
+```text
 Without Encryption:
 ┌──────────────┐     Database Breach     ┌──────────────┐
 │   Database   │ ──────────────────────→ │ Plain Keys   │ → Immediate misuse
@@ -51,7 +51,7 @@ With Our Encryption:
 
 Every image request must include a cryptographic signature generated with your secret key:
 
-```
+```text
 Request URL:
 /api/v1/my-blog/w_800/cdn.example.com/photo.jpg?key=pk_xxx&sig=abc123
 
@@ -79,7 +79,7 @@ Server Verification:
 
 Signatures include an optional expiration timestamp (`exp` parameter):
 
-```
+```text
 Signed URL with expiration:
 /api/v1/my-blog/w_800/photo.jpg?key=pk_xxx&sig=abc&exp=1699999999
                                                     └── Unix timestamp
@@ -105,7 +105,7 @@ Server checks:
 
 ### How We Do It
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────────────────┐
 │ Layer 1: Project-Level — allowedRefererDomains                          │
 │                                                                         │
@@ -178,7 +178,7 @@ Each API key has its own rate limits, allowing you to:
 ### What We Protect Against
 **Unauthorized access at every level** — Ensures users, teams, projects, and API keys each have appropriate access controls.
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────────────────┐
 │ Level 1: User Authentication (Clerk)                                    │
 │ → Verifies user identity before any dashboard access                    │
@@ -286,7 +286,5 @@ We continuously review and improve our security measures. If you have questions 
 
 ## Related Documentation
 
-- [Access Control & Permissions](./access-control.md) — Detailed permission architecture
-- [Design Decisions](./design-decisions.md) — Why we made these security choices
-- [Integration Guide](./integration-guide.md) — How to securely integrate the service
-- [API Key Lifecycle](./api-key-lifecycle.md) — Managing your API keys securely
+- [Access Control & Permissions](../system-design/access-control.md) — Detailed permission architecture
+- [Integration Guide](../service/integration-guide.md) — How to securely integrate the service

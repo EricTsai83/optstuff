@@ -8,7 +8,7 @@ Every request to the image optimization service must be authenticated using **si
 
 ## URL Format
 
-```
+```text
 GET /api/v1/{projectSlug}/{operations}/{imageUrl}?key={keyPrefix}&sig={signature}&exp={expiry}
 ```
 
@@ -23,13 +23,13 @@ GET /api/v1/{projectSlug}/{operations}/{imageUrl}?key={keyPrefix}&sig={signature
 - `exp` (optional): Expiration timestamp in Unix seconds
 
 **Example:**
-```
+```text
 /api/v1/my-blog/w_800,f_webp/images.example.com/photo.jpg?key=pk_abc123&sig=xyz789&exp=1706500000
 ```
 
 ## Authentication Flow
 
-```
+```text
 Request: GET /api/v1/my-blog/w_800,f_webp/images.example.com/photo.jpg
          ?key=pk_abc123&sig=xyz789&exp=1706500000
 
@@ -269,4 +269,4 @@ const signature = hmac.digest("base64");
 ## Related Documentation
 
 - [Integration Guide](./integration-guide.md) - Step-by-step integration instructions
-- [Access Control](../access-control.md) - Domain whitelist configuration
+- [Access Control](../system-design/access-control.md) - Domain whitelist configuration

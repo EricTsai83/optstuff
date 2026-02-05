@@ -18,7 +18,7 @@ Transform images dynamically with URL-based operations:
 - **Fit Modes**: Control how images are resized (cover, contain, fill, etc.)
 
 **Example URL:**
-```
+```text
 /api/v1/{projectSlug}/w_800,q_80,f_webp/{imageUrl}?key={keyPrefix}&sig={signature}
 ```
 
@@ -71,7 +71,7 @@ Protect your account with configurable rate limits:
 
 ### Security Model
 
-```
+```text
 User Authentication (Clerk)
     └── Team Access Control
         └── Project Settings
@@ -171,13 +171,11 @@ Process user uploads efficiently:
 
 | Document | Description |
 |----------|-------------|
-| [Integration Guide](./integration-guide.md) | Step-by-step integration tutorial |
-| [System Architecture](./architecture.md) | Technical architecture overview |
-| [API Key Lifecycle](./api-key-lifecycle.md) | Complete API key management guide |
-| [Authentication](./authentication.md) | Request validation and error handling |
-| [Encryption](./encryption.md) | Encryption implementation details |
-| [Permissions](./permissions.md) | Multi-layer access control |
-| [Security Best Practices](./security-best-practices.md) | Recommendations for secure usage |
+| [Integration Guide](./service/integration-guide.md) | Step-by-step integration tutorial |
+| [Authentication](./service/authentication.md) | Request validation and error handling |
+| [Access Control](./system-design/access-control.md) | Multi-layer access control |
+| [System Overview](./system-design/system-overview.md) | Technical architecture overview |
+| [Security](./security-qa/security.md) | Security best practices and recommendations |
 
 ## Support
 

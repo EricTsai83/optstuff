@@ -16,7 +16,7 @@ OptStuff is an enterprise-grade image optimization API service that enables deve
 
 ## System Architecture
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                              CLIENT LAYER                                   │
 │                                                                             │
@@ -89,8 +89,8 @@ Each API key consists of a dual-key system:
 
 | Key Type | Format | Purpose | Visibility |
 |----------|--------|---------|------------|
-| Public Key | `pk_<64 hex chars>` | Request identification | Safe to expose in URLs |
-| Secret Key | `sk_<64 hex chars>` | URL signature generation | **Must be kept secret** |
+| Public Key | `pk_<43 base64url chars>` | Request identification | Safe to expose in URLs |
+| Secret Key | `sk_<43 base64url chars>` | URL signature generation | **Must be kept secret** |
 | Key Prefix | `pk_<8 chars>` | Quick lookup and display | Stored in plaintext |
 
 ### 4. Image Processing Engine
@@ -121,7 +121,7 @@ Real-time tracking and monitoring includes:
 
 ### Three-Tier Key Hierarchy
 
-```
+```text
 Level 0: System Key (Environment Variable)
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │  API_KEY_ENCRYPTION_SECRET                                                  │
@@ -157,7 +157,7 @@ Level 2: Request Signatures (Per Request)
 
 ### Four-Layer Permission Model
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │ Level 1: User Layer (Clerk Authentication)                                  │
 │ → User login and identity verification                                      │
@@ -197,7 +197,7 @@ Level 2: Request Signatures (Per Request)
 
 ### Image Request Lifecycle
 
-```
+```text
 1. Client Preparation
    ┌─────────────────────────────────────────────────────────────────────────┐
    │ path = "w_800,f_webp/images.example.com/photo.jpg"                      │
@@ -287,11 +287,8 @@ Level 2: Request Signatures (Per Request)
 
 | Document | Description |
 |----------|-------------|
-| [Service Overview](./service-overview.md) | Product-focused service description |
-| [System Architecture](./architecture.md) | Key hierarchy and architecture diagrams |
-| [API Key Lifecycle](./api-key-lifecycle.md) | Complete API key management guide |
+| [Service Overview](../service-overview.md) | Product-focused service description |
 | [Access Control](./access-control.md) | Multi-layer permission architecture |
-| [Integration Guide](./integration-guide.md) | Step-by-step integration tutorial |
-| [Authentication](./authentication.md) | Request validation and error handling |
-| [Encryption](./encryption.md) | Encryption implementation details |
-| [Security Best Practices](./security-best-practices.md) | Recommendations for secure usage |
+| [Integration Guide](../service/integration-guide.md) | Step-by-step integration tutorial |
+| [Authentication](../service/authentication.md) | Request validation and error handling |
+| [Security](../security-qa/security.md) | Security best practices and recommendations |

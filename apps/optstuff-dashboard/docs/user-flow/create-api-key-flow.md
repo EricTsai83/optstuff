@@ -8,7 +8,7 @@ Users create API keys to authenticate image transformation requests. Each API ke
 
 ## Flow Diagram
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                          CREATE API KEY FLOW                                │
 └─────────────────────────────────────────────────────────────────────────────┘
@@ -235,7 +235,6 @@ The `api_keys` table stores:
 
 ## Related Documentation
 
-- [API Key Lifecycle](./api-key-lifecycle.md) — Full lifecycle from creation to revocation
-- [Authentication](./authentication.md) — Request authentication flow
-- [Security Best Practices](./security-best-practices.md) — Key management recommendations
-- [Service Overview](./service-overview.md) — System architecture overview
+- [Authentication](../service/authentication.md) — Request authentication flow
+- [Security](../security-qa/security.md) — Key management recommendations
+- [Service Overview](../service-overview.md) — System architecture overview
