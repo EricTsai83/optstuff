@@ -1,55 +1,192 @@
-# OptStuff API 安全架構文件
+# OptStuff Dashboard
 
-本文件庫說明 OptStuff 圖片優化服務的完整安全架構，包含密鑰管理、請求驗證、權限控管等機制。
+A secure, multi-tenant image optimization service built with Next.js. OptStuff provides on-the-fly image processing with signed URLs, domain whitelisting, and comprehensive usage tracking.
 
-## 文件索引
+## Features
 
-| 文件 | 說明 | 適合對象 |
-|------|------|---------|
-| [系統架構](./architecture.md) | 系統整體架構、密鑰層級與關係 | 想了解系統設計的開發者 |
-| [API Key 生命週期](./api-key-lifecycle.md) | API Key 的建立、使用、撤銷、輪換 | 需要管理 API Key 的開發者 |
-| [請求驗證流程](./authentication.md) | 完整的請求驗證步驟與錯誤處理 | 需要排查問題的開發者 |
-| [資料加密機制](./encryption.md) | AES-256-GCM 加密、HKDF 密鑰派生 | 想了解加密實作的開發者 |
-| [多層權限控管](./permissions.md) | 用戶、Team、Project、API Key 權限架構 | 需要設定權限的管理者 |
-| [安全最佳實踐](./security-best-practices.md) | 密鑰管理、請求安全、攻擊防護建議 | 所有使用者 |
-| [設計決策說明](./design-decisions.md) | 各項設計背後的「為什麼」 | 想深入理解設計的開發者 |
-| [整合教學](./integration-guide.md) | 如何在專案中整合 OptStuff 服務 | **快速上手必讀** |
+- **On-the-fly Image Optimization** - Resize, format conversion (WebP, AVIF), and more via [IPX](https://github.com/unjs/ipx)
+- **Signed URL Security** - HMAC-SHA256 signatures prevent unauthorized access
+- **Multi-tenant Architecture** - Teams → Projects → API Keys hierarchy
+- **Domain Whitelisting** - Control allowed image sources and referer domains
+- **Encrypted Key Storage** - AES-256-GCM encryption for API keys at rest
+- **Usage Analytics** - Request logs, bandwidth tracking, and top images statistics
 
-## 快速導覽
+## Tech Stack
 
-### 我想要...
+| Category | Technology |
+|----------|------------|
+| Framework | Next.js 16 (App Router) |
+| API | tRPC v11 |
+| Database | PostgreSQL + Drizzle ORM |
+| Auth | Clerk |
+| UI | TailwindCSS + Radix UI + shadcn/ui |
+| Image Processing | IPX + Sharp |
 
-- **快速整合到我的專案** → [整合教學](./integration-guide.md)
-- **了解簽名為什麼失敗** → [請求驗證流程](./authentication.md#42-錯誤回應表)
-- **設定 Domain 白名單** → [多層權限控管](./permissions.md#63-domain-白名單控制)
-- **了解資料如何加密** → [資料加密機制](./encryption.md)
-- **理解設計決策** → [設計決策說明](./design-decisions.md)
+## Getting Started
 
-## 相關程式碼
+### Prerequisites
 
-| 檔案 | 功能 |
-|------|------|
-| `src/server/lib/api-key.ts` | 密鑰產生、加密、解密、簽名函數 |
-| `src/server/lib/project-cache.ts` | API Key 快取機制 |
-| `src/server/lib/validators.ts` | 請求驗證函數 |
-| `src/server/api/routers/apiKey.ts` | API Key CRUD 操作 |
-| `src/app/api/v1/[projectSlug]/[...path]/route.ts` | 圖片請求處理 |
+- Node.js 20+
+- pnpm
+- PostgreSQL database
 
-## 核心函數速查
+### Environment Setup
+
+Copy `.env.example` to `.env` and configure:
+
+```bash
+# Required
+DATABASE_URL="postgresql://user:password@localhost:5432/optstuff"
+API_KEY_ENCRYPTION_SECRET="your-32-character-secret-key-here"  # openssl rand -base64 32
+NEXT_PUBLIC_APP_URL="http://localhost:3024"
+
+# Clerk Authentication
+CLERK_SECRET_KEY="sk_test_..."
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY="pk_test_..."
+```
+
+### Installation
+
+```bash
+# Install dependencies
+pnpm install
+
+# Push database schema
+pnpm db:push
+
+# Start development server
+pnpm dev
+```
+
+## API Usage
+
+### Image Optimization Endpoint
+
+```
+GET /api/v1/{projectSlug}/{operations}/{imageUrl}?key={keyPrefix}&sig={signature}&exp={expiry}
+```
+
+**URL Parameters:**
+
+| Parameter | Description | Example |
+|-----------|-------------|---------|
+| `projectSlug` | Your project identifier | `my-blog` |
+| `operations` | IPX operations (comma-separated) | `w_800,f_webp` |
+| `imageUrl` | Source image URL (without protocol) | `cdn.example.com/photo.jpg` |
+
+**Query Parameters:**
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `key` | Yes | API key prefix (e.g., `pk_abc123`) |
+| `sig` | Yes | HMAC-SHA256 signature |
+| `exp` | No | Expiration timestamp (Unix seconds) |
+
+**Example:**
+
+```
+/api/v1/my-blog/w_800,f_webp/images.example.com/photo.jpg?key=pk_abc123&sig=xyz789
+```
+
+### Supported Operations
+
+| Operation | Description | Example |
+|-----------|-------------|---------|
+| `w_{value}` | Width | `w_800` |
+| `h_{value}` | Height | `h_600` |
+| `s_{w}x{h}` | Size (width x height) | `s_200x200` |
+| `f_{format}` | Format (webp, avif, png, jpg) | `f_webp` |
+| `q_{value}` | Quality (1-100) | `q_80` |
+| `embed` | Embed mode | `embed` |
+| `_` | No operations (passthrough) | `_` |
+
+### Generating Signatures
 
 ```typescript
-// 產生 API Key
-generateApiKey(): { key, keyPrefix, secretKey }
+import { createHmac } from "crypto";
 
-// 加密 (存入 DB 前)
-encryptApiKey(plaintext: string): string
+function createUrlSignature(
+  secretKey: string,
+  path: string,
+  expiresAt?: number
+): string {
+  const payload = expiresAt ? `${path}?exp=${expiresAt}` : path;
+  const signature = createHmac("sha256", secretKey)
+    .update(payload)
+    .digest("base64url")
+    .substring(0, 32);
+  return signature;
+}
 
-// 解密 (從 DB 讀取後)
-decryptApiKey(encrypted: string): string
-
-// 產生 URL 簽名
-createUrlSignature(secretKey, path, expiresAt?): string
-
-// 驗證 URL 簽名
-verifyUrlSignature(secretKey, path, signature, expiresAt?): boolean
+// Usage
+const secretKey = "sk_..."; // Your secret key
+const path = "w_800,f_webp/cdn.example.com/photo.jpg";
+const signature = createUrlSignature(secretKey, path);
 ```
+
+## Project Structure
+
+```
+src/
+├── app/
+│   ├── (auth)/              # Auth pages (sign-in, sign-up)
+│   ├── [team]/[project]/    # Dashboard pages
+│   ├── api/
+│   │   ├── trpc/            # tRPC endpoint
+│   │   └── v1/              # Image optimization API
+│   └── onboarding/          # User onboarding
+├── modules/
+│   ├── auth/                # Auth UI components
+│   ├── onboarding/          # Onboarding flow
+│   ├── project-detail/      # Project management UI
+│   └── team/                # Team management UI
+├── server/
+│   ├── api/routers/         # tRPC routers (apiKey, project, team, usage)
+│   ├── db/                  # Database schema and connection
+│   └── lib/
+│       ├── api-key.ts       # Key generation, encryption, signing
+│       ├── ipx-factory.ts   # IPX instance management
+│       ├── project-cache.ts # In-memory caching
+│       ├── request-logger.ts # Request logging
+│       └── validators.ts    # Domain and signature validation
+└── lib/                     # Shared utilities
+```
+
+## Security Architecture
+
+### Key Hierarchy
+
+```
+User (Clerk)
+  └── Team (ownerId-based access control)
+        └── Project (referer domain whitelist)
+              └── API Key (source domain whitelist, signed URLs)
+```
+
+### Request Validation Flow
+
+1. **Project Lookup** - Validate project exists
+2. **Signature Verification** - HMAC-SHA256 with timing-safe comparison
+3. **API Key Validation** - Check expiration and revocation status
+4. **Referer Validation** - Project-level domain whitelist
+5. **Source Domain Validation** - API key-level domain whitelist
+6. **Image Processing** - IPX transforms the image
+7. **Response** - Optimized image with caching headers
+
+### Encryption
+
+- **Algorithm**: AES-256-GCM
+- **Key Derivation**: HKDF (RFC 5869) with SHA-256
+- **Storage Format**: `iv:authTag:ciphertext` (Base64 encoded)
+
+## Documentation
+
+| Document | Description |
+|----------|-------------|
+| [Service Overview](./service-overview.md) | Product-focused service description |
+| [System Overview](./system-design/system-overview.md) | Technical architecture deep-dive |
+| [Access Control](./system-design/access-control.md) | Permission model explained |
+| [Authentication](./service/authentication.md) | Request validation details |
+| [Integration Guide](./service/integration-guide.md) | Step-by-step integration |
+| [User Onboarding](./user-flow/user-onboarding.md) | Onboarding flow walkthrough |
+| [Security Q&A](./security-qa/security.md) | Security measures explained |
