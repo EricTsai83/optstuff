@@ -26,6 +26,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { useState } from "react";
+import { RATE_LIMITS } from "~/lib/constants";
 import type { ApiKeyData, ExpirationStatus } from "./api-key-types";
 import {
   getExpirationStatus,
@@ -360,11 +361,11 @@ export function ApiKeyItem({
           </div>
           <div className="space-y-1 pl-6">
             <div>
-              <span className="font-medium">{(apiKey.rateLimitPerMinute ?? 60).toLocaleString()}</span>
+              <span className="font-medium">{(apiKey.rateLimitPerMinute ?? RATE_LIMITS.perMinute).toLocaleString()}</span>
               <span className="text-muted-foreground"> req/min</span>
             </div>
             <div>
-              <span className="font-medium">{(apiKey.rateLimitPerDay ?? 10000).toLocaleString()}</span>
+              <span className="font-medium">{(apiKey.rateLimitPerDay ?? RATE_LIMITS.perDay).toLocaleString()}</span>
               <span className="text-muted-foreground"> req/day</span>
             </div>
           </div>
