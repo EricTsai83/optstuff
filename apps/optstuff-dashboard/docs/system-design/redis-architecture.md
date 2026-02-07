@@ -54,12 +54,21 @@ Every image request requires loading `ProjectConfig` and `ApiKeyConfig` from the
 ### How It Works
 
 ```text
-getProjectConfig("my-blog")
+getProjectConfigById("uuid-123")          ← used by API route (lookup by API key's projectId)
+│
+├─ Redis GET cache:project:id:uuid-123
+│  ├─ HIT (config)       → return cached config
+│  ├─ HIT (__NOT_FOUND__) → return null (negative cache hit)
+│  └─ MISS → SELECT from PostgreSQL WHERE id = ?
+│            ├─ not found → Redis SET __NOT_FOUND__ (EX 10s) → return null
+│            └─ found     → Redis SET config (EX 60s) → return config
+
+getProjectConfig("my-blog")               ← used for best-effort error logging only
 │
 ├─ Redis GET cache:project:slug:my-blog
 │  ├─ HIT (config)       → return cached config
 │  ├─ HIT (__NOT_FOUND__) → return null (negative cache hit)
-│  └─ MISS → SELECT from PostgreSQL
+│  └─ MISS → SELECT from PostgreSQL WHERE slug = ?
 │            ├─ not found → Redis SET __NOT_FOUND__ (EX 10s) → return null
 │            └─ found     → Redis SET config (EX 60s) → return config
 ```
@@ -227,7 +236,8 @@ T=30 (key expires):
 
 | Prefix | Purpose | TTL | Example |
 |--------|---------|-----|---------|
-| `cache:project:slug:` | Project config cache | 60s | `cache:project:slug:my-blog` |
+| `cache:project:id:` | Project config cache (by ID) | 60s | `cache:project:id:uuid-123` |
+| `cache:project:slug:` | Project config cache (by slug) | 60s | `cache:project:slug:my-blog` |
 | `cache:project:team-slug:` | Team+Project config cache | 60s | `cache:project:team-slug:acme/my-blog` |
 | `cache:apikey:prefix:` | API key config cache | 60s | `cache:apikey:prefix:pk_abc123` |
 | `ratelimit:ipx:minute:` | Per-minute rate limit counter | ~60s | `ratelimit:ipx:minute:pk_abc123` |

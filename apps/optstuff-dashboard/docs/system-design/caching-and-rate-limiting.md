@@ -61,6 +61,7 @@ const CACHE_TTL_SECONDS = 60;
 
 | Data | Key Format | Example |
 |------|------------|---------|
+| Project (by ID) | `cache:project:id:{projectId}` | `cache:project:id:uuid-123` |
 | Project (by slug) | `cache:project:slug:{slug}` | `cache:project:slug:my-blog` |
 | Project (by team + slug) | `cache:project:team-slug:{teamSlug}/{projectSlug}` | `cache:project:team-slug:acme/my-blog` |
 | API Key (by prefix) | `cache:apikey:prefix:{keyPrefix}` | `cache:apikey:prefix:pk_abc123` |

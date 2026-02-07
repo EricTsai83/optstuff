@@ -64,6 +64,7 @@ function serializeApiKeyForCache(config: ApiKeyConfig): CachedApiKeyConfig {
 
 /** Redis cache key prefixes */
 const PROJECT_KEY_PREFIX = "cache:project:slug";
+const PROJECT_ID_KEY_PREFIX = "cache:project:id";
 const PROJECT_TEAM_KEY_PREFIX = "cache:project:team-slug";
 const API_KEY_PREFIX = "cache:apikey:prefix";
 
@@ -142,6 +143,69 @@ export async function getProjectConfig(
   await redis.set(cacheKey, config, { ex: CACHE_TTL_SECONDS }).catch(
     (error: unknown) => {
       console.warn("Redis write failed for project config cache:", error);
+    },
+  );
+
+  return config;
+}
+
+/**
+ * Get project configuration by project ID with Redis caching.
+ * Unlike {@link getProjectConfig}, this uses the unique project ID
+ * so it is immune to slug collisions across teams.
+ *
+ * Degrades gracefully when Redis is unreachable — falls back to direct DB query.
+ *
+ * @param projectId - Project UUID
+ * @returns Project configuration or null if not found
+ */
+export async function getProjectConfigById(
+  projectId: string,
+): Promise<ProjectConfig | null> {
+  const redis = getRedis();
+  const cacheKey = `${PROJECT_ID_KEY_PREFIX}:${projectId}`;
+
+  // Check Redis cache first (skip on Redis failure)
+  try {
+    const cached = await redis.get<ProjectConfig | typeof NOT_FOUND_SENTINEL>(
+      cacheKey,
+    );
+    if (cached === NOT_FOUND_SENTINEL) {
+      return null;
+    }
+    if (cached) {
+      return cached;
+    }
+  } catch (error) {
+    console.warn("Redis read failed for project config by ID, falling back to DB:", error);
+  }
+
+  // Query database by primary key
+  const project = await db.query.projects.findFirst({
+    where: eq(projects.id, projectId),
+  });
+
+  if (!project) {
+    // Negative cache: store sentinel with shorter TTL to absorb repeated misses
+    await redis.set(cacheKey, NOT_FOUND_SENTINEL, {
+      ex: NEGATIVE_CACHE_TTL_SECONDS,
+    }).catch((error: unknown) => {
+      console.warn("Redis write failed for negative cache:", error);
+    });
+    return null;
+  }
+
+  const config: ProjectConfig = {
+    id: project.id,
+    slug: project.slug,
+    teamId: project.teamId,
+    allowedRefererDomains: project.allowedRefererDomains,
+  };
+
+  // Store in Redis with TTL (best-effort)
+  await redis.set(cacheKey, config, { ex: CACHE_TTL_SECONDS }).catch(
+    (error: unknown) => {
+      console.warn("Redis write failed for project config by ID cache:", error);
     },
   );
 
@@ -292,15 +356,24 @@ export async function getApiKeyConfig(
 
 /**
  * Invalidate cache for a specific project.
- * Deletes both the slug-keyed entry and any team+slug entries for this slug.
+ * Deletes the slug-keyed entry, ID-keyed entry, and any team+slug entries for this slug.
  *
  * @param slug - Project slug to invalidate
+ * @param projectId - Optional project ID to also invalidate the ID-keyed cache
  */
-export async function invalidateProjectCache(slug: string): Promise<void> {
+export async function invalidateProjectCache(
+  slug: string,
+  projectId?: string,
+): Promise<void> {
   const redis = getRedis();
 
   // Delete the direct slug key
   const keysToDelete: string[] = [`${PROJECT_KEY_PREFIX}:${slug}`];
+
+  // Delete ID-keyed cache if provided
+  if (projectId) {
+    keysToDelete.push(`${PROJECT_ID_KEY_PREFIX}:${projectId}`);
+  }
 
   // Scan for any team+slug combo keys ending with this slug
   let cursor = "0";
@@ -335,6 +408,7 @@ export async function clearProjectCache(): Promise<void> {
   const redis = getRedis();
   const keysToDelete: string[] = [];
 
+  // Scan slug-keyed entries
   let cursor = "0";
   do {
     const result = await redis.scan(cursor, {
@@ -345,7 +419,18 @@ export async function clearProjectCache(): Promise<void> {
     keysToDelete.push(...result[1]);
   } while (cursor !== "0");
 
-  // Also scan team+slug keys
+  // Scan ID-keyed entries
+  cursor = "0";
+  do {
+    const result = await redis.scan(cursor, {
+      match: `${PROJECT_ID_KEY_PREFIX}:*`,
+      count: 100,
+    });
+    cursor = result[0];
+    keysToDelete.push(...result[1]);
+  } while (cursor !== "0");
+
+  // Scan team+slug keys
   cursor = "0";
   do {
     const result = await redis.scan(cursor, {
