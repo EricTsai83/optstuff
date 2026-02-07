@@ -34,15 +34,7 @@ Request: GET /api/v1/my-blog/w_800,f_webp/images.example.com/photo.jpg
          ?key=pk_abc123&sig=xyz789&exp=1706500000
 
 ┌─────────────────────────────────────────────────────────────────────────┐
-│ Step 1: Project Validation                                              │
-│                                                                         │
-│ Check: Does projectSlug "my-blog" exist?                                │
-│ Fail:  404 Project not found                                            │
-└─────────────────────────────┬───────────────────────────────────────────┘
-                              │ ✓
-                              ▼
-┌─────────────────────────────────────────────────────────────────────────┐
-│ Step 2: Signature Parameter Parsing                                     │
+│ Step 1: Signature Parameter Parsing                                     │
 │                                                                         │
 │ Parse: key, sig, exp from query parameters                              │
 │ Fail:  401 Missing signature parameters                                 │
@@ -50,16 +42,33 @@ Request: GET /api/v1/my-blog/w_800,f_webp/images.example.com/photo.jpg
                               │ ✓
                               ▼
 ┌─────────────────────────────────────────────────────────────────────────┐
-│ Step 3: API Key Validation                                              │
+│ Step 2: API Key Validation                                              │
 │                                                                         │
 │ Query: Find API key by keyPrefix                                        │
-│ Check: API key exists, not revoked, belongs to project, not expired     │
-│ Fail:  401 Invalid API key / API key has expired                        │
+│ Check: API key exists, not revoked, not expired                         │
+│ Fail:  401 Invalid API key / API key has been revoked / expired         │
 └─────────────────────────────┬───────────────────────────────────────────┘
                               │ ✓
                               ▼
 ┌─────────────────────────────────────────────────────────────────────────┐
-│ Step 4: Signature Verification                                          │
+│ Step 3: Project Validation (via API Key)                                │
+│                                                                         │
+│ Lookup: Find project by apiKey.projectId (not by URL slug)              │
+│ Check:  Project exists and project.slug matches URL projectSlug         │
+│ Fail:   404 Project not found / 401 API key does not belong to project  │
+└─────────────────────────────┬───────────────────────────────────────────┘
+                              │ ✓
+                              ▼
+┌─────────────────────────────────────────────────────────────────────────┐
+│ Step 4: Path Parsing                                                    │
+│                                                                         │
+│ Parse: {operations}/{imageUrl} from URL path                            │
+│ Fail:  400 Invalid path format                                          │
+└─────────────────────────────┬───────────────────────────────────────────┘
+                              │ ✓
+                              ▼
+┌─────────────────────────────────────────────────────────────────────────┐
+│ Step 5: Signature Verification                                          │
 │                                                                         │
 │ Compute: expectedSig = HMAC-SHA256(secretKey, path + exp)               │
 │ Compare: signature === expectedSig (constant-time comparison)           │
@@ -68,7 +77,17 @@ Request: GET /api/v1/my-blog/w_800,f_webp/images.example.com/photo.jpg
                               │ ✓
                               ▼
 ┌─────────────────────────────────────────────────────────────────────────┐
-│ Step 5: Referer Validation (Project-level)                              │
+│ Step 6: Rate Limit Check                                                │
+│                                                                         │
+│ Check: Per-minute and per-day rate limits                               │
+│ Note:  Placed after signature verification so unauthenticated           │
+│        requests cannot exhaust quota with invalid signatures            │
+│ Fail:  429 Rate limit exceeded                                          │
+└─────────────────────────────┬───────────────────────────────────────────┘
+                              │ ✓
+                              ▼
+┌─────────────────────────────────────────────────────────────────────────┐
+│ Step 7: Referer Validation (Project-level)                              │
 │                                                                         │
 │ Check: Referer header matches project.allowedRefererDomains             │
 │ Note:  Empty allowlist = allow all referers                             │
@@ -77,7 +96,7 @@ Request: GET /api/v1/my-blog/w_800,f_webp/images.example.com/photo.jpg
                               │ ✓
                               ▼
 ┌─────────────────────────────────────────────────────────────────────────┐
-│ Step 6: Source Domain Validation (API Key-level)                        │
+│ Step 8: Source Domain Validation (API Key-level)                        │
 │                                                                         │
 │ Check: Image source domain matches apiKey.allowedSourceDomains          │
 │ Note:  Empty allowlist = reject all (production) / allow all (dev)      │
@@ -86,7 +105,7 @@ Request: GET /api/v1/my-blog/w_800,f_webp/images.example.com/photo.jpg
                               │ ✓
                               ▼
 ┌─────────────────────────────────────────────────────────────────────────┐
-│ Step 7: Image Processing                                                │
+│ Step 9: Image Processing                                                │
 │                                                                         │
 │ Process: Apply transformations via IPX                                  │
 │ Return:  Optimized image with caching headers                           │
@@ -216,6 +235,7 @@ if (expiresAt && Date.now() > expiresAt * 1000) {
 | 403 | Forbidden: Invalid referer | Referer not in allowlist | Add domain to project settings |
 | 403 | Forbidden: Source domain not allowed | Image source not in allowlist | Add domain to API key settings |
 | 404 | Project not found | Project does not exist | Check projectSlug |
+| 429 | Rate limit exceeded | Per-minute or per-day limit exceeded | Wait for `Retry-After` seconds or increase limit |
 | 500 | Image processing failed | Error processing image | Check if image URL is accessible |
 
 ## Troubleshooting Signature Errors

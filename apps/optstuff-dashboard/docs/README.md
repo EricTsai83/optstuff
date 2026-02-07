@@ -146,7 +146,7 @@ src/
 │   └── lib/
 │       ├── api-key.ts       # Key generation, encryption, signing
 │       ├── ipx-factory.ts   # IPX instance management
-│       ├── project-cache.ts # In-memory caching
+│       ├── config-cache.ts  # Redis-backed config caching for API requests
 │       ├── request-logger.ts # Request logging
 │       └── validators.ts    # Domain and signature validation
 └── lib/                     # Shared utilities
@@ -165,13 +165,14 @@ User (Clerk)
 
 ### Request Validation Flow
 
-1. **Project Lookup** - Validate project exists
-2. **Signature Verification** - HMAC-SHA256 with timing-safe comparison
-3. **API Key Validation** - Check expiration and revocation status
-4. **Referer Validation** - Project-level domain whitelist
-5. **Source Domain Validation** - API key-level domain whitelist
-6. **Image Processing** - IPX transforms the image
-7. **Response** - Optimized image with caching headers
+1. **API Key Validation** - Lookup by keyPrefix, check expiration and revocation
+2. **Project Validation** - Verify project exists and slug matches the API key
+3. **Signature Verification** - HMAC-SHA256 with timing-safe comparison
+4. **Rate Limit Check** - Per-minute and per-day limits (only after signature is verified)
+5. **Referer Validation** - Project-level domain whitelist
+6. **Source Domain Validation** - API key-level domain whitelist
+7. **Image Processing** - IPX transforms the image
+8. **Response** - Optimized image with caching headers
 
 ### Encryption
 
@@ -189,4 +190,6 @@ User (Clerk)
 | [Authentication](./service/authentication.md) | Request validation details |
 | [Integration Guide](./service/integration-guide.md) | Step-by-step integration |
 | [User Onboarding](./user-flow/user-onboarding.md) | Onboarding flow walkthrough |
+| [Caching & Rate Limiting](./system-design/caching-and-rate-limiting.md) | Strategy defaults and configuration guide |
+| [Redis Architecture](./system-design/redis-architecture.md) | Redis design patterns and trade-offs |
 | [Security Q&A](./security-qa/security.md) | Security measures explained |

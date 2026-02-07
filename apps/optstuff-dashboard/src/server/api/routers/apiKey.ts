@@ -2,6 +2,7 @@ import { TRPCError } from "@trpc/server";
 import { and, count, desc, eq, isNull } from "drizzle-orm";
 import { z } from "zod";
 
+import { RATE_LIMITS } from "@/lib/constants";
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
 import type { db as dbType } from "@/server/db";
 import { apiKeys, projects } from "@/server/db/schema";
@@ -10,7 +11,7 @@ import {
   encryptApiKey,
   generateApiKey,
 } from "@/server/lib/api-key";
-import { invalidateApiKeyCache } from "@/server/lib/project-cache";
+import { invalidateApiKeyCache } from "@/server/lib/config-cache";
 
 /** Helper to update project's API key count using SQL count() */
 async function updateProjectApiKeyCount(db: typeof dbType, projectId: string) {
@@ -57,8 +58,6 @@ export const apiKeyRouter = createTRPCRouter({
         name: z.string().min(1).max(255),
         allowedSourceDomains: z.array(z.string()).optional(),
         expiresAt: z.date().optional(),
-        rateLimitPerMinute: z.number().int().min(1).max(10000).optional(),
-        rateLimitPerDay: z.number().int().min(1).max(1000000).optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -100,8 +99,8 @@ export const apiKeyRouter = createTRPCRouter({
               : null,
           createdBy: ctx.userId,
           expiresAt: input.expiresAt,
-          rateLimitPerMinute: input.rateLimitPerMinute ?? 60,
-          rateLimitPerDay: input.rateLimitPerDay ?? 10000,
+          rateLimitPerMinute: RATE_LIMITS.perMinute,
+          rateLimitPerDay: RATE_LIMITS.perDay,
         })
         .returning();
 
@@ -235,9 +234,19 @@ export const apiKeyRouter = createTRPCRouter({
         .where(eq(apiKeys.id, input.apiKeyId))
         .returning();
 
-      // Update project's API key count and invalidate cache
+      // Update project's API key count
       await updateProjectApiKeyCount(ctx.db, apiKey.projectId);
-      invalidateApiKeyCache(apiKey.keyPrefix);
+
+      // Invalidate cache — best-effort so revoke still succeeds if Redis is down.
+      // The 60s TTL provides a self-healing fallback.
+      try {
+        await invalidateApiKeyCache(apiKey.keyPrefix);
+      } catch (error) {
+        console.error(
+          `Failed to invalidate cache for revoked API key ${apiKey.keyPrefix}:`,
+          error,
+        );
+      }
 
       return revokedKey;
     }),
@@ -273,34 +282,49 @@ export const apiKeyRouter = createTRPCRouter({
         });
       }
 
-      // Revoke the old key and invalidate cache
-      await ctx.db
-        .update(apiKeys)
-        .set({ revokedAt: new Date() })
-        .where(eq(apiKeys.id, input.apiKeyId));
-      invalidateApiKeyCache(oldApiKey.keyPrefix);
-
       const { key, keyPrefix, secretKey } = generateApiKey();
 
       // Encrypt keys before storing
       const encryptedKeyFull = encryptApiKey(key);
       const encryptedSecretKey = encryptApiKey(secretKey);
 
-      const [newApiKey] = await ctx.db
-        .insert(apiKeys)
-        .values({
-          projectId: oldApiKey.projectId,
-          name: oldApiKey.name,
-          keyPrefix,
-          keyFull: encryptedKeyFull,
-          secretKey: encryptedSecretKey,
-          allowedSourceDomains: oldApiKey.allowedSourceDomains,
-          createdBy: ctx.userId,
-          expiresAt: oldApiKey.expiresAt,
-          rateLimitPerMinute: oldApiKey.rateLimitPerMinute,
-          rateLimitPerDay: oldApiKey.rateLimitPerDay,
-        })
-        .returning();
+      // Wrap revoke + insert in a transaction so the user never loses
+      // their API key if the insert fails after the old key is revoked.
+      const [newApiKey] = await ctx.db.transaction(async (tx) => {
+        // Revoke the old key
+        await tx
+          .update(apiKeys)
+          .set({ revokedAt: new Date() })
+          .where(eq(apiKeys.id, input.apiKeyId));
+
+        // Insert the new key
+        return tx
+          .insert(apiKeys)
+          .values({
+            projectId: oldApiKey.projectId,
+            name: oldApiKey.name,
+            keyPrefix,
+            keyFull: encryptedKeyFull,
+            secretKey: encryptedSecretKey,
+            allowedSourceDomains: oldApiKey.allowedSourceDomains,
+            createdBy: ctx.userId,
+            expiresAt: oldApiKey.expiresAt,
+            rateLimitPerMinute: oldApiKey.rateLimitPerMinute,
+            rateLimitPerDay: oldApiKey.rateLimitPerDay,
+          })
+          .returning();
+      });
+
+      // Invalidate cache — best-effort, outside the transaction.
+      // The 60s TTL provides a self-healing fallback.
+      try {
+        await invalidateApiKeyCache(oldApiKey.keyPrefix);
+      } catch (error) {
+        console.error(
+          `Failed to invalidate cache for rotated API key ${oldApiKey.keyPrefix}:`,
+          error,
+        );
+      }
 
       // Count doesn't change on rotation (one revoked, one created)
 
@@ -318,8 +342,6 @@ export const apiKeyRouter = createTRPCRouter({
         name: z.string().min(1).max(255).optional(),
         allowedSourceDomains: z.array(z.string()).optional(),
         expiresAt: z.date().nullable().optional(),
-        rateLimitPerMinute: z.number().int().min(1).max(10000).optional(),
-        rateLimitPerDay: z.number().int().min(1).max(1000000).optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -351,8 +373,6 @@ export const apiKeyRouter = createTRPCRouter({
         name?: string;
         allowedSourceDomains?: string[] | null;
         expiresAt?: Date | null;
-        rateLimitPerMinute?: number;
-        rateLimitPerDay?: number;
       } = {};
 
       if (input.name !== undefined) updateData.name = input.name;
@@ -363,10 +383,6 @@ export const apiKeyRouter = createTRPCRouter({
         updateData.allowedSourceDomains = cleaned.length > 0 ? cleaned : null;
       }
       if (input.expiresAt !== undefined) updateData.expiresAt = input.expiresAt;
-      if (input.rateLimitPerMinute !== undefined)
-        updateData.rateLimitPerMinute = input.rateLimitPerMinute;
-      if (input.rateLimitPerDay !== undefined)
-        updateData.rateLimitPerDay = input.rateLimitPerDay;
 
       if (Object.keys(updateData).length === 0) {
         throw new TRPCError({
@@ -381,8 +397,15 @@ export const apiKeyRouter = createTRPCRouter({
         .where(eq(apiKeys.id, input.apiKeyId))
         .returning();
 
-      // Invalidate cache
-      invalidateApiKeyCache(apiKey.keyPrefix);
+      // Invalidate cache — best-effort so update still succeeds if Redis is down.
+      try {
+        await invalidateApiKeyCache(apiKey.keyPrefix);
+      } catch (error) {
+        console.error(
+          `Failed to invalidate cache for updated API key ${apiKey.keyPrefix}:`,
+          error,
+        );
+      }
 
       return updatedKey;
     }),

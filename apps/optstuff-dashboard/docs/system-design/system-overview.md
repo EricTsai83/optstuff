@@ -44,8 +44,8 @@ OptStuff is an enterprise-grade image optimization API service that enables deve
 │                                                                             │
 │  Validation Pipeline:                                                       │
 │  ┌───────┐  ┌───────┐  ┌───────┐  ┌───────┐  ┌───────┐  ┌───────┐           │
-│  │Project│→ │API Key│→ │ Sig   │→ │Referer│→ │Source │→ │ Rate  │           │
-│  │Exists │  │Valid  │  │Verify │  │Domain │  │Domain │  │Limit  │           │
+│  │API Key│→ │Project│→ │ Sig   │→ │ Rate  │→ │Referer│→ │Source │           │
+│  │Valid  │  │Exists │  │Verify │  │Limit  │  │Domain │  │Domain │           │
 │  └───────┘  └───────┘  └───────┘  └───────┘  └───────┘  └───────┘           │
 └─────────────────────────────────────────────────────────────────────────────┘
                                     │
@@ -210,10 +210,10 @@ Level 2: Request Signatures (Per Request)
    ┌─────────────────────────────────────────────────────────────────────────┐
    │ a. Parse URL parameters (keyPrefix, signature)                           │
    │ b. Lookup API Key by keyPrefix                                           │
-   │ c. Decrypt secretKey from database                                      │
+   │ c. Validate project exists and slug matches                             │
    │ d. Verify signature: HMAC-SHA256(secretKey, path) === signature         │
-   │ e. Validate expiration, referer domain, source domain                   │
-   │ f. Check rate limits                                                    │
+   │ e. Check rate limits (only authenticated requests consume quota)        │
+   │ f. Validate referer domain, source domain                               │
    └─────────────────────────────────────────────────────────────────────────┘
                                     │
                                     ▼
@@ -232,7 +232,7 @@ Level 2: Request Signatures (Per Request)
 |-------|---------|
 | **Creation** | Generate key pair → Encrypt → Store in DB → Return to user (once) |
 | **Usage** | Sign URLs with secretKey → Server validates signature |
-| **Rotation** | Revoke old key → Create new key (inherits settings) → Update application |
+| **Rotation** | Revoke old key + Create new key atomically (DB transaction, inherits settings) → Clear cache → Update application |
 | **Revocation** | Mark as revoked → Clear cache → Reject future requests |
 
 ## Rate Limiting

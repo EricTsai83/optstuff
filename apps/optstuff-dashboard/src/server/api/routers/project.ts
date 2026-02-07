@@ -7,7 +7,10 @@ import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
 import type { db as dbType } from "@/server/db";
 import { apiKeys, pinnedProjects, projects, teams } from "@/server/db/schema";
 import { encryptApiKey, generateApiKey } from "@/server/lib/api-key";
-import { invalidateProjectCache } from "@/server/lib/project-cache";
+import {
+  invalidateApiKeyCache,
+  invalidateProjectCache,
+} from "@/server/lib/config-cache";
 
 /**
  * Helper to verify user owns the team.
@@ -315,7 +318,7 @@ export const projectRouter = createTRPCRouter({
 
       // Invalidate cache so IPX service picks up new settings
       if (updatedProject) {
-        invalidateProjectCache(updatedProject.slug);
+        await invalidateProjectCache(updatedProject.slug);
       }
 
       return updatedProject;
@@ -363,7 +366,20 @@ export const projectRouter = createTRPCRouter({
         });
       }
 
+      // Collect API key prefixes before cascade-deleting them with the project
+      const projectApiKeys = await ctx.db.query.apiKeys.findMany({
+        where: eq(apiKeys.projectId, input.projectId),
+        columns: { keyPrefix: true },
+      });
+
       await ctx.db.delete(projects).where(eq(projects.id, input.projectId));
+
+      // Invalidate Redis caches for the project and all its API keys
+      await Promise.all([
+        invalidateProjectCache(project.slug),
+        ...projectApiKeys.map((key) => invalidateApiKeyCache(key.keyPrefix)),
+      ]);
+
       return { success: true };
     }),
 

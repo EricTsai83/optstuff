@@ -13,6 +13,8 @@ export type ApiKeyData = {
   readonly lastUsedAt: Date | null;
   readonly expiresAt: Date | null;
   readonly allowedSourceDomains: string[] | null;
+  readonly rateLimitPerMinute: number | null;
+  readonly rateLimitPerDay: number | null;
 };
 
 export type ExpirationStatus = {

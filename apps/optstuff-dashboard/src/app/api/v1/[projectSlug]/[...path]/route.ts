@@ -8,9 +8,15 @@ import {
   resolveContentType,
 } from "@/lib/ipx-utils";
 import { verifyUrlSignature } from "@/server/lib/api-key";
+import {
+  getApiKeyConfig,
+  getProjectConfig,
+  getProjectConfigById,
+} from "@/server/lib/config-cache";
 import { getProjectIPX } from "@/server/lib/ipx-factory";
-import { getApiKeyConfig, getProjectConfig } from "@/server/lib/project-cache";
+import { checkRateLimit } from "@/server/lib/rate-limiter";
 import { logRequest } from "@/server/lib/request-logger";
+import { updateApiKeyLastUsed } from "@/server/lib/usage-tracker";
 import {
   parseSignatureParams,
   validateReferer,
@@ -44,14 +50,7 @@ export async function GET(
   const url = new URL(request.url);
 
   try {
-    // 1. Get project configuration (with caching)
-    const project = await getProjectConfig(projectSlug);
-
-    if (!project) {
-      return NextResponse.json({ error: "Project not found" }, { status: 404 });
-    }
-
-    // 2. Parse and validate signature parameters
+    // 1. Parse and validate signature parameters
     const sigParams = parseSignatureParams(url.searchParams);
     if (!sigParams) {
       return NextResponse.json(
@@ -64,16 +63,16 @@ export async function GET(
       );
     }
 
-    // 3. Get API key configuration
+    // 2. Get API key configuration
     const apiKey = await getApiKeyConfig(sigParams.keyPrefix);
     if (!apiKey) {
       return NextResponse.json({ error: "Invalid API key" }, { status: 401 });
     }
 
-    // Verify API key belongs to this project
-    if (apiKey.projectId !== project.id) {
+    // Check if API key is revoked (defense in depth — cache may be stale)
+    if (apiKey.revokedAt) {
       return NextResponse.json(
-        { error: "API key does not belong to this project" },
+        { error: "API key has been revoked" },
         { status: 401 },
       );
     }
@@ -86,7 +85,25 @@ export async function GET(
       );
     }
 
-    // 4. Parse path first to get the signing payload
+    // 3. Get project configuration by the API key's projectId (not by slug)
+    //    This avoids slug collisions across teams — the project is always
+    //    the one the API key was issued for.
+    const project = await getProjectConfigById(apiKey.projectId);
+
+    if (!project) {
+      return NextResponse.json({ error: "Project not found" }, { status: 404 });
+    }
+
+    // Verify the URL slug matches the project's actual slug to prevent
+    // URL confusion (e.g. using team-A's slug with team-B's API key).
+    if (project.slug !== projectSlug) {
+      return NextResponse.json(
+        { error: "API key does not belong to this project" },
+        { status: 401 },
+      );
+    }
+
+    // 4. Parse path to get the signing payload
     const parsed = parseIpxPath(path);
     if (!parsed) {
       return NextResponse.json(
@@ -102,7 +119,8 @@ export async function GET(
       );
     }
 
-    // 5. Verify signature
+    // 5. Verify signature (before rate limit to prevent quota exhaustion
+    //    by unauthenticated requests that only know the public keyPrefix)
     const signaturePath = `${parsed.operations}/${parsed.imagePath}`;
     if (
       !verifyUrlSignature(
@@ -122,7 +140,41 @@ export async function GET(
       );
     }
 
-    // 6. Validate Referer (project-level)
+    // 6. Check rate limit (after signature verification so only
+    //    authenticated requests consume quota)
+    const rateLimitResult = await checkRateLimit({
+      keyPrefix: apiKey.keyPrefix,
+      limitPerMinute: apiKey.rateLimitPerMinute,
+      limitPerDay: apiKey.rateLimitPerDay,
+    });
+
+    if (!rateLimitResult.allowed) {
+      await logRequest(project.id, {
+        sourceUrl: path.join("/"),
+        status: "rate_limited",
+      });
+      return NextResponse.json(
+        {
+          error: "Rate limit exceeded",
+          reason:
+            rateLimitResult.reason === "minute"
+              ? "Too many requests per minute"
+              : "Daily limit exceeded",
+          retryAfter: rateLimitResult.retryAfterSeconds,
+          limit: rateLimitResult.limit,
+        },
+        {
+          status: 429,
+          headers: {
+            "Retry-After": String(rateLimitResult.retryAfterSeconds),
+            "X-RateLimit-Limit": String(rateLimitResult.limit),
+            "X-RateLimit-Remaining": String(rateLimitResult.remaining),
+          },
+        },
+      );
+    }
+
+    // 7. Validate Referer (project-level)
     const referer = request.headers.get("referer");
     if (!validateReferer(referer, project.allowedRefererDomains)) {
       await logRequest(project.id, {
@@ -135,7 +187,7 @@ export async function GET(
       );
     }
 
-    // 7. Build full image URL and validate source domain (API key-level)
+    // 8. Build full image URL and validate source domain (API key-level)
     let imageUrl: string;
     try {
       imageUrl = ensureProtocol(parsed.imagePath);
@@ -173,7 +225,7 @@ export async function GET(
       );
     }
 
-    // 8. Process image with IPX
+    // 9. Process image with IPX
     const ipx = getProjectIPX(apiKey.allowedSourceDomains);
     const operations = parseOperationsString(parsed.operations);
     const processedImage = await ipx(imageUrl, operations).process();
@@ -182,17 +234,38 @@ export async function GET(
     const contentType = resolveContentType(processedImage.format ?? "webp");
     const processingTimeMs = Date.now() - startTime;
 
-    // 9. Log successful request (fire-and-forget)
-    logRequest(project.id, {
-      sourceUrl: imageUrl,
-      status: "success",
-      processingTimeMs,
-      optimizedSize: imageData.length,
-    }).catch(() => {
-      // Ignore logging errors
-    });
+    // 10. Update API key last used timestamp (fire-and-forget, batched)
+    updateApiKeyLastUsed(apiKey.id, project.id);
 
-    // 10. Return optimized image
+    // 11. Log successful request (fire-and-forget)
+    // HEAD fetch for originalSize is moved here so it never blocks the response.
+    void (async () => {
+      let originalSize: number | undefined;
+      try {
+        const headResponse = await fetch(imageUrl, {
+          method: "HEAD",
+          signal: AbortSignal.timeout(3_000),
+        });
+        const contentLength = headResponse.headers.get("content-length");
+        if (contentLength) {
+          originalSize = parseInt(contentLength, 10);
+        }
+      } catch {
+        // Ignore — originalSize is optional for logging
+      }
+
+      await logRequest(project.id, {
+        sourceUrl: imageUrl,
+        status: "success",
+        processingTimeMs,
+        originalSize,
+        optimizedSize: imageData.length,
+      }).catch(() => {
+        // Ignore logging errors
+      });
+    })();
+
+    // 12. Return optimized image
     return new Response(imageData as Uint8Array<ArrayBuffer>, {
       status: 200,
       headers: {
