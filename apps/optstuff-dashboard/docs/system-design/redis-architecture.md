@@ -57,10 +57,11 @@ Every image request requires loading `ProjectConfig` and `ApiKeyConfig` from the
 getProjectConfig("my-blog")
 │
 ├─ Redis GET cache:project:slug:my-blog
-│  ├─ HIT  → return cached config
+│  ├─ HIT (config)       → return cached config
+│  ├─ HIT (__NOT_FOUND__) → return null (negative cache hit)
 │  └─ MISS → SELECT from PostgreSQL
-│            ├─ not found → return null
-│            └─ found → Redis SET (EX 60s) → return config
+│            ├─ not found → Redis SET __NOT_FOUND__ (EX 10s) → return null
+│            └─ found     → Redis SET config (EX 60s) → return config
 ```
 
 On dashboard mutations (e.g. revoking an API key or updating project settings), the tRPC handler calls `invalidateProjectCache()` or `invalidateApiKeyCache()` to immediately delete the relevant Redis keys. This provides **instant consistency for admin operations** while the TTL acts as a safety net for any edge cases.
@@ -72,6 +73,7 @@ On dashboard mutations (e.g. revoking an API key or updating project settings), 
 | Lower DB load | Repeated lookups for the same project/key hit Redis (~1-5ms) instead of PostgreSQL (~10-40ms) |
 | Cross-instance sharing | All serverless instances share one cache, unlike in-memory Maps that start empty on every cold start |
 | Active invalidation | Dashboard changes take effect immediately via explicit key deletion, not just TTL expiry |
+| Negative caching | Non-existent slugs/keys are cached with a shorter TTL (10s) to absorb probing attacks and repeated invalid lookups |
 | Automatic cleanup | TTL handles eviction — no manual garbage collection needed |
 
 ### TTL Trade-off (60 seconds)

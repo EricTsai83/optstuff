@@ -81,7 +81,21 @@ This means admin changes take effect **immediately** — the 60s TTL only matter
 
 ### Negative Caching
 
-Currently, `null` results (project not found / key not found) are **not cached**. Every request for a non-existent slug or key prefix will hit the database. This is intentional to avoid caching a "not found" that becomes stale when the resource is later created.
+When a lookup returns no result (project not found / key not found), a sentinel value (`__NOT_FOUND__`) is cached with a **shorter TTL of 10 seconds**. This prevents repeated requests for non-existent slugs or key prefixes (e.g. probing attacks) from hitting the database on every request.
+
+The shorter TTL ensures that when a resource is later created, it becomes visible within 10 seconds — much faster than the full 60-second positive cache TTL. Active invalidation (`invalidateProjectCache` / `invalidateApiKeyCache`) also clears negative cache entries immediately.
+
+```text
+Default negative cache TTL: 10 seconds
+```
+
+Defined as a constant:
+
+```typescript
+const NEGATIVE_CACHE_TTL_SECONDS = 10;
+```
+
+**To change:** Edit the `NEGATIVE_CACHE_TTL_SECONDS` constant in `config-cache.ts` and redeploy.
 
 ---
 
@@ -231,6 +245,7 @@ A quick-reference table of every tunable value:
 | Setting | Default | Location | How to Change |
 |---------|---------|----------|---------------|
 | Config cache TTL | `60` seconds | `config-cache.ts` → `CACHE_TTL_SECONDS` | Edit constant, redeploy |
+| Negative cache TTL | `10` seconds | `config-cache.ts` → `NEGATIVE_CACHE_TTL_SECONDS` | Edit constant, redeploy |
 | Rate limit per minute | `60` requests | `apiKeys.rateLimitPerMinute` (DB) | Update DB column per API key |
 | Rate limit per day | `10,000` requests | `apiKeys.rateLimitPerDay` (DB) | Update DB column per API key |
 | Rate limit default (minute) | `60` | `config-cache.ts` → fallback value | Edit fallback in `getApiKeyConfig`, redeploy |

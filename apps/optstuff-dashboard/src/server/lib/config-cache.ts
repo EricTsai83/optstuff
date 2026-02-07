@@ -74,6 +74,20 @@ const API_KEY_PREFIX = "cache:apikey:prefix";
 const CACHE_TTL_SECONDS = 60;
 
 /**
+ * Negative cache TTL in seconds (10 seconds).
+ * Caches "not found" results with a shorter TTL to absorb repeated
+ * lookups for non-existent slugs or key prefixes (e.g. probing attacks),
+ * while still allowing newly created resources to become visible quickly.
+ */
+const NEGATIVE_CACHE_TTL_SECONDS = 10;
+
+/**
+ * Sentinel value stored in Redis to represent a cached "not found" result.
+ * Must be distinguishable from any valid config object.
+ */
+const NOT_FOUND_SENTINEL = "__NOT_FOUND__" as const;
+
+/**
  * Get project configuration by slug with Redis caching.
  *
  * @param slug - Project slug (unique per team, but we use global slug for API)
@@ -86,7 +100,12 @@ export async function getProjectConfig(
   const cacheKey = `${PROJECT_KEY_PREFIX}:${slug}`;
 
   // Check Redis cache first
-  const cached = await redis.get<ProjectConfig>(cacheKey);
+  const cached = await redis.get<ProjectConfig | typeof NOT_FOUND_SENTINEL>(
+    cacheKey,
+  );
+  if (cached === NOT_FOUND_SENTINEL) {
+    return null;
+  }
   if (cached) {
     return cached;
   }
@@ -98,6 +117,10 @@ export async function getProjectConfig(
   });
 
   if (!project) {
+    // Negative cache: store sentinel with shorter TTL to absorb repeated misses
+    await redis.set(cacheKey, NOT_FOUND_SENTINEL, {
+      ex: NEGATIVE_CACHE_TTL_SECONDS,
+    });
     return null;
   }
 
@@ -129,7 +152,12 @@ export async function getProjectConfigByTeamAndSlug(
   const cacheKey = `${PROJECT_TEAM_KEY_PREFIX}:${teamSlug}/${projectSlug}`;
 
   // Check Redis cache first
-  const cached = await redis.get<ProjectConfig>(cacheKey);
+  const cached = await redis.get<ProjectConfig | typeof NOT_FOUND_SENTINEL>(
+    cacheKey,
+  );
+  if (cached === NOT_FOUND_SENTINEL) {
+    return null;
+  }
   if (cached) {
     return cached;
   }
@@ -140,6 +168,10 @@ export async function getProjectConfigByTeamAndSlug(
   });
 
   if (!team) {
+    // Negative cache: store sentinel with shorter TTL to absorb repeated misses
+    await redis.set(cacheKey, NOT_FOUND_SENTINEL, {
+      ex: NEGATIVE_CACHE_TTL_SECONDS,
+    });
     return null;
   }
 
@@ -149,6 +181,10 @@ export async function getProjectConfigByTeamAndSlug(
   });
 
   if (!project) {
+    // Negative cache: store sentinel with shorter TTL to absorb repeated misses
+    await redis.set(cacheKey, NOT_FOUND_SENTINEL, {
+      ex: NEGATIVE_CACHE_TTL_SECONDS,
+    });
     return null;
   }
 
@@ -178,7 +214,12 @@ export async function getApiKeyConfig(
   const cacheKey = `${API_KEY_PREFIX}:${keyPrefix}`;
 
   // Check Redis cache first
-  const cached = await redis.get<CachedApiKeyConfig>(cacheKey);
+  const cached = await redis.get<
+    CachedApiKeyConfig | typeof NOT_FOUND_SENTINEL
+  >(cacheKey);
+  if (cached === NOT_FOUND_SENTINEL) {
+    return null;
+  }
   if (cached) {
     return parseApiKeyFromCache(cached);
   }
@@ -189,6 +230,10 @@ export async function getApiKeyConfig(
   });
 
   if (!apiKey) {
+    // Negative cache: store sentinel with shorter TTL to absorb repeated misses
+    await redis.set(cacheKey, NOT_FOUND_SENTINEL, {
+      ex: NEGATIVE_CACHE_TTL_SECONDS,
+    });
     return null;
   }
 
