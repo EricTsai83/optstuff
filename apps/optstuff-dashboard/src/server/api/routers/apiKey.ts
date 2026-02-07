@@ -234,9 +234,19 @@ export const apiKeyRouter = createTRPCRouter({
         .where(eq(apiKeys.id, input.apiKeyId))
         .returning();
 
-      // Update project's API key count and invalidate cache
+      // Update project's API key count
       await updateProjectApiKeyCount(ctx.db, apiKey.projectId);
-      await invalidateApiKeyCache(apiKey.keyPrefix);
+
+      // Invalidate cache — best-effort so revoke still succeeds if Redis is down.
+      // The 60s TTL provides a self-healing fallback.
+      try {
+        await invalidateApiKeyCache(apiKey.keyPrefix);
+      } catch (error) {
+        console.error(
+          `Failed to invalidate cache for revoked API key ${apiKey.keyPrefix}:`,
+          error,
+        );
+      }
 
       return revokedKey;
     }),
@@ -272,12 +282,21 @@ export const apiKeyRouter = createTRPCRouter({
         });
       }
 
-      // Revoke the old key and invalidate cache
+      // Revoke the old key
       await ctx.db
         .update(apiKeys)
         .set({ revokedAt: new Date() })
         .where(eq(apiKeys.id, input.apiKeyId));
-      await invalidateApiKeyCache(oldApiKey.keyPrefix);
+
+      // Invalidate cache — best-effort so rotate still succeeds if Redis is down.
+      try {
+        await invalidateApiKeyCache(oldApiKey.keyPrefix);
+      } catch (error) {
+        console.error(
+          `Failed to invalidate cache for rotated API key ${oldApiKey.keyPrefix}:`,
+          error,
+        );
+      }
 
       const { key, keyPrefix, secretKey } = generateApiKey();
 
@@ -372,8 +391,15 @@ export const apiKeyRouter = createTRPCRouter({
         .where(eq(apiKeys.id, input.apiKeyId))
         .returning();
 
-      // Invalidate cache
-      await invalidateApiKeyCache(apiKey.keyPrefix);
+      // Invalidate cache — best-effort so update still succeeds if Redis is down.
+      try {
+        await invalidateApiKeyCache(apiKey.keyPrefix);
+      } catch (error) {
+        console.error(
+          `Failed to invalidate cache for updated API key ${apiKey.keyPrefix}:`,
+          error,
+        );
+      }
 
       return updatedKey;
     }),

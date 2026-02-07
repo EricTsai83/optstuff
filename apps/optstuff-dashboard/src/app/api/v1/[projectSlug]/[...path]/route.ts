@@ -80,6 +80,14 @@ export async function GET(
       );
     }
 
+    // Check if API key is revoked (defense in depth — cache may be stale)
+    if (apiKey.revokedAt) {
+      return NextResponse.json(
+        { error: "API key has been revoked" },
+        { status: 401 },
+      );
+    }
+
     // Check if API key is expired
     if (apiKey.expiresAt && new Date() > apiKey.expiresAt) {
       return NextResponse.json(
