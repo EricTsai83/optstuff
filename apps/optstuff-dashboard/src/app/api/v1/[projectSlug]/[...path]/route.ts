@@ -216,19 +216,7 @@ export async function GET(
       );
     }
 
-    // 9. Fetch original image to get its size (for logging)
-    let originalSize: number | undefined;
-    try {
-      const headResponse = await fetch(imageUrl, { method: "HEAD" });
-      const contentLength = headResponse.headers.get("content-length");
-      if (contentLength) {
-        originalSize = parseInt(contentLength, 10);
-      }
-    } catch {
-      // Ignore errors - originalSize is optional for logging
-    }
-
-    // 10. Process image with IPX
+    // 9. Process image with IPX
     const ipx = getProjectIPX(apiKey.allowedSourceDomains);
     const operations = parseOperationsString(parsed.operations);
     const processedImage = await ipx(imageUrl, operations).process();
@@ -237,21 +225,38 @@ export async function GET(
     const contentType = resolveContentType(processedImage.format ?? "webp");
     const processingTimeMs = Date.now() - startTime;
 
-    // 11. Update API key last used timestamp (fire-and-forget, batched)
+    // 10. Update API key last used timestamp (fire-and-forget, batched)
     updateApiKeyLastUsed(apiKey.id, project.id);
 
-    // 12. Log successful request (fire-and-forget)
-    logRequest(project.id, {
-      sourceUrl: imageUrl,
-      status: "success",
-      processingTimeMs,
-      originalSize,
-      optimizedSize: imageData.length,
-    }).catch(() => {
-      // Ignore logging errors
-    });
+    // 11. Log successful request (fire-and-forget)
+    // HEAD fetch for originalSize is moved here so it never blocks the response.
+    void (async () => {
+      let originalSize: number | undefined;
+      try {
+        const headResponse = await fetch(imageUrl, {
+          method: "HEAD",
+          signal: AbortSignal.timeout(3_000),
+        });
+        const contentLength = headResponse.headers.get("content-length");
+        if (contentLength) {
+          originalSize = parseInt(contentLength, 10);
+        }
+      } catch {
+        // Ignore — originalSize is optional for logging
+      }
 
-    // 13. Return optimized image
+      await logRequest(project.id, {
+        sourceUrl: imageUrl,
+        status: "success",
+        processingTimeMs,
+        originalSize,
+        optimizedSize: imageData.length,
+      }).catch(() => {
+        // Ignore logging errors
+      });
+    })();
+
+    // 12. Return optimized image
     return new Response(imageData as Uint8Array<ArrayBuffer>, {
       status: 200,
       headers: {
