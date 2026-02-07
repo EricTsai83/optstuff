@@ -19,7 +19,7 @@ const isDevelopment = process.env.NODE_ENV === "development";
  */
 export function validateReferer(
   referer: string | null,
-  allowedDomains: string[] | null,
+  allowedDomains: readonly string[] | null,
 ) {
   // If no whitelist is set, allow all
   if (!allowedDomains || allowedDomains.length === 0) return true;
