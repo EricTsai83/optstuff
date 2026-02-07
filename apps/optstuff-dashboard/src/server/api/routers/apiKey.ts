@@ -10,7 +10,7 @@ import {
   encryptApiKey,
   generateApiKey,
 } from "@/server/lib/api-key";
-import { invalidateApiKeyCache } from "@/server/lib/project-cache";
+import { invalidateApiKeyCache } from "@/server/lib/config-cache";
 
 /** Helper to update project's API key count using SQL count() */
 async function updateProjectApiKeyCount(db: typeof dbType, projectId: string) {
@@ -237,7 +237,7 @@ export const apiKeyRouter = createTRPCRouter({
 
       // Update project's API key count and invalidate cache
       await updateProjectApiKeyCount(ctx.db, apiKey.projectId);
-      invalidateApiKeyCache(apiKey.keyPrefix);
+      await invalidateApiKeyCache(apiKey.keyPrefix);
 
       return revokedKey;
     }),
@@ -278,7 +278,7 @@ export const apiKeyRouter = createTRPCRouter({
         .update(apiKeys)
         .set({ revokedAt: new Date() })
         .where(eq(apiKeys.id, input.apiKeyId));
-      invalidateApiKeyCache(oldApiKey.keyPrefix);
+      await invalidateApiKeyCache(oldApiKey.keyPrefix);
 
       const { key, keyPrefix, secretKey } = generateApiKey();
 
@@ -382,7 +382,7 @@ export const apiKeyRouter = createTRPCRouter({
         .returning();
 
       // Invalidate cache
-      invalidateApiKeyCache(apiKey.keyPrefix);
+      await invalidateApiKeyCache(apiKey.keyPrefix);
 
       return updatedKey;
     }),

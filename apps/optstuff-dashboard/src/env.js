@@ -12,6 +12,9 @@ export const env = createEnv({
       .enum(["development", "test", "production"])
       .default("development"),
     API_KEY_ENCRYPTION_SECRET: z.string().min(32), // At least 32 chars for AES-256
+    // Upstash Redis for rate limiting
+    UPSTASH_REDIS_REST_URL: z.string().url(),
+    UPSTASH_REDIS_REST_TOKEN: z.string().min(1),
   },
 
   /**
@@ -32,6 +35,8 @@ export const env = createEnv({
     NODE_ENV: process.env.NODE_ENV,
     NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
     API_KEY_ENCRYPTION_SECRET: process.env.API_KEY_ENCRYPTION_SECRET,
+    UPSTASH_REDIS_REST_URL: process.env.UPSTASH_REDIS_REST_URL,
+    UPSTASH_REDIS_REST_TOKEN: process.env.UPSTASH_REDIS_REST_TOKEN,
   },
   /**
    * Run `build` or `dev` with `SKIP_ENV_VALIDATION` to skip env validation. This is especially

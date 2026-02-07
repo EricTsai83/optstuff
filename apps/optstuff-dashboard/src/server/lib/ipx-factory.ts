@@ -13,10 +13,10 @@ const ipxInstances = new Map<string, ReturnType<typeof createIPX>>();
  * @param allowedDomains - List of allowed source domains
  * @returns IPX instance configured for the given domains
  */
-export function getProjectIPX(allowedDomains: string[] | null) {
+export function getProjectIPX(allowedDomains: readonly string[] | null) {
   // If no domains specified, use a wildcard instance
   const domains =
-    allowedDomains && allowedDomains.length > 0 ? allowedDomains : ["*"];
+    allowedDomains && allowedDomains.length > 0 ? [...allowedDomains] : ["*"];
   const key = domains.sort().join(",");
 
   if (!ipxInstances.has(key)) {

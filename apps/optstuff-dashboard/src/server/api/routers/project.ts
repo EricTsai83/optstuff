@@ -7,7 +7,7 @@ import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
 import type { db as dbType } from "@/server/db";
 import { apiKeys, pinnedProjects, projects, teams } from "@/server/db/schema";
 import { encryptApiKey, generateApiKey } from "@/server/lib/api-key";
-import { invalidateProjectCache } from "@/server/lib/project-cache";
+import { invalidateProjectCache } from "@/server/lib/config-cache";
 
 /**
  * Helper to verify user owns the team.
@@ -315,7 +315,7 @@ export const projectRouter = createTRPCRouter({
 
       // Invalidate cache so IPX service picks up new settings
       if (updatedProject) {
-        invalidateProjectCache(updatedProject.slug);
+        await invalidateProjectCache(updatedProject.slug);
       }
 
       return updatedProject;

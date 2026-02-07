@@ -146,7 +146,7 @@ src/
 │   └── lib/
 │       ├── api-key.ts       # Key generation, encryption, signing
 │       ├── ipx-factory.ts   # IPX instance management
-│       ├── project-cache.ts # In-memory caching
+│       ├── config-cache.ts  # Redis-backed config caching for API requests
 │       ├── request-logger.ts # Request logging
 │       └── validators.ts    # Domain and signature validation
 └── lib/                     # Shared utilities
@@ -189,4 +189,6 @@ User (Clerk)
 | [Authentication](./service/authentication.md) | Request validation details |
 | [Integration Guide](./service/integration-guide.md) | Step-by-step integration |
 | [User Onboarding](./user-flow/user-onboarding.md) | Onboarding flow walkthrough |
+| [Caching & Rate Limiting](./system-design/caching-and-rate-limiting.md) | Strategy defaults and configuration guide |
+| [Redis Architecture](./system-design/redis-architecture.md) | Redis design patterns and trade-offs |
 | [Security Q&A](./security-qa/security.md) | Security measures explained |

@@ -48,7 +48,7 @@ export function validateReferer(
  */
 export function validateSourceDomain(
   sourceHost: string,
-  allowedDomains: string[] | null,
+  allowedDomains: readonly string[] | null,
 ) {
   // Empty allowlist: reject all in production, allow all in development
   if (!allowedDomains || allowedDomains.length === 0) {

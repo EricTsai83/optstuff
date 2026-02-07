@@ -9,8 +9,10 @@ import {
 } from "@/lib/ipx-utils";
 import { verifyUrlSignature } from "@/server/lib/api-key";
 import { getProjectIPX } from "@/server/lib/ipx-factory";
-import { getApiKeyConfig, getProjectConfig } from "@/server/lib/project-cache";
+import { getApiKeyConfig, getProjectConfig } from "@/server/lib/config-cache";
+import { checkRateLimit } from "@/server/lib/rate-limiter";
 import { logRequest } from "@/server/lib/request-logger";
+import { updateApiKeyLastUsed } from "@/server/lib/usage-tracker";
 import {
   parseSignatureParams,
   validateReferer,
@@ -86,7 +88,40 @@ export async function GET(
       );
     }
 
-    // 4. Parse path first to get the signing payload
+    // 4. Check rate limit
+    const rateLimitResult = await checkRateLimit({
+      keyPrefix: apiKey.keyPrefix,
+      limitPerMinute: apiKey.rateLimitPerMinute,
+      limitPerDay: apiKey.rateLimitPerDay,
+    });
+
+    if (!rateLimitResult.allowed) {
+      await logRequest(project.id, {
+        sourceUrl: path.join("/"),
+        status: "forbidden",
+      });
+      return NextResponse.json(
+        {
+          error: "Rate limit exceeded",
+          reason:
+            rateLimitResult.reason === "minute"
+              ? "Too many requests per minute"
+              : "Daily limit exceeded",
+          retryAfter: rateLimitResult.retryAfterSeconds,
+          limit: rateLimitResult.limit,
+        },
+        {
+          status: 429,
+          headers: {
+            "Retry-After": String(rateLimitResult.retryAfterSeconds),
+            "X-RateLimit-Limit": String(rateLimitResult.limit),
+            "X-RateLimit-Remaining": String(rateLimitResult.remaining),
+          },
+        },
+      );
+    }
+
+    // 5. Parse path first to get the signing payload
     const parsed = parseIpxPath(path);
     if (!parsed) {
       return NextResponse.json(
@@ -102,7 +137,7 @@ export async function GET(
       );
     }
 
-    // 5. Verify signature
+    // 6. Verify signature
     const signaturePath = `${parsed.operations}/${parsed.imagePath}`;
     if (
       !verifyUrlSignature(
@@ -122,7 +157,7 @@ export async function GET(
       );
     }
 
-    // 6. Validate Referer (project-level)
+    // 7. Validate Referer (project-level)
     const referer = request.headers.get("referer");
     if (!validateReferer(referer, project.allowedRefererDomains)) {
       await logRequest(project.id, {
@@ -135,7 +170,7 @@ export async function GET(
       );
     }
 
-    // 7. Build full image URL and validate source domain (API key-level)
+    // 8. Build full image URL and validate source domain (API key-level)
     let imageUrl: string;
     try {
       imageUrl = ensureProtocol(parsed.imagePath);
@@ -173,7 +208,19 @@ export async function GET(
       );
     }
 
-    // 8. Process image with IPX
+    // 9. Fetch original image to get its size (for logging)
+    let originalSize: number | undefined;
+    try {
+      const headResponse = await fetch(imageUrl, { method: "HEAD" });
+      const contentLength = headResponse.headers.get("content-length");
+      if (contentLength) {
+        originalSize = parseInt(contentLength, 10);
+      }
+    } catch {
+      // Ignore errors - originalSize is optional for logging
+    }
+
+    // 10. Process image with IPX
     const ipx = getProjectIPX(apiKey.allowedSourceDomains);
     const operations = parseOperationsString(parsed.operations);
     const processedImage = await ipx(imageUrl, operations).process();
@@ -182,17 +229,21 @@ export async function GET(
     const contentType = resolveContentType(processedImage.format ?? "webp");
     const processingTimeMs = Date.now() - startTime;
 
-    // 9. Log successful request (fire-and-forget)
+    // 11. Update API key last used timestamp (fire-and-forget, batched)
+    updateApiKeyLastUsed(apiKey.id, project.id);
+
+    // 12. Log successful request (fire-and-forget)
     logRequest(project.id, {
       sourceUrl: imageUrl,
       status: "success",
       processingTimeMs,
+      originalSize,
       optimizedSize: imageData.length,
     }).catch(() => {
       // Ignore logging errors
     });
 
-    // 10. Return optimized image
+    // 13. Return optimized image
     return new Response(imageData as Uint8Array<ArrayBuffer>, {
       status: 200,
       headers: {
