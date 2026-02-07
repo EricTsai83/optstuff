@@ -33,32 +33,59 @@ export type ApiKeyConfig = {
 
 /**
  * Serialized version of {@link ApiKeyConfig} for Redis storage.
+ * The secret key is stored in its **encrypted** form (never plaintext)
+ * to prevent leaking secrets to Redis.
  * Date fields are stored as ISO strings since JSON does not support Date.
  */
-type CachedApiKeyConfig = Omit<ApiKeyConfig, "expiresAt" | "revokedAt"> & {
+type CachedApiKeyConfig = Omit<
+  ApiKeyConfig,
+  "secretKey" | "expiresAt" | "revokedAt"
+> & {
+  readonly encryptedSecretKey: string;
   readonly expiresAt: string | null;
   readonly revokedAt: string | null;
 };
 
 /**
- * Convert a cached API key config (with ISO string dates) back to {@link ApiKeyConfig}.
+ * Convert a cached API key config back to {@link ApiKeyConfig}.
+ * Decrypts the secret key and converts ISO string dates back to Date objects.
  */
 function parseApiKeyFromCache(cached: CachedApiKeyConfig): ApiKeyConfig {
+  const { encryptedSecretKey, expiresAt, revokedAt, ...rest } = cached;
   return {
-    ...cached,
-    expiresAt: cached.expiresAt ? new Date(cached.expiresAt) : null,
-    revokedAt: cached.revokedAt ? new Date(cached.revokedAt) : null,
+    ...rest,
+    secretKey: decryptApiKey(encryptedSecretKey),
+    expiresAt: expiresAt ? new Date(expiresAt) : null,
+    revokedAt: revokedAt ? new Date(revokedAt) : null,
   };
 }
 
 /**
- * Prepare an {@link ApiKeyConfig} for Redis storage by converting Date fields to ISO strings.
+ * Prepare API key data from a DB row for Redis storage.
+ * Stores the secret key in its encrypted form (from DB) and converts Date fields to ISO strings.
  */
-function serializeApiKeyForCache(config: ApiKeyConfig): CachedApiKeyConfig {
+function serializeApiKeyForCache(apiKeyRow: {
+  readonly id: string;
+  readonly keyPrefix: string;
+  readonly secretKey: string;
+  readonly projectId: string;
+  readonly allowedSourceDomains: string[] | null;
+  readonly expiresAt: Date | null;
+  readonly revokedAt: Date | null;
+  readonly rateLimitPerMinute: number | null;
+  readonly rateLimitPerDay: number | null;
+}): CachedApiKeyConfig {
   return {
-    ...config,
-    expiresAt: config.expiresAt ? config.expiresAt.toISOString() : null,
-    revokedAt: config.revokedAt ? config.revokedAt.toISOString() : null,
+    id: apiKeyRow.id,
+    keyPrefix: apiKeyRow.keyPrefix,
+    encryptedSecretKey: apiKeyRow.secretKey,
+    projectId: apiKeyRow.projectId,
+    allowedSourceDomains: apiKeyRow.allowedSourceDomains,
+    expiresAt: apiKeyRow.expiresAt ? apiKeyRow.expiresAt.toISOString() : null,
+    revokedAt: apiKeyRow.revokedAt ? apiKeyRow.revokedAt.toISOString() : null,
+    rateLimitPerMinute:
+      apiKeyRow.rateLimitPerMinute ?? RATE_LIMITS.perMinute,
+    rateLimitPerDay: apiKeyRow.rateLimitPerDay ?? RATE_LIMITS.perDay,
   };
 }
 
@@ -332,26 +359,18 @@ export async function getApiKeyConfig(
     return null;
   }
 
-  const config: ApiKeyConfig = {
-    id: apiKey.id,
-    keyPrefix: apiKey.keyPrefix,
-    secretKey: decryptApiKey(apiKey.secretKey),
-    projectId: apiKey.projectId,
-    allowedSourceDomains: apiKey.allowedSourceDomains,
-    expiresAt: apiKey.expiresAt,
-    revokedAt: apiKey.revokedAt,
-    rateLimitPerMinute: apiKey.rateLimitPerMinute ?? RATE_LIMITS.perMinute,
-    rateLimitPerDay: apiKey.rateLimitPerDay ?? RATE_LIMITS.perDay,
-  };
+  // Serialize for cache — stores secret in encrypted form, never plaintext
+  const cachedConfig = serializeApiKeyForCache(apiKey);
 
-  // Store serialized version in Redis with TTL (best-effort)
-  await redis.set(cacheKey, serializeApiKeyForCache(config), {
+  // Store in Redis with TTL (best-effort)
+  await redis.set(cacheKey, cachedConfig, {
     ex: CACHE_TTL_SECONDS,
   }).catch((error: unknown) => {
     console.warn("Redis write failed for API key config cache:", error);
   });
 
-  return config;
+  // Decrypt secret key only when returning to the caller
+  return parseApiKeyFromCache(cachedConfig);
 }
 
 /**

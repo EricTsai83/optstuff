@@ -49,7 +49,7 @@ All data stored in Redis is **ephemeral and rebuildable**. PostgreSQL remains th
 
 ### What It Does
 
-Every image request requires loading `ProjectConfig` and `ApiKeyConfig` from the database (including a JOIN and a decryption operation). The cache stores these results in Redis for 60 seconds so that subsequent requests skip the database entirely.
+Every image request requires loading `ProjectConfig` and `ApiKeyConfig` from the database. The cache stores these results in Redis for 60 seconds so that subsequent requests skip the database query. The API key's secret is stored in its **encrypted** form in Redis and decrypted only after retrieval — plaintext secrets are never written to the cache.
 
 ### How It Works
 
@@ -89,9 +89,9 @@ On dashboard mutations (e.g. revoking an API key or updating project settings), 
 
 A shorter TTL gives fresher data but more DB queries. A longer TTL gives better hit rates but delays propagation of changes. 60 seconds balances both — admin operations bypass this via active invalidation, so the TTL only matters for the rare case where invalidation fails.
 
-### Date Serialization
+### Serialization and Secret Handling
 
-`ApiKeyConfig` contains `expiresAt` and `revokedAt` as `Date | null`. Since JSON has no native Date type, these are stored as ISO 8601 strings in Redis and converted back to Date objects on read. A dedicated `CachedApiKeyConfig` type enforces this at compile time.
+`ApiKeyConfig` contains `expiresAt` and `revokedAt` as `Date | null`. Since JSON has no native Date type, these are stored as ISO 8601 strings in Redis and converted back to Date objects on read. Additionally, the API key's secret is stored in its encrypted form (`encryptedSecretKey`) in Redis — never as plaintext — and is only decrypted via `decryptApiKey` after retrieval from cache. A dedicated `CachedApiKeyConfig` type enforces both transformations at compile time.
 
 ---
 
