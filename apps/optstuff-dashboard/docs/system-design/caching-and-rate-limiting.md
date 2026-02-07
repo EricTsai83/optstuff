@@ -45,7 +45,7 @@ Both are cached in Redis after the first lookup.
 
 ### TTL (Time-To-Live)
 
-```
+```text
 Default: 60 seconds
 ```
 
@@ -139,7 +139,7 @@ When a request exceeds the limit, the API returns:
 
 With HTTP headers:
 
-```
+```text
 HTTP/1.1 429 Too Many Requests
 Retry-After: 12
 X-RateLimit-Limit: 60
@@ -183,7 +183,7 @@ A Redis `SET NX EX` lock ensures at most **one DB write per entity per interval*
 
 ### Throttle Interval
 
-```
+```text
 Default: 30 seconds
 ```
 
@@ -197,7 +197,7 @@ const THROTTLE_SECONDS = 30;
 
 ### How It Works
 
-```
+```text
 Request arrives → SET usage:apikey:{id} "1" NX EX 30
                    ├─ "OK" (first request in this 30s window) → UPDATE DB
                    └─ null  (another request already wrote)   → skip
