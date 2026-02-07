@@ -101,10 +101,10 @@ Each API key is checked against two independent limits. Both must pass for the r
 
 | Layer | Default Limit | Window | Redis Key Prefix | Purpose |
 |-------|---------------|--------|-------------------|---------|
-| Per-minute | **60 requests** | 1 minute | `ratelimit:ipx:minute:` | Catch sudden bursts |
 | Per-day | **10,000 requests** | 24 hours | `ratelimit:ipx:day:` | Catch sustained overuse |
+| Per-minute | **60 requests** | 1 minute | `ratelimit:ipx:minute:` | Catch sudden bursts |
 
-The per-minute limit is checked **first** because it provides faster feedback to the caller.
+The per-day limit is checked **first** to avoid wasting minute-window tokens. Because Upstash's `.limit()` is a consume-and-check operation (it decrements the counter atomically), checking minute first would spend a minute token even when the day limit would reject the request. Checking the wider day window first ensures that when day is exhausted, the minute counter stays untouched.
 
 ### How Limits Are Configured
 

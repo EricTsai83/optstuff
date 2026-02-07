@@ -57,30 +57,19 @@ function createDayLimiter(limit: number): Ratelimit {
  * Check if a request is allowed under the rate limit.
  * Uses sliding window algorithm via @upstash/ratelimit.
  *
- * Checks per-minute limit first (stricter), then per-day limit.
+ * Checks per-day limit first (wider window), then per-minute limit.
+ *
+ * The day limit is checked first to avoid wasting minute-window tokens
+ * when the day limit is already exhausted. Since `.limit()` is a
+ * consume-and-check operation, checking minute first would decrement
+ * the minute counter even when the day limit would reject the request.
+ * Checking day first minimises this: a wasted day token (when minute
+ * subsequently rejects) is negligible relative to a 10,000-token pool.
  */
 export async function checkRateLimit(
   config: RateLimitConfig,
 ): Promise<RateLimitResult> {
-  // Check per-minute limit first (stricter, more immediate feedback)
-  const minuteResult = await createMinuteLimiter(config.limitPerMinute).limit(
-    config.keyPrefix,
-  );
-
-  if (!minuteResult.success) {
-    return {
-      allowed: false,
-      reason: "minute",
-      retryAfterSeconds: Math.max(
-        1,
-        Math.ceil((minuteResult.reset - Date.now()) / 1000),
-      ),
-      limit: config.limitPerMinute,
-      remaining: minuteResult.remaining,
-    };
-  }
-
-  // Check per-day limit
+  // Check per-day limit first (wider window — avoids wasting minute tokens)
   const dayResult = await createDayLimiter(config.limitPerDay).limit(
     config.keyPrefix,
   );
@@ -95,6 +84,24 @@ export async function checkRateLimit(
       ),
       limit: config.limitPerDay,
       remaining: dayResult.remaining,
+    };
+  }
+
+  // Check per-minute limit (stricter, more immediate feedback)
+  const minuteResult = await createMinuteLimiter(config.limitPerMinute).limit(
+    config.keyPrefix,
+  );
+
+  if (!minuteResult.success) {
+    return {
+      allowed: false,
+      reason: "minute",
+      retryAfterSeconds: Math.max(
+        1,
+        Math.ceil((minuteResult.reset - Date.now()) / 1000),
+      ),
+      limit: config.limitPerMinute,
+      remaining: minuteResult.remaining,
     };
   }
 

@@ -98,14 +98,22 @@ Enforces per-API-key request limits at two granularities: per-minute and per-day
 ```text
 checkRateLimit({ keyPrefix: "pk_abc", limitPerMinute: 60, limitPerDay: 10000 })
 │
-├─ 1. Per-minute check (stricter, checked first)
+├─ 1. Per-day check (wider window, checked first)
 │     slidingWindow.limit("pk_abc")
-│     └─ exceeded? → { allowed: false, reason: "minute", retryAfter: Ns }
+│     └─ exceeded? → { allowed: false, reason: "day", retryAfter: Ns }
 │
-└─ 2. Per-day check
+└─ 2. Per-minute check (stricter)
       slidingWindow.limit("pk_abc")
-      └─ exceeded? → { allowed: false, reason: "day", retryAfter: Ns }
+      └─ exceeded? → { allowed: false, reason: "minute", retryAfter: Ns }
 ```
+
+### Why Day Is Checked First
+
+Upstash's `.limit()` is a consume-and-check operation — it decrements the counter atomically before returning the result. If the minute limit were checked first, a successful minute check would consume a minute token; a subsequent day rejection would block the request, but the minute token is already spent. Under sustained day-limit exhaustion this drains the minute counter for requests that never proceed.
+
+Checking the day limit first inverts the problem: if day fails, no minute token is consumed. If day passes but minute fails, a day token is wasted — but this is negligible relative to a typical 10,000-token day pool.
+
+> **Note:** Upstash also provides a non-consuming `getRemaining()` method that can query remaining tokens without decrementing. This could be used as a pre-check to avoid any token waste, at the cost of an extra Redis round trip per request. The current order-swap approach avoids this overhead while eliminating the most impactful waste scenario.
 
 ### Why Sliding Window Over Fixed Window
 
@@ -130,7 +138,7 @@ Sliding Window at 11:01:15 (25% into current window):
 
 ### Dual-Layer Design
 
-The minute limit catches **burst abuse** (sudden spike in requests). The day limit catches **sustained abuse** (steady high-frequency usage over hours). Checking the minute limit first provides faster feedback to the caller.
+The minute limit catches **burst abuse** (sudden spike in requests). The day limit catches **sustained abuse** (steady high-frequency usage over hours). The day limit is checked first to prevent wasting minute-window tokens (see [Why Day Is Checked First](#why-day-is-checked-first)).
 
 ### Benefits
 
