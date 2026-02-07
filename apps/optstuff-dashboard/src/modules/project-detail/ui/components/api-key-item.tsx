@@ -17,6 +17,7 @@ import {
   Clock,
   Eye,
   EyeOff,
+  Gauge,
   Globe,
   Key,
   MoreHorizontal,
@@ -319,8 +320,8 @@ export function ApiKeyItem({
       </div>
 
       {/* Details row - aligned with Icon (left edge) */}
-      <div className="mt-5 grid gap-4 border-t pt-5 sm:grid-cols-2">
-        {/* Left column: Timestamps */}
+      <div className="mt-5 grid gap-4 border-t pt-5 sm:grid-cols-3">
+        {/* Column 1: Timestamps */}
         <div className="space-y-2 text-sm">
           <div className="flex items-center gap-2">
             <Clock className="h-4 w-4 text-muted-foreground" />
@@ -351,7 +352,25 @@ export function ApiKeyItem({
           )}
         </div>
 
-        {/* Right column: Domains */}
+        {/* Column 2: Rate Limits */}
+        <div className="space-y-2 text-sm">
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <Gauge className="h-4 w-4" />
+            <span>Rate Limits</span>
+          </div>
+          <div className="space-y-1 pl-6">
+            <div>
+              <span className="font-medium">{(apiKey.rateLimitPerMinute ?? 60).toLocaleString()}</span>
+              <span className="text-muted-foreground"> req/min</span>
+            </div>
+            <div>
+              <span className="font-medium">{(apiKey.rateLimitPerDay ?? 10000).toLocaleString()}</span>
+              <span className="text-muted-foreground"> req/day</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Column 3: Domains */}
         <div className="space-y-2">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Globe className="h-4 w-4" />

@@ -1,5 +1,6 @@
 import { and, eq, isNull } from "drizzle-orm";
 
+import { RATE_LIMITS } from "@/lib/constants";
 import { db } from "@/server/db";
 import { apiKeys, projects, teams } from "@/server/db/schema";
 import { decryptApiKey } from "@/server/lib/api-key";
@@ -199,8 +200,8 @@ export async function getApiKeyConfig(
     allowedSourceDomains: apiKey.allowedSourceDomains,
     expiresAt: apiKey.expiresAt,
     revokedAt: apiKey.revokedAt,
-    rateLimitPerMinute: apiKey.rateLimitPerMinute ?? 60,
-    rateLimitPerDay: apiKey.rateLimitPerDay ?? 10000,
+    rateLimitPerMinute: apiKey.rateLimitPerMinute ?? RATE_LIMITS.perMinute,
+    rateLimitPerDay: apiKey.rateLimitPerDay ?? RATE_LIMITS.perDay,
   };
 
   // Store serialized version in Redis with TTL
