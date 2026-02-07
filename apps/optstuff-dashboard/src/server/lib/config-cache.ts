@@ -1,4 +1,4 @@
-import { and, eq, isNull } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 
 import { RATE_LIMITS } from "@/lib/constants";
 import { db } from "@/server/db";
@@ -344,9 +344,11 @@ export async function getApiKeyConfig(
     console.warn("Redis read failed for API key config, falling back to DB:", error);
   }
 
-  // Query database
+  // Query database — intentionally does NOT filter out revoked keys so that
+  // the revokedAt timestamp is cached and the defense-in-depth check in
+  // route.ts can reject stale cached entries that were revoked after caching.
   const apiKey = await db.query.apiKeys.findFirst({
-    where: and(eq(apiKeys.keyPrefix, keyPrefix), isNull(apiKeys.revokedAt)),
+    where: eq(apiKeys.keyPrefix, keyPrefix),
   });
 
   if (!apiKey) {

@@ -93,6 +93,8 @@ A shorter TTL gives fresher data but more DB queries. A longer TTL gives better 
 
 `ApiKeyConfig` contains `expiresAt` and `revokedAt` as `Date | null`. Since JSON has no native Date type, these are stored as ISO 8601 strings in Redis and converted back to Date objects on read. Additionally, the API key's secret is stored in its encrypted form (`encryptedSecretKey`) in Redis — never as plaintext — and is only decrypted via `decryptApiKey` after retrieval from cache. A dedicated `CachedApiKeyConfig` type enforces both transformations at compile time.
 
+**Why revoked keys are cached (not filtered out):** The database query in `getApiKeyConfig` deliberately does **not** filter by `revokedAt`. This ensures that when the cache refreshes from the database, the `revokedAt` timestamp is present in the cached entry. The route handler then performs a defense-in-depth check: if `apiKey.revokedAt` is set, the request is rejected with a `401 API key has been revoked` error. Without this, the `isNull(revokedAt)` filter would cause revoked keys to return `null` from the DB — indistinguishable from a non-existent key — making the route handler's revocation check dead code. Active invalidation via `invalidateApiKeyCache` remains the primary revocation mechanism; caching `revokedAt` acts as a safety net for stale entries.
+
 ---
 
 ## 2. Rate Limiting

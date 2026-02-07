@@ -1,5 +1,6 @@
 "use client";
 
+import { RATE_LIMITS } from "@/lib/constants";
 import { Badge } from "@workspace/ui/components/badge";
 import { Button } from "@workspace/ui/components/button";
 import { CopyButton } from "@workspace/ui/components/copy-button";
@@ -26,7 +27,6 @@ import {
   Trash2,
 } from "lucide-react";
 import { useState } from "react";
-import { RATE_LIMITS } from "~/lib/constants";
 import type { ApiKeyData, ExpirationStatus } from "./api-key-types";
 import {
   getExpirationStatus,

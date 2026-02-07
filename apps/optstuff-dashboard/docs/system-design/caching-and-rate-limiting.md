@@ -39,7 +39,7 @@ The Image Optimization API uses Redis for three purposes. Each has its own TTL, 
 Every image request requires two database lookups before processing can begin:
 
 1. **ProjectConfig** — project ID, slug, team ID, allowed referer domains
-2. **ApiKeyConfig** — key ID, secret key (stored encrypted in cache, decrypted on read), allowed source domains, expiration, rate limits
+2. **ApiKeyConfig** — key ID, secret key (stored encrypted in cache, decrypted on read), allowed source domains, expiration, revocation status, rate limits
 
 Both are cached in Redis after the first lookup.
 
