@@ -89,6 +89,7 @@ const NOT_FOUND_SENTINEL = "__NOT_FOUND__" as const;
 
 /**
  * Get project configuration by slug with Redis caching.
+ * Degrades gracefully when Redis is unreachable — falls back to direct DB query.
  *
  * @param slug - Project slug (unique per team, but we use global slug for API)
  * @returns Project configuration or null if not found
@@ -99,15 +100,19 @@ export async function getProjectConfig(
   const redis = getRedis();
   const cacheKey = `${PROJECT_KEY_PREFIX}:${slug}`;
 
-  // Check Redis cache first
-  const cached = await redis.get<ProjectConfig | typeof NOT_FOUND_SENTINEL>(
-    cacheKey,
-  );
-  if (cached === NOT_FOUND_SENTINEL) {
-    return null;
-  }
-  if (cached) {
-    return cached;
+  // Check Redis cache first (skip on Redis failure)
+  try {
+    const cached = await redis.get<ProjectConfig | typeof NOT_FOUND_SENTINEL>(
+      cacheKey,
+    );
+    if (cached === NOT_FOUND_SENTINEL) {
+      return null;
+    }
+    if (cached) {
+      return cached;
+    }
+  } catch (error) {
+    console.warn("Redis read failed for project config, falling back to DB:", error);
   }
 
   // Query database
@@ -120,6 +125,8 @@ export async function getProjectConfig(
     // Negative cache: store sentinel with shorter TTL to absorb repeated misses
     await redis.set(cacheKey, NOT_FOUND_SENTINEL, {
       ex: NEGATIVE_CACHE_TTL_SECONDS,
+    }).catch((error: unknown) => {
+      console.warn("Redis write failed for negative cache:", error);
     });
     return null;
   }
@@ -131,14 +138,19 @@ export async function getProjectConfig(
     allowedRefererDomains: project.allowedRefererDomains,
   };
 
-  // Store in Redis with TTL
-  await redis.set(cacheKey, config, { ex: CACHE_TTL_SECONDS });
+  // Store in Redis with TTL (best-effort)
+  await redis.set(cacheKey, config, { ex: CACHE_TTL_SECONDS }).catch(
+    (error: unknown) => {
+      console.warn("Redis write failed for project config cache:", error);
+    },
+  );
 
   return config;
 }
 
 /**
  * Get project configuration by team slug and project slug with Redis caching.
+ * Degrades gracefully when Redis is unreachable — falls back to direct DB query.
  *
  * @param teamSlug - Team slug
  * @param projectSlug - Project slug
@@ -151,15 +163,19 @@ export async function getProjectConfigByTeamAndSlug(
   const redis = getRedis();
   const cacheKey = `${PROJECT_TEAM_KEY_PREFIX}:${teamSlug}/${projectSlug}`;
 
-  // Check Redis cache first
-  const cached = await redis.get<ProjectConfig | typeof NOT_FOUND_SENTINEL>(
-    cacheKey,
-  );
-  if (cached === NOT_FOUND_SENTINEL) {
-    return null;
-  }
-  if (cached) {
-    return cached;
+  // Check Redis cache first (skip on Redis failure)
+  try {
+    const cached = await redis.get<ProjectConfig | typeof NOT_FOUND_SENTINEL>(
+      cacheKey,
+    );
+    if (cached === NOT_FOUND_SENTINEL) {
+      return null;
+    }
+    if (cached) {
+      return cached;
+    }
+  } catch (error) {
+    console.warn("Redis read failed for team+project config, falling back to DB:", error);
   }
 
   // Find team first
@@ -171,6 +187,8 @@ export async function getProjectConfigByTeamAndSlug(
     // Negative cache: store sentinel with shorter TTL to absorb repeated misses
     await redis.set(cacheKey, NOT_FOUND_SENTINEL, {
       ex: NEGATIVE_CACHE_TTL_SECONDS,
+    }).catch((error: unknown) => {
+      console.warn("Redis write failed for negative cache:", error);
     });
     return null;
   }
@@ -184,6 +202,8 @@ export async function getProjectConfigByTeamAndSlug(
     // Negative cache: store sentinel with shorter TTL to absorb repeated misses
     await redis.set(cacheKey, NOT_FOUND_SENTINEL, {
       ex: NEGATIVE_CACHE_TTL_SECONDS,
+    }).catch((error: unknown) => {
+      console.warn("Redis write failed for negative cache:", error);
     });
     return null;
   }
@@ -195,14 +215,19 @@ export async function getProjectConfigByTeamAndSlug(
     allowedRefererDomains: project.allowedRefererDomains,
   };
 
-  // Store in Redis with TTL
-  await redis.set(cacheKey, config, { ex: CACHE_TTL_SECONDS });
+  // Store in Redis with TTL (best-effort)
+  await redis.set(cacheKey, config, { ex: CACHE_TTL_SECONDS }).catch(
+    (error: unknown) => {
+      console.warn("Redis write failed for team+project config cache:", error);
+    },
+  );
 
   return config;
 }
 
 /**
  * Get API key configuration by key prefix with Redis caching.
+ * Degrades gracefully when Redis is unreachable — falls back to direct DB query.
  *
  * @param keyPrefix - The key prefix (e.g., "pk_abc123...")
  * @returns API key configuration or null if not found/invalid
@@ -213,15 +238,19 @@ export async function getApiKeyConfig(
   const redis = getRedis();
   const cacheKey = `${API_KEY_PREFIX}:${keyPrefix}`;
 
-  // Check Redis cache first
-  const cached = await redis.get<
-    CachedApiKeyConfig | typeof NOT_FOUND_SENTINEL
-  >(cacheKey);
-  if (cached === NOT_FOUND_SENTINEL) {
-    return null;
-  }
-  if (cached) {
-    return parseApiKeyFromCache(cached);
+  // Check Redis cache first (skip on Redis failure)
+  try {
+    const cached = await redis.get<
+      CachedApiKeyConfig | typeof NOT_FOUND_SENTINEL
+    >(cacheKey);
+    if (cached === NOT_FOUND_SENTINEL) {
+      return null;
+    }
+    if (cached) {
+      return parseApiKeyFromCache(cached);
+    }
+  } catch (error) {
+    console.warn("Redis read failed for API key config, falling back to DB:", error);
   }
 
   // Query database
@@ -233,6 +262,8 @@ export async function getApiKeyConfig(
     // Negative cache: store sentinel with shorter TTL to absorb repeated misses
     await redis.set(cacheKey, NOT_FOUND_SENTINEL, {
       ex: NEGATIVE_CACHE_TTL_SECONDS,
+    }).catch((error: unknown) => {
+      console.warn("Redis write failed for negative cache:", error);
     });
     return null;
   }
@@ -249,9 +280,11 @@ export async function getApiKeyConfig(
     rateLimitPerDay: apiKey.rateLimitPerDay ?? RATE_LIMITS.perDay,
   };
 
-  // Store serialized version in Redis with TTL
+  // Store serialized version in Redis with TTL (best-effort)
   await redis.set(cacheKey, serializeApiKeyForCache(config), {
     ex: CACHE_TTL_SECONDS,
+  }).catch((error: unknown) => {
+    console.warn("Redis write failed for API key config cache:", error);
   });
 
   return config;

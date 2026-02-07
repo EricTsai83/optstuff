@@ -253,12 +253,24 @@ Redis contains **zero persistent data**. Every key falls into one of three categ
 
 ## Failure Modes
 
-| Scenario | Impact | Severity |
-|----------|--------|----------|
-| Redis temporarily unreachable | Affected requests fail with 500 | Medium |
-| Redis data flushed | All caches miss; rate limits reset; throttle locks gone — system self-heals on next request | Low |
-| Redis instance deleted (e.g. 14-day inactivity on free tier) | All Redis operations fail until a new instance is provisioned and env vars are updated | High |
-| Redis latency spike | Request latency increases but still completes | Low |
+All Redis-dependent code paths degrade gracefully rather than hard-failing requests. The system treats Redis as an **optimisation layer**, not a core dependency — PostgreSQL remains the sole source of truth and every request can be served without Redis at the cost of higher latency and temporarily relaxed rate limits.
+
+| Scenario | Behaviour | Impact | Severity |
+|----------|-----------|--------|----------|
+| Redis temporarily unreachable | Config cache falls back to direct DB query; rate limiter fails open (allows requests); usage tracker skips (fire-and-forget) | Higher latency, no rate enforcement during outage | Medium |
+| Redis data flushed | All caches miss; rate limits reset; throttle locks gone — system self-heals on next request | Brief burst of DB queries + briefly allows over-limit requests | Low |
+| Redis instance deleted (e.g. 14-day inactivity on free tier) | Same as "temporarily unreachable" — every request falls back to DB and rate limits are not enforced until a new instance is provisioned | Sustained DB load increase, no rate protection | High |
+| Redis latency spike | Request latency increases but still completes | Slower responses | Low |
+
+### Design Rationale: Fail-Open
+
+The system intentionally **fails open** (allows requests through) rather than **fails closed** (rejects all requests) when Redis is unavailable:
+
+- **Config cache** — The data is always available from PostgreSQL. Redis is purely a latency optimisation; falling back to DB adds ~10-40 ms per request but keeps the service operational.
+- **Rate limiting** — Rate limits protect against abuse, but a temporary loss of enforcement is less damaging than a full outage. A brief Redis disruption lasting seconds is not enough for meaningful abuse; prolonged outages surface via `console.warn` logs for operator alerting.
+- **Usage tracking** — Already fire-and-forget by design. A missed `lastUsedAt` update is harmless and will self-correct on the next successful write cycle.
+
+> **Note:** If your threat model requires fail-closed rate limiting (e.g. protecting a paid API with strict billing), you can change the `checkRateLimit` catch block to return `{ allowed: false, ... }` instead. The current fail-open default prioritises availability for an image optimisation CDN layer where brief unmetered access is acceptable.
 
 ---
 

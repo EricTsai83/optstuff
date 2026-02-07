@@ -65,51 +65,67 @@ function createDayLimiter(limit: number): Ratelimit {
  * the minute counter even when the day limit would reject the request.
  * Checking day first minimises this: a wasted day token (when minute
  * subsequently rejects) is negligible relative to a 10,000-token pool.
+ *
+ * Degrades gracefully when Redis is unreachable — fails open (allows the
+ * request) rather than returning a 500, since rate limiting is a protective
+ * layer, not a core dependency. A warning is logged so operators can detect
+ * prolonged Redis outages.
  */
 export async function checkRateLimit(
   config: RateLimitConfig,
 ): Promise<RateLimitResult> {
-  // Check per-day limit first (wider window — avoids wasting minute tokens)
-  const dayResult = await createDayLimiter(config.limitPerDay).limit(
-    config.keyPrefix,
-  );
+  try {
+    // Check per-day limit first (wider window — avoids wasting minute tokens)
+    const dayResult = await createDayLimiter(config.limitPerDay).limit(
+      config.keyPrefix,
+    );
 
-  if (!dayResult.success) {
+    if (!dayResult.success) {
+      return {
+        allowed: false,
+        reason: "day",
+        retryAfterSeconds: Math.max(
+          1,
+          Math.ceil((dayResult.reset - Date.now()) / 1000),
+        ),
+        limit: config.limitPerDay,
+        remaining: dayResult.remaining,
+      };
+    }
+
+    // Check per-minute limit (stricter, more immediate feedback)
+    const minuteResult = await createMinuteLimiter(config.limitPerMinute).limit(
+      config.keyPrefix,
+    );
+
+    if (!minuteResult.success) {
+      return {
+        allowed: false,
+        reason: "minute",
+        retryAfterSeconds: Math.max(
+          1,
+          Math.ceil((minuteResult.reset - Date.now()) / 1000),
+        ),
+        limit: config.limitPerMinute,
+        remaining: minuteResult.remaining,
+      };
+    }
+
+    // Both limits passed
     return {
-      allowed: false,
-      reason: "day",
-      retryAfterSeconds: Math.max(
-        1,
-        Math.ceil((dayResult.reset - Date.now()) / 1000),
-      ),
-      limit: config.limitPerDay,
-      remaining: dayResult.remaining,
+      allowed: true,
+      remaining: Math.min(minuteResult.remaining, dayResult.remaining),
+    };
+  } catch (error) {
+    // Fail-open: allow the request through when Redis is unreachable.
+    // Rate limiting is a protective layer — a brief outage should not
+    // cause all image requests to fail with 500.
+    console.warn("Rate limiter Redis error, failing open:", error);
+    return {
+      allowed: true,
+      remaining: 0,
     };
   }
-
-  // Check per-minute limit (stricter, more immediate feedback)
-  const minuteResult = await createMinuteLimiter(config.limitPerMinute).limit(
-    config.keyPrefix,
-  );
-
-  if (!minuteResult.success) {
-    return {
-      allowed: false,
-      reason: "minute",
-      retryAfterSeconds: Math.max(
-        1,
-        Math.ceil((minuteResult.reset - Date.now()) / 1000),
-      ),
-      limit: config.limitPerMinute,
-      remaining: minuteResult.remaining,
-    };
-  }
-
-  // Both limits passed
-  return {
-    allowed: true,
-    remaining: Math.min(minuteResult.remaining, dayResult.remaining),
-  };
 }
 
 /**
