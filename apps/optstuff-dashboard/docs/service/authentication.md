@@ -235,6 +235,7 @@ if (expiresAt && Date.now() > expiresAt * 1000) {
 | 403 | Forbidden: Invalid referer | Referer not in allowlist | Add domain to project settings |
 | 403 | Forbidden: Source domain not allowed | Image source not in allowlist | Add domain to API key settings |
 | 404 | Project not found | Project does not exist | Check projectSlug |
+| 429 | Rate limit exceeded | Per-minute or per-day limit exceeded | Wait for `Retry-After` seconds or increase limit |
 | 500 | Image processing failed | Error processing image | Check if image URL is accessible |
 
 ## Troubleshooting Signature Errors

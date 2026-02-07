@@ -232,7 +232,7 @@ Level 2: Request Signatures (Per Request)
 |-------|---------|
 | **Creation** | Generate key pair → Encrypt → Store in DB → Return to user (once) |
 | **Usage** | Sign URLs with secretKey → Server validates signature |
-| **Rotation** | Revoke old key → Create new key (inherits settings) → Update application |
+| **Rotation** | Revoke old key + Create new key atomically (DB transaction, inherits settings) → Clear cache → Update application |
 | **Revocation** | Mark as revoked → Clear cache → Reject future requests |
 
 ## Rate Limiting
