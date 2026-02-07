@@ -151,7 +151,7 @@ export async function GET(
     if (!rateLimitResult.allowed) {
       await logRequest(project.id, {
         sourceUrl: path.join("/"),
-        status: "forbidden",
+        status: "rate_limited",
       });
       return NextResponse.json(
         {

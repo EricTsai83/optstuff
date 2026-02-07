@@ -8,7 +8,7 @@ import { requestLogs } from "@/server/db/schema";
  */
 export type RequestLogData = {
   sourceUrl: string;
-  status: "success" | "error" | "forbidden";
+  status: "success" | "error" | "forbidden" | "rate_limited";
   processingTimeMs?: number;
   originalSize?: number;
   optimizedSize?: number;

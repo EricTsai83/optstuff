@@ -29,12 +29,14 @@ type RequestLogsTableProps = {
 
 function getStatusBadgeVariant(
   status: string,
-): "default" | "secondary" | "destructive" {
+): "default" | "secondary" | "destructive" | "outline" {
   switch (status) {
     case "success":
       return "default";
     case "forbidden":
       return "secondary";
+    case "rate_limited":
+      return "outline";
     case "error":
       return "destructive";
     default:

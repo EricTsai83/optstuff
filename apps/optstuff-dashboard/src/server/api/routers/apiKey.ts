@@ -282,13 +282,41 @@ export const apiKeyRouter = createTRPCRouter({
         });
       }
 
-      // Revoke the old key
-      await ctx.db
-        .update(apiKeys)
-        .set({ revokedAt: new Date() })
-        .where(eq(apiKeys.id, input.apiKeyId));
+      const { key, keyPrefix, secretKey } = generateApiKey();
 
-      // Invalidate cache — best-effort so rotate still succeeds if Redis is down.
+      // Encrypt keys before storing
+      const encryptedKeyFull = encryptApiKey(key);
+      const encryptedSecretKey = encryptApiKey(secretKey);
+
+      // Wrap revoke + insert in a transaction so the user never loses
+      // their API key if the insert fails after the old key is revoked.
+      const [newApiKey] = await ctx.db.transaction(async (tx) => {
+        // Revoke the old key
+        await tx
+          .update(apiKeys)
+          .set({ revokedAt: new Date() })
+          .where(eq(apiKeys.id, input.apiKeyId));
+
+        // Insert the new key
+        return tx
+          .insert(apiKeys)
+          .values({
+            projectId: oldApiKey.projectId,
+            name: oldApiKey.name,
+            keyPrefix,
+            keyFull: encryptedKeyFull,
+            secretKey: encryptedSecretKey,
+            allowedSourceDomains: oldApiKey.allowedSourceDomains,
+            createdBy: ctx.userId,
+            expiresAt: oldApiKey.expiresAt,
+            rateLimitPerMinute: oldApiKey.rateLimitPerMinute,
+            rateLimitPerDay: oldApiKey.rateLimitPerDay,
+          })
+          .returning();
+      });
+
+      // Invalidate cache — best-effort, outside the transaction.
+      // The 60s TTL provides a self-healing fallback.
       try {
         await invalidateApiKeyCache(oldApiKey.keyPrefix);
       } catch (error) {
@@ -297,28 +325,6 @@ export const apiKeyRouter = createTRPCRouter({
           error,
         );
       }
-
-      const { key, keyPrefix, secretKey } = generateApiKey();
-
-      // Encrypt keys before storing
-      const encryptedKeyFull = encryptApiKey(key);
-      const encryptedSecretKey = encryptApiKey(secretKey);
-
-      const [newApiKey] = await ctx.db
-        .insert(apiKeys)
-        .values({
-          projectId: oldApiKey.projectId,
-          name: oldApiKey.name,
-          keyPrefix,
-          keyFull: encryptedKeyFull,
-          secretKey: encryptedSecretKey,
-          allowedSourceDomains: oldApiKey.allowedSourceDomains,
-          createdBy: ctx.userId,
-          expiresAt: oldApiKey.expiresAt,
-          rateLimitPerMinute: oldApiKey.rateLimitPerMinute,
-          rateLimitPerDay: oldApiKey.rateLimitPerDay,
-        })
-        .returning();
 
       // Count doesn't change on rotation (one revoked, one created)
 
