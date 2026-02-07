@@ -8,12 +8,12 @@ import {
   resolveContentType,
 } from "@/lib/ipx-utils";
 import { verifyUrlSignature } from "@/server/lib/api-key";
-import { getProjectIPX } from "@/server/lib/ipx-factory";
 import {
   getApiKeyConfig,
   getProjectConfig,
   getProjectConfigById,
 } from "@/server/lib/config-cache";
+import { getProjectIPX } from "@/server/lib/ipx-factory";
 import { checkRateLimit } from "@/server/lib/rate-limiter";
 import { logRequest } from "@/server/lib/request-logger";
 import { updateApiKeyLastUsed } from "@/server/lib/usage-tracker";
@@ -103,7 +103,45 @@ export async function GET(
       );
     }
 
-    // 4. Check rate limit
+    // 4. Parse path to get the signing payload
+    const parsed = parseIpxPath(path);
+    if (!parsed) {
+      return NextResponse.json(
+        {
+          error: "Invalid path format",
+          usage:
+            "/api/v1/{projectSlug}/{operations}/{imageUrl}?key={keyPrefix}&sig={signature}",
+          examples: [
+            "/api/v1/my-blog/w_800,f_webp/images.example.com/photo.jpg?key=pk_abc&sig=xyz",
+          ],
+        },
+        { status: 400 },
+      );
+    }
+
+    // 5. Verify signature (before rate limit to prevent quota exhaustion
+    //    by unauthenticated requests that only know the public keyPrefix)
+    const signaturePath = `${parsed.operations}/${parsed.imagePath}`;
+    if (
+      !verifyUrlSignature(
+        apiKey.secretKey,
+        signaturePath,
+        sigParams.signature,
+        sigParams.expiresAt,
+      )
+    ) {
+      await logRequest(project.id, {
+        sourceUrl: path.join("/"),
+        status: "forbidden",
+      });
+      return NextResponse.json(
+        { error: "Invalid or expired signature" },
+        { status: 403 },
+      );
+    }
+
+    // 6. Check rate limit (after signature verification so only
+    //    authenticated requests consume quota)
     const rateLimitResult = await checkRateLimit({
       keyPrefix: apiKey.keyPrefix,
       limitPerMinute: apiKey.rateLimitPerMinute,
@@ -133,42 +171,6 @@ export async function GET(
             "X-RateLimit-Remaining": String(rateLimitResult.remaining),
           },
         },
-      );
-    }
-
-    // 5. Parse path first to get the signing payload
-    const parsed = parseIpxPath(path);
-    if (!parsed) {
-      return NextResponse.json(
-        {
-          error: "Invalid path format",
-          usage:
-            "/api/v1/{projectSlug}/{operations}/{imageUrl}?key={keyPrefix}&sig={signature}",
-          examples: [
-            "/api/v1/my-blog/w_800,f_webp/images.example.com/photo.jpg?key=pk_abc&sig=xyz",
-          ],
-        },
-        { status: 400 },
-      );
-    }
-
-    // 6. Verify signature
-    const signaturePath = `${parsed.operations}/${parsed.imagePath}`;
-    if (
-      !verifyUrlSignature(
-        apiKey.secretKey,
-        signaturePath,
-        sigParams.signature,
-        sigParams.expiresAt,
-      )
-    ) {
-      await logRequest(project.id, {
-        sourceUrl: path.join("/"),
-        status: "forbidden",
-      });
-      return NextResponse.json(
-        { error: "Invalid or expired signature" },
-        { status: 403 },
       );
     }
 

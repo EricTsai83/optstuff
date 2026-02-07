@@ -60,10 +60,10 @@ Request: GET /api/v1/my-blog/w_800,f_webp/images.example.com/photo.jpg
                               │ ✓
                               ▼
 ┌─────────────────────────────────────────────────────────────────────────┐
-│ Step 4: Rate Limit Check                                                │
+│ Step 4: Path Parsing                                                    │
 │                                                                         │
-│ Check: Per-minute and per-day rate limits                               │
-│ Fail:  429 Rate limit exceeded                                          │
+│ Parse: {operations}/{imageUrl} from URL path                            │
+│ Fail:  400 Invalid path format                                          │
 └─────────────────────────────┬───────────────────────────────────────────┘
                               │ ✓
                               ▼
@@ -77,7 +77,17 @@ Request: GET /api/v1/my-blog/w_800,f_webp/images.example.com/photo.jpg
                               │ ✓
                               ▼
 ┌─────────────────────────────────────────────────────────────────────────┐
-│ Step 6: Referer Validation (Project-level)                              │
+│ Step 6: Rate Limit Check                                                │
+│                                                                         │
+│ Check: Per-minute and per-day rate limits                               │
+│ Note:  Placed after signature verification so unauthenticated           │
+│        requests cannot exhaust quota with invalid signatures            │
+│ Fail:  429 Rate limit exceeded                                          │
+└─────────────────────────────┬───────────────────────────────────────────┘
+                              │ ✓
+                              ▼
+┌─────────────────────────────────────────────────────────────────────────┐
+│ Step 7: Referer Validation (Project-level)                              │
 │                                                                         │
 │ Check: Referer header matches project.allowedRefererDomains             │
 │ Note:  Empty allowlist = allow all referers                             │
@@ -86,7 +96,7 @@ Request: GET /api/v1/my-blog/w_800,f_webp/images.example.com/photo.jpg
                               │ ✓
                               ▼
 ┌─────────────────────────────────────────────────────────────────────────┐
-│ Step 7: Source Domain Validation (API Key-level)                        │
+│ Step 8: Source Domain Validation (API Key-level)                        │
 │                                                                         │
 │ Check: Image source domain matches apiKey.allowedSourceDomains          │
 │ Note:  Empty allowlist = reject all (production) / allow all (dev)      │
@@ -95,7 +105,7 @@ Request: GET /api/v1/my-blog/w_800,f_webp/images.example.com/photo.jpg
                               │ ✓
                               ▼
 ┌─────────────────────────────────────────────────────────────────────────┐
-│ Step 8: Image Processing                                                │
+│ Step 9: Image Processing                                                │
 │                                                                         │
 │ Process: Apply transformations via IPX                                  │
 │ Return:  Optimized image with caching headers                           │

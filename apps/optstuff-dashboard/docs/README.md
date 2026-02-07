@@ -165,13 +165,14 @@ User (Clerk)
 
 ### Request Validation Flow
 
-1. **Project Lookup** - Validate project exists
-2. **Signature Verification** - HMAC-SHA256 with timing-safe comparison
-3. **API Key Validation** - Check expiration and revocation status
-4. **Referer Validation** - Project-level domain whitelist
-5. **Source Domain Validation** - API key-level domain whitelist
-6. **Image Processing** - IPX transforms the image
-7. **Response** - Optimized image with caching headers
+1. **API Key Validation** - Lookup by keyPrefix, check expiration and revocation
+2. **Project Validation** - Verify project exists and slug matches the API key
+3. **Signature Verification** - HMAC-SHA256 with timing-safe comparison
+4. **Rate Limit Check** - Per-minute and per-day limits (only after signature is verified)
+5. **Referer Validation** - Project-level domain whitelist
+6. **Source Domain Validation** - API key-level domain whitelist
+7. **Image Processing** - IPX transforms the image
+8. **Response** - Optimized image with caching headers
 
 ### Encryption
 
