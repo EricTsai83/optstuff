@@ -230,7 +230,7 @@ T=30 (key expires):
 
 ### Throttle Interval (30 seconds)
 
-`lastUsedAt` is displayed in the dashboard as "last used N minutes ago". A 30-second precision is more than sufficient for this use case, while reducing DB writes by up to 98% under sustained load (e.g. 60 req/min → 2 writes/min instead of 120).
+`lastUsedAt` is displayed in the dashboard as "last used N minutes ago". A 30-second precision is more than sufficient for this use case, while reducing DB writes by up to ~97% under sustained load (e.g. 60 req/min → 4 writes/min instead of 120).
 
 ---
 
