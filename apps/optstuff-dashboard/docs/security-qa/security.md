@@ -56,7 +56,7 @@ Request URL:
 /api/v1/my-blog/w_800/cdn.example.com/photo.jpg?key=pk_xxx&sig=abc123
 
 Server Verification:
-1. Look up the secretKey using keyPrefix
+1. Look up the secretKey using publicKey
 2. Recalculate: expectedSig = HMAC-SHA256(secretKey, path)
 3. Compare signatures using constant-time comparison
 4. Reject if mismatch

@@ -9,7 +9,7 @@ Every request to the image optimization service must be authenticated using **si
 ## URL Format
 
 ```text
-GET /api/v1/{projectSlug}/{operations}/{imageUrl}?key={keyPrefix}&sig={signature}&exp={expiry}
+GET /api/v1/{projectSlug}/{operations}/{imageUrl}?key={publicKey}&sig={signature}&exp={expiry}
 ```
 
 **Path Parameters:**
@@ -18,7 +18,7 @@ GET /api/v1/{projectSlug}/{operations}/{imageUrl}?key={keyPrefix}&sig={signature
 - `imageUrl`: The source image URL without protocol (e.g., `images.example.com/photo.jpg`)
 
 **Query Parameters:**
-- `key` (required): API key prefix (first 12 characters, e.g., `pk_abc123...`)
+- `key` (required): Public key (e.g., `pk_abc123...`)
 - `sig` (required): HMAC-SHA256 signature of the path
 - `exp` (optional): Expiration timestamp in Unix seconds
 
@@ -44,7 +44,7 @@ Request: GET /api/v1/my-blog/w_800,f_webp/images.example.com/photo.jpg
 ┌─────────────────────────────────────────────────────────────────────────┐
 │ Step 2: API Key Validation                                              │
 │                                                                         │
-│ Query: Find API key by keyPrefix                                        │
+│ Query: Find API key by publicKey                                         │
 │ Check: API key exists, not revoked, not expired                         │
 │ Fail:  401 Invalid API key / API key has been revoked / expired         │
 └─────────────────────────────┬───────────────────────────────────────────┘
@@ -156,7 +156,7 @@ import { createHmac } from "crypto";
 
 // Your secret key (stored securely on your server)
 const secretKey = "sk_your_secret_key";
-const keyPrefix = "pk_abc123..."; // First 12 chars of your API key
+const publicKey = "pk_abc123..."; // Your public key (from dashboard)
 
 // Build the signed URL
 const projectSlug = "my-blog";
@@ -175,7 +175,7 @@ const signature = createHmac("sha256", secretKey)
   .substring(0, 32);
 
 // Construct the final URL
-const url = `/api/v1/${projectSlug}/${path}?key=${keyPrefix}&sig=${signature}&exp=${expiresAt}`;
+const url = `/api/v1/${projectSlug}/${path}?key=${publicKey}&sig=${signature}&exp=${expiresAt}`;
 // Result: /api/v1/my-blog/w_800,f_webp/images.example.com/photo.jpg?key=pk_abc123...&sig=xyz789...&exp=1706500000
 ```
 
@@ -244,7 +244,7 @@ When encountering `403 Invalid or expired signature`, check the following:
 
 ### 1. Correct Secret Key
 
-Ensure you're using the secret key (`sk_...`) associated with the API key, not the API key itself.
+Ensure you're using the secret key (`sk_...`) associated with the API key, not the public key.
 
 ### 2. Path Construction
 

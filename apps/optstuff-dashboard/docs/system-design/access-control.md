@@ -172,7 +172,7 @@ All image requests must be signed with the secret key using HMAC-SHA256:
 
 ```text
 Request URL structure:
-/api/v1/{projectSlug}/{operations}/{imageUrl}?key={keyPrefix}&sig={signature}&exp={expiration}
+/api/v1/{projectSlug}/{operations}/{imageUrl}?key={publicKey}&sig={signature}&exp={expiration}
 
 Signature calculation:
 payload = exp ? "{operations}/{imageUrl}?exp={exp}" : "{operations}/{imageUrl}"

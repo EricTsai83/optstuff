@@ -44,9 +44,9 @@ export function ApiKeyList({ projectId, projectSlug }: ApiKeyListProps) {
     api.apiKey.rotate.useMutation({
       onSuccess: (result) => {
         utils.apiKey.list.invalidate();
-        if (result?.key && result?.secretKey && result?.name) {
+        if (result?.publicKey && result?.secretKey && result?.name) {
           setRotatedKey({
-            key: result.key,
+            publicKey: result.publicKey,
             secretKey: result.secretKey,
             name: result.name,
           });
@@ -95,7 +95,8 @@ export function ApiKeyList({ projectId, projectSlug }: ApiKeyListProps) {
               API Keys
             </CardTitle>
             <CardDescription>
-              Manage authentication keys for this project
+              Manage authentication keys for this project. Secret keys are only
+              shown once on creation or rotation.
             </CardDescription>
           </div>
           <CreateApiKeyDialog projectId={projectId} projectSlug={projectSlug} />

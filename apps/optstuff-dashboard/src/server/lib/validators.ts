@@ -78,15 +78,15 @@ function safeParseTimestamp(value: string | null) {
  * @returns Parsed signature params or null if missing required params
  */
 export function parseSignatureParams(searchParams: URLSearchParams) {
-  const keyPrefix = searchParams.get("key");
+  const publicKey = searchParams.get("key");
   const signature = searchParams.get("sig");
 
-  if (!keyPrefix || !signature) {
+  if (!publicKey || !signature) {
     return null;
   }
 
   return {
-    keyPrefix,
+    publicKey,
     signature,
     expiresAt: safeParseTimestamp(searchParams.get("exp")),
   };

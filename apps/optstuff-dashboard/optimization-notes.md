@@ -4,9 +4,10 @@
 
 
 ## 高優先級（仍建議近期處理）
-- **API Key 解密結果回傳**（`src/server/api/routers/apiKey.ts`）  
-  - **原因**：`list` / `listAll` 回傳 `keyFull` / `secretKey` 會擴大敏感資料暴露面  
-  - **建議方向**：僅建立時回傳一次；查詢僅回 `keyPrefix` 與 metadata  
+- **API Key 架構簡化**（`src/server/api/routers/apiKey.ts`）  
+  - **已完成**：移除冗餘的 `keyFull` 欄位，將 `keyPrefix` 重新命名為 `publicKey`。公鑰以明文儲存（不需加密），僅 `secretKey` 加密儲存  
+  - **安全考量**：`publicKey`（`pk_...`）為公開識別碼，用於 URL `?key=` 參數；`secretKey`（`sk_...`）為 HMAC 簽名金鑰，僅在建立或輪替時回傳一次  
+  - **補充**：用量計算綁定 `keyId`，不需要回傳完整 key；新 key 不繼承舊 key 用量，專案層級用量獨立統計  
 
 - **Error Boundary 缺失**（`src/app/`）  
   - **原因**：App Router 若無 `error.tsx` / `global-error.tsx`，錯誤會白屏  

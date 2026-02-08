@@ -26,7 +26,7 @@ import {
 /**
  * IPX Image Optimization API Route Handler
  *
- * URL Format: /api/v1/{projectSlug}/{operations}/{imageUrl}?key={keyPrefix}&sig={signature}&exp={expiry}
+ * URL Format: /api/v1/{projectSlug}/{operations}/{imageUrl}?key={publicKey}&sig={signature}&exp={expiry}
  *
  * Security:
  * - All requests require a valid signature created with the API key's secret
@@ -57,14 +57,14 @@ export async function GET(
         {
           error: "Missing signature parameters",
           usage:
-            "/api/v1/{projectSlug}/{operations}/{imageUrl}?key={keyPrefix}&sig={signature}",
+            "/api/v1/{projectSlug}/{operations}/{imageUrl}?key={publicKey}&sig={signature}",
         },
         { status: 401 },
       );
     }
 
     // 2. Get API key configuration
-    const apiKey = await getApiKeyConfig(sigParams.keyPrefix);
+    const apiKey = await getApiKeyConfig(sigParams.publicKey);
     if (!apiKey) {
       return NextResponse.json({ error: "Invalid API key" }, { status: 401 });
     }
@@ -110,7 +110,7 @@ export async function GET(
         {
           error: "Invalid path format",
           usage:
-            "/api/v1/{projectSlug}/{operations}/{imageUrl}?key={keyPrefix}&sig={signature}",
+            "/api/v1/{projectSlug}/{operations}/{imageUrl}?key={publicKey}&sig={signature}",
           examples: [
             "/api/v1/my-blog/w_800,f_webp/images.example.com/photo.jpg?key=pk_abc&sig=xyz",
           ],
@@ -120,7 +120,7 @@ export async function GET(
     }
 
     // 5. Verify signature (before rate limit to prevent quota exhaustion
-    //    by unauthenticated requests that only know the public keyPrefix)
+    //    by unauthenticated requests that only know the public key)
     const signaturePath = `${parsed.operations}/${parsed.imagePath}`;
     if (
       !verifyUrlSignature(
@@ -143,7 +143,7 @@ export async function GET(
     // 6. Check rate limit (after signature verification so only
     //    authenticated requests consume quota)
     const rateLimitResult = await checkRateLimit({
-      keyPrefix: apiKey.keyPrefix,
+      publicKey: apiKey.publicKey,
       limitPerMinute: apiKey.rateLimitPerMinute,
       limitPerDay: apiKey.rateLimitPerDay,
     });

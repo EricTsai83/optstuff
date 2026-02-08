@@ -7,8 +7,7 @@ import { differenceInDays } from "date-fns";
 export type ApiKeyData = {
   readonly id: string;
   readonly name: string;
-  readonly keyPrefix: string;
-  readonly keyFull: string;
+  readonly publicKey: string;
   readonly createdAt: Date;
   readonly lastUsedAt: Date | null;
   readonly expiresAt: Date | null;
@@ -24,7 +23,7 @@ export type ExpirationStatus = {
 };
 
 export type RotatedKeyData = {
-  readonly key: string;
+  readonly publicKey: string;
   readonly secretKey: string;
   readonly name: string;
 };

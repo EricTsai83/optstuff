@@ -138,8 +138,7 @@ export const apiKeys = createTable(
       .notNull()
       .references(() => projects.id, { onDelete: "cascade" }),
     name: d.varchar({ length: 255 }).notNull(),
-    keyPrefix: d.varchar({ length: 12 }).notNull(), // Display prefix "pk_abc123..."
-    keyFull: d.varchar({ length: 255 }).notNull().unique(), // Encrypted API key (AES-256-GCM format: iv:authTag:ciphertext)
+    publicKey: d.varchar({ length: 50 }).notNull().unique(), // Public identifier "pk_..." (plaintext, used in URL ?key= param)
     secretKey: d.varchar({ length: 255 }).notNull(), // Encrypted secret key (AES-256-GCM format: iv:authTag:ciphertext)
     // Domain whitelist - controls which image sources this key can access
     allowedSourceDomains: d.text().array(),
@@ -155,8 +154,8 @@ export const apiKeys = createTable(
     index("api_key_project_idx").on(t.projectId),
     // Composite index for querying active keys by project
     index("api_key_project_active_idx").on(t.projectId, t.revokedAt),
-    // Index for looking up keys by prefix (used in signature verification)
-    index("api_key_prefix_idx").on(t.keyPrefix),
+    // Index for looking up keys by public key (used in signature verification)
+    index("api_key_public_key_idx").on(t.publicKey),
   ],
 );
 

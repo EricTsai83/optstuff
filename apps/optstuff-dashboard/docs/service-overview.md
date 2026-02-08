@@ -19,7 +19,7 @@ Transform images dynamically with URL-based operations:
 
 **Example URL:**
 ```text
-/api/v1/{projectSlug}/w_800,q_80,f_webp/{imageUrl}?key={keyPrefix}&sig={signature}
+/api/v1/{projectSlug}/w_800,q_80,f_webp/{imageUrl}?key={publicKey}&sig={signature}
 ```
 
 ### 2. Multi-Tenant Organization

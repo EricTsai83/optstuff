@@ -109,7 +109,7 @@ Enforces per-API-key request limits at two granularities: per-minute and per-day
 ### How It Works
 
 ```text
-checkRateLimit({ keyPrefix: "pk_abc", limitPerMinute: 60, limitPerDay: 10000 })
+checkRateLimit({ publicKey: "pk_abc", limitPerMinute: 60, limitPerDay: 10000 })
 │
 ├─ 1. Per-day check (wider window, checked first)
 │     slidingWindow.limit("pk_abc")

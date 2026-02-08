@@ -2,6 +2,7 @@
 
 import { api } from "@/trpc/react";
 import { Button } from "@workspace/ui/components/button";
+import { CopyButton } from "@workspace/ui/components/copy-button";
 import {
   Dialog,
   DialogContent,
@@ -13,9 +14,9 @@ import {
 } from "@workspace/ui/components/dialog";
 import { Input } from "@workspace/ui/components/input";
 import { Label } from "@workspace/ui/components/label";
+import { cn } from "@workspace/ui/lib/utils";
 import { Key, Plus, Shield } from "lucide-react";
 import { useState } from "react";
-import { CopyButton } from "@workspace/ui/components/copy-button";
 import { DomainListInput } from "./domain-list-input";
 import { ExpirationSelect } from "./expiration-select";
 
@@ -33,7 +34,7 @@ export function CreateApiKeyDialog({
   const [name, setName] = useState("");
   const [sourceDomains, setSourceDomains] = useState<string[]>([]);
   const [expiresAt, setExpiresAt] = useState<Date | undefined>(undefined);
-  const [createdKey, setCreatedKey] = useState<string | null>(null);
+  const [createdPublicKey, setCreatedPublicKey] = useState<string | null>(null);
   const [createdSecretKey, setCreatedSecretKey] = useState<string | null>(null);
 
   const utils = api.useUtils();
@@ -41,8 +42,8 @@ export function CreateApiKeyDialog({
   const { mutate: createKey, isPending } = api.apiKey.create.useMutation({
     onSuccess: (result) => {
       utils.apiKey.list.invalidate();
-      if (result?.key && result?.secretKey) {
-        setCreatedKey(result.key);
+      if (result?.publicKey && result?.secretKey) {
+        setCreatedPublicKey(result.publicKey);
         setCreatedSecretKey(result.secretKey);
         setStep("success");
       }
@@ -68,7 +69,7 @@ export function CreateApiKeyDialog({
       setName("");
       setSourceDomains([]);
       setExpiresAt(undefined);
-      setCreatedKey(null);
+      setCreatedPublicKey(null);
       setCreatedSecretKey(null);
     }, 150);
   };
@@ -84,7 +85,19 @@ export function CreateApiKeyDialog({
           Create API Key
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[520px]">
+      <DialogContent
+        className={cn(
+          "sm:max-w-[520px]",
+          step === "success" && "max-h-[85vh] overflow-y-auto",
+        )}
+        hideCloseButton={step === "success"}
+        onInteractOutside={(e) => {
+          if (step === "success") e.preventDefault();
+        }}
+        onEscapeKeyDown={(e) => {
+          if (step === "success") e.preventDefault();
+        }}
+      >
         {step === "form" ? (
           <form onSubmit={handleSubmit}>
             <DialogHeader>
@@ -160,18 +173,20 @@ export function CreateApiKeyDialog({
 
             {/* Content */}
             <div className="space-y-4">
+              {/* Prominent warning banner */}
+              <div className="flex items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2.5 text-sm font-medium text-amber-700 dark:text-amber-400">
+                <Shield className="h-4 w-4 shrink-0" />
+                <span>
+                  Secret key is only shown once. Copy and save it before
+                  closing.
+                </span>
+              </div>
               {/* Secret Key Display */}
               <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label className="text-muted-foreground flex items-center gap-1.5 text-xs tracking-wider uppercase">
-                    <Key className="h-3 w-3" />
-                    Secret Key (for signing URLs)
-                  </Label>
-                  <div className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400">
-                    <Shield className="h-3 w-3" />
-                    <span>Only shown once</span>
-                  </div>
-                </div>
+                <Label className="text-muted-foreground flex items-center gap-1.5 text-xs tracking-wider uppercase">
+                  <Key className="h-3 w-3" />
+                  Secret Key (for signing URLs)
+                </Label>
                 <div className="bg-muted/50 border-border group relative rounded-lg border p-3">
                   <code className="block pr-10 font-mono text-sm break-all">
                     {createdSecretKey}
@@ -189,18 +204,18 @@ export function CreateApiKeyDialog({
                 </p>
               </div>
 
-              {/* Key Prefix Display */}
+              {/* Public Key Display */}
               <div className="space-y-2">
                 <Label className="text-muted-foreground text-xs tracking-wider uppercase">
-                  Key Prefix (for URL parameter)
+                  Public Key (for URL parameter)
                 </Label>
                 <div className="bg-muted/50 border-border group relative rounded-lg border p-3">
                   <code className="block pr-10 font-mono text-sm">
-                    {createdKey?.substring(0, 12)}
+                    {createdPublicKey}
                   </code>
                   <div className="absolute top-2 right-2">
                     <CopyButton
-                      text={createdKey?.substring(0, 12) ?? ""}
+                      text={createdPublicKey ?? ""}
                       className="h-8 w-8 rounded-md bg-secondary shadow-sm"
                     />
                   </div>
@@ -217,7 +232,7 @@ export function CreateApiKeyDialog({
                     {`import crypto from 'crypto';
 
 const secretKey = '${createdSecretKey}';
-const keyPrefix = '${createdKey?.substring(0, 12)}';
+const publicKey = '${createdPublicKey}';
 
 function signUrl(operations, imageUrl) {
   const path = \`\${operations}/\${imageUrl}\`;
@@ -227,7 +242,7 @@ function signUrl(operations, imageUrl) {
     .digest('base64url')
     .substring(0, 32);
   
-  return \`/api/v1/${projectSlug}/\${path}?key=\${keyPrefix}&sig=\${sig}\`;
+  return \`/api/v1/${projectSlug}/\${path}?key=\${publicKey}&sig=\${sig}\`;
 }
 
 // Example:
