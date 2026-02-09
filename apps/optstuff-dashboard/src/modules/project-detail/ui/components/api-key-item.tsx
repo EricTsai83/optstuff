@@ -262,7 +262,8 @@ export function ApiKeyItem({
 
   // Show first 8 chars in plain text, mask the rest for aesthetics
   const visibleChars = 8;
-  const maskedKey = `${apiKey.publicKey.substring(0, visibleChars)}${"•".repeat(apiKey.publicKey.length - visibleChars)}`;
+  const repeatCount = Math.max(0, apiKey.publicKey.length - visibleChars);
+  const maskedKey = `${apiKey.publicKey.substring(0, visibleChars)}${"•".repeat(repeatCount)}`;
 
   return (
     <div className="rounded-xl border bg-card p-5 transition-colors hover:bg-muted/30">
