@@ -1,14 +1,10 @@
 # Dashboard 優化參考文件（Vercel Serverless + Neon pooler）
-
 本文件以系統設計最佳實踐為出發點，整理目前專案的待優化項目與建議方向。  
 
-
 ## 高優先級（仍建議近期處理）
-
 - **Request ID 追蹤不足**（`src/app/api/v1/[projectSlug]/[...path]/route.ts`）  
   - **原因**：缺少跨請求追蹤資訊，排查問題困難  
   - **建議方向**：新增 `X-Request-ID`，並在 API 回應與 log 中串接  
-
 
 ## 中優先級
 - **Redis fail-open 策略需明確化**（`src/server/lib/rate-limiter.ts`, `config-cache.ts`）  
