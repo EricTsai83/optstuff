@@ -15,7 +15,7 @@ import {
 import { Input } from "@workspace/ui/components/input";
 import { Label } from "@workspace/ui/components/label";
 import { cn } from "@workspace/ui/lib/utils";
-import { Key, Plus, Shield } from "lucide-react";
+import { Eye, EyeOff, Key, Plus, Shield } from "lucide-react";
 import { useState } from "react";
 import { DomainListInput } from "./domain-list-input";
 import { ExpirationSelect } from "./expiration-select";
@@ -36,6 +36,7 @@ export function CreateApiKeyDialog({
   const [expiresAt, setExpiresAt] = useState<Date | undefined>(undefined);
   const [createdPublicKey, setCreatedPublicKey] = useState<string | null>(null);
   const [createdSecretKey, setCreatedSecretKey] = useState<string | null>(null);
+  const [showSecretKey, setShowSecretKey] = useState(false);
 
   const utils = api.useUtils();
 
@@ -71,6 +72,7 @@ export function CreateApiKeyDialog({
       setExpiresAt(undefined);
       setCreatedPublicKey(null);
       setCreatedSecretKey(null);
+      setShowSecretKey(false);
     }, 150);
   };
 
@@ -188,10 +190,25 @@ export function CreateApiKeyDialog({
                   Secret Key (for signing URLs)
                 </Label>
                 <div className="bg-muted/50 border-border group relative rounded-lg border p-3">
-                  <code className="block pr-10 font-mono text-sm break-all">
-                    {createdSecretKey}
+                  <code className="block pr-16 font-mono text-sm break-all">
+                    {showSecretKey
+                      ? createdSecretKey
+                      : "•".repeat(createdSecretKey?.length ?? 0)}
                   </code>
-                  <div className="absolute top-2 right-2">
+                  <div className="absolute top-2 right-2 flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => setShowSecretKey((prev) => !prev)}
+                      className="text-muted-foreground hover:text-foreground flex h-8 w-8 items-center justify-center rounded-md transition-colors"
+                      aria-label={showSecretKey ? "Hide secret key" : "Show secret key"}
+                      tabIndex={0}
+                    >
+                      {showSecretKey ? (
+                        <EyeOff className="h-4 w-4" />
+                      ) : (
+                        <Eye className="h-4 w-4" />
+                      )}
+                    </button>
                     <CopyButton
                       text={createdSecretKey ?? ""}
                       className="h-8 w-8 rounded-md bg-secondary shadow-sm"
@@ -231,7 +248,7 @@ export function CreateApiKeyDialog({
                   <pre className="font-mono text-xs">
                     {`import crypto from 'crypto';
 
-const secretKey = '${createdSecretKey}';
+const secretKey = '${showSecretKey ? createdSecretKey : "•".repeat(createdSecretKey?.length ?? 0)}';
 const publicKey = '${createdPublicKey}';
 
 function signUrl(operations, imageUrl) {
