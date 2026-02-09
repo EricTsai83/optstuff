@@ -15,6 +15,7 @@ export default function DashboardGlobalError({
   return (
     <GlobalErrorPage
       reset={reset}
+      error={error}
       homeHref="/dashboard"
       homeLabel="Go to Dashboard"
       title="Something went wrong | OptStuff"

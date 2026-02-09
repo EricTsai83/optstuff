@@ -12,5 +12,5 @@ export default function MarketingGlobalError({
   readonly error: Error & { readonly digest?: string };
   readonly reset: () => void;
 }) {
-  return <GlobalErrorPage reset={reset} />;
+  return <GlobalErrorPage reset={reset} error={error} />;
 }

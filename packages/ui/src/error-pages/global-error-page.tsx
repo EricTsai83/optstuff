@@ -1,7 +1,11 @@
 "use client";
 
+import { useEffect } from "react";
+
 type GlobalErrorPageProps = {
   readonly reset: () => void;
+  /** The caught error, used for centralized logging. */
+  readonly error: (Error & { readonly digest?: string }) | undefined;
   /** The href for the home / primary navigation link. */
   readonly homeHref?: string;
   /** The label shown on the home link. */
@@ -19,10 +23,16 @@ type GlobalErrorPageProps = {
  */
 export function GlobalErrorPage({
   reset,
+  error,
   homeHref = "/",
   homeLabel = "Go Home",
   title = "Something went wrong | OptStuff",
 }: GlobalErrorPageProps) {
+  useEffect(() => {
+    if (error) {
+      console.error("[GlobalErrorPage]", error);
+    }
+  }, [error]);
   return (
     <html lang="en">
       <head>
@@ -202,9 +212,16 @@ export function GlobalErrorPage({
             }}
             onFocus={(e) => {
               e.currentTarget.style.background = "rgba(245,245,247,0.85)";
+              if (e.currentTarget.matches(":focus-visible")) {
+                e.currentTarget.style.outline =
+                  "2px solid rgba(245,245,247,0.6)";
+                e.currentTarget.style.outlineOffset = "2px";
+              }
             }}
             onBlur={(e) => {
               e.currentTarget.style.background = "#f5f5f7";
+              e.currentTarget.style.outline = "none";
+              e.currentTarget.style.outlineOffset = "0";
             }}
           >
             <svg
@@ -258,10 +275,17 @@ export function GlobalErrorPage({
             onFocus={(e) => {
               e.currentTarget.style.background = "rgba(255,255,255,0.05)";
               e.currentTarget.style.borderColor = "rgba(255,255,255,0.15)";
+              if (e.currentTarget.matches(":focus-visible")) {
+                e.currentTarget.style.outline =
+                  "2px solid rgba(245,245,247,0.5)";
+                e.currentTarget.style.outlineOffset = "2px";
+              }
             }}
             onBlur={(e) => {
               e.currentTarget.style.background = "transparent";
               e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)";
+              e.currentTarget.style.outline = "none";
+              e.currentTarget.style.outlineOffset = "0";
             }}
           >
             <svg
