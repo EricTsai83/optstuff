@@ -78,7 +78,7 @@ GET /api/v1/{projectSlug}/{operations}/{imageUrl}?key={publicKey}&sig={signature
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
-| `key` | Yes | API key prefix (e.g., `pk_abc123`) |
+| `key` | Yes | Public key (e.g., `pk_abc123`) |
 | `sig` | Yes | HMAC-SHA256 signature |
 | `exp` | No | Expiration timestamp (Unix seconds) |
 

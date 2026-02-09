@@ -82,7 +82,7 @@ This means admin changes take effect **immediately** — the 60s TTL only matter
 
 ### Negative Caching
 
-When a lookup returns no result (project not found / key not found), a sentinel value (`__NOT_FOUND__`) is cached with a **shorter TTL of 10 seconds**. This prevents repeated requests for non-existent slugs or key prefixes (e.g. probing attacks) from hitting the database on every request.
+When a lookup returns no result (project not found / key not found), a sentinel value (`__NOT_FOUND__`) is cached with a **shorter TTL of 10 seconds**. This prevents repeated requests for non-existent slugs or public keys (e.g. probing attacks) from hitting the database on every request.
 
 The shorter TTL ensures that when a resource is later created, it becomes visible within 10 seconds — much faster than the full 60-second positive cache TTL. Active invalidation (`invalidateProjectCache` / `invalidateApiKeyCache`) also clears negative cache entries immediately.
 
