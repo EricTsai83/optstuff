@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect } from "react";
+
 import { GlobalErrorPage } from "@workspace/ui/error-pages/global-error-page";
 
 /**
@@ -12,5 +14,10 @@ export default function MarketingGlobalError({
   readonly error: Error & { readonly digest?: string };
   readonly reset: () => void;
 }) {
+  useEffect(() => {
+    // TODO: replace with an error-reporting service (e.g. Sentry)
+    console.error("[MarketingGlobalError]", error);
+  }, [error]);
+
   return <GlobalErrorPage reset={reset} error={error} />;
 }
