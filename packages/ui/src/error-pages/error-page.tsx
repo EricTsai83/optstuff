@@ -1,8 +1,8 @@
 "use client";
 
 import { Button } from "@workspace/ui/components/button";
+import { ErrorLayout } from "@workspace/ui/error-pages/error-layout";
 import { Home, RotateCcw } from "lucide-react";
-import { ErrorLayout } from "./error-layout.js";
 
 type ErrorPageProps = {
   readonly error: Error & { readonly digest?: string };

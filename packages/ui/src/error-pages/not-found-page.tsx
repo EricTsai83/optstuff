@@ -1,6 +1,6 @@
 import { Button } from "@workspace/ui/components/button";
+import { ErrorLayout } from "@workspace/ui/error-pages/error-layout";
 import { MoveLeft } from "lucide-react";
-import { ErrorLayout } from "./error-layout.js";
 
 type NotFoundPageProps = {
   /** The href for the home / primary navigation button. */
