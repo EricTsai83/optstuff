@@ -23,8 +23,11 @@
 在你的 `.env` 或 `.env.local` 中添加：
 
 ```bash
-# 伺服器端專用（絕對不能有 NEXT_PUBLIC_ 前綴！）
+# 伺服器端專用 — 機密！絕對不能有 NEXT_PUBLIC_ 前綴
 IPX_SECRET_KEY="sk_your_secret_key_here"  # 建立 API Key 時取得
+
+# 伺服器端專用 — 非機密，但僅在伺服器端使用，不需要 NEXT_PUBLIC_ 前綴
+# publicKey 會出現在產生的 URL 中（?key=pk_...），本身不是秘密
 IPX_PUBLIC_KEY="pk_abc123..."             # 建立 API Key 時取得
 
 # 公開設定（可以有 NEXT_PUBLIC_ 前綴）
