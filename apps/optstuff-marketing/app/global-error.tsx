@@ -1,0 +1,16 @@
+"use client";
+
+import { GlobalErrorPage } from "@workspace/ui/error-pages/global-error-page";
+
+/**
+ * Global error boundary that catches errors in the root layout.
+ */
+export default function MarketingGlobalError({
+  error,
+  reset,
+}: {
+  readonly error: Error & { readonly digest?: string };
+  readonly reset: () => void;
+}) {
+  return <GlobalErrorPage reset={reset} />;
+}

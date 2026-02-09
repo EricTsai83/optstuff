@@ -52,6 +52,7 @@
     "./postcss.config": "./postcss.config.mjs",
     "./lib/*": "./src/lib/*.ts",
     "./components/*": "./src/components/*.tsx",
+    "./error-pages/*": "./src/error-pages/*.tsx",
     "./hooks/*": "./src/hooks/*.ts"
   }
 }
