@@ -6,10 +6,7 @@ import { RATE_LIMITS } from "@/lib/constants";
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
 import type { db as dbType } from "@/server/db";
 import { apiKeys, projects } from "@/server/db/schema";
-import {
-  encryptApiKey,
-  generateApiKey,
-} from "@/server/lib/api-key";
+import { encryptApiKey, generateApiKey } from "@/server/lib/api-key";
 import { invalidateApiKeyCache } from "@/server/lib/config-cache";
 
 /** Helper to update project's API key count using SQL count() */
@@ -234,7 +231,9 @@ export const apiKeyRouter = createTRPCRouter({
         );
       }
 
-      return revokedKey;
+      // Strip encrypted secretKey from response (consistent with list/get).
+      const { secretKey: _secretKey, ...safeKey } = revokedKey!;
+      return safeKey;
     }),
 
   /**
@@ -391,7 +390,9 @@ export const apiKeyRouter = createTRPCRouter({
         );
       }
 
-      return updatedKey;
+      // Strip encrypted secretKey from response (consistent with list/get).
+      const { secretKey: _secretKey, ...safeKey } = updatedKey!;
+      return safeKey;
     }),
 
   /**

@@ -163,11 +163,10 @@ Each API key has its own rate limits, allowing you to:
 
 | Key | Format | Purpose | Safe to Expose? |
 |-----|--------|---------|-----------------|
-| **Public Key** | `pk_xxx...` | Identifies requests | ✅ Yes |
+| **Public Key** | `pk_xxx...` | Identifies requests, database lookup & display | ✅ Yes |
 | **Secret Key** | `sk_xxx...` | Signs URLs | ❌ Never |
-| **Key Prefix** | `pk_xxxxxxxx` | Database lookup & display | ✅ Yes |
 
-- Public key appears in URLs (necessary for request identification)
+- Public key appears in URLs and is used for request identification and lookup
 - Secret key stays on your server (generates signatures)
 - Even if someone sees your URL, they cannot forge new requests without the secret key
 
