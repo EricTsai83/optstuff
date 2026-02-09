@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect } from "react";
+
 import { GlobalErrorPage } from "@workspace/ui/error-pages/global-error-page";
 
 /**
@@ -12,13 +14,17 @@ export default function DashboardGlobalError({
   readonly error: Error & { readonly digest?: string };
   readonly reset: () => void;
 }) {
+  useEffect(() => {
+    // TODO: replace with an error-reporting service (e.g. Sentry)
+    console.error("[DashboardGlobalError]", error);
+  }, [error]);
+
   return (
     <GlobalErrorPage
       reset={reset}
       error={error}
       homeHref="/dashboard"
       homeLabel="Go to Dashboard"
-      title="Something went wrong | OptStuff"
     />
   );
 }
