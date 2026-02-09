@@ -6,11 +6,7 @@ import { RATE_LIMITS } from "@/lib/constants";
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
 import type { db as dbType } from "@/server/db";
 import { apiKeys, projects } from "@/server/db/schema";
-import {
-  decryptApiKey,
-  encryptApiKey,
-  generateApiKey,
-} from "@/server/lib/api-key";
+import { encryptApiKey, generateApiKey } from "@/server/lib/api-key";
 import { invalidateApiKeyCache } from "@/server/lib/config-cache";
 
 /** Helper to update project's API key count using SQL count() */
@@ -74,10 +70,9 @@ export const apiKeyRouter = createTRPCRouter({
         });
       }
 
-      const { key, keyPrefix, secretKey } = generateApiKey();
+      const { publicKey, secretKey } = generateApiKey();
 
-      // Encrypt keys before storing
-      const encryptedKeyFull = encryptApiKey(key);
+      // Encrypt secret key before storing (public key is stored in plaintext)
       const encryptedSecretKey = encryptApiKey(secretKey);
 
       // Clean up domain entries
@@ -90,8 +85,7 @@ export const apiKeyRouter = createTRPCRouter({
         .values({
           projectId: input.projectId,
           name: input.name,
-          keyPrefix,
-          keyFull: encryptedKeyFull,
+          publicKey,
           secretKey: encryptedSecretKey,
           allowedSourceDomains:
             allowedSourceDomains && allowedSourceDomains.length > 0
@@ -107,8 +101,8 @@ export const apiKeyRouter = createTRPCRouter({
       // Update project's API key count
       await updateProjectApiKeyCount(ctx.db, input.projectId);
 
-      // Return the plaintext API key and secret key (only shown once!)
-      return { ...newApiKey, key, secretKey, keyFull: key };
+      // Return with plaintext secret key (only shown once!)
+      return { ...newApiKey, secretKey };
     }),
 
   /**
@@ -133,12 +127,8 @@ export const apiKeyRouter = createTRPCRouter({
         orderBy: [desc(apiKeys.createdAt)],
       });
 
-      // Decrypt keyFull and secretKey before returning
-      return keys.map((key) => ({
-        ...key,
-        keyFull: decryptApiKey(key.keyFull),
-        secretKey: decryptApiKey(key.secretKey),
-      }));
+      // Public key is already plaintext; strip encrypted secretKey from response.
+      return keys.map(({ secretKey: _secretKey, ...safeKey }) => safeKey);
     }),
 
   /**
@@ -160,12 +150,8 @@ export const apiKeyRouter = createTRPCRouter({
         orderBy: [desc(apiKeys.createdAt)],
       });
 
-      // Decrypt keyFull and secretKey before returning
-      return keys.map((key) => ({
-        ...key,
-        keyFull: decryptApiKey(key.keyFull),
-        secretKey: decryptApiKey(key.secretKey),
-      }));
+      // Public key is already plaintext; strip encrypted secretKey from response.
+      return keys.map(({ secretKey: _secretKey, ...safeKey }) => safeKey);
     }),
 
   /**
@@ -190,12 +176,9 @@ export const apiKeyRouter = createTRPCRouter({
 
       if (!project) return null;
 
-      // Decrypt keyFull and secretKey before returning
-      return {
-        ...apiKey,
-        keyFull: decryptApiKey(apiKey.keyFull),
-        secretKey: decryptApiKey(apiKey.secretKey),
-      };
+      // Public key is already plaintext; strip encrypted secretKey from response.
+      const { secretKey: _secretKey, ...safeKey } = apiKey;
+      return safeKey;
     }),
 
   /**
@@ -240,15 +223,17 @@ export const apiKeyRouter = createTRPCRouter({
       // Invalidate cache — best-effort so revoke still succeeds if Redis is down.
       // The 60s TTL provides a self-healing fallback.
       try {
-        await invalidateApiKeyCache(apiKey.keyPrefix);
+        await invalidateApiKeyCache(apiKey.publicKey);
       } catch (error) {
         console.error(
-          `Failed to invalidate cache for revoked API key ${apiKey.keyPrefix}:`,
+          `Failed to invalidate cache for revoked API key ${apiKey.publicKey}:`,
           error,
         );
       }
 
-      return revokedKey;
+      // Strip encrypted secretKey from response (consistent with list/get).
+      const { secretKey: _secretKey, ...safeKey } = revokedKey!;
+      return safeKey;
     }),
 
   /**
@@ -282,10 +267,9 @@ export const apiKeyRouter = createTRPCRouter({
         });
       }
 
-      const { key, keyPrefix, secretKey } = generateApiKey();
+      const { publicKey, secretKey } = generateApiKey();
 
-      // Encrypt keys before storing
-      const encryptedKeyFull = encryptApiKey(key);
+      // Encrypt secret key before storing (public key is stored in plaintext)
       const encryptedSecretKey = encryptApiKey(secretKey);
 
       // Wrap revoke + insert in a transaction so the user never loses
@@ -303,8 +287,7 @@ export const apiKeyRouter = createTRPCRouter({
           .values({
             projectId: oldApiKey.projectId,
             name: oldApiKey.name,
-            keyPrefix,
-            keyFull: encryptedKeyFull,
+            publicKey,
             secretKey: encryptedSecretKey,
             allowedSourceDomains: oldApiKey.allowedSourceDomains,
             createdBy: ctx.userId,
@@ -318,18 +301,18 @@ export const apiKeyRouter = createTRPCRouter({
       // Invalidate cache — best-effort, outside the transaction.
       // The 60s TTL provides a self-healing fallback.
       try {
-        await invalidateApiKeyCache(oldApiKey.keyPrefix);
+        await invalidateApiKeyCache(oldApiKey.publicKey);
       } catch (error) {
         console.error(
-          `Failed to invalidate cache for rotated API key ${oldApiKey.keyPrefix}:`,
+          `Failed to invalidate cache for rotated API key ${oldApiKey.publicKey}:`,
           error,
         );
       }
 
       // Count doesn't change on rotation (one revoked, one created)
 
-      // Return the plaintext API key and secret key
-      return { ...newApiKey, key, secretKey, keyFull: key };
+      // Return with plaintext secret key (only shown once!)
+      return { ...newApiKey, secretKey };
     }),
 
   /**
@@ -399,15 +382,17 @@ export const apiKeyRouter = createTRPCRouter({
 
       // Invalidate cache — best-effort so update still succeeds if Redis is down.
       try {
-        await invalidateApiKeyCache(apiKey.keyPrefix);
+        await invalidateApiKeyCache(apiKey.publicKey);
       } catch (error) {
         console.error(
-          `Failed to invalidate cache for updated API key ${apiKey.keyPrefix}:`,
+          `Failed to invalidate cache for updated API key ${apiKey.publicKey}:`,
           error,
         );
       }
 
-      return updatedKey;
+      // Strip encrypted secretKey from response (consistent with list/get).
+      const { secretKey: _secretKey, ...safeKey } = updatedKey!;
+      return safeKey;
     }),
 
   /**

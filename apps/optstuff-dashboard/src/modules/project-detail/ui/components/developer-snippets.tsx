@@ -26,7 +26,7 @@ export function DeveloperSnippets({
 }: DeveloperSnippetsProps) {
   const envExample = `# Add to your .env file (server-side only - keep secret!)
 IPX_SECRET_KEY="sk_your_secret_key_here"  # From API Key creation
-IPX_KEY_PREFIX="pk_abc123..."              # From API Key creation
+IPX_PUBLIC_KEY="pk_abc123..."             # From API Key creation
 
 # Public config
 NEXT_PUBLIC_IPX_PROJECT_SLUG="${projectSlug}"
@@ -36,7 +36,7 @@ NEXT_PUBLIC_IPX_ENDPOINT="${apiEndpoint}"  # Your deployment URL`;
 import crypto from "crypto";
 
 const SECRET_KEY = process.env.IPX_SECRET_KEY!;
-const KEY_PREFIX = process.env.IPX_KEY_PREFIX!;
+const PUBLIC_KEY = process.env.IPX_PUBLIC_KEY!;
 const IPX_ENDPOINT = process.env.NEXT_PUBLIC_IPX_ENDPOINT!; // Your deployment URL + /api/v1
 const PROJECT_SLUG = process.env.NEXT_PUBLIC_IPX_PROJECT_SLUG || "${projectSlug}";
 
@@ -59,7 +59,7 @@ export function signIpxUrl(
     .digest("base64url")
     .substring(0, 32);
   
-  let url = \`\${IPX_ENDPOINT}/\${PROJECT_SLUG}/\${path}?key=\${KEY_PREFIX}&sig=\${sig}\`;
+  let url = \`\${IPX_ENDPOINT}/\${PROJECT_SLUG}/\${path}?key=\${PUBLIC_KEY}&sig=\${sig}\`;
   if (exp) url += \`&exp=\${exp}\`;
   
   return url;
@@ -99,13 +99,13 @@ const response = await fetch(\`/api/image-url?src=\${imageSrc}&w=800\`);
 const { url } = await response.json();`;
 
   const directUrlExample = `<!-- Signed URL Format -->
-${apiEndpoint}/${projectSlug}/{operations}/{imageUrl}?key={keyPrefix}&sig={signature}&exp={expiry}
+${apiEndpoint}/${projectSlug}/{operations}/{imageUrl}?key={publicKey}&sig={signature}&exp={expiry}
 
 <!-- Example Signed URL -->
-${apiEndpoint}/${projectSlug}/w_800,f_webp/images.example.com/photo.jpg?key=pk_abc123&sig=xyz789&exp=1706500000
+${apiEndpoint}/${projectSlug}/w_800,f_webp/images.example.com/photo.jpg?key=pk_abc123...&sig=xyz789&exp=1706500000
 
 <!-- URL Parameters -->
-key      → API Key prefix (from dashboard)
+key      → Public Key (from dashboard)
 sig      → HMAC-SHA256 signature
 exp      → (optional) Expiration timestamp
 

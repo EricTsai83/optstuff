@@ -30,7 +30,7 @@ export type RateLimitResult =
  * Rate limit configuration for an API key
  */
 export type RateLimitConfig = {
-  readonly keyPrefix: string;
+  readonly publicKey: string;
   readonly limitPerMinute: number;
   readonly limitPerDay: number;
 };
@@ -77,7 +77,7 @@ export async function checkRateLimit(
   try {
     // Check per-day limit first (wider window — avoids wasting minute tokens)
     const dayResult = await createDayLimiter(config.limitPerDay).limit(
-      config.keyPrefix,
+      config.publicKey,
     );
 
     if (!dayResult.success) {
@@ -95,7 +95,7 @@ export async function checkRateLimit(
 
     // Check per-minute limit (stricter, more immediate feedback)
     const minuteResult = await createMinuteLimiter(config.limitPerMinute).limit(
-      config.keyPrefix,
+      config.publicKey,
     );
 
     if (!minuteResult.success) {
@@ -132,9 +132,9 @@ export async function checkRateLimit(
  * Reset rate limit counters for a specific API key.
  * Useful for testing or administrative purposes.
  */
-export async function resetRateLimit(keyPrefix: string): Promise<void> {
+export async function resetRateLimit(publicKey: string): Promise<void> {
   await Promise.all([
-    createMinuteLimiter(1).resetUsedTokens(keyPrefix),
-    createDayLimiter(1).resetUsedTokens(keyPrefix),
+    createMinuteLimiter(1).resetUsedTokens(publicKey),
+    createDayLimiter(1).resetUsedTokens(publicKey),
   ]);
 }

@@ -102,22 +102,20 @@ export const projectRouter = createTRPCRouter({
       }
 
       // Create default API key
-      const { key, keyPrefix, secretKey } = generateApiKey();
+      const { publicKey, secretKey } = generateApiKey();
 
-      // Encrypt keys before storing
-      const encryptedKeyFull = encryptApiKey(key);
+      // Encrypt secret key before storing (public key is stored in plaintext)
       const encryptedSecretKey = encryptApiKey(secretKey);
 
       await ctx.db.insert(apiKeys).values({
         projectId: newProject.id,
         name: "Default",
-        keyPrefix,
-        keyFull: encryptedKeyFull,
+        publicKey,
         secretKey: encryptedSecretKey,
         createdBy: ctx.userId,
       });
 
-      return { ...newProject, defaultApiKey: key, defaultSecretKey: secretKey };
+      return { ...newProject, defaultApiKey: publicKey, defaultSecretKey: secretKey };
     }),
 
   /**
@@ -366,10 +364,10 @@ export const projectRouter = createTRPCRouter({
         });
       }
 
-      // Collect API key prefixes before cascade-deleting them with the project
+      // Collect public keys before cascade-deleting them with the project
       const projectApiKeys = await ctx.db.query.apiKeys.findMany({
         where: eq(apiKeys.projectId, input.projectId),
-        columns: { keyPrefix: true },
+        columns: { publicKey: true },
       });
 
       await ctx.db.delete(projects).where(eq(projects.id, input.projectId));
@@ -377,7 +375,7 @@ export const projectRouter = createTRPCRouter({
       // Invalidate Redis caches for the project and all its API keys
       await Promise.all([
         invalidateProjectCache(project.slug),
-        ...projectApiKeys.map((key) => invalidateApiKeyCache(key.keyPrefix)),
+        ...projectApiKeys.map((key) => invalidateApiKeyCache(key.publicKey)),
       ]);
 
       return { success: true };

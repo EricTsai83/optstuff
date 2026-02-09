@@ -9,9 +9,9 @@ import {
 
 import { env } from "@/env";
 
-const API_KEY_PREFIX = "pk_";
+const PUBLIC_KEY_PREFIX = "pk_";
 const SECRET_KEY_PREFIX = "sk_";
-const API_KEY_LENGTH = 32; // 32 bytes → ~43 base64url chars (no padding)
+const PUBLIC_KEY_LENGTH = 16; // 16 bytes → 22 base64url chars (128 bits entropy)
 const SECRET_KEY_LENGTH = 32; // 32 bytes → ~43 base64url chars (no padding)
 
 // AES-256-GCM encryption constants
@@ -108,25 +108,20 @@ export function decryptApiKey(encrypted: string) {
 }
 
 /**
- * Generates a new API key with a prefix for identification.
+ * Generates a new API key pair: a public key for identification and a secret key for signing.
  *
  * @returns Object containing:
- *   - key: The full API key (stored in DB and shown to user)
- *   - keyPrefix: The first 12 chars of the key for display purposes
- *   - secretKey: Secret key for signing URLs
+ *   - publicKey: Public identifier stored in plaintext (e.g., "pk_wGqLzyZob...")
+ *   - secretKey: Secret key for HMAC-SHA256 URL signing (e.g., "sk_xYzAbC...")
  */
 export function generateApiKey() {
-  // Generate random bytes and convert to base64url (e.g., "wGqLzyZob...")
-  const randomPart = randomBytes(API_KEY_LENGTH).toString("base64url");
-  const key = `${API_KEY_PREFIX}${randomPart}`;
+  // Public key: "pk_" + 22 base64url chars = 25 chars total (128 bits entropy)
+  const publicKey = `${PUBLIC_KEY_PREFIX}${randomBytes(PUBLIC_KEY_LENGTH).toString("base64url")}`;
 
-  // Extract prefix for display (e.g., "pk_wGqLzy...")
-  const keyPrefix = key.substring(0, 12);
-
-  // Generate secret key for URL signing (e.g., "sk_xYzAbC...")
+  // Secret key for URL signing: "sk_" + ~43 base64url chars
   const secretKey = `${SECRET_KEY_PREFIX}${randomBytes(SECRET_KEY_LENGTH).toString("base64url")}`;
 
-  return { key, keyPrefix, secretKey };
+  return { publicKey, secretKey };
 }
 
 /**

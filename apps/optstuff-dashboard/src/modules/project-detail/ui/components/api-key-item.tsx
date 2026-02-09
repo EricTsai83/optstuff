@@ -16,8 +16,6 @@ import { format, formatDistanceToNow } from "date-fns";
 import {
   AlertTriangle,
   Clock,
-  Eye,
-  EyeOff,
   Gauge,
   Globe,
   Key,
@@ -26,7 +24,6 @@ import {
   RotateCcw,
   Trash2,
 } from "lucide-react";
-import { useState } from "react";
 import type { ApiKeyData, ExpirationStatus } from "./api-key-types";
 import {
   getExpirationStatus,
@@ -249,7 +246,6 @@ export function ApiKeyItem({
   isRevoking,
   isRotating,
 }: ApiKeyItemProps) {
-  const [isKeyVisible, setIsKeyVisible] = useState(false);
   const { isExpired, isExpiringSoon, daysUntilExpiry } = getExpirationStatus(
     apiKey.expiresAt
   );
@@ -264,8 +260,10 @@ export function ApiKeyItem({
         ? "Expiring soon"
         : "Active";
 
-  // Masked version: pk_abc12345••••••••••••
-  const maskedKey = `${apiKey.keyPrefix}${"•".repeat(20)}`;
+  // Show first 8 chars in plain text, mask the rest for aesthetics
+  const visibleChars = 8;
+  const repeatCount = Math.max(0, apiKey.publicKey.length - visibleChars);
+  const maskedKey = `${apiKey.publicKey.substring(0, visibleChars)}${"•".repeat(repeatCount)}`;
 
   return (
     <div className="rounded-xl border bg-card p-5 transition-colors hover:bg-muted/30">
@@ -280,24 +278,11 @@ export function ApiKeyItem({
           <div className="space-y-1">
             <h3 className="text-base font-semibold">{apiKey.name}</h3>
             <div className="flex items-center gap-1 text-sm text-muted-foreground">
-              {/* Fixed width container to prevent layout shift when toggling visibility */}
+              {/* Fixed width container to keep layout stable */}
               <code className="w-[200px] truncate rounded bg-muted px-2 py-0.5 font-mono text-xs">
-                {isKeyVisible ? apiKey.keyFull : maskedKey}
+                {maskedKey}
               </code>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7 shrink-0"
-                onClick={() => setIsKeyVisible(!isKeyVisible)}
-                aria-label={isKeyVisible ? "Hide key" : "Show key"}
-              >
-                {isKeyVisible ? (
-                  <EyeOff className="h-4 w-4" />
-                ) : (
-                  <Eye className="h-4 w-4" />
-                )}
-              </Button>
-              <CopyButton text={apiKey.keyFull} className="h-7 w-7 shrink-0" />
+              <CopyButton text={apiKey.publicKey} className="h-7 w-7 shrink-0" />
             </div>
           </div>
 

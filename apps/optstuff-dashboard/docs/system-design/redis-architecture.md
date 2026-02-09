@@ -109,7 +109,7 @@ Enforces per-API-key request limits at two granularities: per-minute and per-day
 ### How It Works
 
 ```text
-checkRateLimit({ keyPrefix: "pk_abc", limitPerMinute: 60, limitPerDay: 10000 })
+checkRateLimit({ publicKey: "pk_abc", limitPerMinute: 60, limitPerDay: 10000 })
 │
 ├─ 1. Per-day check (wider window, checked first)
 │     slidingWindow.limit("pk_abc")
@@ -241,7 +241,7 @@ T=30 (key expires):
 | `cache:project:id:` | Project config cache (by ID) | 60s | `cache:project:id:uuid-123` |
 | `cache:project:slug:` | Project config cache (by slug) | 60s | `cache:project:slug:my-blog` |
 | `cache:project:team-slug:` | Team+Project config cache | 60s | `cache:project:team-slug:acme/my-blog` |
-| `cache:apikey:prefix:` | API key config cache | 60s | `cache:apikey:prefix:pk_abc123` |
+| `cache:apikey:pk:` | API key config cache | 60s | `cache:apikey:pk:pk_abc123` |
 | `ratelimit:ipx:minute:` | Per-minute rate limit counter | ~60s | `ratelimit:ipx:minute:pk_abc123` |
 | `ratelimit:ipx:day:` | Per-day rate limit counter | ~24h | `ratelimit:ipx:day:pk_abc123` |
 | `usage:apikey:` | API key write throttle lock | 30s | `usage:apikey:uuid-123` |

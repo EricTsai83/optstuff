@@ -303,13 +303,13 @@ export const usageRouter = createTRPCRouter({
         (acc, record) => {
           const keyId = record.apiKeyId ?? "unknown";
           const keyName = record.apiKey?.name ?? "Unknown";
-          const keyPrefix = record.apiKey?.keyPrefix ?? "???";
+          const publicKey = record.apiKey?.publicKey ?? "???";
 
           if (!acc[keyId]) {
             acc[keyId] = {
               apiKeyId: keyId,
               name: keyName,
-              keyPrefix,
+              publicKey,
               requestCount: 0,
               bytesProcessed: 0,
             };
@@ -323,7 +323,7 @@ export const usageRouter = createTRPCRouter({
           {
             apiKeyId: string;
             name: string;
-            keyPrefix: string;
+            publicKey: string;
             requestCount: number;
             bytesProcessed: number;
           }

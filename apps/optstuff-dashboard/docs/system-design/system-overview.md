@@ -40,7 +40,7 @@ OptStuff is an enterprise-grade image optimization API service that enables deve
 │                            API GATEWAY                                      │
 │                                                                             │
 │  Endpoint: /api/v1/{projectSlug}/{operations}/{imageUrl}                    │
-│  Query Params: ?key={keyPrefix}&sig={signature}&exp={expiration}             │
+│  Query Params: ?key={publicKey}&sig={signature}&exp={expiration}              │
 │                                                                             │
 │  Validation Pipeline:                                                       │
 │  ┌───────┐  ┌───────┐  ┌───────┐  ┌───────┐  ┌───────┐  ┌───────┐           │
@@ -89,9 +89,8 @@ Each API key consists of a dual-key system:
 
 | Key Type | Format | Purpose | Visibility |
 |----------|--------|---------|------------|
-| Public Key | `pk_<43 base64url chars>` | Request identification | Safe to expose in URLs |
-| Secret Key | `sk_<43 base64url chars>` | URL signature generation | **Must be kept secret** |
-| Key Prefix | `pk_<9 base64url chars>` | Quick lookup and display | Stored in plaintext |
+| Public Key | `pk_<22 base64url chars>` | Request identification and URL lookup | Safe to expose in URLs, stored in plaintext |
+| Secret Key | `sk_<43 base64url chars>` | URL signature generation | **Must be kept secret**, stored encrypted |
 
 ### 4. Image Processing Engine
 
@@ -132,7 +131,7 @@ Level 0: System Key (Environment Variable)
                                 ▼
 Level 1: API Key Secrets (Per API Key)
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│  keyFull (pk_xxx)          │ secretKey (sk_xxx)                             │
+│  publicKey (pk_xxx)        │ secretKey (sk_xxx)                             │
 │  Purpose: Identify API Key │ Purpose: Generate/verify URL signatures        │
 │  Exposure: Can be known    │ Exposure: Must remain confidential              │
 └────────────────────────────┴────────────────────────────────────────────────┘
@@ -151,7 +150,7 @@ Level 2: Request Signatures (Per Request)
 | Mechanism | Algorithm | Purpose |
 |-----------|-----------|---------|
 | Key Derivation | HKDF (RFC 5869) with SHA-256 | Derive encryption key from master secret |
-| Data Encryption | AES-256-GCM | Encrypt API keys at rest |
+| Data Encryption | AES-256-GCM | Encrypt secret keys at rest |
 | URL Signing | HMAC-SHA256 | Sign image request URLs |
 | Signature Comparison | `timingSafeEqual` | Prevent timing attacks |
 
@@ -202,14 +201,14 @@ Level 2: Request Signatures (Per Request)
    ┌─────────────────────────────────────────────────────────────────────────┐
    │ path = "w_800,f_webp/images.example.com/photo.jpg"                      │
    │ sig = HMAC-SHA256(secretKey, path)                                      │
-   │ url = /api/v1/{slug}/{path}?key={keyPrefix}&sig={sig}&exp={exp}          │
+   │ url = /api/v1/{slug}/{path}?key={publicKey}&sig={sig}&exp={exp}           │
    └─────────────────────────────────────────────────────────────────────────┘
                                     │
                                     ▼
 2. Server Validation
    ┌─────────────────────────────────────────────────────────────────────────┐
-   │ a. Parse URL parameters (keyPrefix, signature)                           │
-   │ b. Lookup API Key by keyPrefix                                           │
+   │ a. Parse URL parameters (publicKey, signature)                            │
+   │ b. Lookup API Key by publicKey                                            │
    │ c. Validate project exists and slug matches                             │
    │ d. Verify signature: HMAC-SHA256(secretKey, path) === signature         │
    │ e. Check rate limits (only authenticated requests consume quota)        │
@@ -252,7 +251,7 @@ Level 2: Request Signatures (Per Request)
 | Supported Input Formats | JPEG, PNG, WebP, AVIF, GIF |
 | Supported Output Formats | JPEG, PNG, WebP, AVIF |
 | Authentication Provider | Clerk |
-| Database | PostgreSQL (via Prisma ORM) |
+| Database | PostgreSQL (via Drizzle ORM) |
 | Framework | Next.js (App Router) |
 
 ## Attack Protections

@@ -40,7 +40,12 @@ type EditApiKeyDialogProps = {
 export function RotatedKeyDialog({ rotatedKey, onClose }: RotatedKeyDialogProps) {
   return (
     <Dialog open={!!rotatedKey} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-[520px]">
+      <DialogContent
+        className="max-h-[85vh] overflow-y-auto sm:max-w-[520px]"
+        hideCloseButton
+        onInteractOutside={(e) => e.preventDefault()}
+        onEscapeKeyDown={(e) => e.preventDefault()}
+      >
         <div className="flex flex-col">
           {/* Success Header */}
           <div className="flex items-center gap-3 pb-4">
@@ -57,18 +62,20 @@ export function RotatedKeyDialog({ rotatedKey, onClose }: RotatedKeyDialogProps)
 
           {/* Content */}
           <div className="space-y-4">
+            {/* Prominent warning banner */}
+            <div className="flex items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2.5 text-sm font-medium text-amber-700 dark:text-amber-400">
+              <Shield className="h-4 w-4 shrink-0" />
+              <span>
+                These keys are only shown once. Copy and save them before
+                closing.
+              </span>
+            </div>
             {/* Secret Key Display */}
             <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label className="flex items-center gap-1.5 text-xs uppercase tracking-wider text-muted-foreground">
-                  <Key className="h-3 w-3" />
-                  New Secret Key (for signing URLs)
-                </Label>
-                <div className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400">
-                  <Shield className="h-3 w-3" />
-                  <span>Only shown once</span>
-                </div>
-              </div>
+              <Label className="flex items-center gap-1.5 text-xs uppercase tracking-wider text-muted-foreground">
+                <Key className="h-3 w-3" />
+                New Secret Key (for signing URLs)
+              </Label>
               <div className="group relative rounded-lg border border-border bg-muted/50 p-3">
                 <code className="block break-all pr-10 font-mono text-sm">
                   {rotatedKey?.secretKey}
@@ -86,18 +93,18 @@ export function RotatedKeyDialog({ rotatedKey, onClose }: RotatedKeyDialogProps)
               </p>
             </div>
 
-            {/* Key Prefix Display */}
+            {/* Public Key Display */}
             <div className="space-y-2">
               <Label className="text-xs uppercase tracking-wider text-muted-foreground">
-                New Key Prefix (for URL parameter)
+                New Public Key (for URL parameter)
               </Label>
               <div className="group relative rounded-lg border border-border bg-muted/50 p-3">
                 <code className="block pr-10 font-mono text-sm">
-                  {rotatedKey?.key.substring(0, 12)}
+                  {rotatedKey?.publicKey}
                 </code>
                 <div className="absolute right-2 top-2">
                   <CopyButton
-                    text={rotatedKey?.key.substring(0, 12) ?? ""}
+                    text={rotatedKey?.publicKey ?? ""}
                     className="h-8 w-8 rounded-md bg-secondary shadow-sm"
                   />
                 </div>

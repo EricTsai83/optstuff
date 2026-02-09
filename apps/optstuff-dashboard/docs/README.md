@@ -63,7 +63,7 @@ pnpm dev
 ### Image Optimization Endpoint
 
 ```
-GET /api/v1/{projectSlug}/{operations}/{imageUrl}?key={keyPrefix}&sig={signature}&exp={expiry}
+GET /api/v1/{projectSlug}/{operations}/{imageUrl}?key={publicKey}&sig={signature}&exp={expiry}
 ```
 
 **URL Parameters:**
@@ -78,7 +78,7 @@ GET /api/v1/{projectSlug}/{operations}/{imageUrl}?key={keyPrefix}&sig={signature
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
-| `key` | Yes | API key prefix (e.g., `pk_abc123`) |
+| `key` | Yes | Public key (e.g., `pk_abc123`) |
 | `sig` | Yes | HMAC-SHA256 signature |
 | `exp` | No | Expiration timestamp (Unix seconds) |
 
@@ -165,7 +165,7 @@ User (Clerk)
 
 ### Request Validation Flow
 
-1. **API Key Validation** - Lookup by keyPrefix, check expiration and revocation
+1. **API Key Validation** - Lookup by publicKey, check expiration and revocation
 2. **Project Validation** - Verify project exists and slug matches the API key
 3. **Signature Verification** - HMAC-SHA256 with timing-safe comparison
 4. **Rate Limit Check** - Per-minute and per-day limits (only after signature is verified)

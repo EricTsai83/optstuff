@@ -21,7 +21,7 @@ export type ProjectConfig = {
  */
 export type ApiKeyConfig = {
   readonly id: string;
-  readonly keyPrefix: string;
+  readonly publicKey: string;
   readonly secretKey: string;
   readonly projectId: string;
   readonly allowedSourceDomains: readonly string[] | null;
@@ -66,7 +66,7 @@ function parseApiKeyFromCache(cached: CachedApiKeyConfig): ApiKeyConfig {
  */
 function serializeApiKeyForCache(apiKeyRow: {
   readonly id: string;
-  readonly keyPrefix: string;
+  readonly publicKey: string;
   readonly secretKey: string;
   readonly projectId: string;
   readonly allowedSourceDomains: string[] | null;
@@ -77,7 +77,7 @@ function serializeApiKeyForCache(apiKeyRow: {
 }): CachedApiKeyConfig {
   return {
     id: apiKeyRow.id,
-    keyPrefix: apiKeyRow.keyPrefix,
+    publicKey: apiKeyRow.publicKey,
     encryptedSecretKey: apiKeyRow.secretKey,
     projectId: apiKeyRow.projectId,
     allowedSourceDomains: apiKeyRow.allowedSourceDomains,
@@ -93,7 +93,7 @@ function serializeApiKeyForCache(apiKeyRow: {
 const PROJECT_KEY_PREFIX = "cache:project:slug";
 const PROJECT_ID_KEY_PREFIX = "cache:project:id";
 const PROJECT_TEAM_KEY_PREFIX = "cache:project:team-slug";
-const API_KEY_PREFIX = "cache:apikey:prefix";
+const API_KEY_PREFIX = "cache:apikey:pk";
 
 /**
  * Cache TTL in seconds (60 seconds).
@@ -104,7 +104,7 @@ const CACHE_TTL_SECONDS = 60;
 /**
  * Negative cache TTL in seconds (10 seconds).
  * Caches "not found" results with a shorter TTL to absorb repeated
- * lookups for non-existent slugs or key prefixes (e.g. probing attacks),
+ * lookups for non-existent slugs or public keys (e.g. probing attacks),
  * while still allowing newly created resources to become visible quickly.
  */
 const NEGATIVE_CACHE_TTL_SECONDS = 10;
@@ -317,17 +317,17 @@ export async function getProjectConfigByTeamAndSlug(
 }
 
 /**
- * Get API key configuration by key prefix with Redis caching.
+ * Get API key configuration by public key with Redis caching.
  * Degrades gracefully when Redis is unreachable — falls back to direct DB query.
  *
- * @param keyPrefix - The key prefix (e.g., "pk_abc123...")
+ * @param publicKey - The public key (e.g., "pk_abc123...")
  * @returns API key configuration or null if not found/invalid
  */
 export async function getApiKeyConfig(
-  keyPrefix: string,
+  publicKey: string,
 ): Promise<ApiKeyConfig | null> {
   const redis = getRedis();
-  const cacheKey = `${API_KEY_PREFIX}:${keyPrefix}`;
+  const cacheKey = `${API_KEY_PREFIX}:${publicKey}`;
 
   // Check Redis cache first (skip on Redis failure)
   try {
@@ -348,7 +348,7 @@ export async function getApiKeyConfig(
   // the revokedAt timestamp is cached and the defense-in-depth check in
   // route.ts can reject stale cached entries that were revoked after caching.
   const apiKey = await db.query.apiKeys.findFirst({
-    where: eq(apiKeys.keyPrefix, keyPrefix),
+    where: eq(apiKeys.publicKey, publicKey),
   });
 
   if (!apiKey) {
@@ -415,11 +415,11 @@ export async function invalidateProjectCache(
 /**
  * Invalidate cache for a specific API key.
  *
- * @param keyPrefix - API key prefix to invalidate
+ * @param publicKey - Public key to invalidate
  */
-export async function invalidateApiKeyCache(keyPrefix: string): Promise<void> {
+export async function invalidateApiKeyCache(publicKey: string): Promise<void> {
   const redis = getRedis();
-  await redis.del(`${API_KEY_PREFIX}:${keyPrefix}`);
+  await redis.del(`${API_KEY_PREFIX}:${publicKey}`);
 }
 
 /**

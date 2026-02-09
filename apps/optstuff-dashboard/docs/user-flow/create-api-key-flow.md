@@ -4,7 +4,7 @@ This document explains the API key creation flow in OptStuff Dashboard.
 
 ## Overview
 
-Users create API keys to authenticate image transformation requests. Each API key consists of a **key prefix** (for identification) and a **secret key** (for URL signing). The secret key is only shown once at creation time.
+Users create API keys to authenticate image transformation requests. Each API key consists of a **public key** (`pk_...`, for identification) and a **secret key** (`sk_...`, for URL signing). The full public key can be viewed and copied from the API key list. The secret key is only shown once at creation or rotation time.
 
 ## Flow Diagram
 
@@ -52,9 +52,9 @@ Users create API keys to authenticate image transformation requests. Each API ke
 │  generateApiKey()   │                              │  Error Response     │
 │                     │                              │                     │
 │  Generate:          │                              │  Show error toast   │
-│  - key (pk_xxx)     │                              │  User can retry     │
-│  - keyPrefix        │                              │                     │
-│  - secretKey (sk_xx)│                              └─────────────────────┘
+│  - publicKey (pk_x) │                              │  User can retry     │
+│  - secretKey (sk_x) │                              │                     │
+│                     │                              └─────────────────────┘
 └──────────┬──────────┘
            │
            ▼
@@ -62,8 +62,7 @@ Users create API keys to authenticate image transformation requests. Each API ke
 │  encryptApiKey()    │
 │                     │
 │  Encrypt:           │
-│  - keyFull          │
-│  - secretKey        │
+│  - secretKey only   │
 │  (AES-256-GCM)      │
 └──────────┬──────────┘
            │
@@ -72,24 +71,26 @@ Users create API keys to authenticate image transformation requests. Each API ke
 ┌─────────────────────┐            ┌─────────────────────┐
 │  Store in Database  │            │  Return to Client   │
 │                     │            │                     │
-│  - id               │            │  - key (plaintext)  │
-│  - name             │            │  - secretKey        │
-│  - keyPrefix        │            │    (plaintext)      │
-│    (plaintext)      │            │                     │
-│  - keyFull          │            │  ⚠️ Only shown once │
-│    (encrypted)      │            └──────────┬──────────┘
-│  - secretKey        │                       │
-│    (encrypted)      │                       ▼
-│  - allowedDomains   │            ┌─────────────────────┐
-│  - expiresAt        │            │  Dialog switches    │
-└─────────────────────┘            │  to Success Step    │
+│  - id               │            │  - publicKey        │
+│  - name             │            │    (plaintext)      │
+│  - publicKey        │            │  - secretKey        │
+│    (plaintext)      │            │    (plaintext)      │
+│  - secretKey        │            │                     │
+│    (encrypted)      │            │  ⚠️ secretKey only  │
+│  - allowedDomains   │            │    shown once!      │
+│  - expiresAt        │            └──────────┬──────────┘
+└─────────────────────┘                       │
+                                              ▼
+                                   ┌─────────────────────┐
+                                   │  Dialog switches    │
+                                   │  to Success Step    │
                                    └──────────┬──────────┘
                                               │
                                               ▼
                                    ┌─────────────────────┐
                                    │  Display:           │
                                    │  - Secret Key       │
-                                   │  - Key Prefix       │
+                                   │  - Public Key       │
                                    │  - Usage Example    │
                                    │                     │
                                    │  Copy buttons for   │
@@ -110,9 +111,8 @@ Users create API keys to authenticate image transformation requests. Each API ke
 
 | Component | Format | Description |
 |-----------|--------|-------------|
-| Key | `pk_` + 32 bytes (base64url) | Full API key, stored encrypted |
-| Key Prefix | First 12 chars of key | Used in URL for identification (e.g., `pk_wGqLzy...`) |
-| Secret Key | `sk_` + 32 bytes (base64url) | Used for HMAC-SHA256 URL signing |
+| Public Key | `pk_` + 16 bytes (base64url) = 25 chars | Public identifier, stored in plaintext. Used in URL `?key=` param |
+| Secret Key | `sk_` + 32 bytes (base64url) | Used for HMAC-SHA256 URL signing, stored encrypted |
 
 ### Encryption
 
@@ -120,8 +120,7 @@ Users create API keys to authenticate image transformation requests. Each API ke
 |--------|---------|
 | Algorithm | AES-256-GCM (authenticated encryption) |
 | Key Derivation | HKDF (RFC 5869) from master secret |
-| Storage | Only `keyFull` and `secretKey` are encrypted |
-| `keyPrefix` | Stored in plaintext for database lookup |
+| Storage | Only `secretKey` is encrypted; `publicKey` is stored in plaintext |
 
 ### Form Fields
 
@@ -157,20 +156,22 @@ When the user clicks "Create Key":
 
 The backend:
 
-1. Generates cryptographically secure key and secretKey
-2. Encrypts both using AES-256-GCM
-3. Stores encrypted values in database
-4. Returns plaintext key and secretKey to client
+1. Generates cryptographically secure publicKey and secretKey
+2. Encrypts secretKey using AES-256-GCM (publicKey is stored in plaintext)
+3. Stores values in database
+4. Returns publicKey and plaintext secretKey to client
 
 ### 5. Success Screen
 
 Dialog transitions to success view showing:
 
 1. **Secret Key** — Full secret key with copy button and warning
-2. **Key Prefix** — Shortened key for URL parameter
+2. **Public Key** — Public identifier for URL `?key=` parameter
 3. **Usage Example** — Code snippet showing how to sign URLs
 
 > ⚠️ **Important**: The secret key is only shown once. Users must copy and save it securely.
+>
+> The public key (`pk_...`) can always be copied later from the API key list page (displayed masked with a copy button).
 
 ### 6. Complete
 
@@ -214,8 +215,7 @@ The `api_keys` table stores:
 | `id` | UUID | Primary key |
 | `projectId` | UUID | Foreign key to projects table |
 | `name` | String | User-defined key name |
-| `keyPrefix` | String | First 12 chars (plaintext, indexed) |
-| `keyFull` | String | Full key (AES-256-GCM encrypted) |
+| `publicKey` | String | Public identifier (plaintext, unique, indexed) |
 | `secretKey` | String | Secret key (AES-256-GCM encrypted) |
 | `allowedSourceDomains` | String[] | Allowed image source domains |
 | `expiresAt` | Timestamp | Optional expiration date |
@@ -225,11 +225,12 @@ The `api_keys` table stores:
 
 ## Security Considerations
 
-1. **Secret Key Display** — Only shown once at creation, never retrievable again
-2. **Encryption at Rest** — Keys encrypted using HKDF-derived AES-256-GCM
-3. **Domain Restrictions** — Keys are scoped to specific source domains
-4. **Expiration** — Optional automatic key invalidation
-5. **Audit Trail** — `createdAt`, `lastUsedAt`, `revokedAt` timestamps
+1. **Secret Key Display** — Only shown once at creation or rotation, never retrievable again
+2. **Public Key Display** — Public key (`pk_...`) is available in the API key list (masked display with copy button). Since it's a public identifier without signing capability, this is safe to expose
+3. **Encryption at Rest** — Secret key encrypted using HKDF-derived AES-256-GCM; public key stored in plaintext
+4. **Domain Restrictions** — Keys are scoped to specific source domains
+5. **Expiration** — Optional automatic key invalidation
+6. **Audit Trail** — `createdAt`, `lastUsedAt`, `revokedAt` timestamps
 
 ---
 

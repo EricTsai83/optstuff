@@ -23,9 +23,12 @@
 在你的 `.env` 或 `.env.local` 中添加：
 
 ```bash
-# 伺服器端專用（絕對不能有 NEXT_PUBLIC_ 前綴！）
+# 伺服器端專用 — 機密！絕對不能有 NEXT_PUBLIC_ 前綴
 IPX_SECRET_KEY="sk_your_secret_key_here"  # 建立 API Key 時取得
-IPX_KEY_PREFIX="pk_abc123..."              # 建立 API Key 時取得
+
+# 伺服器端專用 — 非機密，但僅在伺服器端使用，不需要 NEXT_PUBLIC_ 前綴
+# publicKey 會出現在產生的 URL 中（?key=pk_...），本身不是秘密
+IPX_PUBLIC_KEY="pk_abc123..."             # 建立 API Key 時取得
 
 # 公開設定（可以有 NEXT_PUBLIC_ 前綴）
 NEXT_PUBLIC_IPX_PROJECT_SLUG="your-project-slug"
@@ -43,7 +46,7 @@ NEXT_PUBLIC_IPX_ENDPOINT="https://your-optstuff-deployment.com/api/v1"
 import crypto from "crypto";
 
 const SECRET_KEY = process.env.IPX_SECRET_KEY!;
-const KEY_PREFIX = process.env.IPX_KEY_PREFIX!;
+const PUBLIC_KEY = process.env.IPX_PUBLIC_KEY!;
 const IPX_ENDPOINT = process.env.NEXT_PUBLIC_IPX_ENDPOINT!;
 const PROJECT_SLUG = process.env.NEXT_PUBLIC_IPX_PROJECT_SLUG!;
 
@@ -87,7 +90,7 @@ export function signIpxUrl(
     .substring(0, 32);
   
   // 4. 組合 URL
-  let url = `${IPX_ENDPOINT}/${PROJECT_SLUG}/${path}?key=${KEY_PREFIX}&sig=${sig}`;
+  let url = `${IPX_ENDPOINT}/${PROJECT_SLUG}/${path}?key=${PUBLIC_KEY}&sig=${sig}`;
   if (exp) url += `&exp=${exp}`;
   
   return url;
@@ -266,19 +269,30 @@ const exp = Math.floor(Date.now() / 1000) + 3600;
 ### 問題 4: secretKey 遺失
 
 ```
-問題: secretKey 只會在建立時顯示一次
+問題: secretKey 只會在建立或輪替時顯示一次
 
 解決方法:
-1. 到 Dashboard 撤銷舊的 API Key
-2. 建立新的 API Key
-3. 保存新的 secretKey
+1. 到 Dashboard 使用「Rotate Key」輪替 API Key
+2. 保存新的 secretKey
+   （輪替會撤銷舊 key 並產生新 key，其他設定會保留）
+```
+
+### 問題 5: publicKey 遺失
+
+```
+問題: 忘記 publicKey（公鑰）
+
+解決方法:
+Dashboard API Key 列表頁會顯示遮罩的完整公鑰，
+點擊旁邊的複製按鈕即可取得完整的 pk_... 公鑰。
 ```
 
 ## 安全檢查清單
 
 在上線前，請確認：
 
-- [ ] `secretKey` 存在環境變數中，沒有 `NEXT_PUBLIC_` 前綴
+- [ ] `secretKey`（`sk_...`）存在環境變數中，沒有 `NEXT_PUBLIC_` 前綴
+- [ ] `publicKey`（`pk_...`）可以是公開的，但建議也放在環境變數中方便管理
 - [ ] `.env` 檔案在 `.gitignore` 中
 - [ ] 簽名邏輯只在 Server Component 或 API Route 中執行
 - [ ] 前端程式碼中沒有出現 `secretKey`

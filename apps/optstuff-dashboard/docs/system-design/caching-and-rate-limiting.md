@@ -64,7 +64,7 @@ const CACHE_TTL_SECONDS = 60;
 | Project (by ID) | `cache:project:id:{projectId}` | `cache:project:id:uuid-123` |
 | Project (by slug) | `cache:project:slug:{slug}` | `cache:project:slug:my-blog` |
 | Project (by team + slug) | `cache:project:team-slug:{teamSlug}/{projectSlug}` | `cache:project:team-slug:acme/my-blog` |
-| API Key (by prefix) | `cache:apikey:prefix:{keyPrefix}` | `cache:apikey:prefix:pk_abc123` |
+| API Key (by public key) | `cache:apikey:pk:{publicKey}` | `cache:apikey:pk:pk_abc123` |
 
 ### Invalidation
 
@@ -76,13 +76,13 @@ Cache entries are removed in two ways:
 | Dashboard Action | Invalidation Function | Effect |
 |------------------|-----------------------|--------|
 | Update project settings | `invalidateProjectCache(slug)` | Deletes all cache entries for that project slug |
-| Revoke / update API key | `invalidateApiKeyCache(keyPrefix)` | Deletes the cache entry for that key prefix |
+| Revoke / update API key | `invalidateApiKeyCache(publicKey)` | Deletes the cache entry for that public key |
 
 This means admin changes take effect **immediately** — the 60s TTL only matters if the invalidation call somehow fails.
 
 ### Negative Caching
 
-When a lookup returns no result (project not found / key not found), a sentinel value (`__NOT_FOUND__`) is cached with a **shorter TTL of 10 seconds**. This prevents repeated requests for non-existent slugs or key prefixes (e.g. probing attacks) from hitting the database on every request.
+When a lookup returns no result (project not found / key not found), a sentinel value (`__NOT_FOUND__`) is cached with a **shorter TTL of 10 seconds**. This prevents repeated requests for non-existent slugs or public keys (e.g. probing attacks) from hitting the database on every request.
 
 The shorter TTL ensures that when a resource is later created, it becomes visible within 10 seconds — much faster than the full 60-second positive cache TTL. Active invalidation (`invalidateProjectCache` / `invalidateApiKeyCache`) also clears negative cache entries immediately.
 
@@ -137,7 +137,7 @@ rateLimitPerMinute: apiKey.rateLimitPerMinute ?? 60,    // ← change 60
 rateLimitPerDay: apiKey.rateLimitPerDay ?? 10000,       // ← change 10000
 ```
 
-**To change limits for a specific API key:** Update the `rateLimitPerMinute` and/or `rateLimitPerDay` columns in the `apiKeys` table for that key. After updating, call `invalidateApiKeyCache(keyPrefix)` to flush the cached config so the new limits take effect immediately.
+**To change limits for a specific API key:** Update the `rateLimitPerMinute` and/or `rateLimitPerDay` columns in the `apiKeys` table for that key. After updating, call `invalidateApiKeyCache(publicKey)` to flush the cached config so the new limits take effect immediately.
 
 ### Response When Rate Limited
 
@@ -289,7 +289,7 @@ Defaults should work well. Monitor Upstash analytics to see if rate limits are b
 When you update `rateLimitPerMinute` or `rateLimitPerDay` in the database:
 
 1. The cached `ApiKeyConfig` still holds the **old** limits for up to 60 seconds.
-2. To apply immediately, call `invalidateApiKeyCache(keyPrefix)` after the DB update.
+2. To apply immediately, call `invalidateApiKeyCache(publicKey)` after the DB update.
 3. The tRPC routers (`apiKey.ts`) already do this automatically when updating keys via the dashboard.
 
 If you update limits via a direct SQL query (not through the dashboard), you must invalidate manually or wait for the cache TTL to expire.
