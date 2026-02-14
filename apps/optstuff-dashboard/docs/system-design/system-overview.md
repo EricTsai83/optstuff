@@ -40,7 +40,7 @@ OptStuff is an enterprise-grade image optimization API service that enables deve
 │                            API GATEWAY                                      │
 │                                                                             │
 │  Endpoint: /api/v1/{projectSlug}/{operations}/{imageUrl}                    │
-│  Query Params: ?key={publicKey}&sig={signature}&exp={expiration}              │
+│  Query Params: ?key={publicKey}&sig={signature}&exp={expiration}            │
 │                                                                             │
 │  Validation Pipeline:                                                       │
 │  ┌───────┐  ┌───────┐  ┌───────┐  ┌───────┐  ┌───────┐  ┌───────┐           │
