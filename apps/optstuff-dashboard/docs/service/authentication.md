@@ -8,13 +8,11 @@ Every request to the image optimization service must be authenticated using **si
 
 ## Terminology
 
-本文件中使用的術語：
-
-| 術語 | 說明 |
-|------|------|
-| **API Key** | 使用者在 Dashboard 建立的一組認證憑證（**不是單一字串**）。包含一對金鑰（publicKey + secretKey）以及存取設定（允許的 source domains、速率限制、過期時間等）。類比：像是一張**門禁卡**——卡片上印有卡號（publicKey），內嵌晶片密碼（secretKey），同時綁定了可進入的樓層和時段（存取設定） |
-| **publicKey**（`pk_...`） | API Key 的公開識別碼，用來辨識是哪一組 API Key。可安全暴露在 URL 中，類似門禁卡上的**卡號** |
-| **secretKey**（`sk_...`） | API Key 的私密金鑰，用來產生與驗證 HMAC-SHA256 簽名。絕不會出現在 URL 中，類似門禁卡內嵌的**晶片密碼** |
+| Term | Description |
+|------|-------------|
+| **API Key** | A set of authentication credentials created by the user through the Dashboard (**not a single string**). Contains a key pair (publicKey + secretKey) along with access settings (allowed source domains, rate limits, expiration, etc.). Analogy: like an **access card** — the card number printed on the front (publicKey), a chip password embedded inside (secretKey), and rules for which floors and time slots it grants access to (access settings) |
+| **publicKey** (`pk_...`) | The public identifier of an API Key, used to identify which API Key a request belongs to. Safe to expose in URLs — similar to the **card number** on an access card |
+| **secretKey** (`sk_...`) | The private key of an API Key, used to generate and verify HMAC-SHA256 signatures. Never appears in URLs — similar to the **chip password** embedded inside an access card |
 
 ## URL Format
 
@@ -126,6 +124,46 @@ Request: GET /api/v1/my-blog/w_800,f_webp/images.example.com/photo.jpg
 
 Understanding where `publicKey` and `signature` come from is essential to grasping the full authentication model.
 
+### Who Does What?
+
+There are three distinct actors in this system. Each has a specific, limited responsibility:
+
+```text
+┌──────────────────────────────────────────────────────────────────────────┐
+│  1. Dashboard (one-time setup)                                           │
+│                                                                          │
+│     Developer creates an API Key → receives publicKey (pk_) + secretKey  │
+│     (sk_) → stores them in their own server's environment variables      │
+│                                                                          │
+│     The Dashboard only issues keys. It does NOT generate signatures.     │
+├──────────────────────────────────────────────────────────────────────────┤
+│  2. Developer's Server (per request, automatic)                          │
+│                                                                          │
+│     For each image, the developer's server code automatically:           │
+│       • Constructs the path ({operations}/{imageUrl})                    │
+│       • Decides the exp (e.g. now + 1 hour, or omitted)                  │
+│       • Computes sig = HMAC-SHA256(secretKey, path + exp)                │
+│       • Assembles the full signed URL                                    │
+│       • Embeds it in <img src="..."> and sends HTML to the browser       │
+│                                                                          │
+│     The signature is generated HERE, by the developer's own server.      │
+├──────────────────────────────────────────────────────────────────────────┤
+│  3. OptStuff Server (on receiving a request)                             │
+│                                                                          │
+│     Reads path, sig, exp, and publicKey from the incoming URL.           │
+│     Looks up the API Key by publicKey → decrypts the secretKey.          │
+│     Recomputes: expectedSig = HMAC-SHA256(secretKey, path + exp)         │
+│     Compares: sig === expectedSig?                                       │
+│       • Match    → the developer's server authorized this request → ✅   │
+│       • Mismatch → not authorized (forged or tampered) → ❌              │
+│                                                                          │
+│     The server does NOT need a pre-registered list of valid paths.       │
+│     A valid signature IS the proof that the path was authorized.         │
+└──────────────────────────────────────────────────────────────────────────┘
+```
+
+> **Key insight**: The Dashboard only issues keys. The developer's server generates signatures. The OptStuff server verifies them. No single actor does everything.
+
 ### Where Does `publicKey` Come From?
 
 The `publicKey` (`pk_...`) is generated when a user **creates an API Key** through the Dashboard:
@@ -143,98 +181,159 @@ User creates API Key (Dashboard)
          │
          ├───────────────────────────────────┐
          ▼                                   ▼
-┌─────────────────────┐           ┌─────────────────────┐
-│  Store in Database   │           │  Return to User     │
-│                      │           │                      │
-│  publicKey: 明文儲存  │           │  publicKey: pk_xxx   │
-│  secretKey: 加密儲存  │           │  secretKey: sk_xxx   │
-│  (AES-256-GCM)       │           │                      │
-└─────────────────────┘           │  ⚠️ secretKey 只會    │
-                                  │    顯示這一次！        │
-                                  └─────────────────────┘
+┌─────────────────────────┐       ┌─────────────────────────┐
+│  Store in Database       │       │  Return to User          │
+│                          │       │                          │
+│  publicKey: plaintext    │       │  publicKey: pk_xxx       │
+│  secretKey: encrypted    │       │  secretKey: sk_xxx       │
+│  (AES-256-GCM)           │       │                          │
+└─────────────────────────┘       │  ⚠️ secretKey is shown   │
+                                  │    only this once!        │
+                                  └─────────────────────────┘
 ```
 
-- **publicKey** 以明文存在資料庫中（安全，因為它只是識別碼）
-- **secretKey** 以 AES-256-GCM 加密後才存入資料庫
-- secretKey 只在建立或輪替（Rotate）時顯示一次，之後無法再取得
+- **publicKey** is stored in plaintext in the database (safe, since it is only an identifier)
+- **secretKey** is encrypted with AES-256-GCM before being stored in the database
+- secretKey is only displayed once — at creation or rotation — and cannot be retrieved afterward
 
 ### Where Does `signature` Come From?
 
-`signature` 是由**呼叫端（Client）**在伺服器端使用 `secretKey` 對 URL path 產生 HMAC-SHA256 簽名：
+The `signature` is generated on the **caller's server** using `secretKey` to produce an HMAC-SHA256 signature of the URL path:
 
 ```text
 Client Server (e.g., Next.js Server Component)
          │
-         │  已知：publicKey, secretKey (環境變數)
-         │  目標：產生簽名過的圖片 URL
+         │  Known: publicKey, secretKey (from environment variables)
+         │  Goal:  Generate a signed image URL
          │
          ▼
 ┌──────────────────────────────────────────────────────────────────────┐
-│  1. 組合路徑                                                          │
+│  1. Construct path                                                   │
 │     path = "{operations}/{imageUrl}"                                 │
-│     例: "w_800,f_webp/images.example.com/photo.jpg"                  │
+│     e.g. "w_800,f_webp/images.example.com/photo.jpg"                │
 │                                                                      │
-│  2. 組合 payload（含可選的過期時間）                                     │
+│  2. Construct payload (with optional expiration)                     │
 │     payload = expiresAt ? `${path}?exp=${expiresAt}` : path          │
 │                                                                      │
-│  3. 產生簽名                                                          │
+│  3. Generate signature                                               │
 │     signature = HMAC-SHA256(secretKey, payload)                      │
 │                 .digest("base64url")                                 │
 │                 .substring(0, 32)                                    │
 │                                                                      │
-│  4. 組合最終 URL                                                      │
+│  4. Construct final URL                                              │
 │     /api/v1/{slug}/{path}?key={publicKey}&sig={signature}&exp={exp}  │
 └──────────────────────────────────────────────────────────────────────┘
 ```
 
-> **關鍵概念**：`signature` 證明請求者擁有 `secretKey`，而不需要在 URL 中暴露 `secretKey` 本身。伺服器端透過 `publicKey` 查詢到對應的 API Key，從中取得 `secretKey`，重新計算簽名來驗證。
+> **Key concept**: The `signature` proves that the requester possesses the `secretKey`, without exposing the `secretKey` itself in the URL. The server looks up the corresponding API Key via `publicKey`, retrieves and decrypts the `secretKey`, and recomputes the signature to verify.
+
+### Signature Lifecycle
+
+The signature is **never stored anywhere** — not in the database, not in a cache. It is a purely computed artifact: generated on the caller's server, and recomputed on the OptStuff server for comparison.
+
+#### Three Inputs to the Signature
+
+Generating or verifying a signature requires three input values, each from a different source:
+
+```text
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  signature = HMAC-SHA256( secretKey, path [+ exp] )                        │
+│                                                                             │
+│  ┌──────────────────┐  ┌──────────────────┐  ┌──────────────────────┐      │
+│  │    secretKey      │  │      path        │  │        exp           │      │
+│  │                   │  │                  │  │                      │      │
+│  │  Source: DB       │  │  Source: URL     │  │  Source: URL query   │      │
+│  │  (encrypted)      │  │  (dynamic)       │  │  (caller decides)   │      │
+│  │                   │  │                  │  │                      │      │
+│  │  sk_xxx...        │  │  {operations}/   │  │  Unix timestamp     │      │
+│  │                   │  │  {imageUrl}      │  │  (optional)         │      │
+│  └──────────────────┘  └──────────────────┘  └──────────────────────┘      │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+| Input | Storage | Description |
+|-------|---------|-------------|
+| **secretKey** | DB (`api_key` table, AES-256-GCM encrypted) | Generated when the API Key is created, encrypted and persisted. Retrieved and decrypted via `publicKey` lookup during verification |
+| **path** | Not stored — from the HTTP request URL path | `{operations}/{imageUrl}`, different for every request. Constructed by the caller, parsed from the URL by the server |
+| **exp** | Not stored — from the HTTP request query parameter | Expiration time (Unix seconds) decided by the caller, optional. Parsed from `?exp=` by the server |
+
+#### Generation & Verification: Same Formula, Two Locations
+
+The security of the signature relies on a core principle: **only the two parties that both know the `secretKey` can compute the same signature for a given `path + exp`.**
+
+```text
+    Caller's Server (generate)                 OptStuff Server (verify)
+    ──────────────────────────                 ────────────────────────
+
+    Known:                                     Known:
+    • secretKey (env variable)                 • secretKey (DB lookup + decrypt)
+    • path (self-constructed)                  • path (parsed from URL)
+    • exp (self-determined)                    • exp (parsed from query string)
+
+           │                                          │
+           ▼                                          ▼
+    sig = HMAC-SHA256(                         expectedSig = HMAC-SHA256(
+            secretKey,                                        secretKey,
+            path + exp                                        path + exp
+          )                                                 )
+           │                                          │
+           ▼                                          ▼
+    Embed in URL: ?sig={sig}  ── HTTP request ──►  Compare: sig === expectedSig ?
+                                                   ✅ Pass / ❌ Reject
+```
+
+> **Why is this secure?** Even if an attacker intercepts the `sig` from the URL, they cannot:
+> - Reverse-engineer the `secretKey` (HMAC-SHA256 is a one-way function)
+> - Forge a signature for a different path (a different path produces a completely different sig)
+> - Extend the expiration (modifying `exp` causes signature verification to fail)
 
 ### End-to-End Lifecycle
 
 ```text
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│ Phase 1: Key Provisioning (一次性，透過 Dashboard)                            │
+│ Phase 1: Key Provisioning (one-time, via Dashboard)                         │
 │                                                                             │
-│   User ──建立 API Key──► Dashboard ──generateApiKey()──► publicKey + secretKey│
+│   User ── Create API Key ──► Dashboard ── generateApiKey() ──►              │
+│                                            publicKey + secretKey            │
 │                                                                             │
-│   User 將 secretKey 存入伺服器環境變數（如 .env）                              │
-│   publicKey 也存入環境變數（方便管理，本身非機密）                               │
+│   User stores secretKey in server environment variables (e.g. .env)         │
+│   publicKey also stored in env vars (for convenience; not a secret)         │
 └─────────────────────────────────────────────────────────────────────────────┘
                                     │
                                     ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│ Phase 2: URL Signing (每次請求，呼叫端伺服器執行)                              │
+│ Phase 2: URL Signing (per request, executed on caller's server)             │
 │                                                                             │
 │   path = "w_800,f_webp/images.example.com/photo.jpg"                        │
-│   sig  = HMAC-SHA256(secretKey, path)  ← 用 secretKey 簽名                  │
+│   sig  = HMAC-SHA256(secretKey, path)  ← sign with secretKey               │
 │   url  = /api/v1/{slug}/{path}?key={publicKey}&sig={sig}                    │
 │                                                                             │
-│   將簽名過的 URL 嵌入 HTML <img src="..."> 傳送給瀏覽器                       │
+│   Embed signed URL in HTML <img src="..."> and send to browser             │
 └─────────────────────────────────────────────────────────────────────────────┘
                                     │
                                     ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│ Phase 3: Request Validation (OptStuff 伺服器接收請求)                         │
+│ Phase 3: Request Validation (OptStuff server receives request)              │
 │                                                                             │
-│   1. 從 URL 解析 publicKey, signature, exp                                  │
-│   2. 用 publicKey 查詢資料庫 → 找到對應的 API Key                             │
-│   3. 從 API Key 中取出並解密 secretKey                                      │
-│   4. 重新計算: expectedSig = HMAC-SHA256(secretKey, path)                   │
-│   5. 比對: signature === expectedSig (timingSafeEqual)                      │
-│   6. 通過 → 處理圖片；失敗 → 回傳 401/403                                    │
+│   1. Parse publicKey, signature, exp from URL                               │
+│   2. Look up API Key in database using publicKey                            │
+│   3. Retrieve and decrypt secretKey from the API Key record                 │
+│   4. Recompute: expectedSig = HMAC-SHA256(secretKey, path)                  │
+│   5. Compare: signature === expectedSig (timingSafeEqual)                   │
+│   6. Pass → process image; Fail → return 401/403                            │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ### Why This Design?
 
-| 設計選擇 | 原因 |
-|----------|------|
-| publicKey 與 secretKey 分離 | publicKey 可安全暴露在 URL 中，secretKey 永遠不離開伺服器 |
-| HMAC-SHA256 簽名 | 單向雜湊，即使攔截到 signature 也無法反推 secretKey |
-| secretKey 加密儲存 | 即使資料庫洩漏，攻擊者也無法取得原始 secretKey |
-| 可選的 `exp` 過期時間 | 限制簽名有效期，防止 replay 攻擊 |
+| Design Choice | Reason |
+|---------------|--------|
+| Separate publicKey and secretKey | publicKey can be safely exposed in URLs; secretKey never leaves the server |
+| HMAC-SHA256 signatures | One-way hash — even if a signature is intercepted, the secretKey cannot be reverse-engineered |
+| Encrypted secretKey storage | Even if the database is compromised, attackers cannot obtain the raw secretKey |
+| Optional `exp` expiration | Limits signature validity window, preventing replay attacks |
 
-> **延伸閱讀**: 完整的 API Key 建立流程請參考 [Create API Key Flow](../user-flow/create-api-key-flow.md)
+> **Further reading**: For the full API Key creation flow, see [Create API Key Flow](../user-flow/create-api-key-flow.md)
 
 ## Generating Signed URLs
 
