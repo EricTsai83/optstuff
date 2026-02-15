@@ -190,6 +190,5 @@ User (Clerk)
 | [Authentication](./service/authentication.md) | Request validation details |
 | [Integration Guide](./service/integration-guide.md) | Step-by-step integration |
 | [User Onboarding](./user-flow/user-onboarding.md) | Onboarding flow walkthrough |
-| [Caching & Rate Limiting](./system-design/caching-and-rate-limiting.md) | Strategy defaults and configuration guide |
-| [Redis Architecture](./system-design/redis-architecture.md) | Redis design patterns and trade-offs |
+| [Caching Architecture](./system-design/caching-architecture.md) | HTTP caching, Redis patterns, rate limiting, and configuration guide |
 | [Security Q&A](./security-qa/security.md) | Security measures explained |
