@@ -1,6 +1,8 @@
 # Caching Architecture
 
-This document describes every caching layer in the OptStuff image optimization service — from browser and CDN caching to server-side Redis patterns — their design rationale, default values, and how to change them.
+This document describes how the OptStuff image optimization service caches responses — from browser and CDN caching to server-side caching and rate limiting — along with default values and how to change them.
+
+For internal implementation details (Redis key schema, implementation patterns, serialization), see [Redis Schema](./redis-schema.md).
 
 ---
 
@@ -8,10 +10,9 @@ This document describes every caching layer in the OptStuff image optimization s
 
 - [Architecture Overview](#architecture-overview)
 - [Layer 1: HTTP Caching (Browser & CDN)](#layer-1-http-caching-browser--cdn)
-- [Layer 2: Redis Configuration Cache](#layer-2-redis-configuration-cache)
-- [Layer 3: Redis Rate Limiting](#layer-3-redis-rate-limiting)
-- [Layer 4: Redis Write Throttling](#layer-4-redis-write-throttling)
-- [Redis Key Schema](#redis-key-schema)
+- [Layer 2: Server-Side Configuration Cache](#layer-2-server-side-configuration-cache)
+- [Layer 3: Rate Limiting](#layer-3-rate-limiting)
+- [Layer 4: Write Throttling](#layer-4-write-throttling)
 - [Data Durability](#data-durability)
 - [Failure Modes](#failure-modes)
 - [Configuration Reference](#configuration-reference)
@@ -30,7 +31,7 @@ Client requests optimized image
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │  Layer 1: HTTP Caching (Browser & CDN)                                      │
 │                                                                             │
-│  Cache-Control: public, max-age=31536000, immutable                         │
+│  Cache-Control: public, s-maxage=31536000, max-age=31536000, immutable      │
 │  → Browser serves from disk cache instantly (0ms)                           │
 │  → CDN edge serves cached response (~10ms)                                  │
 │  → Eliminates redundant requests to origin                                  │
@@ -38,20 +39,18 @@ Client requests optimized image
                                │ Cache miss
                                ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│  Layer 2: Redis Configuration Cache                                          │
+│  Layer 2: Server-Side Configuration Cache                                   │
 │                                                                             │
-│  Pattern: Cache-Aside (Lazy Population)                                     │
-│  → Caches ProjectConfig and ApiKeyConfig (TTL 60s)                            │
-│  → Avoids DB reads on every image request                                   │
+│  → Caches project and API key configuration (TTL 60s)                       │
+│  → Avoids database reads on every image request                             │
 └──────────────────────────────┬──────────────────────────────────────────────┘
                                │ Config loaded
                                ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│  Layer 3: Redis Rate Limiting                                               │
+│  Layer 3: Rate Limiting                                                     │
 │                                                                             │
-│  Pattern: Sliding Window Counter (@upstash/ratelimit)                       │
 │  → Per-day (10K) + Per-minute (60) dual-layer limits                        │
-│  → Global accuracy across serverless instances                              │
+│  → Global accuracy across all server instances                              │
 └──────────────────────────────┬──────────────────────────────────────────────┘
                                │ Request allowed
                                ▼
@@ -62,42 +61,34 @@ Client requests optimized image
                                │ Response sent
                                ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│  Layer 4: Redis Write Throttling (fire-and-forget)                           │
+│  Layer 4: Write Throttling (fire-and-forget)                                │
 │                                                                             │
-│  Pattern: Distributed Lock via SET NX EX                                    │
-│  → Throttles lastUsedAt / lastActivityAt DB writes (30s interval)           │
-│  → Reduces DB UPDATEs by ~97%                                               │
+│  → Throttles lastUsedAt / lastActivityAt database writes (30s interval)     │
+│  → Reduces database writes by ~97%                                          │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
-| Layer | Purpose | Technology | Latency Saved |
-|-------|---------|------------|---------------|
-| HTTP Caching | Avoid hitting origin server entirely | Cache-Control headers | ~50–500ms |
-| Config Cache | Avoid DB reads for project/key lookups | Upstash Redis | ~10–40ms |
-| Rate Limiting | Prevent API abuse across all instances | Upstash Redis | N/A (enforcement) |
-| Write Throttling | Reduce DB write pressure | Upstash Redis | N/A (background) |
+| Layer | Purpose | Latency Saved |
+|-------|---------|---------------|
+| HTTP Caching | Avoid hitting origin server entirely | ~50–500ms |
+| Config Cache | Avoid database reads for project/key lookups | ~10–40ms |
+| Rate Limiting | Prevent API abuse across all instances | N/A (enforcement) |
+| Write Throttling | Reduce database write pressure | N/A (background) |
 
-All Redis data is **ephemeral and rebuildable**. PostgreSQL remains the sole source of truth.
+All server-side cache data is **ephemeral and rebuildable**. The database remains the sole source of truth.
 
 ---
 
 ## Layer 1: HTTP Caching (Browser & CDN)
 
-**File:** `src/app/api/v1/[projectSlug]/[...path]/route.ts`
-
 HTTP caching is the outermost layer — it prevents requests from ever reaching the server. When a browser or CDN has a cached copy of an optimized image, it serves it directly without contacting the origin.
 
-### Current Response Headers
+### Response Headers
 
-```typescript
-return new Response(imageData, {
-  status: 200,
-  headers: {
-    "Content-Type": contentType,
-    "Cache-Control": "public, max-age=31536000, immutable",
-    "X-Processing-Time": `${processingTimeMs}ms`,
-  },
-});
+Every successful image response includes:
+
+```text
+Cache-Control: public, s-maxage=31536000, max-age=31536000, immutable
 ```
 
 ### Cache-Control Directives
@@ -105,8 +96,41 @@ return new Response(imageData, {
 | Directive | Meaning |
 |-----------|---------|
 | `public` | Any cache (browser, CDN, proxy) may store this response |
-| `max-age=31536000` | Cache is valid for **1 year** (365 × 86,400 seconds) |
+| `s-maxage=31536000` | **Shared caches** (CDN, reverse proxy) may cache for **1 year** — the standard HTTP directive (RFC 7234) for controlling CDN cache duration |
+| `max-age=31536000` | **Private caches** (browser) may cache for **1 year** (365 × 86,400 seconds) |
 | `immutable` | Content will **never change** — browser should not revalidate even on hard refresh |
+
+#### `public`
+
+Declares that **any cache** — browser, CDN edge, reverse proxy — is permitted to store this response. Without `public`, shared caches may decline to cache responses that include certain headers (such as `Authorization`). Since optimized images are public resources with no user-specific content, `public` is the correct choice.
+
+The opposite directive, `private`, restricts caching to the end user's browser only. Use `private` for responses containing personal or session-specific data (e.g. account pages, user dashboards).
+
+#### `max-age=31536000`
+
+Tells **private caches (browsers)** to treat the response as fresh for 31,536,000 seconds (365 days = 1 year). During this window, the browser serves the image directly from its local disk or memory cache — **no network request is made at all** (latency = 0ms). The timer starts when the browser receives the response, not when the server generated it.
+
+After the `max-age` window expires, the browser must revalidate with the origin server before using the cached copy again (unless `immutable` is set — see below).
+
+#### `s-maxage=31536000`
+
+Tells **shared caches (CDNs, reverse proxies)** to treat the response as fresh for 1 year. The `s` stands for "shared". When `s-maxage` is present, shared caches use it **instead of** `max-age` — it acts as an override specifically for CDN-layer caching. Browsers always ignore `s-maxage`.
+
+Having both directives allows **independent tuning** in the future. For example:
+
+```text
+Cache-Control: public, s-maxage=31536000, max-age=3600
+```
+
+This would keep CDN caching at 1 year while reducing browser cache to 1 hour — useful if you want browsers to check for updates more frequently while the CDN continues to serve cached copies at the edge.
+
+#### `immutable`
+
+Signals that the response body **will never change** for this URL. Without `immutable`, a user refreshing the page (F5) causes the browser to send a **conditional revalidation request** (`If-None-Match` / `If-Modified-Since`) — the server typically responds with `304 Not Modified`, but the round trip still costs network latency. With `immutable`, the browser **skips revalidation entirely** during the `max-age` window, even on manual refresh.
+
+This is safe because image optimization URLs are content-addressable (see [Why This Strategy Works](#why-this-strategy-works) below): the URL encodes all transformation parameters and a cryptographic signature, so the same URL always produces the same output. If anything changes, a new URL is generated, which is treated as a completely separate cache entry.
+
+> **Note:** When `s-maxage` is present, shared caches ignore `max-age` and use `s-maxage` instead. Browsers (private caches) always ignore `s-maxage` and use `max-age`. This separation allows independent tuning of CDN vs. browser cache durations in the future.
 
 ### Why This Strategy Works
 
@@ -116,7 +140,9 @@ This makes aggressive caching safe — there is no risk of serving stale content
 
 ### CDN Behavior
 
-When deployed behind a CDN (e.g. Vercel Edge Network, Cloudflare):
+The `s-maxage` directive is the HTTP standard (RFC 7234) way to control shared cache (CDN) duration. It is platform-agnostic and respected by all standards-compliant CDNs, including Vercel Edge Network, Cloudflare, AWS CloudFront, Fastly, Akamai, and Nginx reverse proxies.
+
+When deployed behind any CDN:
 
 ```text
 First request for /api/v1/my-blog/w_800,f_webp/cdn.example.com/photo.jpg?key=pk_abc&sig=xyz
@@ -126,7 +152,7 @@ Second request (same URL)
   → CDN cache HIT → served from edge (~10ms) → origin never contacted
 ```
 
-The `public` directive is critical here — without it, CDNs with default configurations may not cache the response.
+The `public` directive allows shared caches to store the response, while `s-maxage` explicitly sets the CDN cache duration. Together, they ensure correct caching behaviour regardless of which CDN is in front of the origin.
 
 ### ETag (Not Currently Implemented)
 
@@ -142,119 +168,36 @@ For now, the `immutable` directive makes ETag unnecessary for most scenarios. It
 
 ---
 
-## Layer 2: Redis Configuration Cache
+## Layer 2: Server-Side Configuration Cache
 
-**File:** `src/server/lib/config-cache.ts`
-**Pattern:** Cache-Aside (Lazy Population)
+Every image request requires two lookups before processing can begin:
 
-### What Is Cached
+1. **Project configuration** — project ID, slug, team ID, allowed referer domains
+2. **API key configuration** — key ID, allowed source domains, expiration, revocation status, rate limits
 
-Every image request requires two database lookups before processing can begin:
+Both are cached server-side after the first lookup, with a **60-second TTL**. This avoids database queries on every image request while keeping data reasonably fresh.
 
-1. **ProjectConfig** — project ID, slug, team ID, allowed referer domains
-2. **ApiKeyConfig** — key ID, secret key (stored encrypted in cache, decrypted on read), allowed source domains, expiration, revocation status, rate limits
+### Cache Behavior
 
-Both are cached in Redis after the first lookup.
-
-### How It Works
-
-```text
-getProjectConfigById("uuid-123")          ← used by API route (lookup by API key's projectId)
-│
-├─ Redis GET cache:project:id:uuid-123
-│  ├─ HIT (config)       → return cached config
-│  ├─ HIT (__NOT_FOUND__) → return null (negative cache hit)
-│  └─ MISS → SELECT from PostgreSQL WHERE id = ?
-│            ├─ not found → Redis SET __NOT_FOUND__ (EX 10s) → return null
-│            └─ found     → Redis SET config (EX 60s) → return config
-
-getApiKeyConfig("pk_abc123")              ← used by API route
-│
-├─ Redis GET cache:apikey:pk:pk_abc123
-│  ├─ HIT (cached config) → decrypt secretKey → return ApiKeyConfig
-│  ├─ HIT (__NOT_FOUND__)  → return null (negative cache hit)
-│  └─ MISS → SELECT from PostgreSQL WHERE publicKey = ?
-│            ├─ not found → Redis SET __NOT_FOUND__ (EX 10s) → return null
-│            └─ found     → Redis SET config with encrypted secret (EX 60s)
-│                          → decrypt secretKey → return ApiKeyConfig
-```
-
-On dashboard mutations (e.g. revoking an API key or updating project settings), the tRPC handler calls `invalidateProjectCache()` or `invalidateApiKeyCache()` to immediately delete the relevant Redis keys. This provides **instant consistency for admin operations** while the TTL acts as a safety net for edge cases.
-
-### TTL (Time-To-Live)
-
-```text
-Positive cache:  60 seconds (CACHE_TTL_SECONDS)
-Negative cache:  10 seconds (NEGATIVE_CACHE_TTL_SECONDS)
-```
-
-A shorter TTL gives fresher data but more DB queries. A longer TTL gives better hit rates but delays propagation of changes. 60 seconds balances both — admin operations bypass this via active invalidation, so the TTL only matters for the rare case where invalidation fails.
-
-### Cache Keys
-
-| Data | Key Format | Example |
-|------|------------|---------|
-| Project (by ID) | `cache:project:id:{projectId}` | `cache:project:id:uuid-123` |
-| Project (by slug) | `cache:project:slug:{slug}` | `cache:project:slug:my-blog` |
-| Project (by team + slug) | `cache:project:team-slug:{teamSlug}/{projectSlug}` | `cache:project:team-slug:acme/my-blog` |
-| API Key (by public key) | `cache:apikey:pk:{publicKey}` | `cache:apikey:pk:pk_abc123` |
-
-### Negative Caching
-
-When a lookup returns no result (project not found / key not found), a sentinel value (`__NOT_FOUND__`) is cached with a **shorter TTL of 10 seconds**. This prevents repeated requests for non-existent slugs or public keys (e.g. probing attacks) from hitting the database on every request.
-
-The shorter TTL ensures that when a resource is later created, it becomes visible within 10 seconds — much faster than the full 60-second positive cache TTL. Active invalidation also clears negative cache entries immediately.
+- **Cache hit** — Configuration is served from cache instantly (~1-5ms).
+- **Cache miss** — Configuration is fetched from the database (~10-40ms), then cached for subsequent requests.
+- **Negative caching** — When a project or API key doesn't exist, a "not found" marker is cached for **10 seconds** to prevent repeated database queries from probing attacks or typos.
 
 ### Invalidation
 
-Cache entries are removed in two ways:
+When you make changes through the dashboard (e.g. update project settings, revoke an API key), the relevant cache entries are **immediately invalidated**. Changes take effect instantly — the 60-second TTL only acts as a safety net for the rare case where invalidation fails.
 
-1. **Automatic** — Redis evicts the key after TTL expires.
-2. **Manual (immediate)** — Dashboard mutations call invalidation functions:
-
-| Dashboard Action | Invalidation Function | Effect |
-|------------------|-----------------------|--------|
-| Update project settings | `invalidateProjectCache(slug, projectId?)` | Deletes all cache entries for that project (slug, ID, team+slug) |
-| Delete project | `invalidateProjectCache(slug, projectId?)` + invalidate all project API keys | Clears project and all associated key caches |
-| Revoke / update API key | `invalidateApiKeyCache(publicKey)` | Deletes the cache entry for that public key |
-
-Admin changes take effect **immediately** — the TTL only matters if the invalidation call somehow fails.
-
-### Serialization and Secret Handling
-
-`ApiKeyConfig` requires special handling for Redis storage:
-
-- **Secret keys** are stored in their **encrypted form** (`encryptedSecretKey`) in Redis — never as plaintext — and are only decrypted via `decryptApiKey()` after retrieval from cache. This prevents leaking secrets to the Redis layer.
-- **Date fields** (`expiresAt`, `revokedAt`) are stored as ISO 8601 strings since JSON has no native Date type, and converted back to `Date` objects on read.
-
-A dedicated `CachedApiKeyConfig` type enforces both transformations at compile time.
-
-**Why revoked keys are cached (not filtered out):** The database query in `getApiKeyConfig` deliberately does **not** filter by `revokedAt IS NULL`. This ensures that when the cache refreshes from the database, the `revokedAt` timestamp is present in the cached entry. The route handler then performs a defense-in-depth check: if `apiKey.revokedAt` is set, the request is rejected with `401`. Without this, the filter would cause revoked keys to return `null` from the DB — indistinguishable from a non-existent key — making the route handler's revocation check dead code. Active invalidation via `invalidateApiKeyCache` remains the primary revocation mechanism; caching `revokedAt` acts as a safety net for stale entries.
-
-### Benefits
-
-| Benefit | Detail |
-|---------|--------|
-| Lower DB load | Repeated lookups hit Redis (~1-5ms) instead of PostgreSQL (~10-40ms) |
-| Cross-instance sharing | All serverless instances share one cache, unlike in-memory Maps that start empty on every cold start |
-| Active invalidation | Dashboard changes take effect immediately via explicit key deletion, not just TTL expiry |
-| Negative caching | Non-existent slugs/keys are cached with a shorter TTL (10s) to absorb probing attacks |
-| Automatic cleanup | TTL handles eviction — no manual garbage collection needed |
+If you update settings via direct database queries (not through the dashboard), changes will take effect within 60 seconds when the cache naturally expires.
 
 ---
 
-## Layer 3: Redis Rate Limiting
+## Layer 3: Rate Limiting
 
-**File:** `src/server/lib/rate-limiter.ts`
-**Pattern:** Sliding Window Counter (via `@upstash/ratelimit`)
-
-### What It Does
-
-Enforces per-API-key request limits at two granularities: per-minute and per-day. All serverless instances share the same counters, making the limit globally accurate.
+Rate limiting enforces per-API-key request limits to prevent abuse. All server instances share the same counters, making the limits globally accurate.
 
 ### Algorithm: Sliding Window
 
-Unlike fixed windows that reset at hard boundaries (allowing up to 2× burst), sliding windows weight the previous window's count by overlap percentage, producing a smooth limit with no boundary spikes:
+Unlike fixed windows that reset at hard boundaries (allowing up to 2× burst at the boundary), sliding windows produce smooth limits with no boundary spikes:
 
 ```text
 Fixed Window (problem):
@@ -269,32 +212,14 @@ Sliding Window (solution) at 11:01:15 (25% into current window):
   Weighted count = 42 × 0.75 + 18 = 49.5 → under limit, allowed
 ```
 
-### Dual-Layer Design
+### Dual-Layer Limits
 
 Each API key is checked against two independent limits. Both must pass for the request to proceed.
 
-| Layer | Default Limit | Window | Redis Key Prefix | Purpose |
-|-------|---------------|--------|-------------------|---------|
-| Per-day | **10,000 requests** | 24 hours | `ratelimit:ipx:day:` | Catch sustained overuse |
-| Per-minute | **60 requests** | 1 minute | `ratelimit:ipx:minute:` | Catch sudden bursts |
-
-The per-day limit is checked **first**. This is deliberate: Upstash's `.limit()` is a consume-and-check operation — it decrements the counter atomically before returning the result. If the minute limit were checked first, a successful minute check would consume a minute token; a subsequent day rejection would block the request, but the minute token is already spent. Checking the day limit first inverts the problem: if day fails, no minute token is consumed.
-
-> **Note:** Upstash also provides a non-consuming `getRemaining()` method that can query remaining tokens without decrementing. This could be used as a pre-check to avoid any token waste, at the cost of an extra Redis round trip per request. The current order-swap approach avoids this overhead while eliminating the most impactful waste scenario.
-
-### How It Works
-
-```text
-checkRateLimit({ publicKey: "pk_abc", limitPerMinute: 60, limitPerDay: 10000 })
-│
-├─ 1. Per-day check (wider window, checked first)
-│     slidingWindow.limit("pk_abc")
-│     └─ exceeded? → { allowed: false, reason: "day", retryAfter: Ns }
-│
-└─ 2. Per-minute check (stricter)
-      slidingWindow.limit("pk_abc")
-      └─ exceeded? → { allowed: false, reason: "minute", retryAfter: Ns }
-```
+| Layer | Default Limit | Window | Purpose |
+|-------|---------------|--------|---------|
+| Per-day | **10,000 requests** | 24 hours | Catch sustained overuse |
+| Per-minute | **60 requests** | 1 minute | Catch sudden bursts |
 
 ### Configuration
 
@@ -302,19 +227,14 @@ Rate limits are **per API key**, stored in the database:
 
 | Database Column | Type | Default (fallback) |
 |-----------------|------|--------------------|
-| `apiKeys.rateLimitPerMinute` | `integer \| null` | `60` |
-| `apiKeys.rateLimitPerDay` | `integer \| null` | `10000` |
+| `apiKeys.rateLimitPerMinute` | `integer | null` | `60` |
+| `apiKeys.rateLimitPerDay` | `integer | null` | `10000` |
 
-**To change the default fallback:** Edit the fallback values in `config-cache.ts`:
-
-```typescript
-rateLimitPerMinute: apiKey.rateLimitPerMinute ?? 60,    // ← change 60
-rateLimitPerDay: apiKey.rateLimitPerDay ?? 10000,       // ← change 10000
-```
-
-**To change limits for a specific API key:** Update the `rateLimitPerMinute` and/or `rateLimitPerDay` columns in the `apiKeys` table. After updating, call `invalidateApiKeyCache(publicKey)` to flush the cached config so the new limits take effect immediately.
+**To change limits for a specific API key:** Update the `rateLimitPerMinute` and/or `rateLimitPerDay` columns in the `apiKeys` table. Changes made through the dashboard take effect immediately; direct database changes take effect within 60 seconds (cache TTL).
 
 ### Response When Rate Limited
+
+When a request exceeds the rate limit, the API returns:
 
 ```json
 {
@@ -334,149 +254,60 @@ X-RateLimit-Limit: 60
 X-RateLimit-Remaining: 0
 ```
 
-### Resetting Rate Limits
-
-For testing or administrative purposes, use the `resetRateLimit` function:
-
-```typescript
-import { resetRateLimit } from "@/server/lib/rate-limiter";
-
-await resetRateLimit("pk_abc123");
-```
-
-This clears the sliding window counters in Redis for the specified key prefix.
-
-### Instance Lifecycle
-
-`Ratelimit` instances are lightweight configuration objects — they hold a reference to the shared Redis client, the window algorithm, and a key prefix. They are stateless: all actual counters live in Redis. Instances are created inline per `checkRateLimit` call rather than cached in-memory, because the construction cost is negligible and avoiding module-level `Map` state simplifies the code for serverless environments where containers are recycled frequently.
-
-### Analytics
-
-Rate limit instances are created with `analytics: true`, which sends usage metrics to the Upstash dashboard. You can view rate limit hit/miss statistics at [console.upstash.com](https://console.upstash.com).
+The `Retry-After` header indicates how many seconds to wait before retrying. Clients should respect this value to avoid further 429 responses.
 
 ---
 
-## Layer 4: Redis Write Throttling
+## Layer 4: Write Throttling
 
-**File:** `src/server/lib/usage-tracker.ts`
-**Pattern:** Distributed Lock via SET NX (Set-If-Not-Exists)
-
-### Problem
-
-Every image request should update two timestamps in the database:
+Every image request updates two timestamps in the database:
 
 - `apiKeys.lastUsedAt` — when this API key was last used
 - `projects.lastActivityAt` — when this project last had activity
 
-Without throttling, an API key handling 60 req/min produces **120 UPDATE queries/min** (one for the key, one for the project, per request).
-
-### Solution
-
-A Redis `SET NX EX` lock ensures at most **one DB write per entity per interval**, regardless of how many requests or serverless instances are running.
-
-### How It Works
-
-```text
-updateApiKeyLastUsed("apikey-uuid", "project-uuid")
-│
-├─ Redis SET usage:apikey:{id} "1" NX EX 30
-│  ├─ "OK" (key didn't exist) → UPDATE apiKeys SET lastUsedAt = now()
-│  └─ null  (key exists)      → skip DB write
-│
-├─ Redis SET usage:project:{id} "1" NX EX 30
-│  ├─ "OK" (key didn't exist) → UPDATE projects SET lastActivityAt = now()
-│  └─ null  (key exists)      → skip DB write
-```
-
-### Atomicity Guarantee
-
-`SET key value NX EX 30` is atomic in Redis. Even if 10 serverless instances execute it simultaneously for the same key, exactly one succeeds:
-
-```text
-T=0:
-  Instance A: SET usage:apikey:abc "1" NX EX 30 → "OK"    (writes DB)
-  Instance B: SET usage:apikey:abc "1" NX EX 30 → null     (skips)
-  Instance C: SET usage:apikey:abc "1" NX EX 30 → null     (skips)
-
-T=30 (key expires):
-  Instance D: SET usage:apikey:abc "1" NX EX 30 → "OK"    (writes DB)
-```
-
-### Why SET NX Instead of In-Memory Batching
-
-A previous design used an in-memory `Map` with `setTimeout` to batch writes every 5 seconds. This fails in serverless because:
-
-1. `setTimeout` does not fire if the container is recycled before the timer
-2. Pending updates in the `Map` are permanently lost on container recycle
-3. Multiple instances maintain separate Maps, limiting deduplication effectiveness
-
-`SET NX EX` solves all three problems: it is a single atomic Redis command with no dependency on timers, container lifecycle, or instance-local state.
-
-### Execution Model
-
-Write throttling runs as **fire-and-forget** — it does not `await` the result and does not block the image response. Errors are caught and logged to `console.error` but never propagated to the caller.
-
-### Precision vs. Performance
-
-`lastUsedAt` is displayed in the dashboard as "last used N minutes ago". A 30-second precision is more than sufficient for this UI, while reducing DB writes by up to **97%** under sustained load:
+To avoid excessive database writes, the system throttles these updates to **at most once per 30 seconds** per entity. This reduces database writes by up to **97%** under sustained load while maintaining sufficient precision for the "last used N minutes ago" display in the dashboard.
 
 | Scenario (60 req/min) | Without Throttling | With Throttling (30s) |
 |------------------------|--------------------|-----------------------|
-| DB UPDATEs per minute (key) | 60 | 2 |
-| DB UPDATEs per minute (project) | 60 | 2 |
-| **Total UPDATEs per minute** | **120** | **4** |
+| Database writes per minute (key) | 60 | 2 |
+| Database writes per minute (project) | 60 | 2 |
+| **Total writes per minute** | **120** | **4** |
 
----
-
-## Redis Key Schema
-
-| Prefix | Purpose | TTL | Example |
-|--------|---------|-----|---------|
-| `cache:project:id:` | Project config cache (by ID) | 60s | `cache:project:id:uuid-123` |
-| `cache:project:slug:` | Project config cache (by slug) | 60s | `cache:project:slug:my-blog` |
-| `cache:project:team-slug:` | Team+Project config cache | 60s | `cache:project:team-slug:acme/my-blog` |
-| `cache:apikey:pk:` | API key config cache | 60s | `cache:apikey:pk:pk_abc123` |
-| `ratelimit:ipx:minute:` | Per-minute rate limit counter | ~60s | `ratelimit:ipx:minute:pk_abc123` |
-| `ratelimit:ipx:day:` | Per-day rate limit counter | ~24h | `ratelimit:ipx:day:pk_abc123` |
-| `usage:apikey:` | API key write throttle lock | 30s | `usage:apikey:uuid-123` |
-| `usage:project:` | Project write throttle lock | 30s | `usage:project:uuid-456` |
-
-All keys have a TTL. No key persists indefinitely.
+Write throttling runs as **fire-and-forget** — it never blocks or delays the image response.
 
 ---
 
 ## Data Durability
 
-Redis contains **zero persistent data**. Every key falls into one of three categories:
+Server-side cache data contains **zero persistent data**. Every cached entry falls into one of three categories:
 
-| Category | Source of Truth | If Redis Is Wiped |
+| Category | Source of Truth | If Cache Is Wiped |
 |----------|----------------|-------------------|
-| Config cache | PostgreSQL | Next request refills from DB (higher latency for one request) |
+| Config cache | Database | Next request refills from database (higher latency for one request) |
 | Rate limit counters | None (ephemeral by nature) | Counters reset to zero (briefly allows over-limit requests) |
-| Write throttle locks | None (control flags) | Triggers one extra DB UPDATE per key (harmless) |
+| Write throttle locks | None (control flags) | Triggers one extra database write per entity (harmless) |
 
 ---
 
 ## Failure Modes
 
-All Redis-dependent code paths degrade gracefully rather than hard-failing requests. The system treats Redis as an **optimisation layer**, not a core dependency.
+All caching layers degrade gracefully rather than hard-failing requests. The system treats the cache as an **optimisation layer**, not a core dependency.
 
 | Scenario | Behaviour | Impact | Severity |
 |----------|-----------|--------|----------|
-| Redis temporarily unreachable | Config cache falls back to direct DB query; rate limiter fails open; usage tracker skips | Higher latency, no rate enforcement during outage | Medium |
-| Redis data flushed | All caches miss; rate limits reset; throttle locks gone — system self-heals on next request | Brief burst of DB queries + briefly allows over-limit requests | Low |
-| Redis instance deleted (e.g. 14-day inactivity on free tier) | Same as "temporarily unreachable" — every request falls back to DB | Sustained DB load increase, no rate protection | High |
-| Redis latency spike | Request latency increases but still completes | Slower responses | Low |
+| Cache temporarily unreachable | Config falls back to direct database query; rate limiter fails open; usage tracker skips | Higher latency, no rate enforcement during outage | Medium |
+| Cache data flushed | All caches miss; rate limits reset; throttle locks gone — system self-heals on next request | Brief burst of database queries + briefly allows over-limit requests | Low |
+| Cache latency spike | Request latency increases but still completes | Slower responses | Low |
 
 ### Fail-Open Design Rationale
 
-The system intentionally **fails open** (allows requests through) rather than **fails closed** (rejects all requests) when Redis is unavailable:
+The system intentionally **fails open** (allows requests through) rather than **fails closed** (rejects all requests) when the cache is unavailable:
 
-- **Config cache** — The data is always available from PostgreSQL. Redis is purely a latency optimisation; falling back to DB adds ~10-40ms per request but keeps the service operational.
-- **Rate limiting** — Rate limits protect against abuse, but a temporary loss of enforcement is less damaging than a full outage. A brief Redis disruption is not enough for meaningful abuse; prolonged outages surface via `console.warn` logs for operator alerting.
+- **Config cache** — The data is always available from the database. Caching is purely a latency optimisation; falling back to database adds ~10-40ms per request but keeps the service operational.
+- **Rate limiting** — Rate limits protect against abuse, but a temporary loss of enforcement is less damaging than a full outage. Brief disruptions are logged via `console.warn` for operator alerting.
 - **Usage tracking** — Already fire-and-forget by design. A missed `lastUsedAt` update is harmless and will self-correct on the next successful write cycle.
 
-> **Note:** If your threat model requires fail-closed rate limiting (e.g. protecting a paid API with strict billing), you can change the `checkRateLimit` catch block to return `{ allowed: false, ... }` instead. The current fail-open default prioritises availability for an image optimisation CDN layer where brief unmetered access is acceptable.
+> **Note:** If your threat model requires fail-closed rate limiting (e.g. protecting a paid API with strict billing), you can change the rate limiter to reject requests when the cache is unavailable. The current fail-open default prioritises availability for an image optimisation CDN layer where brief unmetered access is acceptable.
 
 ---
 
@@ -484,27 +315,26 @@ The system intentionally **fails open** (allows requests through) rather than **
 
 A quick-reference table of every tunable value:
 
-| Setting | Default | Location | How to Change |
-|---------|---------|----------|---------------|
-| HTTP cache max-age | `31536000` (1 year) | `route.ts` → `Cache-Control` header | Edit header value, redeploy |
-| Config cache TTL | `60` seconds | `config-cache.ts` → `CACHE_TTL_SECONDS` | Edit constant, redeploy |
-| Negative cache TTL | `10` seconds | `config-cache.ts` → `NEGATIVE_CACHE_TTL_SECONDS` | Edit constant, redeploy |
-| Rate limit per minute | `60` requests | `apiKeys.rateLimitPerMinute` (DB) | Update DB column per API key |
-| Rate limit per day | `10,000` requests | `apiKeys.rateLimitPerDay` (DB) | Update DB column per API key |
-| Rate limit default (minute) | `60` | `config-cache.ts` → fallback value | Edit fallback in `getApiKeyConfig`, redeploy |
-| Rate limit default (day) | `10,000` | `config-cache.ts` → fallback value | Edit fallback in `getApiKeyConfig`, redeploy |
-| Write throttle interval | `30` seconds | `usage-tracker.ts` → `THROTTLE_SECONDS` | Edit constant, redeploy |
+| Setting | Default | How to Change |
+|---------|---------|---------------|
+| HTTP cache s-maxage (CDN) | `31536000` (1 year) | Edit `s-maxage` value in `route.ts`, redeploy |
+| HTTP cache max-age (browser) | `31536000` (1 year) | Edit `max-age` value in `route.ts`, redeploy |
+| Config cache TTL | `60` seconds | Edit `CACHE_TTL_SECONDS` in `config-cache.ts`, redeploy |
+| Negative cache TTL | `10` seconds | Edit `NEGATIVE_CACHE_TTL_SECONDS` in `config-cache.ts`, redeploy |
+| Rate limit per minute | `60` requests | Update `rateLimitPerMinute` column per API key in DB |
+| Rate limit per day | `10,000` requests | Update `rateLimitPerDay` column per API key in DB |
+| Rate limit default (minute) | `60` | Edit fallback value in `config-cache.ts`, redeploy |
+| Rate limit default (day) | `10,000` | Edit fallback value in `config-cache.ts`, redeploy |
+| Write throttle interval | `30` seconds | Edit `THROTTLE_SECONDS` in `usage-tracker.ts`, redeploy |
 
 ### Environment Variables
 
-Redis connectivity is configured via environment variables consumed by `@upstash/redis`:
+Redis connectivity is configured via environment variables:
 
 | Variable | Description |
 |----------|-------------|
 | `UPSTASH_REDIS_REST_URL` | Upstash Redis REST endpoint |
 | `UPSTASH_REDIS_REST_TOKEN` | Upstash Redis REST token |
-
-These are read by `Redis.fromEnv()` in `src/server/lib/redis.ts`.
 
 ---
 
@@ -512,29 +342,27 @@ These are read by `Redis.fromEnv()` in `src/server/lib/redis.ts`.
 
 ### Low-Traffic Projects (< 100 req/day)
 
-The defaults are well-suited for low-traffic use. No changes needed. Consider whether you need Redis at all — if cold start latency is acceptable, you could bypass caching and hit the database directly.
+The defaults are well-suited for low-traffic use. No changes needed.
 
 ### Medium-Traffic Projects (100–10,000 req/day)
 
-Defaults should work well. Monitor Upstash analytics to see if rate limits are being hit legitimately. If so, increase the per-day limit for affected API keys.
+Defaults should work well. Monitor rate limit analytics to see if limits are being hit legitimately. If so, increase the per-day limit for affected API keys.
 
 ### High-Traffic Projects (> 10,000 req/day)
 
 | Setting | Suggested Change | Reason |
 |---------|-----------------|--------|
-| `CACHE_TTL_SECONDS` | Increase to `120`–`300` | Fewer cache misses under heavy load |
-| `THROTTLE_SECONDS` | Increase to `60` | Further reduces DB write pressure |
+| Config cache TTL | Increase to `120`–`300` seconds | Fewer cache misses under heavy load |
+| Write throttle interval | Increase to `60` seconds | Further reduces database write pressure |
 | Per-key rate limits | Set per key based on expected traffic | Avoid false 429s for legitimate heavy users |
 
 ### After Changing Database Rate Limits
 
 When you update `rateLimitPerMinute` or `rateLimitPerDay` in the database:
 
-1. The cached `ApiKeyConfig` still holds the **old** limits for up to 60 seconds.
-2. To apply immediately, call `invalidateApiKeyCache(publicKey)` after the DB update.
-3. The tRPC routers (`apiKey.ts`) already do this automatically when updating keys via the dashboard.
-
-If you update limits via a direct SQL query (not through the dashboard), you must invalidate manually or wait for the cache TTL to expire.
+1. The cached configuration still holds the **old** limits for up to 60 seconds.
+2. Changes made through the dashboard take effect **immediately** (automatic cache invalidation).
+3. Changes made via direct SQL queries take effect after the cache TTL expires (~60 seconds).
 
 ---
 
@@ -542,6 +370,7 @@ If you update limits via a direct SQL query (not through the dashboard), you mus
 
 | Document | Description |
 |----------|-------------|
+| [Redis Schema](./redis-schema.md) | Internal Redis key schema, implementation patterns, and serialization details |
 | [System Overview](./system-overview.md) | Full system architecture |
 | [Access Control](./access-control.md) | Multi-layer permission model |
 | [Security](../security-qa/security.md) | Security design and threat model |

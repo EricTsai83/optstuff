@@ -270,7 +270,8 @@ export async function GET(
       status: 200,
       headers: {
         "Content-Type": contentType,
-        "Cache-Control": "public, max-age=31536000, immutable",
+        "Cache-Control":
+          "public, s-maxage=31536000, max-age=31536000, immutable",
         "X-Processing-Time": `${processingTimeMs}ms`,
       },
     });
