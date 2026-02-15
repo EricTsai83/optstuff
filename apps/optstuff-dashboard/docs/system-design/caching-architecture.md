@@ -38,10 +38,10 @@ Client requests optimized image
                                │ Cache miss
                                ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│  Layer 2: Redis Configuration Cache                                         │
+│  Layer 2: Redis Configuration Cache                                          │
 │                                                                             │
 │  Pattern: Cache-Aside (Lazy Population)                                     │
-│  → Caches ProjectConfig and ApiKeyConfig (TTL 60s)                          │
+│  → Caches ProjectConfig and ApiKeyConfig (TTL 60s)                            │
 │  → Avoids DB reads on every image request                                   │
 └──────────────────────────────┬──────────────────────────────────────────────┘
                                │ Config loaded
@@ -62,7 +62,7 @@ Client requests optimized image
                                │ Response sent
                                ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│  Layer 4: Redis Write Throttling (fire-and-forget)                          │
+│  Layer 4: Redis Write Throttling (fire-and-forget)                           │
 │                                                                             │
 │  Pattern: Distributed Lock via SET NX EX                                    │
 │  → Throttles lastUsedAt / lastActivityAt DB writes (30s interval)           │
