@@ -285,5 +285,5 @@ We continuously review and improve our security measures. If you have questions 
 
 ## Related Documentation
 
-- [Access Control & Permissions](../system-design/access-control.md) — Detailed permission architecture
-- [Integration Guide](../service/integration-guide.md) — How to securely integrate the service
+- [Access Control & Permissions](./access-control.md) — Detailed permission architecture
+- [Integration Guide](../getting-started/integration-guide.md) — How to securely integrate the service

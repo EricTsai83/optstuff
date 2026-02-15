@@ -286,8 +286,8 @@ Level 2: Request Signatures (Per Request)
 
 | Document | Description |
 |----------|-------------|
-| [Service Overview](../service-overview.md) | Product-focused service description |
-| [Access Control](./access-control.md) | Multi-layer permission architecture |
-| [Integration Guide](../service/integration-guide.md) | Step-by-step integration tutorial |
-| [Authentication](../service/authentication.md) | Request validation and error handling |
-| [Security](../security-qa/security.md) | Security best practices and recommendations |
+| [Service Overview](../../user-guide/getting-started/service-overview.md) | Product-focused service description |
+| [Access Control](../../user-guide/reference/access-control.md) | Multi-layer permission architecture |
+| [Integration Guide](../../user-guide/getting-started/integration-guide.md) | Step-by-step integration tutorial |
+| [Authentication](../../user-guide/reference/authentication.md) | Request validation and error handling |
+| [Security](../../user-guide/reference/security.md) | Security best practices and recommendations |

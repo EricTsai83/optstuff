@@ -171,11 +171,11 @@ Process user uploads efficiently:
 
 | Document | Description |
 |----------|-------------|
-| [Integration Guide](./service/integration-guide.md) | Step-by-step integration tutorial |
-| [Authentication](./service/authentication.md) | Request validation and error handling |
-| [Access Control](./system-design/access-control.md) | Multi-layer access control |
-| [System Overview](./system-design/system-overview.md) | Technical architecture overview |
-| [Security](./security-qa/security.md) | Security best practices and recommendations |
+| [Integration Guide](./integration-guide.md) | Step-by-step integration tutorial |
+| [Authentication](../reference/authentication.md) | Request validation and error handling |
+| [Access Control](../reference/access-control.md) | Multi-layer access control |
+| [System Overview](../../internal/architecture/system-overview.md) | Technical architecture overview |
+| [Security](../reference/security.md) | Security best practices and recommendations |
 
 ## Support
 

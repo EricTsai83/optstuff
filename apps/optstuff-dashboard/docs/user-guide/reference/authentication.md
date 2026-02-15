@@ -321,6 +321,6 @@ const signature = hmac.digest("base64");
 
 ## Related Documentation
 
-- [Integration Guide](./integration-guide.md) — Step-by-step integration instructions
-- [Access Control](../system-design/access-control.md) — Domain whitelist configuration
-- [Create API Key Flow](../user-flow/create-api-key-flow.md) — Full API Key creation flow
+- [Integration Guide](../getting-started/integration-guide.md) — Step-by-step integration instructions
+- [Access Control](./access-control.md) — Domain whitelist configuration
+- [Create API Key Flow](../../internal/feature-flows/create-api-key-flow.md) — Full API Key creation flow

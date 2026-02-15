@@ -2,7 +2,7 @@
 
 This document describes how the OptStuff image optimization service caches responses — from browser and CDN caching to server-side caching and rate limiting — along with default values and how to change them.
 
-For internal implementation details (Redis key schema, implementation patterns, serialization), see [Redis Schema](./redis-schema.md).
+For internal implementation details (Redis key schema, implementation patterns, serialization), see [Redis Schema](../../internal/architecture/redis-schema.md).
 
 ---
 
@@ -370,7 +370,7 @@ When you update `rateLimitPerMinute` or `rateLimitPerDay` in the database:
 
 | Document | Description |
 |----------|-------------|
-| [Redis Schema](./redis-schema.md) | Internal Redis key schema, implementation patterns, and serialization details |
-| [System Overview](./system-overview.md) | Full system architecture |
+| [Redis Schema](../../internal/architecture/redis-schema.md) | Internal Redis key schema, implementation patterns, and serialization details |
+| [System Overview](../../internal/architecture/system-overview.md) | Full system architecture |
 | [Access Control](./access-control.md) | Multi-layer permission model |
-| [Security](../security-qa/security.md) | Security design and threat model |
+| [Security](./security.md) | Security design and threat model |

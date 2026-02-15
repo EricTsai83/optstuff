@@ -182,14 +182,22 @@ User (Clerk)
 
 ## Documentation
 
+### 👤 User Guide — 給 API 使用者
+
 | Document | Description |
 |----------|-------------|
-| [Service Overview](./service-overview.md) | Product-focused service description |
-| [System Overview](./system-design/system-overview.md) | Technical architecture deep-dive |
-| [Access Control](./system-design/access-control.md) | Permission model explained |
-| [Authentication](./service/authentication.md) | Request validation details |
-| [Integration Guide](./service/integration-guide.md) | Step-by-step integration |
-| [User Onboarding](./user-flow/user-onboarding.md) | Onboarding flow walkthrough |
-| [Caching Architecture](./system-design/caching-architecture.md) | HTTP caching, rate limiting, and configuration guide for API users |
-| [Redis Schema](./system-design/redis-schema.md) | Internal Redis key schema, implementation patterns, and serialization details |
-| [Security Q&A](./security-qa/security.md) | Security measures explained |
+| [Service Overview](./user-guide/getting-started/service-overview.md) | 產品概覽與功能介紹 |
+| [Integration Guide](./user-guide/getting-started/integration-guide.md) | Step-by-step 整合教學 |
+| [Authentication](./user-guide/reference/authentication.md) | 簽章認證與 URL 格式 |
+| [Access Control](./user-guide/reference/access-control.md) | 權限模型與 Domain Whitelisting |
+| [Caching Guide](./user-guide/reference/caching-guide.md) | HTTP 快取、Rate Limiting 與設定參考 |
+| [Security](./user-guide/reference/security.md) | 安全機制說明 |
+
+### 🔧 Internal — 給專案開發者
+
+| Document | Description |
+|----------|-------------|
+| [System Overview](./internal/architecture/system-overview.md) | 系統架構總覽 |
+| [Redis Schema](./internal/architecture/redis-schema.md) | Redis Key Schema 與實作細節 |
+| [User Onboarding Flow](./internal/feature-flows/user-onboarding-flow.md) | Onboarding 流程與相關程式碼 |
+| [Create API Key Flow](./internal/feature-flows/create-api-key-flow.md) | API Key 建立流程與實作 |

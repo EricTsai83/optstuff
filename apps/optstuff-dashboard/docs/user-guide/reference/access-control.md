@@ -264,7 +264,7 @@ Rate limits can be configured at the API Key level:
 
 ## Related Documentation
 
-- [Service Overview](../service-overview.md) - Complete service overview
-- [Integration Guide](../service/integration-guide.md) - Step-by-step integration tutorial
-- [Authentication](../service/authentication.md) - Request validation and error handling
-- [Security](../security-qa/security.md) - Detailed security recommendations
+- [Service Overview](../getting-started/service-overview.md) - Complete service overview
+- [Integration Guide](../getting-started/integration-guide.md) - Step-by-step integration tutorial
+- [Authentication](./authentication.md) - Request validation and error handling
+- [Security](./security.md) - Detailed security recommendations

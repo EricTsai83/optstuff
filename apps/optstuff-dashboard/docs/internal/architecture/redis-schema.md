@@ -2,7 +2,7 @@
 
 Internal documentation for contributors. This document covers the Redis key schema, implementation patterns, serialization strategies, and atomicity guarantees used by the caching layer.
 
-For the user-facing caching guide (HTTP caching, rate limit behavior, configuration reference), see [Caching Architecture](./caching-architecture.md).
+For the user-facing caching guide (HTTP caching, rate limit behavior, configuration reference), see [Caching Guide](../../user-guide/reference/caching-guide.md).
 
 ---
 
@@ -252,7 +252,7 @@ Redis contains **zero persistent data**. Every key falls into one of three categ
 
 | Document | Description |
 |----------|-------------|
-| [Caching Architecture](./caching-architecture.md) | User-facing caching guide with HTTP caching, rate limit behavior, and configuration reference |
+| [Caching Guide](../../user-guide/reference/caching-guide.md) | User-facing caching guide with HTTP caching, rate limit behavior, and configuration reference |
 | [System Overview](./system-overview.md) | Full system architecture |
-| [Access Control](./access-control.md) | Multi-layer permission model |
-| [Security](../security-qa/security.md) | Security design and threat model |
+| [Access Control](../../user-guide/reference/access-control.md) | Multi-layer permission model |
+| [Security](../../user-guide/reference/security.md) | Security design and threat model |

@@ -236,6 +236,6 @@ The `api_keys` table stores:
 
 ## Related Documentation
 
-- [Authentication](../service/authentication.md) — Request authentication flow
-- [Security](../security-qa/security.md) — Key management recommendations
-- [Service Overview](../service-overview.md) — System architecture overview
+- [Authentication](../../user-guide/reference/authentication.md) — Request authentication flow
+- [Security](../../user-guide/reference/security.md) — Key management recommendations
+- [Service Overview](../../user-guide/getting-started/service-overview.md) — System architecture overview

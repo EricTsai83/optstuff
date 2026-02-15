@@ -148,5 +148,5 @@ The `teams` table enforces:
 
 ## Related Documentation
 
-- [Authentication](../service/authentication.md) — Request authentication flow
-- [Access Control](../system-design/access-control.md) — Team and project permissions
+- [Authentication](../../user-guide/reference/authentication.md) — Request authentication flow
+- [Access Control](../../user-guide/reference/access-control.md) — Team and project permissions

@@ -301,6 +301,6 @@ Dashboard API Key 列表頁會顯示遮罩的完整公鑰，
 
 ## 延伸閱讀
 
-- [請求驗證流程](./authentication.md) - 了解驗證細節
-- [多層權限控管](./permissions.md) - 設定 Domain 白名單
-- [安全最佳實踐](./security-best-practices.md) - 更多安全建議
+- [請求驗證流程](../reference/authentication.md) - 了解驗證細節
+- [多層權限控管](../reference/access-control.md) - 設定 Domain 白名單
+- [安全最佳實踐](../reference/security.md) - 更多安全建議
