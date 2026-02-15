@@ -5,6 +5,7 @@ import { api } from "@/trpc/react";
 import { Button } from "@workspace/ui/components/button";
 import { Input } from "@workspace/ui/components/input";
 import { Label } from "@workspace/ui/components/label";
+import { LoadingButton } from "@workspace/ui/components/loading-button";
 import { Check, Loader2, RefreshCw, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -212,20 +213,14 @@ export function OnboardingForm({
         </div>
 
         <div className="py-2">
-          <Button
+          <LoadingButton
             type="submit"
             className="w-full"
-            disabled={isPending || !name.trim() || !isSlugValid}
+            loading={isPending}
+            disabled={!name.trim() || !isSlugValid}
           >
-            {isPending ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Creating...
-              </>
-            ) : (
-              "Continue"
-            )}
-          </Button>
+            Continue
+          </LoadingButton>
         </div>
       </form>
 

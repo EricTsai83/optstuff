@@ -10,6 +10,7 @@ import {
 } from "@workspace/ui/components/card";
 import { Input } from "@workspace/ui/components/input";
 import { Label } from "@workspace/ui/components/label";
+import { LoadingButton } from "@workspace/ui/components/loading-button";
 import {
   Select,
   SelectContent,
@@ -18,7 +19,7 @@ import {
   SelectValue,
 } from "@workspace/ui/components/select";
 import { Slider } from "@workspace/ui/components/slider";
-import { ExternalLink, ImageIcon, Loader2 } from "lucide-react";
+import { ExternalLink, ImageIcon } from "lucide-react";
 import { useState } from "react";
 import { CopyButton } from "@workspace/ui/components/copy-button";
 
@@ -159,10 +160,9 @@ export function UrlTester({ projectSlug, apiEndpoint }: UrlTesterProps) {
         )}
 
         <div className="flex gap-2">
-          <Button onClick={handleTest} disabled={!imageUrl || isLoading}>
-            {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          <LoadingButton onClick={handleTest} loading={isLoading} disabled={!imageUrl}>
             Test Image
-          </Button>
+          </LoadingButton>
         </div>
 
         {error && (
