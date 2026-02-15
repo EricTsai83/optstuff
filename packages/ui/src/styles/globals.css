@@ -89,7 +89,7 @@
 
   /* Muted colors */
   --muted: oklch(0.24 0.015 260);
-  --muted-foreground: oklch(0.70 0.02 260);
+  --muted-foreground: oklch(0.7 0.02 260);
 
   /* Accent colors */
   --accent: oklch(0.7 0.18 160);
@@ -100,7 +100,7 @@
   --destructive-foreground: oklch(0.95 0.05 25);
 
   /* Border & input colors */
-  --border: oklch(0.30 0.015 260);
+  --border: oklch(0.3 0.015 260);
   --input: oklch(0.26 0.012 260);
   --ring: oklch(0.7 0.18 160);
 
@@ -209,14 +209,13 @@
   .animate-theme-toggle-icon-out {
     animation: theme-toggle-icon-out 300ms ease-out forwards;
   }
-}
 
-/* Hide scrollbar for navigation tabs */
-.scrollbar-hide {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
 
-.scrollbar-hide::-webkit-scrollbar {
-  display: none;
+    &::-webkit-scrollbar {
+      display: none;
+    }
+  }
 }

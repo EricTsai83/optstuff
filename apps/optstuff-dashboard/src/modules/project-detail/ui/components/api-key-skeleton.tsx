@@ -1,5 +1,6 @@
 "use client";
 
+import { DOCS_LINKS } from "@/lib/constants";
 import {
   Card,
   CardContent,
@@ -37,8 +38,17 @@ export function EmptyApiKeyState() {
       <Key className="mb-4 h-12 w-12 opacity-40" />
       <p className="text-lg font-medium">No API keys yet</p>
       <p className="mt-2 max-w-sm text-sm">
-        Create an API key to start using the image optimization service.
+        API keys authenticate your image optimization requests. Each key
+        includes a public key (for URLs) and a secret key (for signing).
       </p>
+      <a
+        href={DOCS_LINKS.apiKeys}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="mt-3 text-sm font-medium text-blue-600 underline underline-offset-4 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+      >
+        Learn more about API keys
+      </a>
     </div>
   );
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import { DOCS_LINKS } from "@/lib/constants";
 import {
   Tabs,
   TabsContent,
@@ -80,7 +81,7 @@ response = requests.get(
 export function DocsLink() {
   return (
     <a
-      href="https://docs.optstuff.dev"
+      href={DOCS_LINKS.home}
       target="_blank"
       rel="noopener noreferrer"
       className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1.5 text-xs transition-colors"

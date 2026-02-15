@@ -21,6 +21,7 @@ import {
 } from "@workspace/ui/components/card";
 import { Input } from "@workspace/ui/components/input";
 import { Label } from "@workspace/ui/components/label";
+import { LoadingButton } from "@workspace/ui/components/loading-button";
 import { format } from "date-fns";
 import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -168,15 +169,13 @@ export function SettingsTab({ project, team }: SettingsTabProps) {
             value={format(new Date(project.createdAt), "PPP")}
           />
           <div className="flex justify-end">
-            <Button
+            <LoadingButton
               onClick={handleSaveProjectInfo}
-              disabled={!hasProjectInfoChanges || isUpdatingProject || !projectName.trim()}
+              loading={isUpdatingProject}
+              disabled={!hasProjectInfoChanges || !projectName.trim()}
             >
-              {isUpdatingProject && (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              )}
               Save
-            </Button>
+            </LoadingButton>
           </div>
         </CardContent>
       </Card>
@@ -211,15 +210,13 @@ export function SettingsTab({ project, team }: SettingsTabProps) {
               </div>
 
               <div className="flex justify-end">
-                <Button
+                <LoadingButton
                   onClick={handleSaveSettings}
-                  disabled={!hasSettingsChanges || isUpdatingSettings}
+                  loading={isUpdatingSettings}
+                  disabled={!hasSettingsChanges}
                 >
-                  {isUpdatingSettings && (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  )}
                   Save Settings
-                </Button>
+                </LoadingButton>
               </div>
             </>
           )}
@@ -277,16 +274,14 @@ export function SettingsTab({ project, team }: SettingsTabProps) {
                   <AlertDialogCancel disabled={isDeleting}>
                     Cancel
                   </AlertDialogCancel>
-                  <Button
+                  <LoadingButton
                     onClick={handleDelete}
-                    disabled={confirmText !== project.name || isDeleting}
+                    loading={isDeleting}
+                    disabled={confirmText !== project.name}
                     variant="destructive"
                   >
-                    {isDeleting && (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    )}
                     Delete Project
-                  </Button>
+                  </LoadingButton>
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>

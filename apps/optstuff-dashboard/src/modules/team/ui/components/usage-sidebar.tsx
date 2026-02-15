@@ -1,5 +1,6 @@
 "use client";
 
+import { DOCS_LINKS } from "@/lib/constants";
 import {
   UsageProgressBar,
   UsageProgressBarSkeleton,
@@ -155,7 +156,7 @@ export function UsageSidebar({ teamId }: UsageSidebarProps) {
             </p>
             <Button variant="outline" className="w-full bg-transparent" asChild>
               <a
-                href="https://docs.optstuff.dev"
+                href={DOCS_LINKS.home}
                 target="_blank"
                 rel="noopener noreferrer"
               >

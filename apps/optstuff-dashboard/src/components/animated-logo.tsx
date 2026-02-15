@@ -36,7 +36,9 @@ export function AnimatedLogo() {
       )}
       style={{ top: `${top}px` }}
     >
+
       <LogoIcon size={size} />
+
     </div>
   );
 }

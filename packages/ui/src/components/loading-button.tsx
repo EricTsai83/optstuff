@@ -1,17 +1,20 @@
 "use client";
 
-import { Loader2 } from "lucide-react";
 import type { ComponentProps } from "react";
 
 import { Button } from "@workspace/ui/components/button";
+import { cn } from "@workspace/ui/lib/utils";
 
 type LoadingButtonProps = ComponentProps<typeof Button> & {
-  /** 顯示 loading spinner 並自動禁用按鈕 */
+  /** Shows a loading state and automatically disables the button */
   readonly loading?: boolean;
 };
 
 /**
- * 帶有 loading 狀態的 Button 組件
+ * Button with a smooth loading transition.
+ *
+ * A spinner slides in from the left when loading starts,
+ * and the button width adjusts smoothly via CSS transitions.
  *
  * @example
  * ```tsx
@@ -24,11 +27,25 @@ function LoadingButton({
   loading = false,
   disabled,
   children,
+  className,
   ...props
 }: LoadingButtonProps) {
   return (
-    <Button disabled={disabled || loading} {...props}>
-      {loading && <Loader2 className="animate-spin" />}
+    <Button
+      disabled={disabled || loading}
+      className={cn("transition-all duration-300 ease-out", className)}
+      {...props}
+    >
+      {/* Spinner wrapper: w-0 → w-4 with -ml-2 to cancel parent gap when collapsed */}
+      <span
+        aria-hidden="true"
+        className={cn(
+          "inline-flex shrink-0 overflow-hidden transition-all duration-300 ease-out",
+          loading ? "w-4 opacity-100" : "w-0 -ml-2 opacity-0",
+        )}
+      >
+        <span className="size-4 shrink-0 animate-spin rounded-full border-2 border-current border-r-transparent" />
+      </span>
       {children}
     </Button>
   );
@@ -36,3 +53,4 @@ function LoadingButton({
 
 export { LoadingButton };
 export type { LoadingButtonProps };
+

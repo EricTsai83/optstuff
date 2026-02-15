@@ -1,5 +1,6 @@
 "use client";
 
+import { DOCS_LINKS } from "@/lib/constants";
 import { api } from "@/trpc/react";
 import { Button } from "@workspace/ui/components/button";
 import { CopyButton } from "@workspace/ui/components/copy-button";
@@ -270,10 +271,17 @@ const url = signUrl('w_800,f_webp', 'images.example.com/photo.jpg');`}
             </div>
 
             {/* Footer */}
-            <DialogFooter className="mt-6">
-              <Button onClick={handleClose} className="w-full sm:w-auto">
-                Done
+            <DialogFooter className="mt-6 flex-col gap-2 sm:flex-row">
+              <Button variant="outline" asChild>
+                <a
+                  href={DOCS_LINKS.integration}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Read Integration Guide
+                </a>
               </Button>
+              <Button onClick={handleClose}>Done</Button>
             </DialogFooter>
           </div>
         )}

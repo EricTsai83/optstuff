@@ -14,6 +14,7 @@ import {
 } from "@workspace/ui/components/dialog";
 import { Input } from "@workspace/ui/components/input";
 import { Label } from "@workspace/ui/components/label";
+import { LoadingButton } from "@workspace/ui/components/loading-button";
 import { Check, Loader2, RefreshCw, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
@@ -230,13 +231,13 @@ export function CreateTeamDialog({
             >
               Cancel
             </Button>
-            <Button
+            <LoadingButton
               type="submit"
-              disabled={isPending || !name.trim() || !isSlugValid}
+              loading={isPending}
+              disabled={!name.trim() || !isSlugValid}
             >
-              {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Create Team
-            </Button>
+            </LoadingButton>
           </DialogFooter>
         </form>
       </DialogContent>

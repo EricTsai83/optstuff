@@ -1,5 +1,6 @@
 "use client";
 
+import { DOCS_LINKS } from "@/lib/constants";
 import { formatBytes, formatNumber } from "@/lib/format";
 import type { Project } from "@/lib/types";
 import { api } from "@/trpc/react";
@@ -25,6 +26,7 @@ import {
   Settings,
 } from "lucide-react";
 import Link from "next/link";
+import { useState } from "react";
 import { getProjectColor } from "../../constants";
 import { CreateProjectDialog } from "./create-project-dialog";
 
@@ -39,6 +41,7 @@ export function ProjectList({
   teamSlug,
   searchQuery = "",
 }: ProjectListProps) {
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const { data: projects, isLoading } = api.project.list.useQuery({ teamId });
   const { data: pinnedProjects, isLoading: isPinnedLoading } =
     api.project.listPinned.useQuery();
@@ -84,6 +87,14 @@ export function ProjectList({
 
   return (
     <div className="min-w-0 flex-1">
+      {/* Create project dialog rendered at ProjectList level so it survives EmptyProjectState unmount */}
+      <CreateProjectDialog
+        teamId={teamId}
+        teamSlug={teamSlug}
+        externalOpen={createDialogOpen}
+        onExternalOpenChange={setCreateDialogOpen}
+      />
+
       {/* Pinned Projects Section */}
       {teamPinnedProjects.length > 0 && (
         <div className="mb-6">
@@ -117,7 +128,7 @@ export function ProjectList({
       </div>
 
       {!projects?.length ? (
-        <EmptyProjectState teamId={teamId} teamSlug={teamSlug} />
+        <EmptyProjectState onCreateProject={() => setCreateDialogOpen(true)} />
       ) : !filteredProjects?.length ? (
         <NoSearchResults query={searchQuery} />
       ) : (
@@ -348,11 +359,9 @@ function ProjectItem({
 }
 
 function EmptyProjectState({
-  teamId,
-  teamSlug,
+  onCreateProject,
 }: {
-  teamId: string;
-  teamSlug: string;
+  readonly onCreateProject: () => void;
 }) {
   return (
     <div className="border-border flex flex-col items-center justify-center rounded-lg border-2 border-dashed py-12 text-center">
@@ -361,13 +370,18 @@ function EmptyProjectState({
       </div>
       <h3 className="font-medium">No projects yet</h3>
       <p className="text-muted-foreground mt-1 mb-4 max-w-sm text-sm">
-        Create your first project to start optimizing images with API keys.
+        Create your first project to start optimizing images. A default API key
+        will be generated automatically.
       </p>
-      <CreateProjectDialog
-        teamId={teamId}
-        teamSlug={teamSlug}
-        trigger={<Button>Create Your First Project</Button>}
-      />
+      <Button onClick={onCreateProject}>Create Your First Project</Button>
+      <a
+        href={DOCS_LINKS.gettingStarted}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-muted-foreground hover:text-foreground mt-4 text-sm underline underline-offset-4 transition-colors"
+      >
+        Not sure how it works? Read the docs
+      </a>
     </div>
   );
 }
