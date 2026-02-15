@@ -1,21 +1,20 @@
 "use client";
 
-import { Loader2 } from "lucide-react";
 import type { ComponentProps } from "react";
 
 import { Button } from "@workspace/ui/components/button";
 import { cn } from "@workspace/ui/lib/utils";
 
 type LoadingButtonProps = ComponentProps<typeof Button> & {
-  /** 顯示 loading spinner 並自動禁用按鈕 */
+  /** Shows a loading state and automatically disables the button */
   readonly loading?: boolean;
 };
 
 /**
- * 帶有 loading 狀態的 Button 組件。
+ * Button with a smooth loading transition.
  *
- * 使用 overlay 技術：loading 時 children 變透明但仍佔據空間，
- * spinner 以 absolute 定位疊在中央，避免 layout shift。
+ * A spinner slides in from the left when loading starts,
+ * and the button width adjusts smoothly via CSS transitions.
  *
  * @example
  * ```tsx
@@ -34,25 +33,24 @@ function LoadingButton({
   return (
     <Button
       disabled={disabled || loading}
-      className={cn("relative", className)}
+      className={cn("transition-all duration-300 ease-out", className)}
       {...props}
     >
+      {/* Spinner wrapper: w-0 → w-4 with -ml-2 to cancel parent gap when collapsed */}
       <span
+        aria-hidden="true"
         className={cn(
-          "inline-flex items-center gap-2 transition-opacity",
-          loading && "opacity-0",
+          "inline-flex shrink-0 overflow-hidden transition-all duration-300 ease-out",
+          loading ? "w-4 opacity-100" : "w-0 -ml-2 opacity-0",
         )}
       >
-        {children}
+        <span className="size-4 shrink-0 animate-spin rounded-full border-2 border-current border-r-transparent" />
       </span>
-      {loading && (
-        <span className="absolute inset-0 flex items-center justify-center">
-          <Loader2 className="size-4 animate-spin" />
-        </span>
-      )}
+      {children}
     </Button>
   );
 }
 
 export { LoadingButton };
 export type { LoadingButtonProps };
+

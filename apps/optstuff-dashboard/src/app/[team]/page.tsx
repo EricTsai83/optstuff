@@ -3,6 +3,7 @@ import { TeamContent } from "@/modules/team";
 import { db } from "@/server/db";
 import { teams } from "@/server/db/schema";
 import { auth } from "@workspace/auth/server";
+import { LoadingButton } from "@workspace/ui/components/loading-button";
 import { eq } from "drizzle-orm";
 import { notFound, redirect } from "next/navigation";
 
@@ -21,6 +22,7 @@ function renderTeamPage(team: typeof teams.$inferSelect) {
           teamName={team.name}
           isPersonal={team.isPersonal}
         />
+        <LoadingButton loading={true}>Create Project</LoadingButton>
       </div>
     </>
   );
