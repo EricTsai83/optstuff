@@ -1,6 +1,7 @@
 "use client";
 
 import { AnimatedLogo } from "@/components/animated-logo";
+import { DOCS_LINKS } from "@/lib/constants";
 import { TeamSwitcher } from "@/modules/team";
 import { ClerkLoaded, ClerkLoading, UserButton } from "@workspace/auth/client";
 import { UserButtonSkeleton } from "@workspace/auth/components/user-button-skeleton";
@@ -41,7 +42,7 @@ export function Header({ teamSlug }: HeaderProps) {
           Feedback
         </Button>
         <IconButton icon={Bell} hasNotification />
-        <IconButton icon={BookOpen} href="https://docs.optstuff.dev" />
+        <IconButton icon={BookOpen} href={DOCS_LINKS.home} />
         <UserAvatar />
       </div>
 

@@ -1,5 +1,6 @@
 "use client";
 
+import { DOCS_LINKS } from "@/lib/constants";
 import { Button } from "@workspace/ui/components/button";
 import {
   DropdownMenu,
@@ -15,7 +16,7 @@ import { useEffect, useState } from "react";
 
 const FOOTER_LINKS = [
   { name: "Home", href: "/" },
-  { name: "Docs", href: "https://docs.optstuff.dev", external: true },
+  { name: "Docs", href: DOCS_LINKS.home, external: true },
   { name: "Contact", href: "mailto:support@optstuff.dev" },
   { name: "Legal", href: "#", hasDropdown: true },
 ];
