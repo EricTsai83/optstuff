@@ -184,19 +184,26 @@ The docs site base URL is configured via the `NEXT_PUBLIC_DOCS_URL` environment 
 NEXT_PUBLIC_DOCS_URL="https://docs.optstuff.dev"
 ```
 
-- Validated in `src/env.js` via `@t3-oss/env-nextjs` with Zod
-- Defaults to `https://docs.optstuff.dev` when not set
+- Validated in `src/env.js` via `@t3-oss/env-nextjs` with Zod (`z.string().url()`)
+- **Required** — validation will fail if `NEXT_PUBLIC_DOCS_URL` is missing or empty
 - Different environments can point to different docs sites (e.g., localhost for dev)
 
-### Centralized Link Builder
+### Centralized Link Object
 
 All documentation links are derived from the env var in `src/lib/constants.ts`:
 
 ```typescript
-export const DOCS_LINKS = buildDocsLinks(
-  process.env.NEXT_PUBLIC_DOCS_URL ?? "https://docs.optstuff.dev",
-);
-// → { home, gettingStarted, integration, apiKeys, security, urlSigning }
+import { env } from "@/env";
+
+/** Centralized documentation links — driven by `NEXT_PUBLIC_DOCS_URL` env var */
+export const DOCS_LINKS = {
+  home: env.NEXT_PUBLIC_DOCS_URL,
+  gettingStarted: `${env.NEXT_PUBLIC_DOCS_URL}/getting-started`,
+  integration: `${env.NEXT_PUBLIC_DOCS_URL}/integration`,
+  apiKeys: `${env.NEXT_PUBLIC_DOCS_URL}/api-keys`,
+  security: `${env.NEXT_PUBLIC_DOCS_URL}/security`,
+  urlSigning: `${env.NEXT_PUBLIC_DOCS_URL}/url-signing`,
+} as const;
 ```
 
 To change the docs URL, update `NEXT_PUBLIC_DOCS_URL` in the environment — no code changes needed.

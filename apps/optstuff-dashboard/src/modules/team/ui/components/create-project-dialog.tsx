@@ -63,7 +63,13 @@ export function CreateProjectDialog({
 
   const utils = api.useUtils();
 
-  const { mutate: createProject, isPending } = api.project.create.useMutation({
+  const {
+    mutate: createProject,
+    isPending,
+    isError,
+    error: mutationError,
+    reset: resetMutation,
+  } = api.project.create.useMutation({
     onSuccess: (project) => {
       utils.project.list.invalidate();
       utils.project.listAll.invalidate();
@@ -87,6 +93,7 @@ export function CreateProjectDialog({
     e.preventDefault();
     if (!name.trim()) return;
 
+    resetMutation();
     createProject({
       teamId,
       name: name.trim(),
@@ -177,6 +184,11 @@ export function CreateProjectDialog({
                 />
               </div>
             </div>
+            {isError && (
+              <p className="text-destructive text-sm" role="alert">
+                {mutationError?.message ?? "Failed to create project. Please try again."}
+              </p>
+            )}
             <DialogFooter>
               <Button
                 type="button"
