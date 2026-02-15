@@ -7,7 +7,7 @@ import { ClerkLoaded, ClerkLoading, UserButton } from "@workspace/auth/client";
 import { UserButtonSkeleton } from "@workspace/auth/components/user-button-skeleton";
 import { Button } from "@workspace/ui/components/button";
 import { Input } from "@workspace/ui/components/input";
-import { Bell, BookOpen, Menu, Moon, Search, Sun } from "lucide-react";
+import { Bell, BookOpen, Home, Menu, Moon, Search, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
 
 type HeaderProps = {
@@ -151,6 +151,14 @@ function UserAvatar() {
               onClick={() => setTheme(isDark ? "light" : "dark")}
             />
           </UserButton.MenuItems>
+          <UserButton.MenuItems>
+            <UserButton.Action
+              label="Home Page"
+              labelIcon={<Home className="h-4 w-4" />}
+              onClick={() => window.location.href = "/"}
+            />
+          </UserButton.MenuItems>
+
         </UserButton>
       </ClerkLoaded>
     </div>
