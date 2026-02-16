@@ -78,9 +78,19 @@ export const projectRouter = createTRPCRouter({
       }
 
       const slug = generateSlug(input.name);
-      const existingProject = await ctx.db.query.projects.findFirst({
-        where: and(eq(projects.teamId, input.teamId), eq(projects.slug, slug)),
-      });
+
+      // If slug is empty (e.g. non-ASCII names), always use unique slug
+      const finalSlug = await (async () => {
+        if (!slug) {
+          return generateUniqueSlug(input.name);
+        }
+
+        const existingProject = await ctx.db.query.projects.findFirst({
+          where: and(eq(projects.teamId, input.teamId), eq(projects.slug, slug)),
+        });
+
+        return existingProject ? generateUniqueSlug(input.name) : slug;
+      })();
 
       // Create the project
       const [newProject] = await ctx.db
@@ -88,7 +98,7 @@ export const projectRouter = createTRPCRouter({
         .values({
           teamId: input.teamId,
           name: input.name,
-          slug: existingProject ? generateUniqueSlug(input.name) : slug,
+          slug: finalSlug,
           description: input.description,
           apiKeyCount: 1, // Will have one default key
         })
