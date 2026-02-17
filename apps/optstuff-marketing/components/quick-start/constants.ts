@@ -3,16 +3,12 @@ import type { Step } from "./types";
 export const STEPS: readonly Step[] = [
   {
     number: "1",
-    title: "Create a Project",
-    description: "Sign up and create a project in your dashboard.",
+    title: "Create a Project & Get API Keys",
+    description:
+      "Sign up, create a project, and get your secret and public keys.",
   },
   {
     number: "2",
-    title: "Get API Key",
-    description: "Your project includes a default API key ready to use.",
-  },
-  {
-    number: "3",
     title: "Start Optimizing",
     description:
       "Prefix the remote image URL (no protocol) with our optimization endpoint to get the optimized URL.",

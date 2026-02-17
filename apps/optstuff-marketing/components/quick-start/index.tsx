@@ -6,11 +6,7 @@ import { Terminal } from "lucide-react";
 import { SectionHeader, SectionWrapper } from "@/components/ui/section";
 import { useIntersectionVisibility } from "@/hooks/use-intersection-visibility";
 import { STEPS } from "./constants";
-import {
-  CreateProjectVisual,
-  OptimizeVisual,
-  SetupProjectVisual,
-} from "./step-visuals";
+import { CreateProjectVisual, OptimizeVisual } from "./step-visuals";
 
 export function QuickStart() {
   const { visibleItems: visibleSteps, setItemRef: setStepRef } =
@@ -24,7 +20,7 @@ export function QuickStart() {
       <SectionHeader
         icon={Terminal}
         badge="Quick Start"
-        title="Three steps to faster images"
+        title="Two steps to faster images"
         description="Get started in minutes with a simple integration."
         className="mb-12 sm:mb-20"
       />
@@ -104,10 +100,10 @@ export function QuickStart() {
                   <div
                     className={cn(
                       "border-border/50 bg-card/50 overflow-hidden rounded-xl border backdrop-blur-sm transition-all duration-500 sm:rounded-2xl",
-                      // Third step's OptimizeVisual needs more height on mobile devices
-                      index === 2
+                      // Each step needs different height to fit its content
+                      index === 1
                         ? "h-[200px] sm:h-[180px] md:h-[220px]"
-                        : "h-[140px] sm:h-[180px] md:h-[220px]",
+                        : "h-[260px] sm:h-[320px] md:h-[370px]",
                       isVisible
                         ? "translate-x-0 opacity-100"
                         : "translate-x-8 opacity-0",
@@ -115,8 +111,7 @@ export function QuickStart() {
                   >
                     <div className="h-full p-2 sm:p-4 md:p-5">
                       {index === 0 && <CreateProjectVisual />}
-                      {index === 1 && <SetupProjectVisual />}
-                      {index === 2 && <OptimizeVisual />}
+                      {index === 1 && <OptimizeVisual />}
                     </div>
                   </div>
                 </div>
