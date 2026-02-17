@@ -13,6 +13,31 @@ import {
 } from "@/server/lib/config-cache";
 
 /**
+ * Checks if an error is a Postgres unique-constraint violation for the given constraint name.
+ * Postgres error code "23505" = unique_violation.
+ */
+function isUniqueConstraintError(
+  error: unknown,
+  constraintName: string,
+): boolean {
+  if (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    (error as { readonly code: string }).code === "23505"
+  ) {
+    if ("constraint_name" in error) {
+      return (
+        (error as { readonly constraint_name: string }).constraint_name ===
+        constraintName
+      );
+    }
+    return true;
+  }
+  return false;
+}
+
+/**
  * Helper to verify user owns the team.
  * Returns the team if access is granted, null otherwise.
  */
@@ -79,30 +104,46 @@ export const projectRouter = createTRPCRouter({
 
       const slug = generateSlug(input.name);
 
-      // If slug is empty (e.g. non-ASCII names), always use unique slug
-      const finalSlug = await (async () => {
-        if (!slug) {
-          return generateUniqueSlug(input.name);
-        }
-
+      // Determine initial slug: use unique slug for empty slugs (e.g. non-ASCII names)
+      let finalSlug: string;
+      if (!slug) {
+        finalSlug = generateUniqueSlug(input.name);
+      } else {
         const existingProject = await ctx.db.query.projects.findFirst({
           where: and(eq(projects.teamId, input.teamId), eq(projects.slug, slug)),
         });
+        finalSlug = existingProject ? generateUniqueSlug(input.name) : slug;
+      }
 
-        return existingProject ? generateUniqueSlug(input.name) : slug;
-      })();
+      // Insert project, retrying once on slug collision (TOCTOU with project_team_slug_unique)
+      const insertProject = async (slugToUse: string) => {
+        const [created] = await ctx.db
+          .insert(projects)
+          .values({
+            teamId: input.teamId,
+            name: input.name,
+            slug: slugToUse,
+            description: input.description,
+            apiKeyCount: 1, // Will have one default key
+          })
+          .returning();
+        return created;
+      };
 
-      // Create the project
-      const [newProject] = await ctx.db
-        .insert(projects)
-        .values({
-          teamId: input.teamId,
-          name: input.name,
-          slug: finalSlug,
-          description: input.description,
-          apiKeyCount: 1, // Will have one default key
-        })
-        .returning();
+      let newProject = await insertProject(finalSlug).catch(
+        (error: unknown) => {
+          if (isUniqueConstraintError(error, "project_team_slug_unique")) {
+            return null;
+          }
+          throw error;
+        },
+      );
+
+      // Retry once with a freshly generated unique slug
+      if (!newProject) {
+        finalSlug = generateUniqueSlug(input.name);
+        newProject = await insertProject(finalSlug);
+      }
 
       if (!newProject) {
         throw new TRPCError({

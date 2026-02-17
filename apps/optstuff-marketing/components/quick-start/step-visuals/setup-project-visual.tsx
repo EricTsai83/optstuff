@@ -41,8 +41,8 @@ export function SetupProjectVisual() {
   const [isClicking, setIsClicking] = useState(false);
   const prevStepRef = useRef(0);
 
-  const secretKey = "sk_live_yc8Xjq...4K3k";
-  const publishableKey = "pk_live_a7Bm2x...9R1w";
+  const secretKey = "sk_test_example_abcc123";
+  const publishableKey = "pk_test_example_abc123";
 
   // Animation loop:
   // step 0: dashboard with cursor on "Create Project" button (1.5s)

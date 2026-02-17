@@ -61,9 +61,9 @@ export function CreateProjectVisual() {
   const isFirstRenderRef = useRef(true);
 
   const projectName = "My App";
-  const secretKey = "sk_live_yc8XjqSwYTiu4K3k";
-  const maskedSecretKey = "sk_live_••••••••••••••••••";
-  const publishableKey = "pk_live_a7Bm2UtfKlV9R1w";
+  const secretKey = "sk_test_example_abc123";
+  const maskedSecretKey = "sk_test_example_••••••";
+  const publishableKey = "pk_test_example_abc123";
 
   // Animation loop:
   // step 0: dashboard idle (2s first render for DOM entrance, 1.5s on loops)
