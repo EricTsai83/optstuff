@@ -7,41 +7,18 @@ import {
   Copy,
   Eye,
   EyeOff,
-  FolderOpen,
   Search,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
+import { FakeCursor } from "./fake-cursor";
 import { MiniDashboardHeader } from "./mini-dashboard-header";
+import { ProjectCardList } from "./project-card-list";
 
-/** Classic mouse pointer SVG */
-function FakeCursor({
-  isClicking,
-  className,
-}: {
-  readonly isClicking: boolean;
-  readonly className?: string;
-}) {
-  return (
-    <svg
-      viewBox="0 0 14 18"
-      fill="none"
-      className={cn(
-        "h-3.5 w-3 drop-shadow-md transition-transform duration-100 sm:h-[18px] sm:w-[14px]",
-        isClicking && "scale-75",
-        className,
-      )}
-    >
-      <path
-        d="M1 1L1 13L3.8 10.2L6.4 16L8.2 15L5.6 9.2L10 9.2L1 1Z"
-        fill="white"
-        stroke="black"
-        strokeWidth="1.2"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
+const PROJECT_NAME = "My App";
+const SECRET_KEY = "sk_test_example_abc123";
+const MASKED_SECRET_KEY = "sk_test_example_••••••";
+const PUBLISHABLE_KEY = "pk_test_example_abc123";
 
 /**
  * Combined animation: Create project → type name → submit →
@@ -60,11 +37,6 @@ export function CreateProjectVisual() {
   const prevStepRef = useRef(0);
   const isFirstRenderRef = useRef(true);
 
-  const projectName = "My App";
-  const secretKey = "sk_test_example_abc123";
-  const maskedSecretKey = "sk_test_example_••••••";
-  const publishableKey = "pk_test_example_abc123";
-
   // Animation loop:
   // step 0: dashboard idle (2s first render for DOM entrance, 1.5s on loops)
   // step 1: cursor on "New Project" button (1.5s)
@@ -80,16 +52,15 @@ export function CreateProjectVisual() {
     const delays = [initialDelay, 1500, 2000, 1200, 1500, 1000, 1200, 1000, 2500];
 
     const timeout = setTimeout(() => {
-      setStep((prev) => {
-        if (prev >= 8) {
-          setTypedName("");
-          setSkVisible(false);
-          setIsCopied(false);
-          isFirstRenderRef.current = false;
-          return 0;
-        }
-        return prev + 1;
-      });
+      const newStep = step >= 8 ? 0 : step + 1;
+      setStep(newStep);
+
+      if (newStep === 0) {
+        setTypedName("");
+        setSkVisible(false);
+        setIsCopied(false);
+        isFirstRenderRef.current = false;
+      }
     }, delays[step]);
 
     return () => clearTimeout(timeout);
@@ -97,9 +68,9 @@ export function CreateProjectVisual() {
 
   // Typing animation during step 2
   useEffect(() => {
-    if (step === 2 && typedName.length < projectName.length) {
+    if (step === 2 && typedName.length < PROJECT_NAME.length) {
       const timeout = setTimeout(() => {
-        setTypedName(projectName.slice(0, typedName.length + 1));
+        setTypedName(PROJECT_NAME.slice(0, typedName.length + 1));
       }, 150);
       return () => clearTimeout(timeout);
     }
@@ -192,26 +163,7 @@ export function CreateProjectVisual() {
           </div>
 
           {/* Mini project cards — background, keep modest */}
-          <div className="space-y-1.5 sm:space-y-2">
-            <div className="border-border/50 flex items-center gap-2 rounded-md border p-1.5 sm:gap-2.5 sm:rounded-lg sm:p-2">
-              <FolderOpen className="text-muted-foreground h-3 w-3 shrink-0 sm:h-3.5 sm:w-3.5" />
-              <span className="text-foreground text-[8px] font-medium sm:text-[10px]">
-                my-website
-              </span>
-              <span className="text-muted-foreground ml-auto text-[7px] sm:text-[9px]">
-                3 keys
-              </span>
-            </div>
-            <div className="border-border/50 flex items-center gap-2 rounded-md border p-1.5 sm:gap-2.5 sm:rounded-lg sm:p-2">
-              <FolderOpen className="text-muted-foreground h-3 w-3 shrink-0 sm:h-3.5 sm:w-3.5" />
-              <span className="text-foreground text-[8px] font-medium sm:text-[10px]">
-                blog-images
-              </span>
-              <span className="text-muted-foreground ml-auto text-[7px] sm:text-[9px]">
-                1 key
-              </span>
-            </div>
-          </div>
+          <ProjectCardList variant="regular" />
         </div>
 
         {/* Dialog overlay */}
@@ -351,7 +303,7 @@ export function CreateProjectVisual() {
                               : "text-muted-foreground",
                           )}
                         >
-                          {skVisible ? secretKey : maskedSecretKey}
+                          {skVisible ? SECRET_KEY : MASKED_SECRET_KEY}
                         </code>
 
                         {/* Eye toggle — focal icon */}
@@ -415,7 +367,7 @@ export function CreateProjectVisual() {
                         </div>
                         {/* PK value — focal, larger mono text */}
                         <code className="border-border/50 bg-muted/50 text-foreground min-w-0 flex-1 truncate rounded-md border px-2 py-1 font-mono text-[10px] sm:px-2.5 sm:text-xs">
-                          {publishableKey}
+                          {PUBLISHABLE_KEY}
                         </code>
                         <Copy className="text-muted-foreground h-3.5 w-3.5 shrink-0 sm:h-4 sm:w-4" />
                       </div>

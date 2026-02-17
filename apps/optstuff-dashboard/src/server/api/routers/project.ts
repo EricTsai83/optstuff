@@ -32,7 +32,7 @@ function isUniqueConstraintError(
         constraintName
       );
     }
-    return true;
+    return false;
   }
   return false;
 }
@@ -110,7 +110,10 @@ export const projectRouter = createTRPCRouter({
         finalSlug = generateUniqueSlug(input.name);
       } else {
         const existingProject = await ctx.db.query.projects.findFirst({
-          where: and(eq(projects.teamId, input.teamId), eq(projects.slug, slug)),
+          where: and(
+            eq(projects.teamId, input.teamId),
+            eq(projects.slug, slug),
+          ),
         });
         finalSlug = existingProject ? generateUniqueSlug(input.name) : slug;
       }
@@ -166,7 +169,11 @@ export const projectRouter = createTRPCRouter({
         createdBy: ctx.userId,
       });
 
-      return { ...newProject, defaultApiKey: publicKey, defaultSecretKey: secretKey };
+      return {
+        ...newProject,
+        defaultApiKey: publicKey,
+        defaultSecretKey: secretKey,
+      };
     }),
 
   /**

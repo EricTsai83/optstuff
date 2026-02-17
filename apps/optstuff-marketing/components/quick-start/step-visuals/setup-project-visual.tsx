@@ -1,39 +1,12 @@
 "use client";
 
 import { cn } from "@workspace/ui/lib/utils";
-import { CheckCircle2, Copy, FolderOpen, Search } from "lucide-react";
+import { CheckCircle2, Copy, Search } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
+import { FakeCursor } from "./fake-cursor";
 import { MiniDashboardHeader } from "./mini-dashboard-header";
-
-/** Classic mouse pointer SVG */
-function FakeCursor({
-  isClicking,
-  className,
-}: {
-  readonly isClicking: boolean;
-  readonly className?: string;
-}) {
-  return (
-    <svg
-      viewBox="0 0 14 18"
-      fill="none"
-      className={cn(
-        "h-3.5 w-3 drop-shadow-md transition-transform duration-100 sm:h-[18px] sm:w-[14px]",
-        isClicking && "scale-75",
-        className,
-      )}
-    >
-      <path
-        d="M1 1L1 13L3.8 10.2L6.4 16L8.2 15L5.6 9.2L10 9.2L1 1Z"
-        fill="white"
-        stroke="black"
-        strokeWidth="1.2"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
+import { ProjectCardList } from "./project-card-list";
 
 /** Step 2: Click "Create Project" → "Project Created" dialog with sk & pk keys */
 export function SetupProjectVisual() {
@@ -41,7 +14,7 @@ export function SetupProjectVisual() {
   const [isClicking, setIsClicking] = useState(false);
   const prevStepRef = useRef(0);
 
-  const secretKey = "sk_test_example_abcc123";
+  const secretKey = "sk_test_example_abc123";
   const publishableKey = "pk_test_example_abc123";
 
   // Animation loop:
@@ -115,26 +88,7 @@ export function SetupProjectVisual() {
           </div>
 
           {/* Mini project cards */}
-          <div className="space-y-1 sm:space-y-1.5">
-            <div className="border-border/50 flex items-center gap-1.5 rounded-md border p-1 sm:gap-2 sm:rounded-lg sm:p-1.5">
-              <FolderOpen className="text-muted-foreground h-2.5 w-2.5 shrink-0 sm:h-3 sm:w-3" />
-              <span className="text-foreground text-[7px] font-medium sm:text-[9px]">
-                my-website
-              </span>
-              <span className="text-muted-foreground ml-auto text-[6px] sm:text-[8px]">
-                3 keys
-              </span>
-            </div>
-            <div className="border-border/50 flex items-center gap-1.5 rounded-md border p-1 sm:gap-2 sm:rounded-lg sm:p-1.5">
-              <FolderOpen className="text-muted-foreground h-2.5 w-2.5 shrink-0 sm:h-3 sm:w-3" />
-              <span className="text-foreground text-[7px] font-medium sm:text-[9px]">
-                blog-images
-              </span>
-              <span className="text-muted-foreground ml-auto text-[6px] sm:text-[8px]">
-                1 key
-              </span>
-            </div>
-          </div>
+          <ProjectCardList variant="compact" />
         </div>
 
         {/* Dialog overlay — "Project Created" with sk & pk keys */}
