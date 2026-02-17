@@ -22,5 +22,8 @@
     "globals": "^15.15.0",
     "typescript": "^5.9.2",
     "typescript-eslint": "^8.39.0"
+  },
+  "dependencies": {
+    "@types/eslint-config-prettier": "^6.11.3"
   }
 }

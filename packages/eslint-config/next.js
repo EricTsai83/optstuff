@@ -1,36 +1,31 @@
-import js from "@eslint/js"
-import pluginNext from "@next/eslint-plugin-next"
-import eslintConfigPrettier from "eslint-config-prettier"
-import pluginReact from "eslint-plugin-react"
-import pluginReactHooks from "eslint-plugin-react-hooks"
-import globals from "globals"
-import tseslint from "typescript-eslint"
+import pluginNext from "@next/eslint-plugin-next";
+import pluginReact from "eslint-plugin-react";
+import pluginReactHooks from "eslint-plugin-react-hooks";
+import { defineConfig } from "eslint/config";
+import globals from "globals";
 
-import { config as baseConfig } from "./base.js"
+import { config as baseConfig } from "./base.js";
+
+const reactFlatRecommended = pluginReact.configs.flat.recommended;
 
 /**
  * A custom ESLint configuration for libraries that use Next.js.
- *
- * @type {import("eslint").Linter.Config}
- * */
-export const nextJsConfig = [
+ */
+export const nextJsConfig = defineConfig(
   ...baseConfig,
-  js.configs.recommended,
-  eslintConfigPrettier,
-  ...tseslint.configs.recommended,
   {
-    ...pluginReact.configs.flat.recommended,
+    ...reactFlatRecommended,
     languageOptions: {
-      ...pluginReact.configs.flat.recommended.languageOptions,
+      ...reactFlatRecommended?.languageOptions,
       globals: {
+        ...reactFlatRecommended?.languageOptions?.globals,
+        ...globals.browser,
         ...globals.serviceworker,
       },
     },
   },
   {
-    plugins: {
-      "@next/next": pluginNext,
-    },
+    plugins: { "@next/next": pluginNext },
     rules: {
       ...pluginNext.configs.recommended.rules,
       ...pluginNext.configs["core-web-vitals"].rules,
@@ -48,4 +43,4 @@ export const nextJsConfig = [
       "react/prop-types": "off",
     },
   },
-]
+);
