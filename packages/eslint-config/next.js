@@ -1,11 +1,8 @@
-import js from "@eslint/js";
 import pluginNext from "@next/eslint-plugin-next";
-import eslintConfigPrettier from "eslint-config-prettier";
 import pluginReact from "eslint-plugin-react";
 import pluginReactHooks from "eslint-plugin-react-hooks";
 import { defineConfig } from "eslint/config";
 import globals from "globals";
-import tseslint from "typescript-eslint";
 
 import { config as baseConfig } from "./base.js";
 
@@ -16,9 +13,6 @@ const reactFlatRecommended = pluginReact.configs.flat.recommended;
  */
 export const nextJsConfig = defineConfig(
   ...baseConfig,
-  js.configs.recommended,
-  eslintConfigPrettier,
-  ...tseslint.configs.recommended,
   {
     ...reactFlatRecommended,
     languageOptions: {
