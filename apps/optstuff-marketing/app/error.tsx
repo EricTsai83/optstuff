@@ -1,5 +1,7 @@
 "use client";
 
+import type { ReactNode } from "react";
+
 import { ErrorPage } from "@workspace/ui/error-pages/error-page";
 
 /**
@@ -12,6 +14,6 @@ export default function MarketingErrorPage({
 }: {
   readonly error: Error & { readonly digest?: string };
   readonly reset: () => void;
-}) {
+}): ReactNode {
   return <ErrorPage error={error} reset={reset} />;
 }

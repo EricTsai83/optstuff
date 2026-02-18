@@ -6,7 +6,7 @@
     "build": {
       "dependsOn": ["^build"],
       "inputs": ["$TURBO_DEFAULT$", ".env*"],
-      "outputs": [".next/**", "!.next/cache/**"],
+      "outputs": [".next/**", "!.next/cache/**", ".source/**"],
       "env": [
         "DATABASE_URL",
         "SKIP_ENV_VALIDATION",
