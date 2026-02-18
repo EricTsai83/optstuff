@@ -1,10 +1,20 @@
 import { RootProvider } from 'fumadocs-ui/provider/next';
-import './global.css';
+import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
+import './global.css';
 
 const inter = Inter({
   subsets: ['latin'],
 });
+
+export const metadata: Metadata = {
+  title: {
+    default: 'OptStuff Docs',
+    template: '%s | OptStuff Docs',
+  },
+  description:
+    'Documentation for OptStuff - optimize your stuff with actionable insights.',
+};
 
 export default function Layout({ children }: LayoutProps<'/'>) {
   return (
