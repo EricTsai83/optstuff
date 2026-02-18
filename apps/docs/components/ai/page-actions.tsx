@@ -17,23 +17,27 @@ export function LLMCopyButton({
   markdownUrl: string;
 }) {
   const [isLoading, setLoading] = useState(false);
+  const [copyError, setCopyError] = useState<string | undefined>(undefined);
   const [checked, onClick] = useCopyButton(async () => {
+    setCopyError(undefined);
+
     const cached = cache.get(markdownUrl);
     if (cached) return navigator.clipboard.writeText(cached);
 
     setLoading(true);
 
     try {
-      await navigator.clipboard.write([
-        new ClipboardItem({
-          'text/plain': fetch(markdownUrl).then(async (res) => {
-            const content = await res.text();
-            cache.set(markdownUrl, content);
-
-            return content;
-          }),
-        }),
-      ]);
+      const res = await fetch(markdownUrl);
+      if (!res.ok) {
+        throw new Error(`Failed to fetch markdown (${res.status})`);
+      }
+      const content = await res.text();
+      cache.set(markdownUrl, content);
+      await navigator.clipboard.writeText(content);
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Failed to copy markdown';
+      setCopyError(message);
     } finally {
       setLoading(false);
     }
@@ -50,9 +54,10 @@ export function LLMCopyButton({
         }),
       )}
       onClick={onClick}
+      title={copyError}
     >
-      {checked ? <Check /> : <Copy />}
-      Copy Markdown
+      {checked && !copyError ? <Check /> : <Copy />}
+      {copyError ? 'Copy Failed' : 'Copy Markdown'}
     </button>
   );
 }
