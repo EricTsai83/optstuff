@@ -181,7 +181,7 @@ The docs site base URL is configured via the `NEXT_PUBLIC_DOCS_URL` environment 
 
 ```bash
 # .env or .env.local
-NEXT_PUBLIC_DOCS_URL="https://docs.optstuff.dev"
+NEXT_PUBLIC_DOCS_URL="http://localhost:3002"
 ```
 
 - Validated in `src/env.js` via `@t3-oss/env-nextjs` with Zod (`z.string().url()`)
