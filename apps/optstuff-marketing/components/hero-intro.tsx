@@ -57,7 +57,7 @@ export function HeroIntro() {
               className="h-12 w-full rounded-full px-6 hover:shadow-xl sm:w-auto"
               asChild
             >
-              <Link href="/docs">Documentation</Link>
+              <Link href={process.env.NEXT_PUBLIC_DOCS_URL ?? "#"}>Documentation</Link>
             </Button>
           </div>
         </div>
