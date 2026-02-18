@@ -7,7 +7,14 @@ const inter = Inter({
   subsets: ['latin'],
 });
 
+const metadataBaseUrl =
+  process.env.NEXT_PUBLIC_SITE_URL ??
+  (process.env.VERCEL_URL
+    ? `https://${process.env.VERCEL_URL}`
+    : 'http://localhost:3002');
+
 export const metadata: Metadata = {
+  metadataBase: new URL(metadataBaseUrl),
   title: {
     default: 'OptStuff Docs',
     template: '%s | OptStuff Docs',
