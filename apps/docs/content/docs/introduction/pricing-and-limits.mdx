@@ -1,0 +1,84 @@
+---
+title: Pricing and Limits
+description: OptStuff plan details, usage limits, rate limits, and what happens when you exceed them.
+---
+
+## Free Plan
+
+Get started at no cost with generous limits for personal projects and prototyping.
+
+| Resource | Monthly Limit |
+|----------|---------------|
+| Requests | 10,000 |
+| Bandwidth | 1 GB |
+
+### Default Rate Limits (per API Key)
+
+| Limit | Default Value |
+|-------|---------------|
+| Per-minute | 60 requests |
+| Per-day | 10,000 requests |
+
+Rate limits are configurable per API key. See [Rate Limiting](/docs/guides/rate-limiting) for tuning guidance.
+
+## What Happens When You Exceed Limits
+
+### Rate Limit Exceeded
+
+When a single API key exceeds its per-minute or per-day limit, subsequent requests receive a `429 Too Many Requests` response with a `Retry-After` header indicating when to retry.
+
+```json
+{
+  "error": "Rate limit exceeded",
+  "reason": "Too many requests per minute",
+  "retryAfter": 12,
+  "limit": 60
+}
+```
+
+Other API keys on the same project are **not affected** — rate limits are enforced independently per key.
+
+### Monthly Usage Exceeded
+
+When your team's total monthly requests or bandwidth reaches the free plan limit:
+
+- Existing cached responses continue to be served by CDNs
+- New optimization requests may be throttled or rejected
+- Usage resets at the start of each billing period
+
+## Paid Plans
+
+For teams that need higher limits, priority support, or custom SLAs:
+
+| Feature | Free | Pro (coming soon) |
+|---------|------|-------------------|
+| Monthly requests | 10,000 | Custom |
+| Monthly bandwidth | 1 GB | Custom |
+| Default rate limit (per minute) | 60 | Custom |
+| Default rate limit (per day) | 10,000 | Custom |
+| Teams | Unlimited | Unlimited |
+| Projects per team | Unlimited | Unlimited |
+| API keys per project | Unlimited | Unlimited |
+| Signed URL security | Yes | Yes |
+| Domain whitelisting | Yes | Yes |
+| Usage analytics | Yes | Yes |
+| Priority support | — | Yes |
+
+Contact us at **support@optstuff.com** to discuss enterprise pricing and custom limits.
+
+## Included in All Plans
+
+Every OptStuff plan includes the full security and feature set:
+
+- HMAC-SHA256 signed URLs
+- AES-256-GCM encrypted key storage
+- Two-layer domain whitelisting
+- Configurable rate limits per API key
+- Usage analytics and request logs
+- Multi-tenant team/project hierarchy
+
+## Related Documentation
+
+- [Rate Limiting](/docs/guides/rate-limiting) — How rate limits work and how to configure them
+- [Key Management](/docs/guides/key-management) — API key lifecycle and per-key settings
+- [Quick Start](/docs/getting-started/quickstart) — Get started in under 5 minutes

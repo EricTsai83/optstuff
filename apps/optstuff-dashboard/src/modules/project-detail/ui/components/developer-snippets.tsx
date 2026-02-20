@@ -25,26 +25,26 @@ export function DeveloperSnippets({
   apiEndpoint,
 }: DeveloperSnippetsProps) {
   const envExample = `# Add to your .env file (server-side only - keep secret!)
-IPX_SECRET_KEY="sk_your_secret_key_here"  # From API Key creation
-IPX_PUBLIC_KEY="pk_abc123..."             # From API Key creation
+OPTSTUFF_SECRET_KEY="sk_your_secret_key_here"  # From API Key creation
+OPTSTUFF_PUBLIC_KEY="pk_abc123..."             # From API Key creation
 
 # Public config
-NEXT_PUBLIC_IPX_PROJECT_SLUG="${projectSlug}"
-NEXT_PUBLIC_IPX_ENDPOINT="${apiEndpoint}"  # Your deployment URL`;
+NEXT_PUBLIC_OPTSTUFF_PROJECT_SLUG="${projectSlug}"
+NEXT_PUBLIC_OPTSTUFF_ENDPOINT="${apiEndpoint}"  # Your deployment URL`;
 
-  const loaderExample = `// lib/ipx-signer.ts (SERVER-SIDE ONLY)
+  const loaderExample = `// lib/optstuff.ts (SERVER-SIDE ONLY)
 import crypto from "crypto";
 
-const SECRET_KEY = process.env.IPX_SECRET_KEY!;
-const PUBLIC_KEY = process.env.IPX_PUBLIC_KEY!;
-const IPX_ENDPOINT = process.env.NEXT_PUBLIC_IPX_ENDPOINT!; // Your deployment URL + /api/v1
-const PROJECT_SLUG = process.env.NEXT_PUBLIC_IPX_PROJECT_SLUG || "${projectSlug}";
+const SECRET_KEY = process.env.OPTSTUFF_SECRET_KEY!;
+const PUBLIC_KEY = process.env.OPTSTUFF_PUBLIC_KEY!;
+const ENDPOINT = process.env.NEXT_PUBLIC_OPTSTUFF_ENDPOINT!; // Your deployment URL + /api/v1
+const PROJECT_SLUG = process.env.NEXT_PUBLIC_OPTSTUFF_PROJECT_SLUG || "${projectSlug}";
 
 /**
- * Sign an IPX URL with HMAC-SHA256
+ * Sign an image URL with HMAC-SHA256
  * Call this from your API route or server component
  */
-export function signIpxUrl(
+export function signImageUrl(
   imagePath: string,
   operations: string = "_",
   expiresIn?: number // seconds from now
@@ -59,7 +59,7 @@ export function signIpxUrl(
     .digest("base64url")
     .substring(0, 32);
   
-  let url = \`\${IPX_ENDPOINT}/\${PROJECT_SLUG}/\${path}?key=\${PUBLIC_KEY}&sig=\${sig}\`;
+  let url = \`\${ENDPOINT}/\${PROJECT_SLUG}/\${path}?key=\${PUBLIC_KEY}&sig=\${sig}\`;
   if (exp) url += \`&exp=\${exp}\`;
   
   return url;
@@ -73,18 +73,18 @@ export async function GET(request: Request) {
   const width = searchParams.get("w");
   
   const ops = width ? \`w_\${width},f_webp\` : "f_webp";
-  const signedUrl = signIpxUrl(src, ops, 3600); // 1 hour expiry
+  const signedUrl = signImageUrl(src, ops, 3600); // 1 hour expiry
   
   return Response.json({ url: signedUrl });
 }`;
 
   const usageExample = `// Using signed URLs in Next.js
 // Option 1: Server Component (recommended)
-import { signIpxUrl } from "@/lib/ipx-signer";
+import { signImageUrl } from "@/lib/optstuff";
 
 export default function MyPage() {
   // Sign URL on server
-  const imageUrl = signIpxUrl(
+  const imageUrl = signImageUrl(
     "images.example.com/photo.jpg",
     "w_800,f_webp",
     3600 // 1 hour
@@ -124,7 +124,7 @@ _            → No operations`;
         <CardHeader>
           <CardTitle>Quick Start</CardTitle>
           <CardDescription>
-            Copy these code snippets to integrate IPX into your project
+            Copy these code snippets to integrate OptStuff into your project
           </CardDescription>
         </CardHeader>
         <CardContent>

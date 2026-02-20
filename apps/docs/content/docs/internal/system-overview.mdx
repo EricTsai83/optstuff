@@ -1,4 +1,7 @@
-# OptStuff System Overview
+---
+title: System Overview
+description: Comprehensive technical overview of the OptStuff image optimization service — architecture, security model, core components, and request lifecycle.
+---
 
 This document provides a comprehensive technical overview of the OptStuff image optimization service, covering its architecture, security model, and core components.
 
@@ -268,26 +271,14 @@ Level 2: Request Signatures (Per Request)
 
 ## Error Handling
 
-| HTTP Status | Error | Cause |
-|-------------|-------|-------|
-| 400 | Invalid path format | Malformed request URL structure |
-| 400 | Invalid image URL | Unable to parse the image URL |
-| 401 | Missing signature parameters | `key` or `sig` parameter not provided |
-| 401 | Invalid API key | API key not found or does not belong to project |
-| 401 | API key has expired | Key past its `expiresAt` date |
-| 403 | Invalid or expired signature | Signature mismatch or expired |
-| 403 | Source domain not allowed | Image source not in allowedSourceDomains |
-| 403 | Invalid referer | Request referer not in allowedRefererDomains |
-| 404 | Project not found | Project slug does not exist |
-| 429 | Rate limit exceeded | Request count exceeded configured limits |
-| 500 | Image processing failed | Internal error during image optimization |
+For the complete error code list with causes and solutions, see [Error Codes](/docs/api-reference/error-codes).
 
 ## Related Documentation
 
 | Document | Description |
 |----------|-------------|
-| [Service Overview](../../user-guide/getting-started/service-overview.md) | Product-focused service description |
-| [Access Control](../../user-guide/reference/access-control.md) | Multi-layer permission architecture |
-| [Integration Guide](../../user-guide/getting-started/integration-guide.md) | Step-by-step integration tutorial |
-| [Authentication](../../user-guide/reference/authentication.md) | Request validation and error handling |
-| [Security](../../user-guide/reference/security.md) | Security best practices and recommendations |
+| [What is OptStuff?](/docs/introduction/what-is-optstuff) | Product-focused service description |
+| [Domain Whitelisting](/docs/guides/domain-whitelisting) | Domain whitelist configuration |
+| [Integration Guide](/docs/getting-started/integration-guide) | Step-by-step integration tutorial |
+| [URL Signing](/docs/guides/url-signing) | Request signing and validation |
+| [Security Best Practices](/docs/guides/security-best-practices) | Security recommendations |

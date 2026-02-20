@@ -1,0 +1,114 @@
+---
+title: Error Codes
+description: Complete reference of all HTTP error codes returned by the OptStuff API, with causes, solutions, and troubleshooting guides.
+---
+
+This page lists all error codes returned by the OptStuff API and provides troubleshooting guidance for common issues.
+
+## Error Code Reference
+
+| HTTP Status | Error | Cause | Solution |
+|-------------|-------|-------|----------|
+| 400 | Invalid path format | Malformed URL structure | Check that the URL follows `/api/v1/{projectSlug}/{operations}/{imageUrl}` |
+| 400 | Invalid image URL | Unable to parse image URL from path | Verify the image URL is valid and does not include the protocol (`https://`) |
+| 401 | Missing signature parameters | `key` or `sig` query parameter not provided | Include both `?key={publicKey}&sig={signature}` in the URL |
+| 401 | Invalid API key | API key not found in database | Verify the public key (`pk_...`) is correct |
+| 401 | API key has been revoked | Key was explicitly revoked | Create a new API key from the [dashboard](/docs/getting-started/dashboard-setup) |
+| 401 | API key has expired | Key is past its `expiresAt` date | Create a new key or [rotate](/docs/guides/key-management#rotation) the existing one |
+| 401 | API key does not belong to this project | Public key is valid but bound to a different project | Use the correct key for the project, or check `projectSlug` in the URL |
+| 403 | Invalid or expired signature | HMAC-SHA256 verification failed, or `exp` has passed | See [Troubleshooting Signature Errors](#troubleshooting-signature-errors) below |
+| 403 | Forbidden: Invalid referer | Referer header doesn't match project's allowed domains | Add your domain in project settings (see [Domain Whitelisting](/docs/guides/domain-whitelisting)) |
+| 403 | Forbidden: Source domain not allowed | Image source domain not in key's allowed list | Add the domain in key settings (see [Domain Whitelisting](/docs/guides/domain-whitelisting)) |
+| 404 | Project not found | `projectSlug` doesn't match any project | Check the project slug is correct |
+| 429 | Rate limit exceeded | Per-minute or per-day limit reached | Wait for `Retry-After` seconds, or [increase limits](/docs/guides/rate-limiting) |
+| 500 | Image processing failed | Internal error during optimization | Check that the source image is accessible and in a [supported format](/docs/api-reference/image-operations#supported-formats) |
+
+## Troubleshooting Signature Errors
+
+If you're getting `403 Invalid or expired signature`, check these common mistakes:
+
+### 1. Wrong Key
+
+Make sure you're signing with the **secret key** (`sk_...`), not the public key (`pk_...`).
+
+### 2. Wrong Path Order
+
+```typescript
+// ✅ Correct: {operations}/{imageUrl}
+const path = "w_800,f_webp/images.example.com/photo.jpg";
+
+// ❌ Wrong: {imageUrl}/{operations}
+const path = "images.example.com/photo.jpg/w_800,f_webp";
+```
+
+### 3. Wrong Timestamp Unit
+
+```typescript
+// ✅ Correct: Unix seconds
+const exp = Math.floor(Date.now() / 1000) + 3600;
+
+// ❌ Wrong: Unix milliseconds
+const exp = Date.now() + 3600000;
+```
+
+### 4. Expiration Not Included in Payload
+
+If you pass `exp` in the URL, you **must** include it in the signed payload:
+
+```typescript
+// ✅ Correct: include exp in payload
+const payload = `w_800,f_webp/images.example.com/photo.jpg?exp=1706500000`;
+
+// ❌ Wrong: exp in URL but not in payload
+const payload = `w_800,f_webp/images.example.com/photo.jpg`;
+```
+
+### 5. Wrong Encoding
+
+```typescript
+// ✅ Correct: base64url, truncated to 32 characters
+const signature = hmac.digest("base64url").substring(0, 32);
+
+// ❌ Wrong: standard base64 (contains +, /, =)
+const signature = hmac.digest("base64");
+```
+
+### 6. Lost Secret Key
+
+The secret key is only shown once at creation or rotation. If you've lost it:
+
+1. Go to **Dashboard → Project → API Keys**
+2. Click **Rotate** on the key
+3. Copy and save the new secret key
+4. Update your environment variables and redeploy
+
+> The public key can always be viewed and copied from the API key list.
+
+## Rate Limit Response Format
+
+When a `429` error is returned:
+
+```json
+{
+  "error": "Rate limit exceeded",
+  "reason": "Too many requests per minute",
+  "retryAfter": 12,
+  "limit": 60
+}
+```
+
+HTTP headers:
+
+```text
+HTTP/1.1 429 Too Many Requests
+Retry-After: 12
+X-RateLimit-Limit: 60
+X-RateLimit-Remaining: 0
+```
+
+## Related Documentation
+
+- [API Endpoint](/docs/api-reference/endpoint) — Endpoint format and authentication flow
+- [URL Signing](/docs/guides/url-signing) — Signature formula and code examples
+- [Domain Whitelisting](/docs/guides/domain-whitelisting) — Configuring allowed domains
+- [Rate Limiting](/docs/guides/rate-limiting) — Rate limit configuration and tuning

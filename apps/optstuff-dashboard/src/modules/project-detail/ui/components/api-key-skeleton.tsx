@@ -42,7 +42,7 @@ export function EmptyApiKeyState() {
         includes a public key (for URLs) and a secret key (for signing).
       </p>
       <a
-        href={DOCS_LINKS.apiKeys}
+        href={DOCS_LINKS.keyManagement}
         target="_blank"
         rel="noopener noreferrer"
         className="mt-3 text-sm font-medium text-blue-600 underline underline-offset-4 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"

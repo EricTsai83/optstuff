@@ -1,0 +1,14 @@
+{
+  "title": "Documentation",
+  "pages": [
+    "index",
+    "introduction",
+    "getting-started",
+    "guides",
+    "api-reference",
+    "faq",
+    "changelog",
+    "---",
+    "internal"
+  ]
+}

@@ -1,0 +1,80 @@
+---
+title: Domain Whitelisting
+description: Configure project-level referer domains and API key-level source domains to control who can use your service and which images can be processed.
+---
+
+OptStuff provides two layers of domain whitelisting, each serving a different purpose.
+
+## Two-Layer Architecture
+
+```text
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ Layer 1: Project — allowedRefererDomains                                    │
+│                                                                             │
+│ Question: WHO can use this service?                                         │
+│ Validation: HTTP Referer header                                             │
+│ Protection: Blocks other websites from embedding your images                │
+└──────────────────────────────┬──────────────────────────────────────────────┘
+                               │
+                               ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ Layer 2: API Key — allowedSourceDomains                                     │
+│                                                                             │
+│ Question: WHAT image sources can be processed?                              │
+│ Validation: Image URL in the request                                        │
+│ Protection: Prevents processing unauthorized images                         │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+**Why two layers?**
+
+- **Separation of concerns** — Control who uses the service vs. what gets processed
+- **Granular permissions** — Different API keys can have different source restrictions
+- **Principle of least privilege** — Each key only allows what's necessary
+
+## Configuring Referer Domains (Project Level)
+
+1. Navigate to **Dashboard → Project → Settings**
+2. In **Allowed Referer Domains**, add your website domains
+3. Subdomain matching: adding `example.com` automatically allows `www.example.com`, `cdn.example.com`, etc.
+
+| List Status | Behavior |
+|-------------|----------|
+| Empty (default) | All referers allowed |
+| Non-empty | Only listed domains allowed |
+
+## Configuring Source Domains (API Key Level)
+
+1. Navigate to **Dashboard → Project → API Keys**
+2. Click the API key to edit
+3. In **Allowed Source Domains**, add image origin domains
+4. Subdomain matching: `example.com` also matches `cdn.example.com`
+
+| Environment | Behavior When List Is Empty |
+|-------------|---------------------------|
+| Production | **Reject all** requests (fail closed) |
+| Development | Allow all sources (for convenience) |
+
+> **Important:** Always configure at least one source domain for production API keys.
+
+## Practical Example
+
+```text
+Project: my-company
+allowedRefererDomains: [site-a.com, site-b.com]
+
+API Key 1 (for site-a.com):
+  allowedSourceDomains: [cdn.site-a.com]
+
+API Key 2 (for site-b.com):
+  allowedSourceDomains: [images.site-b.com, s3.amazonaws.com]
+
+API Key 3 (shared across sites):
+  allowedSourceDomains: [cdn.site-a.com, images.site-b.com]
+```
+
+## Related Documentation
+
+- [Core Concepts](/docs/introduction/core-concepts) — Overview of the resource hierarchy
+- [Security Best Practices](/docs/guides/security-best-practices) — Broader security recommendations
+- [Error Codes](/docs/api-reference/error-codes) — `403` errors for domain violations

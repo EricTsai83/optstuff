@@ -1,13 +1,56 @@
 ---
-title: Hello World
-description: Your first document
+title: OptStuff Documentation
+description: Secure, high-performance image optimization API with signed URLs, domain whitelisting, and multi-tenant support.
 ---
 
-Welcome to the docs! You can start writing documents in `/content/docs`.
+OptStuff is a secure, high-performance image optimization API that transforms images on-the-fly with URL-based operations, signed URL security, and multi-tenant access control.
 
-## What is Next?
+## Quick Example
+
+Turn any image into an optimized, resized WebP — with one signed URL:
+
+```text
+GET /api/v1/my-blog/w_800,q_80,f_webp/cdn.example.com/photo.jpg?key=pk_...&sig=...
+```
+
+Generate it server-side in a few lines:
+
+```typescript
+import { signImageUrl } from "@/lib/optstuff";
+
+const url = signImageUrl("cdn.example.com/photo.jpg", "w_800,q_80,f_webp", 86400);
+```
+
+## Explore the Docs
 
 <Cards>
-  <Card title="Learn more about Next.js" href="https://nextjs.org/docs" />
-  <Card title="Learn more about Fumadocs" href="https://fumadocs.dev" />
+  <Card title="What is OptStuff?" href="/docs/introduction/what-is-optstuff">
+    Learn what OptStuff does, who it's for, and how it works.
+  </Card>
+  <Card title="Quick Start" href="/docs/getting-started/quickstart">
+    Get your first optimized image in under 5 minutes.
+  </Card>
+  <Card title="Integration Guide" href="/docs/getting-started/integration-guide">
+    Add OptStuff to your Next.js application with signed URLs.
+  </Card>
+  <Card title="API Reference" href="/docs/api-reference/endpoint">
+    Endpoint format, image operations, and error codes.
+  </Card>
+  <Card title="Code Examples" href="/docs/guides/code-examples">
+    URL signing in Node.js, Python, Go, Ruby, and PHP.
+  </Card>
+  <Card title="CDN and Caching" href="/docs/guides/cdn-caching">
+    Set up Cloudflare, Vercel, or CloudFront for edge-cached delivery.
+  </Card>
 </Cards>
+
+## Key Capabilities
+
+| Feature | Description |
+|---------|-------------|
+| **On-the-fly Optimization** | Resize, format conversion (WebP, AVIF), and quality adjustment via URL parameters |
+| **Signed URL Security** | HMAC-SHA256 signatures prevent unauthorized access |
+| **Multi-tenant Architecture** | Teams, Projects, and API Keys hierarchy |
+| **Domain Whitelisting** | Two-layer control over who can use the API and which images can be processed |
+| **Rate Limiting** | Configurable per-key per-minute and per-day limits |
+| **Usage Analytics** | Request logs, bandwidth tracking, and top images statistics |

@@ -1,0 +1,68 @@
+---
+title: Quick Start
+description: Get your first optimized image with OptStuff in under 5 minutes.
+---
+
+This guide walks you through getting your first optimized image from OptStuff.
+
+## Prerequisites
+
+- An OptStuff account ([sign up here](https://optstuff.vercel.app))
+- Node.js 18+ (for the signing example)
+
+## 1. Create a Team and Project
+
+After signing in, you'll be guided to create a **personal team**. Then create your first **project** from the dashboard — a default API key is generated automatically.
+
+> See [Dashboard Setup](/docs/getting-started/dashboard-setup) for detailed UI instructions.
+
+## 2. Copy Your Keys
+
+After project creation, a success screen displays your keys:
+
+- **Public Key** (`pk_...`) — identifies requests in URLs
+- **Secret Key** (`sk_...`) — signs URLs server-side
+
+> **Copy the secret key now.** It is only shown once.
+
+## 3. Sign Your First URL
+
+Create a file called `sign.mjs`:
+
+```javascript
+import { createHmac } from "crypto";
+
+const SECRET_KEY = "sk_your_secret_key"; // ← replace
+const PUBLIC_KEY = "pk_your_public_key"; // ← replace
+const PROJECT_SLUG = "your-project-slug"; // ← replace
+const ENDPOINT = "https://your-optstuff-deployment.com/api/v1";
+
+const operations = "w_400,f_webp";
+const imageUrl = "images.unsplash.com/photo-1506744038136-46273834b3fb";
+const path = `${operations}/${imageUrl}`;
+
+const signature = createHmac("sha256", SECRET_KEY)
+  .update(path)
+  .digest("base64url")
+  .substring(0, 32);
+
+const url = `${ENDPOINT}/${PROJECT_SLUG}/${path}?key=${PUBLIC_KEY}&sig=${signature}`;
+
+console.log(url);
+```
+
+Run it:
+
+```bash
+node sign.mjs
+```
+
+## 4. Open the URL
+
+Paste the output URL in your browser. You should see the image resized to 400px width and converted to WebP format.
+
+## Next Steps
+
+- [Dashboard Setup](/docs/getting-started/dashboard-setup) — Learn how to manage teams, projects, and API keys
+- [Integration Guide](/docs/getting-started/integration-guide) — Add OptStuff to your Next.js application
+- [Image Operations](/docs/api-reference/image-operations) — Full list of supported transformations

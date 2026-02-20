@@ -1,0 +1,279 @@
+---
+title: Code Examples
+description: URL signing examples in multiple languages and frameworks — Node.js, Python, Go, Ruby, and PHP.
+---
+
+OptStuff uses HMAC-SHA256 signed URLs for authentication. Below are signing implementations for popular languages and frameworks.
+
+For the signing formula, see [URL Signing](/docs/guides/url-signing). For a complete Next.js integration, see the [Integration Guide](/docs/getting-started/integration-guide).
+
+## Node.js
+
+```javascript
+import { createHmac } from "crypto";
+
+function signImageUrl({ projectSlug, publicKey, secretKey, operations, imageUrl, expiresIn }) {
+  const path = `${operations}/${imageUrl}`;
+  const exp = expiresIn
+    ? Math.floor(Date.now() / 1000) + expiresIn
+    : undefined;
+
+  const payload = exp ? `${path}?exp=${exp}` : path;
+  const signature = createHmac("sha256", secretKey)
+    .update(payload)
+    .digest("base64url")
+    .substring(0, 32);
+
+  const params = new URLSearchParams({ key: publicKey, sig: signature });
+  if (exp) params.set("exp", String(exp));
+
+  return `https://your-optstuff-deployment.com/api/v1/${projectSlug}/${path}?${params}`;
+}
+```
+
+### Express Example
+
+```javascript
+import express from "express";
+import { createHmac } from "crypto";
+
+const app = express();
+
+const SECRET_KEY = process.env.OPTSTUFF_SECRET_KEY;
+const PUBLIC_KEY = process.env.OPTSTUFF_PUBLIC_KEY;
+const PROJECT_SLUG = process.env.OPTSTUFF_PROJECT_SLUG;
+const ENDPOINT = process.env.OPTSTUFF_ENDPOINT;
+
+function signImageUrl(imageUrl, operations = "_", expiresIn) {
+  const path = `${operations}/${imageUrl}`;
+  const exp = expiresIn
+    ? Math.floor(Date.now() / 1000) + expiresIn
+    : undefined;
+
+  const payload = exp ? `${path}?exp=${exp}` : path;
+  const sig = createHmac("sha256", SECRET_KEY)
+    .update(payload)
+    .digest("base64url")
+    .substring(0, 32);
+
+  let url = `${ENDPOINT}/${PROJECT_SLUG}/${path}?key=${PUBLIC_KEY}&sig=${sig}`;
+  if (exp) url += `&exp=${exp}`;
+  return url;
+}
+
+app.get("/image", (req, res) => {
+  const { src, w, f } = req.query;
+  if (!src) return res.status(400).json({ error: "Missing src" });
+
+  const ops = [w && `w_${w}`, f && `f_${f}`].filter(Boolean).join(",") || "_";
+  const url = signImageUrl(src, ops, 3600);
+
+  res.json({ url });
+});
+
+app.listen(3000);
+```
+
+## Python
+
+```python
+import hmac
+import hashlib
+import base64
+import time
+import os
+
+SECRET_KEY = os.environ["OPTSTUFF_SECRET_KEY"]
+PUBLIC_KEY = os.environ["OPTSTUFF_PUBLIC_KEY"]
+PROJECT_SLUG = os.environ["OPTSTUFF_PROJECT_SLUG"]
+ENDPOINT = os.environ["OPTSTUFF_ENDPOINT"]
+
+
+def sign_image_url(image_url: str, operations: str = "_", expires_in: int | None = None) -> str:
+    path = f"{operations}/{image_url}"
+
+    exp = int(time.time()) + expires_in if expires_in else None
+    payload = f"{path}?exp={exp}" if exp else path
+
+    sig_bytes = hmac.new(
+        SECRET_KEY.encode(),
+        payload.encode(),
+        hashlib.sha256,
+    ).digest()
+
+    signature = base64.urlsafe_b64encode(sig_bytes).decode().rstrip("=")[:32]
+
+    url = f"{ENDPOINT}/{PROJECT_SLUG}/{path}?key={PUBLIC_KEY}&sig={signature}"
+    if exp:
+        url += f"&exp={exp}"
+    return url
+```
+
+### Flask Example
+
+```python
+from flask import Flask, request, jsonify
+
+app = Flask(__name__)
+
+@app.route("/image")
+def image():
+    src = request.args.get("src")
+    if not src:
+        return jsonify(error="Missing src"), 400
+
+    width = request.args.get("w")
+    fmt = request.args.get("f", "webp")
+    ops = ",".join(filter(None, [f"w_{width}" if width else None, f"f_{fmt}"]))
+
+    url = sign_image_url(src, ops or "_", expires_in=3600)
+    return jsonify(url=url)
+```
+
+### Django Example
+
+```python
+# views.py
+from django.http import JsonResponse
+
+def image_url(request):
+    src = request.GET.get("src")
+    if not src:
+        return JsonResponse({"error": "Missing src"}, status=400)
+
+    width = request.GET.get("w")
+    fmt = request.GET.get("f", "webp")
+    ops = ",".join(filter(None, [f"w_{width}" if width else None, f"f_{fmt}"]))
+
+    url = sign_image_url(src, ops or "_", expires_in=3600)
+    return JsonResponse({"url": url})
+```
+
+## Go
+
+```go
+package optstuff
+
+import (
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/base64"
+	"fmt"
+	"net/url"
+	"os"
+	"time"
+)
+
+var (
+	secretKey   = os.Getenv("OPTSTUFF_SECRET_KEY")
+	publicKey   = os.Getenv("OPTSTUFF_PUBLIC_KEY")
+	projectSlug = os.Getenv("OPTSTUFF_PROJECT_SLUG")
+	endpoint    = os.Getenv("OPTSTUFF_ENDPOINT")
+)
+
+func SignImageURL(imageURL, operations string, expiresIn int64) string {
+	if operations == "" {
+		operations = "_"
+	}
+	path := fmt.Sprintf("%s/%s", operations, imageURL)
+
+	var exp int64
+	payload := path
+	if expiresIn > 0 {
+		exp = time.Now().Unix() + expiresIn
+		payload = fmt.Sprintf("%s?exp=%d", path, exp)
+	}
+
+	mac := hmac.New(sha256.New, []byte(secretKey))
+	mac.Write([]byte(payload))
+	sig := base64.RawURLEncoding.EncodeToString(mac.Sum(nil))
+	if len(sig) > 32 {
+		sig = sig[:32]
+	}
+
+	params := url.Values{}
+	params.Set("key", publicKey)
+	params.Set("sig", sig)
+	if exp > 0 {
+		params.Set("exp", fmt.Sprintf("%d", exp))
+	}
+
+	return fmt.Sprintf("%s/%s/%s?%s", endpoint, projectSlug, path, params.Encode())
+}
+```
+
+## Ruby
+
+```ruby
+require "openssl"
+require "base64"
+
+OPTSTUFF_SECRET_KEY  = ENV.fetch("OPTSTUFF_SECRET_KEY")
+OPTSTUFF_PUBLIC_KEY  = ENV.fetch("OPTSTUFF_PUBLIC_KEY")
+OPTSTUFF_PROJECT_SLUG = ENV.fetch("OPTSTUFF_PROJECT_SLUG")
+OPTSTUFF_ENDPOINT    = ENV.fetch("OPTSTUFF_ENDPOINT")
+
+def sign_image_url(image_url, operations: "_", expires_in: nil)
+  path = "#{operations}/#{image_url}"
+
+  exp = expires_in ? Time.now.to_i + expires_in : nil
+  payload = exp ? "#{path}?exp=#{exp}" : path
+
+  digest = OpenSSL::HMAC.digest("SHA256", OPTSTUFF_SECRET_KEY, payload)
+  sig = Base64.urlsafe_encode64(digest, padding: false)[0, 32]
+
+  url = "#{OPTSTUFF_ENDPOINT}/#{OPTSTUFF_PROJECT_SLUG}/#{path}?key=#{OPTSTUFF_PUBLIC_KEY}&sig=#{sig}"
+  url += "&exp=#{exp}" if exp
+  url
+end
+```
+
+## PHP
+
+```php
+<?php
+
+$secretKey   = getenv('OPTSTUFF_SECRET_KEY');
+$publicKey   = getenv('OPTSTUFF_PUBLIC_KEY');
+$projectSlug = getenv('OPTSTUFF_PROJECT_SLUG');
+$endpoint    = getenv('OPTSTUFF_ENDPOINT');
+
+function signImageUrl(
+    string $imageUrl,
+    string $operations = '_',
+    ?int $expiresIn = null
+): string {
+    global $secretKey, $publicKey, $projectSlug, $endpoint;
+
+    $path = "{$operations}/{$imageUrl}";
+
+    $exp = $expiresIn ? time() + $expiresIn : null;
+    $payload = $exp ? "{$path}?exp={$exp}" : $path;
+
+    $sigRaw = hash_hmac('sha256', $payload, $secretKey, true);
+    $sig = substr(rtrim(strtr(base64_encode($sigRaw), '+/', '-_'), '='), 0, 32);
+
+    $url = "{$endpoint}/{$projectSlug}/{$path}?key={$publicKey}&sig={$sig}";
+    if ($exp) {
+        $url .= "&exp={$exp}";
+    }
+    return $url;
+}
+```
+
+## Signing Checklist
+
+Regardless of the language, make sure your implementation:
+
+- [ ] Uses HMAC-SHA256 as the hash algorithm
+- [ ] Encodes the digest as **base64url** (not standard base64)
+- [ ] Truncates the signature to **32 characters**
+- [ ] Includes `exp` in the signed payload when using expiration
+- [ ] Uses Unix **seconds** (not milliseconds) for the `exp` value
+
+## Related Documentation
+
+- [URL Signing](/docs/guides/url-signing) — Signature formula and security properties
+- [Integration Guide](/docs/getting-started/integration-guide) — Complete Next.js integration
+- [API Endpoint](/docs/api-reference/endpoint) — Endpoint format and authentication flow
+- [Error Codes](/docs/api-reference/error-codes) — Troubleshooting failed requests

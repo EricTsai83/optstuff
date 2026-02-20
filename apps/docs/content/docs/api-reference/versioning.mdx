@@ -1,0 +1,80 @@
+---
+title: API Versioning
+description: OptStuff API versioning policy — version format, backward compatibility, deprecation process, and migration guidance.
+---
+
+## Current Version
+
+The current API version is **v1**, accessed via the URL path prefix:
+
+```text
+/api/v1/{projectSlug}/{operations}/{imageUrl}?key=...&sig=...
+```
+
+## Versioning Policy
+
+### Version Format
+
+API versions use a simple numeric format: `v1`, `v2`, etc. The version is embedded in the URL path, so different versions can coexist without conflict.
+
+### Backward Compatibility
+
+Within a major version (e.g., `v1`), OptStuff guarantees backward compatibility:
+
+| Change Type | Allowed in v1? | Example |
+|-------------|----------------|---------|
+| New image operations | Yes | Adding `blur_10` operation |
+| New query parameters | Yes | Adding optional `cache` parameter |
+| New response headers | Yes | Adding `X-Processing-Time` header |
+| New error codes | Yes | Adding a new `422` response |
+| Changing existing behavior | No | Changing how `w_800` works |
+| Removing operations | No | Removing `f_avif` support |
+| Changing signature format | No | Changing HMAC algorithm |
+| Changing error response shape | No | Renaming `error` to `message` |
+
+In short: **additive changes are allowed; breaking changes require a new version.**
+
+### What Counts as a Breaking Change
+
+- Removing or renaming a URL path segment, query parameter, or image operation
+- Changing the signature computation algorithm or payload format
+- Changing the meaning of an existing operation (e.g., `w_800` now means "max width" instead of "exact width")
+- Changing error response JSON structure
+- Changing authentication behavior (e.g., requiring a new parameter)
+
+## Deprecation Process
+
+When a new API version is released:
+
+1. **Announcement** — The new version is announced in the [Changelog](/docs/changelog) with a migration guide
+2. **Overlap period** — Both the old and new versions run simultaneously for at least **6 months**
+3. **Deprecation warning** — The old version adds a `Deprecation` response header with the sunset date
+4. **Sunset** — After the overlap period, the old version returns `410 Gone` with a message pointing to the new version
+
+### Deprecation Headers
+
+During the overlap period, responses from the deprecated version include:
+
+```text
+Deprecation: true
+Sunset: Sat, 01 Jan 2028 00:00:00 GMT
+Link: </api/v2/>; rel="successor-version"
+```
+
+## Migration Guidance
+
+When a new version is available:
+
+1. Review the changelog entry for breaking changes
+2. Update your signing utility to use the new version prefix
+3. Test with a development API key
+4. Update production environment variables and deploy
+5. Monitor for errors in your usage analytics
+
+Since signed URLs include the version in the path, old and new URLs can coexist during migration. Cached responses for old-version URLs remain valid.
+
+## Related Documentation
+
+- [Changelog](/docs/changelog) — Release notes and version announcements
+- [API Endpoint](/docs/api-reference/endpoint) — Current endpoint format
+- [URL Signing](/docs/guides/url-signing) — Signature formula for the current version

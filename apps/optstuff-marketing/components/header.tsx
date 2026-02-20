@@ -30,7 +30,7 @@ type NavigationItem = {
 const NAVIGATION: readonly NavigationItem[] = [
   { href: "#demo", label: "Demo" },
   { href: "/blog", label: "Blog" },
-  { href: "/docs", label: "Docs" },
+  { href: process.env.NEXT_PUBLIC_DOCS_URL ?? "#", label: "Docs" },
 ] as const;
 
 const HEADER_CONFIG = {

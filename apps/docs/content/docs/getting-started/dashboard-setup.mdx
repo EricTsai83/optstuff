@@ -1,0 +1,136 @@
+---
+title: Dashboard Setup
+description: How to create teams, projects, and API keys in the OptStuff dashboard.
+---
+
+This guide walks you through setting up your OptStuff dashboard — from team creation to managing API keys.
+
+## Overview
+
+The setup flow takes about 2 minutes:
+
+```text
+Sign In → Create Team → Create Project → Copy API Keys → Start Integrating
+```
+
+## Creating a Team
+
+When you first sign in, you'll be redirected to the onboarding page to create your **personal team**.
+
+1. Enter a **team name** (a suggestion is pre-filled from your profile)
+2. Choose a **team slug** — the URL identifier (e.g., `optstuff.com/my-team`)
+   - 3–50 characters, lowercase letters, numbers, and hyphens
+   - Must be globally unique
+3. Click **Create Team**
+
+```text
+┌─────────────────────────────────────────┐
+│           Create Your Team              │
+│                                         │
+│  Team Name:  [Eric's Team         ]     │
+│  Team Slug:  [erics-team          ]     │
+│                                         │
+│              [Create Team]              │
+└─────────────────────────────────────────┘
+```
+
+You'll be redirected to your new team dashboard.
+
+> Your personal team cannot be deleted. You can create additional teams later for different organizations.
+
+## Creating a Project
+
+From the team dashboard:
+
+1. Click **Create Project**
+2. Enter a **project name** (required) and optional **description**
+3. Click **Create**
+
+A **default API key** is generated automatically with your new project.
+
+### Copying Your Keys
+
+After project creation, a success dialog displays your API key pair:
+
+```text
+┌─────────────────────────────────────────────────────┐
+│              Project Created!                        │
+│                                                      │
+│  Secret Key:  sk_••••••••••••••••  [Show] [Copy]    │
+│  Public Key:  pk_abc123def456ghi   [Copy]           │
+│                                                      │
+│  ⚠ The secret key is only shown once.               │
+│     Save it to your environment variables now.       │
+│                                                      │
+│              [I've Saved My Keys]                    │
+└─────────────────────────────────────────────────────┘
+```
+
+- **Secret Key** (`sk_...`) — masked by default, with show/hide toggle and copy button
+- **Public Key** (`pk_...`) — visible with copy button
+
+> **The secret key is only shown once.** Copy and save it to your environment variables before closing the dialog.
+
+The dialog is locked during this step — you cannot close it accidentally.
+
+## Managing API Keys
+
+Navigate to your project's **Overview** tab to see your API keys listed in a table:
+
+```text
+┌──────────────┬──────────────┬─────────────┬───────────┬─────────┐
+│ Name         │ Public Key   │ Last Used   │ Expires   │ Actions │
+├──────────────┼──────────────┼─────────────┼───────────┼─────────┤
+│ Default      │ pk_abc123... │ 2 hours ago │ Never     │ ••• ▼   │
+│ Production   │ pk_def456... │ 5 mins ago  │ 90 days   │ ••• ▼   │
+└──────────────┴──────────────┴─────────────┴───────────┴─────────┘
+```
+
+### Create an API Key
+
+1. Click **Create API Key**
+2. Fill in:
+   - **Key Name** (required) — e.g., "Production", "Development"
+   - **Allowed Source Domains** (required) — which image origins this key can process
+   - **Expiration** (optional) — automatic invalidation date (30 days, 90 days, etc.)
+3. Click **Create Key**
+4. Copy the secret key from the success screen
+
+### Rotate a Key
+
+Rotation atomically **revokes the old key** and **creates a new one** with the same settings. Use this when a key may have been compromised.
+
+1. Click the **Rotate** action on an API key
+2. Copy the new secret key
+3. Update your environment variables and redeploy
+
+### Revoke a Key
+
+Revocation immediately disables a key. All requests using it will be rejected.
+
+1. Click the **Revoke** action on an API key
+2. Confirm the action
+
+## Project Tabs
+
+Each project has four tabs:
+
+| Tab | What You'll Find |
+|-----|-----------------|
+| **Overview** | API endpoint, API key list, usage summary |
+| **Usage** | Daily charts, bandwidth savings, top images, request logs |
+| **Developer** | Code snippets, URL tester, integration examples |
+| **Settings** | Project name/slug, allowed referer domains, project deletion |
+
+## Configuring Project Settings
+
+From your project's **Settings** tab, you can configure:
+
+- **Allowed Referer Domains** — which websites can embed your optimized images
+
+See [Domain Whitelisting](/docs/guides/domain-whitelisting) for details.
+
+## Next Steps
+
+- [Integration Guide](/docs/getting-started/integration-guide) — Add OptStuff to your application
+- [Key Management](/docs/guides/key-management) — Best practices for API key lifecycle

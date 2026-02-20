@@ -6,7 +6,7 @@ const FOOTER_NAVIGATION = {
   product: [
     { href: "#demo", label: "Demo" },
     { href: "/blog", label: "Blog" },
-    { href: "/docs", label: "Docs" },
+    { href: process.env.NEXT_PUBLIC_DOCS_URL ?? "#", label: "Docs" },
   ],
   social: [
     {
