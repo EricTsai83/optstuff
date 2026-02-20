@@ -16,6 +16,7 @@ import { useEffect, useState } from "react";
 type NavigationItem = {
   readonly href: string;
   readonly label: string;
+  readonly external: boolean;
 };
 
 type MobileSidebarProps = {
@@ -82,6 +83,7 @@ export function MobileSidebar({
                 key={item.href}
                 href={item.href}
                 onClick={onClose}
+                {...(item.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
                 className={cn(
                   "group border-border/30 text-foreground hover:text-accent flex items-center justify-between border-b py-4 text-lg font-medium transition-all",
                   "transform",
