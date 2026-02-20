@@ -31,13 +31,15 @@ export function Footer() {
           {/* Navigation */}
           <nav className="text-muted-foreground dark:text-foreground flex flex-wrap items-center justify-center gap-x-6 gap-y-3 text-sm sm:gap-x-8">
             {FOOTER_NAVIGATION.product.map((item) => (
-              <Link
+              <a
                 key={item.href}
                 href={item.href}
                 className="hover:text-foreground after:bg-foreground relative transition-colors after:absolute after:bottom-0 after:left-0 after:h-px after:w-0 after:transition-all after:duration-300 hover:after:w-full"
+                target="_blank"
+                rel="noopener noreferrer"
               >
                 {item.label}
-              </Link>
+              </a>
             ))}
           </nav>
 
