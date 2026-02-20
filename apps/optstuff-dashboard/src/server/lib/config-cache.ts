@@ -47,10 +47,11 @@ type CachedApiKeyConfig = Omit<
 };
 
 /**
- * Convert a cached API key config back to {@link ApiKeyConfig}.
- * Decrypts the secret key and converts ISO string dates back to Date objects.
+ * Converts a cached API key record into an ApiKeyConfig.
  *
- * @returns Parsed config, or null if decryption fails (corrupted cache entry)
+ * Decrypts the encrypted secret and transforms ISO date strings for `expiresAt` and `revokedAt` into `Date` objects.
+ *
+ * @returns The reconstructed `ApiKeyConfig`, or `null` if secret decryption fails (corrupted cache entry).
  */
 function parseApiKeyFromCache(cached: CachedApiKeyConfig): ApiKeyConfig | null {
   const { encryptedSecretKey, expiresAt, revokedAt, ...rest } = cached;
@@ -329,11 +330,12 @@ export async function getProjectConfigByTeamAndSlug(
 }
 
 /**
- * Get API key configuration by public key with Redis caching.
- * Degrades gracefully when Redis is unreachable — falls back to direct DB query.
+ * Retrieve the API key configuration for a given public key, using Redis for caching.
  *
- * @param publicKey - The public key (e.g., "pk_abc123...")
- * @returns API key configuration or null if not found/invalid
+ * If Redis is unavailable or a cached entry is corrupted (cannot be decrypted), the function falls back to a direct database lookup.
+ *
+ * @param publicKey - The public API key (for example, "pk_abc123...")
+ * @returns The API key configuration for `publicKey`, or `null` if not found or if cached data cannot be decrypted
  */
 export async function getApiKeyConfig(
   publicKey: string,
