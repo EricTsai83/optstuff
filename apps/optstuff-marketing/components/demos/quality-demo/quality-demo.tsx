@@ -36,9 +36,10 @@ export function QualityDemo() {
     [],
   );
 
-  const handleMouseMove = useCallback(
+  const updatePositionFromClient = useCallback(
     (
-      e: React.MouseEvent<HTMLImageElement>,
+      clientX: number,
+      clientY: number,
       imageRef: React.RefObject<HTMLImageElement | null>,
     ) => {
       if (!imageRef.current) return;
@@ -49,8 +50,8 @@ export function QualityDemo() {
       const naturalHeight = img.naturalHeight;
 
       if (naturalWidth === 0 || naturalHeight === 0) {
-        const imgX = (e.clientX - imgRect.left) / imgRect.width;
-        const imgY = (e.clientY - imgRect.top) / imgRect.height;
+        const imgX = (clientX - imgRect.left) / imgRect.width;
+        const imgY = (clientY - imgRect.top) / imgRect.height;
         setImagePos({
           x: Math.max(0, Math.min(1, imgX)),
           y: Math.max(0, Math.min(1, imgY)),
@@ -79,14 +80,14 @@ export function QualityDemo() {
         offsetY = 0;
       }
 
-      const mouseX = e.clientX - imgRect.left;
-      const mouseY = e.clientY - imgRect.top;
+      const pointerX = clientX - imgRect.left;
+      const pointerY = clientY - imgRect.top;
 
       if (
-        mouseX < offsetX ||
-        mouseX > offsetX + displayedWidth ||
-        mouseY < offsetY ||
-        mouseY > offsetY + displayedHeight
+        pointerX < offsetX ||
+        pointerX > offsetX + displayedWidth ||
+        pointerY < offsetY ||
+        pointerY > offsetY + displayedHeight
       ) {
         setIsHovering(false);
         return;
@@ -94,14 +95,37 @@ export function QualityDemo() {
 
       setIsHovering(true);
       setImagePos({
-        x: Math.max(0, Math.min(1, (mouseX - offsetX) / displayedWidth)),
-        y: Math.max(0, Math.min(1, (mouseY - offsetY) / displayedHeight)),
+        x: Math.max(0, Math.min(1, (pointerX - offsetX) / displayedWidth)),
+        y: Math.max(0, Math.min(1, (pointerY - offsetY) / displayedHeight)),
       });
     },
     [],
   );
 
-  const handleMouseLeave = useCallback(() => {
+  const handleMouseMove = useCallback(
+    (
+      e: React.MouseEvent<HTMLImageElement>,
+      imageRef: React.RefObject<HTMLImageElement | null>,
+    ) => {
+      updatePositionFromClient(e.clientX, e.clientY, imageRef);
+    },
+    [updatePositionFromClient],
+  );
+
+  const handleTouchMove = useCallback(
+    (
+      e: React.TouchEvent<HTMLDivElement>,
+      imageRef: React.RefObject<HTMLImageElement | null>,
+    ) => {
+      const touch = e.touches[0];
+      if (!touch) return;
+      e.preventDefault();
+      updatePositionFromClient(touch.clientX, touch.clientY, imageRef);
+    },
+    [updatePositionFromClient],
+  );
+
+  const handlePointerLeave = useCallback(() => {
     setIsHovering(false);
     setImagePos({ x: 0.5, y: 0.5 });
   }, []);
@@ -131,7 +155,7 @@ export function QualityDemo() {
               min={10}
               max={100}
               step={5}
-              className="**:[[role=slider]]:border-2 **:[[role=slider]]:border-gray-300 **:[[role=slider]]:bg-linear-to-b **:[[role=slider]]:from-white **:[[role=slider]]:to-gray-100 **:[[role=slider]]:shadow-lg dark:**:[[role=slider]]:border-white"
+              className="**:[[role=slider]]:h-5 **:[[role=slider]]:w-5 **:[[role=slider]]:border-2 **:[[role=slider]]:border-gray-300 **:[[role=slider]]:bg-linear-to-b **:[[role=slider]]:from-white **:[[role=slider]]:to-gray-100 **:[[role=slider]]:shadow-lg dark:**:[[role=slider]]:border-white"
             />
             <div className="text-muted-foreground mt-3 flex justify-between text-xs">
               <span className="flex items-center gap-1">
@@ -160,7 +184,7 @@ export function QualityDemo() {
               min={1}
               max={10000}
               step={1}
-              className="**:[[role=slider]]:border-2 **:[[role=slider]]:border-gray-300 **:[[role=slider]]:bg-linear-to-b **:[[role=slider]]:from-white **:[[role=slider]]:to-gray-100 **:[[role=slider]]:shadow-lg dark:**:[[role=slider]]:border-white"
+              className="**:[[role=slider]]:h-5 **:[[role=slider]]:w-5 **:[[role=slider]]:border-2 **:[[role=slider]]:border-gray-300 **:[[role=slider]]:bg-linear-to-b **:[[role=slider]]:from-white **:[[role=slider]]:to-gray-100 **:[[role=slider]]:shadow-lg dark:**:[[role=slider]]:border-white"
             />
             <div className="text-muted-foreground mt-3 flex justify-between text-xs">
               <span>1 image</span>
@@ -183,7 +207,9 @@ export function QualityDemo() {
                 label="Original"
                 imageRef={originalImageRef}
                 onMouseMove={(e) => handleMouseMove(e, originalImageRef)}
-                onMouseLeave={handleMouseLeave}
+                onMouseLeave={handlePointerLeave}
+                onTouchMove={(e) => handleTouchMove(e, originalImageRef)}
+                onTouchEnd={handlePointerLeave}
               />
             </PreviewCard>
 
@@ -197,7 +223,9 @@ export function QualityDemo() {
                 label="Optimized"
                 imageRef={optimizedImageRef}
                 onMouseMove={(e) => handleMouseMove(e, optimizedImageRef)}
-                onMouseLeave={handleMouseLeave}
+                onMouseLeave={handlePointerLeave}
+                onTouchMove={(e) => handleTouchMove(e, optimizedImageRef)}
+                onTouchEnd={handlePointerLeave}
               />
             </PreviewCard>
 
@@ -213,10 +241,11 @@ export function QualityDemo() {
 
           <p className="text-muted-foreground text-center text-xs">
             <span className="mr-1.5 inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" />
-            Hover over images to compare details
+            <span className="hidden sm:inline">Hover over images to compare details</span>
+            <span className="sm:hidden">Touch and drag to compare details</span>
           </p>
 
-          <div className="flex gap-2.5">
+          <div className="grid grid-cols-3 gap-2.5">
             <StatCard
               value={`${estimatedSize} KB`}
               label="File Size"
@@ -254,6 +283,8 @@ type ImageContainerProps = {
   readonly imageRef: React.RefObject<HTMLImageElement | null>;
   readonly onMouseMove: (e: React.MouseEvent<HTMLImageElement>) => void;
   readonly onMouseLeave: () => void;
+  readonly onTouchMove: (e: React.TouchEvent<HTMLDivElement>) => void;
+  readonly onTouchEnd: () => void;
 };
 
 function ImageContainer({
@@ -262,9 +293,15 @@ function ImageContainer({
   imageRef,
   onMouseMove,
   onMouseLeave,
+  onTouchMove,
+  onTouchEnd,
 }: ImageContainerProps) {
   return (
-    <div className="relative h-full w-full">
+    <div
+      className="relative h-full w-full touch-none"
+      onTouchMove={onTouchMove}
+      onTouchEnd={onTouchEnd}
+    >
       <Image
         ref={imageRef}
         src={imageUrl}

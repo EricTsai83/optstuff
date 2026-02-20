@@ -67,38 +67,38 @@ export function ProjectDetailView({
 
         {/* Tabs */}
         <div className="container mx-auto px-4">
-          <TabsList className="h-auto w-full justify-start gap-0 rounded-none border-none bg-transparent p-0">
+          <TabsList className="scrollbar-hide h-auto w-full justify-start gap-0 overflow-x-auto rounded-none border-none bg-transparent p-0 *:shrink-0">
             <TabsTrigger
               value="overview"
-              className="data-[state=active]:border-foreground text-muted-foreground data-[state=active]:text-foreground rounded-none border-b-2 border-transparent px-4 py-3 shadow-none data-[state=active]:bg-transparent data-[state=active]:shadow-none"
+              className="data-[state=active]:border-foreground text-muted-foreground data-[state=active]:text-foreground rounded-none border-b-2 border-transparent px-3 py-3 text-sm whitespace-nowrap shadow-none data-[state=active]:bg-transparent data-[state=active]:shadow-none sm:px-4"
             >
               <LayoutDashboard className="h-4 w-4" />
               Overview
             </TabsTrigger>
             <TabsTrigger
               value="api-keys"
-              className="data-[state=active]:border-foreground text-muted-foreground data-[state=active]:text-foreground rounded-none border-b-2 border-transparent px-4 py-3 shadow-none data-[state=active]:bg-transparent data-[state=active]:shadow-none"
+              className="data-[state=active]:border-foreground text-muted-foreground data-[state=active]:text-foreground rounded-none border-b-2 border-transparent px-3 py-3 text-sm whitespace-nowrap shadow-none data-[state=active]:bg-transparent data-[state=active]:shadow-none sm:px-4"
             >
               <Key className="h-4 w-4" />
               API Keys
             </TabsTrigger>
             <TabsTrigger
               value="usage"
-              className="data-[state=active]:border-foreground text-muted-foreground data-[state=active]:text-foreground rounded-none border-b-2 border-transparent px-4 py-3 shadow-none data-[state=active]:bg-transparent data-[state=active]:shadow-none"
+              className="data-[state=active]:border-foreground text-muted-foreground data-[state=active]:text-foreground rounded-none border-b-2 border-transparent px-3 py-3 text-sm whitespace-nowrap shadow-none data-[state=active]:bg-transparent data-[state=active]:shadow-none sm:px-4"
             >
               <Activity className="h-4 w-4" />
               Usage
             </TabsTrigger>
             <TabsTrigger
               value="developer"
-              className="data-[state=active]:border-foreground text-muted-foreground data-[state=active]:text-foreground rounded-none border-b-2 border-transparent px-4 py-3 shadow-none data-[state=active]:bg-transparent data-[state=active]:shadow-none"
+              className="data-[state=active]:border-foreground text-muted-foreground data-[state=active]:text-foreground rounded-none border-b-2 border-transparent px-3 py-3 text-sm whitespace-nowrap shadow-none data-[state=active]:bg-transparent data-[state=active]:shadow-none sm:px-4"
             >
               <Code className="h-4 w-4" />
               Developer
             </TabsTrigger>
             <TabsTrigger
               value="settings"
-              className="data-[state=active]:border-foreground text-muted-foreground data-[state=active]:text-foreground rounded-none border-b-2 border-transparent px-4 py-3 shadow-none data-[state=active]:bg-transparent data-[state=active]:shadow-none"
+              className="data-[state=active]:border-foreground text-muted-foreground data-[state=active]:text-foreground rounded-none border-b-2 border-transparent px-3 py-3 text-sm whitespace-nowrap shadow-none data-[state=active]:bg-transparent data-[state=active]:shadow-none sm:px-4"
             >
               <Settings className="h-4 w-4" />
               Settings

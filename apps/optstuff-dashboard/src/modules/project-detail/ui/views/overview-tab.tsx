@@ -28,9 +28,9 @@ export function OverviewTab({ project }: OverviewTabProps) {
   const projectEndpoint = `${env.NEXT_PUBLIC_APP_URL}/api/v1/${project.slug}`;
 
   return (
-    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+    <div className="space-y-6">
       {/* Endpoint Info */}
-      <Card className="md:col-span-2 lg:col-span-3">
+      <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Globe className="h-5 w-5" />
@@ -41,39 +41,42 @@ export function OverviewTab({ project }: OverviewTabProps) {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="bg-muted flex items-center gap-2 rounded-lg p-4">
-            <code className="flex-1 truncate font-mono text-sm">
+          <div className="bg-muted flex items-center gap-2 rounded-lg p-3 sm:p-4">
+            <code className="min-w-0 flex-1 truncate font-mono text-xs sm:text-sm">
               {projectEndpoint}
             </code>
-            <CopyButton text={projectEndpoint} className="bg-secondary" />
+            <CopyButton text={projectEndpoint} className="bg-secondary shrink-0" />
           </div>
-          <p className="text-muted-foreground mt-3 text-sm">
+          <p className="text-muted-foreground mt-3 text-xs sm:text-sm">
             <strong>URL Format:</strong>{" "}
-            <code className="bg-muted rounded px-1">
+            <code className="bg-muted rounded px-1 text-[11px] sm:text-sm">
               {projectEndpoint}/&#123;operations&#125;/&#123;imageUrl&#125;
             </code>
           </p>
         </CardContent>
       </Card>
 
-      <StatCard
-        title="API Keys"
-        value={String(apiKeys?.length ?? 0)}
-        subtitle="Active keys"
-        icon={<Key className="text-muted-foreground h-4 w-4" />}
-      />
-      <StatCard
-        title="API Requests"
-        value={formatNumber(usageSummary?.totalRequests ?? 0)}
-        subtitle="Last 30 days"
-        icon={<Activity className="text-muted-foreground h-4 w-4" />}
-      />
-      <StatCard
-        title="Bandwidth"
-        value={formatBytes(usageSummary?.totalBytes ?? 0)}
-        subtitle="Last 30 days"
-        icon={<Activity className="text-muted-foreground h-4 w-4" />}
-      />
+      {/* Stats */}
+      <div className="grid grid-cols-3 gap-3 sm:gap-6">
+        <StatCard
+          title="API Keys"
+          value={String(apiKeys?.length ?? 0)}
+          subtitle="Active keys"
+          icon={<Key className="text-muted-foreground h-4 w-4" />}
+        />
+        <StatCard
+          title="API Requests"
+          value={formatNumber(usageSummary?.totalRequests ?? 0)}
+          subtitle="Last 30 days"
+          icon={<Activity className="text-muted-foreground h-4 w-4" />}
+        />
+        <StatCard
+          title="Bandwidth"
+          value={formatBytes(usageSummary?.totalBytes ?? 0)}
+          subtitle="Last 30 days"
+          icon={<Activity className="text-muted-foreground h-4 w-4" />}
+        />
+      </div>
     </div>
   );
 }

@@ -6,7 +6,7 @@ import { Label } from "@workspace/ui/components/label";
 import { Slider } from "@workspace/ui/components/slider";
 import { Maximize2 } from "lucide-react";
 import Image from "next/image";
-import { useMemo, useState } from "react";
+import { useCallback, useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
   DEMO_IMAGE,
   ORIGINAL_HEIGHT,
@@ -25,9 +25,8 @@ const FIT_MODES = {
 
 type FitMode = keyof typeof FIT_MODES;
 
-/** Fixed dimensions for preview container */
-const PREVIEW_CONTAINER_WIDTH = 320;
-const PREVIEW_CONTAINER_HEIGHT = 240;
+const PREVIEW_MAX_WIDTH = 320;
+const PREVIEW_ASPECT_RATIO = 4 / 3;
 
 function estimateFileSize(width: number, height: number): number {
   const ratio = (width * height) / (ORIGINAL_WIDTH * ORIGINAL_HEIGHT);
@@ -70,22 +69,42 @@ export function ResizeDemo() {
   const [width, setWidth] = useState(400);
   const [height, setHeight] = useState(300);
   const [fit, setFit] = useState<FitMode>("cover");
+  const previewRef = useRef<HTMLDivElement>(null);
+  const [containerSize, setContainerSize] = useState({
+    width: PREVIEW_MAX_WIDTH,
+    height: Math.round(PREVIEW_MAX_WIDTH / PREVIEW_ASPECT_RATIO),
+  });
+
+  const handleResize = useCallback(() => {
+    if (!previewRef.current) return;
+    const rect = previewRef.current.getBoundingClientRect();
+    setContainerSize({
+      width: rect.width,
+      height: rect.height,
+    });
+  }, []);
+
+  useLayoutEffect(() => {
+    handleResize();
+    const observer = new ResizeObserver(handleResize);
+    if (previewRef.current) observer.observe(previewRef.current);
+    return () => observer.disconnect();
+  }, [handleResize]);
 
   const estimatedSize = useMemo(
     () => estimateFileSize(width, height),
     [width, height],
   );
 
-  // Calculate scaled size within fixed container
   const scaledSize = useMemo(
     () =>
       calculateScaledSize(
         width,
         height,
-        PREVIEW_CONTAINER_WIDTH,
-        PREVIEW_CONTAINER_HEIGHT,
+        containerSize.width,
+        containerSize.height,
       ),
-    [width, height],
+    [width, height, containerSize.width, containerSize.height],
   );
 
   // Build image URL with resize parameters
@@ -147,7 +166,7 @@ export function ResizeDemo() {
                 min={100}
                 max={800}
                 step={10}
-                className="**:[[role=slider]]:h-4 **:[[role=slider]]:w-4"
+                className="**:[[role=slider]]:h-5 **:[[role=slider]]:w-5"
               />
             </div>
           </ControlCard>
@@ -166,7 +185,7 @@ export function ResizeDemo() {
                 min={100}
                 max={600}
                 step={10}
-                className="**:[[role=slider]]:h-4 **:[[role=slider]]:w-4"
+                className="**:[[role=slider]]:h-5 **:[[role=slider]]:w-5"
               />
             </div>
           </ControlCard>
@@ -191,16 +210,13 @@ export function ResizeDemo() {
           </ControlCard>
         </div>
 
-        {/* Fixed-size preview container */}
+        {/* Responsive preview container */}
         <div className="bg-muted/50 flex min-h-[280px] w-full items-center justify-center rounded-xl p-4 lg:col-span-2">
-          <div className="flex flex-col items-center gap-2.5">
-            {/* Fixed outer frame with dynamically scaled image inside */}
+          <div className="flex w-full flex-col items-center gap-2.5">
             <div
-              className="bg-background/50 flex items-center justify-center rounded-lg border border-dashed border-zinc-600"
-              style={{
-                width: PREVIEW_CONTAINER_WIDTH,
-                height: PREVIEW_CONTAINER_HEIGHT,
-              }}
+              ref={previewRef}
+              className="bg-background/50 flex w-full max-w-[320px] items-center justify-center rounded-lg border border-dashed border-zinc-600"
+              style={{ aspectRatio: `${PREVIEW_ASPECT_RATIO}` }}
             >
               {/* Dynamically sized image frame */}
               <div

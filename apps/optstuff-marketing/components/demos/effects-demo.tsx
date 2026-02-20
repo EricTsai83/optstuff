@@ -48,7 +48,7 @@ function SliderControl({
         max={max}
         step={step}
         disabled={disabled}
-        className="**:[[role=slider]]:h-3 **:[[role=slider]]:w-3"
+        className="**:[[role=slider]]:h-5 **:[[role=slider]]:w-5"
       />
     </div>
   );
@@ -109,7 +109,6 @@ function SectionHeader({ title, enabled, onToggle }: SectionHeaderProps) {
         <Switch
           checked={enabled}
           onCheckedChange={onToggle}
-          className="scale-75"
         />
       </div>
     </div>
