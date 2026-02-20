@@ -195,12 +195,12 @@ export function SavingsVisualizer({
           <div className="border-t border-gray-100 p-3 dark:border-white/5">
             {/* Size Comparison */}
             <div className="mb-3">
-              <p className="text-muted-foreground mb-2 text-center text-[10px] tracking-wider uppercase">
+              <p className="text-muted-foreground mb-2 text-center text-xs tracking-wider uppercase">
                 Total Size Comparison
               </p>
               <div className="flex items-center justify-center gap-4">
                 <div className="text-center">
-                  <p className="text-muted-foreground mb-0.5 text-[10px]">
+                  <p className="text-muted-foreground mb-0.5 text-xs">
                     Before
                   </p>
                   <p className="font-mono text-lg font-semibold text-gray-400 tabular-nums line-through">
@@ -211,7 +211,7 @@ export function SavingsVisualizer({
                 <div className="text-center">
                   <p
                     className={cn(
-                      "mb-0.5 text-[10px] transition-colors duration-500 ease-in-out",
+                      "mb-0.5 text-xs transition-colors duration-500 ease-in-out",
                       trendColorClass,
                     )}
                   >
@@ -240,7 +240,7 @@ export function SavingsVisualizer({
                   style={{ width: `${100 - savedPercentage}%` }}
                 />
               </div>
-              <div className="mt-1.5 flex justify-between text-[10px]">
+              <div className="mt-1.5 flex justify-between text-xs">
                 <span
                   className={cn(
                     "transition-colors duration-500 ease-in-out",
@@ -256,7 +256,7 @@ export function SavingsVisualizer({
             </div>
 
             {/* Stats Row */}
-            <div className="grid grid-cols-5 gap-2">
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
               <StatItem
                 icon={<ImageIcon className="text-muted-foreground h-3 w-3" />}
                 label="Per Image"
@@ -326,7 +326,7 @@ function StatItem({
     <div className="rounded-lg bg-gray-50 p-2.5 text-center dark:bg-white/5">
       <div className="mb-1 flex items-center justify-center gap-1">
         {icon}
-        <span className="text-muted-foreground text-[9px] uppercase">
+        <span className="text-muted-foreground text-[11px] uppercase">
           {label}
         </span>
       </div>

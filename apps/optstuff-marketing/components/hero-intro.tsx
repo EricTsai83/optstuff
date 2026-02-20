@@ -2,7 +2,6 @@ import { HeroAnimation } from "@/components/hero-animation";
 import { AnimatedLink } from "@/components/ui/animated-link";
 import { Button } from "@workspace/ui/components/button";
 import { ArrowRight } from "lucide-react";
-import Link from "next/link";
 
 export function HeroIntro() {
   return (
@@ -46,10 +45,10 @@ export function HeroIntro() {
               className="group h-12 w-full rounded-full px-6 hover:shadow-xl sm:w-auto"
               asChild
             >
-              <Link href="/">
+              <a href="/dashboard">
                 Start for free
                 <ArrowRight className="ml-0.5 h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
-              </Link>
+              </a>
             </Button>
             <Button
               size="lg"
@@ -57,7 +56,7 @@ export function HeroIntro() {
               className="h-12 w-full rounded-full px-6 hover:shadow-xl sm:w-auto"
               asChild
             >
-              <Link href={process.env.NEXT_PUBLIC_DOCS_URL ?? "#"}>Documentation</Link>
+              <a href={process.env.NEXT_PUBLIC_DOCS_URL ?? "#"} target="_blank" rel="noopener noreferrer">Documentation</a>
             </Button>
           </div>
         </div>

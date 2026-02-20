@@ -140,7 +140,7 @@ _            → No operations`;
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="env" className="w-full">
-            <TabsList className="mb-4 grid w-full grid-cols-4">
+            <TabsList className="mb-4 grid w-full grid-cols-2 sm:grid-cols-4">
               <TabsTrigger value="env">.env</TabsTrigger>
               <TabsTrigger value="loader">Loader</TabsTrigger>
               <TabsTrigger value="usage">Usage</TabsTrigger>

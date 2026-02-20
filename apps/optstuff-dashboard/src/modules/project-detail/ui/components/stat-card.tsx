@@ -17,16 +17,18 @@ type StatCardProps = {
 export function StatCard({ title, value, subtitle, icon }: StatCardProps) {
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between pb-2">
-        <CardTitle className="text-muted-foreground text-sm font-normal">
+      <CardHeader className="flex flex-row items-center justify-between px-3 pb-1 sm:px-6 sm:pb-2">
+        <CardTitle className="text-muted-foreground text-xs font-normal sm:text-sm">
           {title}
         </CardTitle>
-        {icon}
+        {icon && <span className="hidden sm:inline">{icon}</span>}
       </CardHeader>
-      <CardContent>
-        <div className="text-2xl font-bold">{value}</div>
+      <CardContent className="px-3 sm:px-6">
+        <div className="truncate text-lg font-bold sm:text-2xl">{value}</div>
         {subtitle && (
-          <p className="text-muted-foreground text-xs">{subtitle}</p>
+          <p className="text-muted-foreground hidden text-xs sm:block">
+            {subtitle}
+          </p>
         )}
       </CardContent>
     </Card>

@@ -51,7 +51,7 @@ export function FormatDemo() {
             {formats.map((f) => (
               <div
                 key={f.value}
-                className={`flex cursor-pointer items-center justify-between rounded-xl border-2 px-4 py-2.5 transition-all ${
+                className={`flex cursor-pointer items-center justify-between rounded-xl border-2 px-4 py-3 transition-all ${
                   format === f.value
                     ? "border-accent bg-accent/5"
                     : "bg-muted/50 hover:bg-muted border-transparent"

@@ -25,12 +25,13 @@ import { useEffect, useState } from "react";
 type NavigationItem = {
   readonly href: string;
   readonly label: string;
+  readonly external: boolean;
 };
 
 const NAVIGATION: readonly NavigationItem[] = [
-  { href: "#demo", label: "Demo" },
-  { href: "/blog", label: "Blog" },
-  { href: process.env.NEXT_PUBLIC_DOCS_URL ?? "#", label: "Docs" },
+  { href: "#demo", label: "Demo", external: false },
+  { href: "/blog", label: "Blog", external: false },
+  { href: process.env.NEXT_PUBLIC_DOCS_URL ?? "#", label: "Docs", external: true },
 ] as const;
 
 const HEADER_CONFIG = {
@@ -91,6 +92,7 @@ export function Header() {
               <Link
                 key={item.href}
                 href={item.href}
+                {...(item.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
                 className="text-muted-foreground hover:text-foreground dark:text-foreground after:bg-foreground relative text-sm font-medium transition-colors after:absolute after:bottom-0 after:left-0 after:h-px after:w-0 after:transition-all after:duration-300 hover:after:w-full"
               >
                 {item.label}
