@@ -388,8 +388,19 @@ export async function getApiKeyConfig(
     console.warn("Redis write failed for API key config cache:", error);
   });
 
-  // Decrypt secret key only when returning to the caller
-  return parseApiKeyFromCache(cachedConfig);
+  // Decrypt secret key only when returning to the caller.
+  // Unlike the cache-hit path (which falls through to DB on failure),
+  // a decryption failure here indicates a server-side issue (e.g. wrong
+  // API_KEY_ENCRYPTION_SECRET or corrupted DB data) — surface it as an
+  // error so the route handler returns 500, not a misleading 401.
+  const parsed = parseApiKeyFromCache(cachedConfig);
+  if (!parsed) {
+    throw new Error(
+      `API key decryption failed for public key "${publicKey}" after DB fetch`,
+    );
+  }
+
+  return parsed;
 }
 
 /**
