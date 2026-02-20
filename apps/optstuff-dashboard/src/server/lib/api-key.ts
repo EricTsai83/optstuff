@@ -70,7 +70,7 @@ export function encryptApiKey(plaintext: string) {
   return `${iv.toString("base64")}:${authTag.toString("base64")}:${encrypted.toString("base64")}`;
 }
 
-type Result<T, E extends Error> =
+export type Result<T, E extends Error> =
   | { readonly ok: true; readonly value: T }
   | { readonly ok: false; readonly error: E };
 

@@ -118,6 +118,7 @@ f_webp       → Format WebP
 f_avif       → Format AVIF
 fit_cover    → Crop to fill dimensions
 fit_contain  → Scale to fit within dimensions
+fit_fill     → Stretch to fill exact dimensions
 embed        → Embed mode
 _            → No operations`;
 

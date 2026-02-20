@@ -180,6 +180,10 @@ export function OptimizedImage({ src, width, alt }: OptimizedImageProps) {
 }
 ```
 
+### Option 3: `next/image` Loader
+
+You can use OptStuff as a custom loader for `next/image`. See the [CDN and Caching guide](/docs/guides/cdn-caching#using-with-nextimage) for a ready-to-use `optstuffLoader` implementation.
+
 ## Operations Reference
 
 | Operation | Description | Example |
@@ -216,10 +220,6 @@ Before going to production, verify:
 | `403` Invalid referer | Your website not in project's allowed domains | Add the domain in Dashboard → Project settings |
 
 For the complete error reference, see [Error Codes](/docs/api-reference/error-codes).
-
-## Using with `next/image`
-
-You can use OptStuff as a custom loader for `next/image`. See the [CDN and Caching guide](/docs/guides/cdn-caching#using-with-nextimage) for a ready-to-use `optstuffLoader` implementation.
 
 ## Further Reading
 

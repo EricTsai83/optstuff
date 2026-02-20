@@ -41,7 +41,14 @@ Rate limits are stored per API key in the database:
 | `rateLimitPerMinute` | 1 – 10,000 | 60 |
 | `rateLimitPerDay` | 1 – 1,000,000 | 10,000 |
 
-New API keys are created with the default limits. Custom per-key rate limits are not yet configurable through the dashboard UI — this feature is planned for a future release. If you need to adjust limits, modify the database directly; changes take effect within 60 seconds (cache TTL).
+New API keys are created with the default limits. Custom per-key rate limits are not yet configurable through the dashboard UI — this feature is planned for a future release. If you need to adjust limits, update the `api_keys` table directly:
+
+- **`rate_limit_per_minute`** — valid range: 1 – 10,000
+- **`rate_limit_per_day`** — valid range: 1 – 1,000,000
+
+> **Before modifying:** back up the `api_keys` table and validate that your values fall within the ranges above (the schema enforces integer type but not range — out-of-range values may cause unexpected behaviour). If you are unsure about the correct limits for your use case, contact support or consult the internal [Rate Limit Runbook](/docs/internal/rate-limit-runbook).
+
+Changes take effect within 60 seconds (cache TTL).
 
 ## Response When Rate Limited
 
@@ -53,6 +60,8 @@ New API keys are created with the default limits. Custom per-key rate limits are
   "limit": 60
 }
 ```
+
+`retryAfter` is the number of **seconds** to wait before retrying (consistent with the HTTP `Retry-After` header).
 
 HTTP headers:
 
