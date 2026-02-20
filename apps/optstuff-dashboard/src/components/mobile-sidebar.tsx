@@ -16,6 +16,7 @@ import {
   X,
 } from "lucide-react";
 import { useTheme } from "next-themes";
+import { useEffect, useRef } from "react";
 
 type SidebarLink = {
   readonly label: string;
@@ -51,6 +52,9 @@ const SIDEBAR_LINKS: readonly SidebarLink[] = [
   },
 ];
 
+const FOCUSABLE_SELECTOR =
+  'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
 type MobileSidebarProps = {
   readonly isOpen: boolean;
   readonly onClose: () => void;
@@ -59,11 +63,74 @@ type MobileSidebarProps = {
 export function MobileSidebar({ isOpen, onClose }: MobileSidebarProps) {
   const { resolvedTheme, setTheme } = useTheme();
   const isDark = resolvedTheme === "dark";
+  const panelRef = useRef<HTMLDivElement>(null);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        onClose();
+      }
+    }
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isOpen, onClose]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    previousFocusRef.current = document.activeElement as HTMLElement | null;
+
+    const panel = panelRef.current;
+    if (panel) {
+      const firstFocusable =
+        panel.querySelector<HTMLElement>(FOCUSABLE_SELECTOR);
+      firstFocusable?.focus();
+    }
+
+    function handleTabKey(event: KeyboardEvent) {
+      if (event.key !== "Tab" || !panel) return;
+
+      const focusableElements =
+        panel.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR);
+      if (focusableElements.length === 0) return;
+
+      const first = focusableElements[0];
+      const last = focusableElements[focusableElements.length - 1];
+      if (!first || !last) return;
+
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    }
+
+    document.addEventListener("keydown", handleTabKey);
+    return () => {
+      document.removeEventListener("keydown", handleTabKey);
+      previousFocusRef.current?.focus();
+      previousFocusRef.current = null;
+    };
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
   return (
-    <div className="bg-background fixed inset-0 z-50 flex flex-col overflow-hidden md:hidden">
+    <div
+      ref={panelRef}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="mobile-sidebar-title"
+      className="bg-background fixed inset-0 z-50 flex flex-col overflow-hidden md:hidden"
+    >
       {/* Close button — aligned to header's toggle position */}
       <div className="flex h-16 shrink-0 items-center justify-end px-4">
         <Button
@@ -78,7 +145,10 @@ export function MobileSidebar({ isOpen, onClose }: MobileSidebarProps) {
       </div>
 
       <nav className="scrollbar-hide flex flex-1 flex-col gap-1 overflow-y-auto overscroll-contain px-4">
-        <p className="text-muted-foreground mb-1 px-3 text-xs font-medium uppercase tracking-wider">
+        <p
+          id="mobile-sidebar-title"
+          className="text-muted-foreground mb-1 px-3 text-xs font-medium uppercase tracking-wider"
+        >
           Menu
         </p>
 

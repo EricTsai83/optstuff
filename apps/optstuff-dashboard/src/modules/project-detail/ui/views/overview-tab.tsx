@@ -11,7 +11,7 @@ import {
   CardTitle,
 } from "@workspace/ui/components/card";
 import { CopyButton } from "@workspace/ui/components/copy-button";
-import { Activity, Globe, Key } from "lucide-react";
+import { Activity, Globe, HardDrive, Key } from "lucide-react";
 import type { Project } from "../../types";
 import { StatCard } from "../components/stat-card";
 
@@ -57,7 +57,7 @@ export function OverviewTab({ project }: OverviewTabProps) {
       </Card>
 
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-3 sm:gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-6">
         <StatCard
           title="API Keys"
           value={String(apiKeys?.length ?? 0)}
@@ -74,7 +74,7 @@ export function OverviewTab({ project }: OverviewTabProps) {
           title="Bandwidth"
           value={formatBytes(usageSummary?.totalBytes ?? 0)}
           subtitle="Last 30 days"
-          icon={<Activity className="text-muted-foreground h-4 w-4" />}
+          icon={<HardDrive className="text-muted-foreground h-4 w-4" />}
         />
       </div>
     </div>

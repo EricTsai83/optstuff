@@ -184,9 +184,9 @@ function StatusIcon({
         colors.background,
         colors.text
       )}
+      aria-label={statusLabel}
     >
       <Key className="h-6 w-6" />
-
     </div>
   );
 }
@@ -278,7 +278,6 @@ export function ApiKeyItem({
           <div className="space-y-1">
             <h3 className="text-base font-semibold">{apiKey.name}</h3>
             <div className="flex items-center gap-1 text-sm text-muted-foreground">
-              {/* Fixed width container to keep layout stable */}
               <code className="max-w-[200px] truncate rounded bg-muted px-2 py-0.5 font-mono text-xs">
                 {maskedKey}
               </code>
