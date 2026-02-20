@@ -8,6 +8,7 @@ import {
 } from "crypto";
 
 import { env } from "@/env";
+import type { Result } from "@/lib/types";
 
 const PUBLIC_KEY_PREFIX = "pk_";
 const SECRET_KEY_PREFIX = "sk_";
@@ -69,10 +70,6 @@ export function encryptApiKey(plaintext: string) {
   // Format: iv:authTag:ciphertext (all base64 encoded)
   return `${iv.toString("base64")}:${authTag.toString("base64")}:${encrypted.toString("base64")}`;
 }
-
-export type Result<T, E extends Error> =
-  | { readonly ok: true; readonly value: T }
-  | { readonly ok: false; readonly error: E };
 
 export class DecryptApiKeyError extends Error {
   constructor(message: string) {
