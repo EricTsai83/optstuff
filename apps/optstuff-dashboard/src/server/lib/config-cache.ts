@@ -376,7 +376,7 @@ export async function getApiKeyConfig(
         return parsed;
       }
       // Decryption failed — corrupted cache entry. Invalidate and fall through to DB.
-      await redis.del(cacheKey).catch(() => {});
+      await redis.del(cacheKey).catch(() => undefined);
     }
   } catch (error) {
     console.warn(
