@@ -83,19 +83,23 @@ export function resolveContentType(format: string) {
 }
 
 /**
- * Parse IPX path format
+ * Parse an IPX-style path into an operations string and an image path.
  *
- * Format: /{operations}/{image_path}
+ * Returns `null` when the input does not contain at least one operations segment and an image path,
+ * when the operations segment is empty, or when the image path contains malformed percent-encoding.
+ * The decoded image path will have its protocol slashes normalized (e.g., `https:/example` → `https://example`).
  *
- * @example
- * - ["w_200", "example.com/image.jpg"] => { operations: "w_200", imagePath: "example.com/image.jpg" }
+ * @param pathSegments - URL path segments where the first segment is the operations string and the remaining segments form the image path
+ * @returns `{ operations: string; imagePath: string }` when parsing succeeds, `null` otherwise
  */
 export function parseIpxPath(pathSegments: string[]) {
   if (pathSegments.length < 2) {
     return null;
   }
 
-  const operations = pathSegments[0]!;
+  const operations = pathSegments[0];
+  if (!operations) return null;
+
   let imagePath = pathSegments.slice(1).join("/");
 
   try {
@@ -111,15 +115,10 @@ export function parseIpxPath(pathSegments: string[]) {
 }
 
 /**
- * Convert IPX URL format operation string to operation object
+ * Parse an IPX operations string into an operations map.
  *
- * Parses IPX param strings by splitting on commas and extracting key-value pairs
- * at underscore positions. Keys are preserved as-is (abbreviated form).
- *
- * @example
- * - "w_200" => { w: "200" }
- * - "embed,f_webp,s_200x200" => { embed: true, f: "webp", s: "200x200" }
- * - "_" => {}
+ * @param operationsStr - Comma-separated operations where tokens with an underscore represent `key_value` pairs, tokens without an underscore represent flag-only operations, and a single underscore (`"_"`) denotes no operations.
+ * @returns A record mapping operation keys to their string value or `true` for flag-only operations.
  */
 export function parseOperationsString(operationsStr: string) {
   if (operationsStr === "_") {
@@ -130,6 +129,8 @@ export function parseOperationsString(operationsStr: string) {
   const parts = operationsStr.split(",");
 
   for (const part of parts) {
+    if (!part) continue;
+
     const underscoreIndex = part.indexOf("_");
 
     if (underscoreIndex > 0) {

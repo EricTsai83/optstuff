@@ -11,7 +11,7 @@ Each API key consists of a **dual-key pair**:
 
 | Component | Format | Purpose | Visibility |
 |-----------|--------|---------|------------|
-| Public Key | `pk_` + 25 characters | Identifies requests in URLs | Viewable anytime in dashboard |
+| Public Key | `pk_` + 22 characters (25 total) | Identifies requests in URLs | Viewable anytime in dashboard |
 | Secret Key | `sk_` + base64url | Signs URLs (HMAC-SHA256) | **Shown only once** at creation/rotation |
 
 For details on how keys are used in requests, see [URL Signing](/docs/guides/url-signing).

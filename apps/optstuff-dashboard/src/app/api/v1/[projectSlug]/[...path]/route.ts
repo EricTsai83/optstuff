@@ -40,6 +40,15 @@ import {
 
 export const dynamic = "force-dynamic";
 
+/**
+ * Handle GET requests to serve IPX-optimized images for a project using signed URLs.
+ *
+ * Validates the request signature and API key, enforces rate limits and referer/source-domain restrictions, processes the requested image with IPX according to the signed operations, updates usage metadata, and logs the request. On success returns the optimized image bytes with appropriate caching and content-type headers; on failure returns a JSON error response with an appropriate HTTP status.
+ *
+ * @param request - The incoming Request object for the HTTP GET.
+ * @param params - A promise resolving to route parameters: `projectSlug` (the project's URL slug) and `path` (an array representing the operations and image path segments).
+ * @returns An HTTP response containing the optimized image on success, or a JSON error object with an appropriate status code on failure.
+ */
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ projectSlug: string; path: string[] }> },
@@ -263,7 +272,7 @@ export async function GET(
       }).catch(() => {
         // Ignore logging errors
       });
-    })();
+    })().catch(() => {});
 
     // 12. Return optimized image
     return new Response(imageData as Uint8Array<ArrayBuffer>, {
@@ -277,8 +286,6 @@ export async function GET(
     });
   } catch (error) {
     console.error("Image processing error:", error);
-
-    const errorMessage = error instanceof Error ? error.message : String(error);
 
     // Log error (fire-and-forget)
     try {
@@ -294,10 +301,7 @@ export async function GET(
     }
 
     return NextResponse.json(
-      {
-        error: "Image processing failed",
-        details: errorMessage,
-      },
+      { error: "Image processing failed" },
       { status: 500 },
     );
   }

@@ -20,6 +20,13 @@ type DeveloperSnippetsProps = {
   readonly apiEndpoint: string;
 };
 
+/**
+ * Render a tabbed "Quick Start" card with ready-to-copy code snippets for integrating OptStuff.
+ *
+ * @param projectSlug - Project identifier inserted into the displayed snippets (e.g., NEXT_PUBLIC_OPTSTUFF_PROJECT_SLUG).
+ * @param apiEndpoint - Deployment endpoint inserted into the displayed snippets (used for signed URL examples).
+ * @returns A React element containing a card with four tabs (.env, Loader, Usage, Direct URL), each showing a code example and a copy button.
+ */
 export function DeveloperSnippets({
   projectSlug,
   apiEndpoint,
@@ -116,6 +123,10 @@ s_800x600    → Size 800x600
 q_80         → Quality 80%
 f_webp       → Format WebP
 f_avif       → Format AVIF
+fit_cover    → Crop to fill dimensions
+fit_contain  → Scale to fit within dimensions
+fit_fill     → Stretch to fill exact dimensions
+embed        → Embed mode
 _            → No operations`;
 
   return (

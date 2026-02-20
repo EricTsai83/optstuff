@@ -13,7 +13,7 @@ export type ProjectConfig = {
   readonly id: string;
   readonly slug: string;
   readonly teamId: string;
-  readonly allowedRefererDomains: string[] | null;
+  readonly allowedRefererDomains: readonly string[] | null;
 };
 
 /**
@@ -47,14 +47,27 @@ type CachedApiKeyConfig = Omit<
 };
 
 /**
- * Convert a cached API key config back to {@link ApiKeyConfig}.
- * Decrypts the secret key and converts ISO string dates back to Date objects.
+ * Converts a cached API key record into an ApiKeyConfig.
+ *
+ * Decrypts the encrypted secret and transforms ISO date strings for `expiresAt` and `revokedAt` into `Date` objects.
+ *
+ * @returns The reconstructed `ApiKeyConfig`, or `null` if secret decryption fails (corrupted cache entry).
  */
-function parseApiKeyFromCache(cached: CachedApiKeyConfig): ApiKeyConfig {
+function parseApiKeyFromCache(cached: CachedApiKeyConfig): ApiKeyConfig | null {
   const { encryptedSecretKey, expiresAt, revokedAt, ...rest } = cached;
+  const decryptResult = decryptApiKey(encryptedSecretKey);
+
+  if (!decryptResult.ok) {
+    console.warn(
+      `Failed to decrypt cached API key ${cached.publicKey}:`,
+      decryptResult.error.message,
+    );
+    return null;
+  }
+
   return {
     ...rest,
-    secretKey: decryptApiKey(encryptedSecretKey),
+    secretKey: decryptResult.value,
     expiresAt: expiresAt ? new Date(expiresAt) : null,
     revokedAt: revokedAt ? new Date(revokedAt) : null,
   };
@@ -83,8 +96,7 @@ function serializeApiKeyForCache(apiKeyRow: {
     allowedSourceDomains: apiKeyRow.allowedSourceDomains,
     expiresAt: apiKeyRow.expiresAt ? apiKeyRow.expiresAt.toISOString() : null,
     revokedAt: apiKeyRow.revokedAt ? apiKeyRow.revokedAt.toISOString() : null,
-    rateLimitPerMinute:
-      apiKeyRow.rateLimitPerMinute ?? RATE_LIMITS.perMinute,
+    rateLimitPerMinute: apiKeyRow.rateLimitPerMinute ?? RATE_LIMITS.perMinute,
     rateLimitPerDay: apiKeyRow.rateLimitPerDay ?? RATE_LIMITS.perDay,
   };
 }
@@ -140,7 +152,10 @@ export async function getProjectConfig(
       return cached;
     }
   } catch (error) {
-    console.warn("Redis read failed for project config, falling back to DB:", error);
+    console.warn(
+      "Redis read failed for project config, falling back to DB:",
+      error,
+    );
   }
 
   // Query database
@@ -151,11 +166,13 @@ export async function getProjectConfig(
 
   if (!project) {
     // Negative cache: store sentinel with shorter TTL to absorb repeated misses
-    await redis.set(cacheKey, NOT_FOUND_SENTINEL, {
-      ex: NEGATIVE_CACHE_TTL_SECONDS,
-    }).catch((error: unknown) => {
-      console.warn("Redis write failed for negative cache:", error);
-    });
+    await redis
+      .set(cacheKey, NOT_FOUND_SENTINEL, {
+        ex: NEGATIVE_CACHE_TTL_SECONDS,
+      })
+      .catch((error: unknown) => {
+        console.warn("Redis write failed for negative cache:", error);
+      });
     return null;
   }
 
@@ -167,11 +184,11 @@ export async function getProjectConfig(
   };
 
   // Store in Redis with TTL (best-effort)
-  await redis.set(cacheKey, config, { ex: CACHE_TTL_SECONDS }).catch(
-    (error: unknown) => {
+  await redis
+    .set(cacheKey, config, { ex: CACHE_TTL_SECONDS })
+    .catch((error: unknown) => {
       console.warn("Redis write failed for project config cache:", error);
-    },
-  );
+    });
 
   return config;
 }
@@ -204,7 +221,10 @@ export async function getProjectConfigById(
       return cached;
     }
   } catch (error) {
-    console.warn("Redis read failed for project config by ID, falling back to DB:", error);
+    console.warn(
+      "Redis read failed for project config by ID, falling back to DB:",
+      error,
+    );
   }
 
   // Query database by primary key
@@ -214,11 +234,13 @@ export async function getProjectConfigById(
 
   if (!project) {
     // Negative cache: store sentinel with shorter TTL to absorb repeated misses
-    await redis.set(cacheKey, NOT_FOUND_SENTINEL, {
-      ex: NEGATIVE_CACHE_TTL_SECONDS,
-    }).catch((error: unknown) => {
-      console.warn("Redis write failed for negative cache:", error);
-    });
+    await redis
+      .set(cacheKey, NOT_FOUND_SENTINEL, {
+        ex: NEGATIVE_CACHE_TTL_SECONDS,
+      })
+      .catch((error: unknown) => {
+        console.warn("Redis write failed for negative cache:", error);
+      });
     return null;
   }
 
@@ -230,11 +252,11 @@ export async function getProjectConfigById(
   };
 
   // Store in Redis with TTL (best-effort)
-  await redis.set(cacheKey, config, { ex: CACHE_TTL_SECONDS }).catch(
-    (error: unknown) => {
+  await redis
+    .set(cacheKey, config, { ex: CACHE_TTL_SECONDS })
+    .catch((error: unknown) => {
       console.warn("Redis write failed for project config by ID cache:", error);
-    },
-  );
+    });
 
   return config;
 }
@@ -266,7 +288,10 @@ export async function getProjectConfigByTeamAndSlug(
       return cached;
     }
   } catch (error) {
-    console.warn("Redis read failed for team+project config, falling back to DB:", error);
+    console.warn(
+      "Redis read failed for team+project config, falling back to DB:",
+      error,
+    );
   }
 
   // Find team first
@@ -276,11 +301,13 @@ export async function getProjectConfigByTeamAndSlug(
 
   if (!team) {
     // Negative cache: store sentinel with shorter TTL to absorb repeated misses
-    await redis.set(cacheKey, NOT_FOUND_SENTINEL, {
-      ex: NEGATIVE_CACHE_TTL_SECONDS,
-    }).catch((error: unknown) => {
-      console.warn("Redis write failed for negative cache:", error);
-    });
+    await redis
+      .set(cacheKey, NOT_FOUND_SENTINEL, {
+        ex: NEGATIVE_CACHE_TTL_SECONDS,
+      })
+      .catch((error: unknown) => {
+        console.warn("Redis write failed for negative cache:", error);
+      });
     return null;
   }
 
@@ -291,11 +318,13 @@ export async function getProjectConfigByTeamAndSlug(
 
   if (!project) {
     // Negative cache: store sentinel with shorter TTL to absorb repeated misses
-    await redis.set(cacheKey, NOT_FOUND_SENTINEL, {
-      ex: NEGATIVE_CACHE_TTL_SECONDS,
-    }).catch((error: unknown) => {
-      console.warn("Redis write failed for negative cache:", error);
-    });
+    await redis
+      .set(cacheKey, NOT_FOUND_SENTINEL, {
+        ex: NEGATIVE_CACHE_TTL_SECONDS,
+      })
+      .catch((error: unknown) => {
+        console.warn("Redis write failed for negative cache:", error);
+      });
     return null;
   }
 
@@ -307,11 +336,11 @@ export async function getProjectConfigByTeamAndSlug(
   };
 
   // Store in Redis with TTL (best-effort)
-  await redis.set(cacheKey, config, { ex: CACHE_TTL_SECONDS }).catch(
-    (error: unknown) => {
+  await redis
+    .set(cacheKey, config, { ex: CACHE_TTL_SECONDS })
+    .catch((error: unknown) => {
       console.warn("Redis write failed for team+project config cache:", error);
-    },
-  );
+    });
 
   return config;
 }
@@ -319,9 +348,13 @@ export async function getProjectConfigByTeamAndSlug(
 /**
  * Get API key configuration by public key with Redis caching.
  * Degrades gracefully when Redis is unreachable — falls back to direct DB query.
+ * Cache decryption failures invalidate the corrupted entry and fall back to a
+ * fresh DB lookup rather than returning null.
  *
  * @param publicKey - The public key (e.g., "pk_abc123...")
- * @returns API key configuration or null if not found/invalid
+ * @returns The API key configuration for `publicKey`, or null if the key does not exist.
+ * @throws {Error} When decryption of the DB-fetched secret key fails (e.g. wrong
+ *   encryption secret or corrupted DB data).
  */
 export async function getApiKeyConfig(
   publicKey: string,
@@ -338,10 +371,18 @@ export async function getApiKeyConfig(
       return null;
     }
     if (cached) {
-      return parseApiKeyFromCache(cached);
+      const parsed = parseApiKeyFromCache(cached);
+      if (parsed) {
+        return parsed;
+      }
+      // Decryption failed — corrupted cache entry. Invalidate and fall through to DB.
+      await redis.del(cacheKey).catch(() => undefined);
     }
   } catch (error) {
-    console.warn("Redis read failed for API key config, falling back to DB:", error);
+    console.warn(
+      "Redis read failed for API key config, falling back to DB:",
+      error,
+    );
   }
 
   // Query database — intentionally does NOT filter out revoked keys so that
@@ -353,11 +394,13 @@ export async function getApiKeyConfig(
 
   if (!apiKey) {
     // Negative cache: store sentinel with shorter TTL to absorb repeated misses
-    await redis.set(cacheKey, NOT_FOUND_SENTINEL, {
-      ex: NEGATIVE_CACHE_TTL_SECONDS,
-    }).catch((error: unknown) => {
-      console.warn("Redis write failed for negative cache:", error);
-    });
+    await redis
+      .set(cacheKey, NOT_FOUND_SENTINEL, {
+        ex: NEGATIVE_CACHE_TTL_SECONDS,
+      })
+      .catch((error: unknown) => {
+        console.warn("Redis write failed for negative cache:", error);
+      });
     return null;
   }
 
@@ -365,14 +408,27 @@ export async function getApiKeyConfig(
   const cachedConfig = serializeApiKeyForCache(apiKey);
 
   // Store in Redis with TTL (best-effort)
-  await redis.set(cacheKey, cachedConfig, {
-    ex: CACHE_TTL_SECONDS,
-  }).catch((error: unknown) => {
-    console.warn("Redis write failed for API key config cache:", error);
-  });
+  await redis
+    .set(cacheKey, cachedConfig, {
+      ex: CACHE_TTL_SECONDS,
+    })
+    .catch((error: unknown) => {
+      console.warn("Redis write failed for API key config cache:", error);
+    });
 
-  // Decrypt secret key only when returning to the caller
-  return parseApiKeyFromCache(cachedConfig);
+  // Decrypt secret key only when returning to the caller.
+  // Unlike the cache-hit path (which falls through to DB on failure),
+  // a decryption failure here indicates a server-side issue (e.g. wrong
+  // API_KEY_ENCRYPTION_SECRET or corrupted DB data) — surface it as an
+  // error so the route handler returns 500, not a misleading 401.
+  const parsed = parseApiKeyFromCache(cachedConfig);
+  if (!parsed) {
+    throw new Error(
+      `API key decryption failed for public key "${publicKey}" after DB fetch`,
+    );
+  }
+
+  return parsed;
 }
 
 /**

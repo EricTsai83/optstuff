@@ -84,6 +84,20 @@ The secret key is only shown once at creation or rotation. If you've lost it:
 
 > The public key can always be viewed and copied from the API key list.
 
+## Error Response Format
+
+All error responses include an `error` field. Depending on the error, additional fields may be present:
+
+| Field | When Included | Description |
+|-------|---------------|-------------|
+| `error` | Always | Human-readable error message |
+| `details` | `400` (invalid image URL), `500` | Additional context about the failure |
+| `usage` | `400` (invalid path), `401` (missing params) | Hints showing the correct URL format |
+| `examples` | `400` (invalid path) | Example valid URLs |
+| `reason` | `429` | Whether the minute or day limit was hit |
+| `retryAfter` | `429` | Seconds to wait before retrying |
+| `limit` | `429` | The limit that was exceeded |
+
 ## Rate Limit Response Format
 
 When a `429` error is returned:
