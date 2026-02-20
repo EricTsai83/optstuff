@@ -1,0 +1,85 @@
+---
+title: Rate Limiting
+description: How OptStuff rate limiting works — sliding window algorithm, dual-layer limits, configuration, response format, and tuning recommendations.
+---
+
+Rate limiting protects your account from abuse and unexpected costs. Each API key has independent rate limits, enforced globally across all server instances.
+
+## Dual-Layer Limits
+
+Every request is checked against two independent limits. Both must pass.
+
+| Layer | Default | Window | Purpose |
+|-------|---------|--------|---------|
+| Per-day | 10,000 requests | 24 hours | Catch sustained overuse |
+| Per-minute | 60 requests | 1 minute | Catch sudden bursts |
+
+## Algorithm: Sliding Window
+
+Unlike fixed windows that can allow up to 2× burst at boundaries, the sliding window algorithm produces smooth limits:
+
+```text
+Fixed Window (problem at boundary):
+  Window 1 [11:00 – 11:01]          Window 2 [11:01 – 11:02]
+           ... 0 req ... 59 req  │  60 req ...
+                                 ↑
+                          119 requests in ~1 second
+
+Sliding Window (smooth):
+  At 11:01:15 (25% into current window):
+  Previous window count = 42
+  Current window count  = 18
+  Weighted count = 42 × 0.75 + 18 = 49.5 → under limit
+```
+
+## Configuration
+
+Rate limits are stored per API key in the database:
+
+| Setting | Range | Default |
+|---------|-------|---------|
+| `rateLimitPerMinute` | 1 – 10,000 | 60 |
+| `rateLimitPerDay` | 1 – 1,000,000 | 10,000 |
+
+Changes made through the dashboard take effect **immediately** (the cache is invalidated). Direct database changes take effect within 60 seconds (cache TTL).
+
+## Response When Rate Limited
+
+```json
+{
+  "error": "Rate limit exceeded",
+  "reason": "Too many requests per minute",
+  "retryAfter": 12,
+  "limit": 60
+}
+```
+
+HTTP headers:
+
+```text
+HTTP/1.1 429 Too Many Requests
+Retry-After: 12
+X-RateLimit-Limit: 60
+X-RateLimit-Remaining: 0
+```
+
+Clients should respect the `Retry-After` header to avoid further 429 responses.
+
+## Tuning Recommendations
+
+| Traffic Level | Recommendation |
+|---------------|----------------|
+| Low (< 100 req/day) | Defaults work well |
+| Medium (100 – 10,000 req/day) | Monitor analytics; increase per-day limit if hit legitimately |
+| High (> 10,000 req/day) | Set per-key limits based on expected traffic to avoid false 429s |
+
+## Design Notes
+
+- Rate limits are checked **after** signature verification so that unauthenticated requests cannot exhaust quota.
+- The per-day limit is checked **before** the per-minute limit to minimize token waste (see [Redis Schema](/docs/internal/redis-schema) for details).
+
+## Related Documentation
+
+- [Key Management](/docs/guides/key-management) — How to configure per-key limits
+- [Error Codes](/docs/api-reference/error-codes) — Rate limit error details
+- [Security Best Practices](/docs/guides/security-best-practices) — Broader security context

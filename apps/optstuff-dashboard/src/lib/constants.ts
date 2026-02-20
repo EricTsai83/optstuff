@@ -19,9 +19,14 @@ export const RATE_LIMITS = {
 /** Centralized documentation links — driven by `NEXT_PUBLIC_DOCS_URL` env var */
 export const DOCS_LINKS = {
   home: env.NEXT_PUBLIC_DOCS_URL,
-  gettingStarted: `${env.NEXT_PUBLIC_DOCS_URL}/getting-started`,
-  integration: `${env.NEXT_PUBLIC_DOCS_URL}/integration`,
-  apiKeys: `${env.NEXT_PUBLIC_DOCS_URL}/api-keys`,
-  security: `${env.NEXT_PUBLIC_DOCS_URL}/security`,
-  urlSigning: `${env.NEXT_PUBLIC_DOCS_URL}/url-signing`,
+  quickstart: `${env.NEXT_PUBLIC_DOCS_URL}/getting-started/quickstart`,
+  integration: `${env.NEXT_PUBLIC_DOCS_URL}/getting-started/integration-guide`,
+  keyManagement: `${env.NEXT_PUBLIC_DOCS_URL}/guides/key-management`,
+  security: `${env.NEXT_PUBLIC_DOCS_URL}/guides/security-best-practices`,
+  urlSigning: `${env.NEXT_PUBLIC_DOCS_URL}/guides/url-signing`,
+  codeExamples: `${env.NEXT_PUBLIC_DOCS_URL}/guides/code-examples`,
+  cdnCaching: `${env.NEXT_PUBLIC_DOCS_URL}/guides/cdn-caching`,
+  pricing: `${env.NEXT_PUBLIC_DOCS_URL}/introduction/pricing-and-limits`,
+  faq: `${env.NEXT_PUBLIC_DOCS_URL}/faq`,
+  changelog: `${env.NEXT_PUBLIC_DOCS_URL}/changelog`,
 } as const;

@@ -1,0 +1,80 @@
+---
+title: Security Best Practices
+description: Defense-in-depth security overview — encrypted storage, request signing, domain whitelisting, rate limiting, and actionable recommendations.
+---
+
+OptStuff is built with a defense-in-depth approach. Even if one layer is compromised, multiple additional barriers protect your assets.
+
+## Security Layers
+
+| Layer | Protects Against | How |
+|-------|-----------------|-----|
+| [Encrypted Storage](#encrypted-storage) | Database breaches | AES-256-GCM encryption for secret keys at rest |
+| [Request Signing](#request-signing) | Unauthorized usage | HMAC-SHA256 signature on every request |
+| [Signature Expiration](#signature-expiration) | Replay attacks | Optional `exp` timestamp limits URL validity |
+| [Domain Whitelisting](#domain-whitelisting) | Hotlinking & abuse | Two-layer domain control |
+| [Rate Limiting](#rate-limiting) | Resource exhaustion | Per-key per-minute and per-day limits |
+| [Dual-Key System](#dual-key-system) | Accidental exposure | Separates public identifiers from secrets |
+
+### Encrypted Storage
+
+Secret keys are encrypted with **AES-256-GCM** before storage. The encryption key is derived via **HKDF (RFC 5869)** from a master secret stored in environment variables — separate from the database. Even if the database is compromised, attackers cannot obtain usable keys.
+
+### Request Signing
+
+Every request must include an HMAC-SHA256 signature. The signature is a one-way function — intercepting it cannot reveal the secret key. Signatures are compared using constant-time comparison (`timingSafeEqual`) to prevent timing attacks.
+
+See [URL Signing](/docs/guides/url-signing) for implementation details.
+
+### Signature Expiration
+
+The optional `exp` parameter limits how long a signed URL is valid. Recommended expiration times depend on the use case — see [URL Signing](/docs/guides/url-signing#signature-expiration).
+
+### Domain Whitelisting
+
+Two-layer domain control restricts both who can use the service (referer domains) and which images can be processed (source domains). See [Domain Whitelisting](/docs/guides/domain-whitelisting) for configuration.
+
+### Rate Limiting
+
+Per-key rate limits prevent abuse and contain the impact of compromised keys. See [Rate Limiting](/docs/guides/rate-limiting) for configuration.
+
+### Dual-Key System
+
+Public keys (`pk_...`) are safe to expose in URLs. Secret keys (`sk_...`) never leave your server. Even if someone sees a signed URL, they cannot forge new requests.
+
+## Attack Protection Summary
+
+| Attack | Protection |
+|--------|-----------|
+| Brute Force | HMAC-SHA256 + 32-char signature makes collision infeasible |
+| Replay Attacks | Signature expiration (`exp`) limits URL validity |
+| Timing Attacks | `timingSafeEqual` constant-time comparison |
+| Database Breach | AES-256-GCM encryption; keys useless without master key |
+| Man-in-the-Middle | HTTPS + signature validation |
+| Hotlinking | Referer domain whitelist |
+| Unauthorized Sources | Source domain whitelist |
+| Resource Exhaustion | Per-key rate limiting |
+
+## Secure Defaults
+
+| Setting | Empty/Unset Behavior |
+|---------|---------------------|
+| `allowedSourceDomains` | Production: reject all requests |
+| `allowedRefererDomains` | Allow all (no restriction) |
+| API key expiration | No expiration (we recommend setting one) |
+
+## Technical Standards
+
+| Standard | Usage |
+|----------|-------|
+| AES-256-GCM | Authenticated encryption for stored keys |
+| HKDF (RFC 5869) | Cryptographic key derivation |
+| HMAC-SHA256 | URL signature generation |
+| Constant-time comparison | Timing-safe signature verification |
+
+## Related Documentation
+
+- [URL Signing](/docs/guides/url-signing) — Signature generation and code examples
+- [Domain Whitelisting](/docs/guides/domain-whitelisting) — Domain configuration
+- [Rate Limiting](/docs/guides/rate-limiting) — Rate limit configuration
+- [Key Management](/docs/guides/key-management) — API key lifecycle best practices

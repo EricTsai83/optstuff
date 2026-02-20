@@ -1,0 +1,126 @@
+---
+title: FAQ
+description: Frequently asked questions about OptStuff — pricing, CDN usage, migration, team management, and troubleshooting.
+---
+
+## General
+
+### What is OptStuff?
+
+OptStuff is a secure image optimization API that resizes, compresses, and converts images on-the-fly via URL parameters. See [What is OptStuff?](/docs/introduction/what-is-optstuff) for a full overview.
+
+### What image formats are supported?
+
+**Input:** JPEG, PNG, WebP, AVIF, GIF
+**Output:** JPEG, PNG, WebP, AVIF
+
+See [Image Operations](/docs/api-reference/image-operations) for the complete reference.
+
+### Is OptStuff open source?
+
+Yes. The source code is available on [GitHub](https://github.com/EricTsai83/optstuff).
+
+---
+
+## Pricing and Limits
+
+### What's included in the free plan?
+
+10,000 requests and 1 GB bandwidth per month, with full access to all features (signed URLs, domain whitelisting, analytics, etc.). See [Pricing and Limits](/docs/introduction/pricing-and-limits).
+
+### What happens when I exceed the free plan?
+
+When your team's monthly request or bandwidth limit is reached, new optimization requests may be throttled or rejected with a `429` response. Existing CDN-cached images continue to be served. Usage resets at the start of each billing period.
+
+### Can I increase rate limits on the free plan?
+
+Yes — rate limits are configurable per API key in the dashboard. The free plan's overall monthly request and bandwidth caps still apply. See [Rate Limiting](/docs/guides/rate-limiting).
+
+---
+
+## Integration
+
+### Can I use OptStuff with a CDN?
+
+Yes, and it's recommended. OptStuff returns `Cache-Control: public, s-maxage=31536000, immutable` headers, making it compatible with any CDN. See the [CDN and Caching](/docs/guides/cdn-caching) guide for setup instructions with Cloudflare, Vercel, and CloudFront.
+
+### Does OptStuff work with frameworks other than Next.js?
+
+Yes. OptStuff is a standard HTTP API — any server-side language that can compute HMAC-SHA256 can generate signed URLs. See [Code Examples](/docs/guides/code-examples) for implementations in Node.js, Python, Go, Ruby, and PHP.
+
+### Can I use OptStuff from the browser?
+
+URL **signing** must happen server-side because it requires the secret key. The signed URL itself can be used in `<img>` tags, CSS `background-image`, or any client-side context. See the [Integration Guide](/docs/getting-started/integration-guide) for the recommended pattern.
+
+### How do I migrate from Cloudinary / Imgix / another service?
+
+1. Create an OptStuff project and API key
+2. Add your image source domains to the key's allowed source domains
+3. Replace your existing image URL generation with OptStuff's signing utility
+4. Update your CDN origin to point to your OptStuff deployment
+
+The URL structure is different, so you'll need to update your image components. See the [Quick Start](/docs/getting-started/quickstart) for the basic integration pattern.
+
+---
+
+## Security
+
+### Is my secret key stored securely?
+
+Yes. Secret keys are encrypted with AES-256-GCM before storage. The encryption master key is derived via HKDF (RFC 5869) and stored separately from the database. See [Security Best Practices](/docs/guides/security-best-practices).
+
+### What if I lose my secret key?
+
+The secret key is only shown once at creation or rotation. If you've lost it, **rotate** the key from the dashboard to generate a new pair. The old key is immediately revoked. See [Key Management](/docs/guides/key-management#rotation).
+
+### Can someone forge requests if they see a signed URL?
+
+No. A signed URL proves the request was authorized, but it cannot be used to derive the secret key or forge new URLs with different parameters. Each URL is bound to its specific operations, image source, and optional expiration.
+
+---
+
+## Teams and Projects
+
+### Can multiple people manage the same project?
+
+Currently, only the team owner can manage resources (projects, API keys, settings). Team collaboration features are on the roadmap.
+
+### Can I have multiple projects in one team?
+
+Yes. Each team can have unlimited projects, and each project can have unlimited API keys. This lets you isolate different applications or environments.
+
+### Can I transfer a project to another team?
+
+Project transfers are not currently supported. You can create a new project in the target team and generate new API keys.
+
+---
+
+## Troubleshooting
+
+### I'm getting `403 Invalid or expired signature`
+
+This is the most common error. Check these causes in order:
+
+1. **Wrong key** — Make sure you're signing with the secret key (`sk_...`), not the public key
+2. **Wrong path order** — Operations must come before the image URL: `w_800,f_webp/cdn.example.com/photo.jpg`
+3. **Wrong encoding** — Use `base64url`, not standard `base64`
+4. **Expired signature** — If using `exp`, ensure the timestamp is in Unix seconds (not milliseconds)
+
+See [Troubleshooting Signature Errors](/docs/api-reference/error-codes#troubleshooting-signature-errors) for the full checklist.
+
+### I'm getting `403 Source domain not allowed`
+
+The image source domain is not in the API key's allowed source domains list. Add it in **Dashboard → Project → API Key settings**. See [Domain Whitelisting](/docs/guides/domain-whitelisting).
+
+### I'm getting `429 Too Many Requests`
+
+You've exceeded per-minute or per-day rate limits for this API key. Check the `Retry-After` header in the response and wait before retrying. See [Rate Limiting](/docs/guides/rate-limiting) to adjust limits.
+
+### Images are not being cached by my CDN
+
+Verify that:
+1. Your CDN is configured to respect `Cache-Control` headers
+2. Query strings (`key`, `sig`, `exp`) are included in the cache key
+3. The CDN is not stripping or overriding cache headers
+
+See [CDN and Caching](/docs/guides/cdn-caching) for CDN-specific configuration.

@@ -1,0 +1,61 @@
+---
+title: What is OptStuff?
+description: OptStuff is a secure image optimization API that resizes, compresses, and converts images on-the-fly with signed URL security and multi-tenant support.
+---
+
+OptStuff is a secure, high-performance image optimization API designed for developers and teams who need to deliver optimized images at scale with fine-grained access control.
+
+## What It Does
+
+Point your image URLs through OptStuff's API endpoint, and it delivers optimized images with the right format, size, and quality — all controlled via URL parameters.
+
+```text
+/api/v1/my-blog/w_800,q_80,f_webp/cdn.example.com/photo.jpg?key=pk_...&sig=...
+```
+
+## Key Features
+
+- **On-the-fly Optimization** — Resize, format conversion (WebP, AVIF), and quality adjustment via URL parameters
+- **Signed URL Security** — HMAC-SHA256 signatures prevent unauthorized access
+- **Multi-tenant Architecture** — Teams → Projects → API Keys hierarchy
+- **Domain Whitelisting** — Control allowed image sources and referer domains
+- **Encrypted Key Storage** — AES-256-GCM encryption for API keys at rest
+- **Rate Limiting** — Configurable per-minute and per-day limits per API key
+- **Usage Analytics** — Request logs, bandwidth tracking, and top images statistics
+
+## Use Cases
+
+| Scenario | How OptStuff Helps |
+|----------|-------------------|
+| **Web Applications** | Serve appropriately sized images for different screens; convert to modern formats (WebP, AVIF) |
+| **Content Delivery** | Integrate with your CDN for edge-cached, optimized images |
+| **E-commerce** | Thumbnail generation, zoom-ready images, consistent catalog dimensions |
+| **User-Generated Content** | Resize, compress, and convert user uploads to web-friendly formats |
+
+## How It Works
+
+1. **Create a Project** — Set up a project in the dashboard
+2. **Generate an API Key** — Get your public/secret key pair
+3. **Sign URLs** — Use the secret key to sign image request URLs server-side
+4. **Make Requests** — Send signed requests to the OptStuff API
+5. **Get Optimized Images** — Receive optimized images with caching headers
+
+## Technical Specifications
+
+| Specification | Details |
+|---------------|---------|
+| Encryption | AES-256-GCM with HKDF key derivation |
+| Signing | HMAC-SHA256 |
+| Image Engine | IPX (powered by Sharp) |
+| Supported Input Formats | JPEG, PNG, WebP, AVIF, GIF |
+| Supported Output Formats | JPEG, PNG, WebP, AVIF |
+| Caching | Aggressive cache headers for CDN compatibility |
+
+## Pricing
+
+OptStuff offers a free plan with 10,000 requests and 1 GB bandwidth per month. For details on all plans, limits, and what happens when you exceed them, see [Pricing and Limits](/docs/introduction/pricing-and-limits).
+
+## Next Steps
+
+- **New to OptStuff?** Start with [Core Concepts](/docs/introduction/core-concepts) to understand the key building blocks.
+- **Ready to integrate?** Jump to the [Quick Start](/docs/getting-started/quickstart) for a 5-minute walkthrough.

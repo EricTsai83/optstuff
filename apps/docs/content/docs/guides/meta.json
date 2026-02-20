@@ -1,0 +1,12 @@
+{
+  "title": "Guides",
+  "pages": [
+    "url-signing",
+    "code-examples",
+    "cdn-caching",
+    "domain-whitelisting",
+    "rate-limiting",
+    "key-management",
+    "security-best-practices"
+  ]
+}

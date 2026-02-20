@@ -375,7 +375,7 @@ function EmptyProjectState({
       </p>
       <Button onClick={onCreateProject}>Create Your First Project</Button>
       <a
-        href={DOCS_LINKS.gettingStarted}
+        href={DOCS_LINKS.quickstart}
         target="_blank"
         rel="noopener noreferrer"
         className="text-muted-foreground hover:text-foreground mt-4 text-sm underline underline-offset-4 transition-colors"
