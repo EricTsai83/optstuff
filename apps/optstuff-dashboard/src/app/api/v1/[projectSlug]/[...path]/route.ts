@@ -263,7 +263,7 @@ export async function GET(
       }).catch(() => {
         // Ignore logging errors
       });
-    })();
+    })().catch(() => {});
 
     // 12. Return optimized image
     return new Response(imageData as Uint8Array<ArrayBuffer>, {
@@ -277,8 +277,6 @@ export async function GET(
     });
   } catch (error) {
     console.error("Image processing error:", error);
-
-    const errorMessage = error instanceof Error ? error.message : String(error);
 
     // Log error (fire-and-forget)
     try {
@@ -294,10 +292,7 @@ export async function GET(
     }
 
     return NextResponse.json(
-      {
-        error: "Image processing failed",
-        details: errorMessage,
-      },
+      { error: "Image processing failed" },
       { status: 500 },
     );
   }

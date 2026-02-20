@@ -188,10 +188,12 @@ export function OptimizedImage({ src, width, alt }: OptimizedImageProps) {
 | `h_{n}` | Height | `h_600` → 600px tall |
 | `s_{w}x{h}` | Size | `s_800x600` → 800×600 |
 | `q_{n}` | Quality (1-100) | `q_80` → 80% quality |
-| `f_{format}` | Format | `f_webp`, `f_avif`, `f_png` |
+| `f_{format}` | Format | `f_webp`, `f_avif`, `f_png`, `f_jpg` |
+| `fit_{mode}` | Fit mode | `fit_cover`, `fit_contain`, `fit_fill` |
+| `embed` | Embed mode | `embed` |
 | `_` | No operations | Forwards the original image |
 
-For the full operations reference, see [Image Operations](/docs/api-reference/image-operations).
+For the full operations reference (including fit modes and combination examples), see [Image Operations](/docs/api-reference/image-operations).
 
 ## Pre-Launch Checklist
 
@@ -215,8 +217,13 @@ Before going to production, verify:
 
 For the complete error reference, see [Error Codes](/docs/api-reference/error-codes).
 
+## Using with `next/image`
+
+You can use OptStuff as a custom loader for `next/image`. See the [CDN and Caching guide](/docs/guides/cdn-caching#using-with-nextimage) for a ready-to-use `optstuffLoader` implementation.
+
 ## Further Reading
 
 - [URL Signing](/docs/guides/url-signing) — Signature formula and security properties
 - [Domain Whitelisting](/docs/guides/domain-whitelisting) — Configure allowed domains
+- [CDN and Caching](/docs/guides/cdn-caching) — CDN integration and `next/image` loader
 - [Security Best Practices](/docs/guides/security-best-practices) — Recommendations for production

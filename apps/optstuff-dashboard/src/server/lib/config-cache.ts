@@ -3,7 +3,7 @@ import { and, eq } from "drizzle-orm";
 import { RATE_LIMITS } from "@/lib/constants";
 import { db } from "@/server/db";
 import { apiKeys, projects, teams } from "@/server/db/schema";
-import { decryptApiKey } from "@/server/lib/api-key";
+import { decryptApiKey, DecryptApiKeyError } from "@/server/lib/api-key";
 import { getRedis } from "@/server/lib/redis";
 
 /**
@@ -13,7 +13,7 @@ export type ProjectConfig = {
   readonly id: string;
   readonly slug: string;
   readonly teamId: string;
-  readonly allowedRefererDomains: string[] | null;
+  readonly allowedRefererDomains: readonly string[] | null;
 };
 
 /**
@@ -49,12 +49,24 @@ type CachedApiKeyConfig = Omit<
 /**
  * Convert a cached API key config back to {@link ApiKeyConfig}.
  * Decrypts the secret key and converts ISO string dates back to Date objects.
+ *
+ * @returns Parsed config, or null if decryption fails (corrupted cache entry)
  */
-function parseApiKeyFromCache(cached: CachedApiKeyConfig): ApiKeyConfig {
+function parseApiKeyFromCache(cached: CachedApiKeyConfig): ApiKeyConfig | null {
   const { encryptedSecretKey, expiresAt, revokedAt, ...rest } = cached;
+  const decryptResult = decryptApiKey(encryptedSecretKey);
+
+  if (!decryptResult.ok) {
+    console.warn(
+      `Failed to decrypt cached API key ${cached.publicKey}:`,
+      decryptResult.error.message,
+    );
+    return null;
+  }
+
   return {
     ...rest,
-    secretKey: decryptApiKey(encryptedSecretKey),
+    secretKey: decryptResult.value,
     expiresAt: expiresAt ? new Date(expiresAt) : null,
     revokedAt: revokedAt ? new Date(revokedAt) : null,
   };
@@ -338,7 +350,12 @@ export async function getApiKeyConfig(
       return null;
     }
     if (cached) {
-      return parseApiKeyFromCache(cached);
+      const parsed = parseApiKeyFromCache(cached);
+      if (parsed) {
+        return parsed;
+      }
+      // Decryption failed — corrupted cache entry. Invalidate and fall through to DB.
+      await redis.del(cacheKey).catch(() => {});
     }
   } catch (error) {
     console.warn("Redis read failed for API key config, falling back to DB:", error);

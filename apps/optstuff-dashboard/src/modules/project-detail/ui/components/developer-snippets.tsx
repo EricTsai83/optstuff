@@ -116,6 +116,9 @@ s_800x600    → Size 800x600
 q_80         → Quality 80%
 f_webp       → Format WebP
 f_avif       → Format AVIF
+fit_cover    → Crop to fill dimensions
+fit_contain  → Scale to fit within dimensions
+embed        → Embed mode
 _            → No operations`;
 
   return (

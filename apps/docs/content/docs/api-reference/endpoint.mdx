@@ -43,7 +43,14 @@ Returns the optimized image binary with aggressive caching headers:
 HTTP/1.1 200 OK
 Content-Type: image/webp
 Cache-Control: public, s-maxage=31536000, max-age=31536000, immutable
+X-Processing-Time: 42ms
 ```
+
+| Header | Description |
+|--------|-------------|
+| `Content-Type` | Output format (`image/webp`, `image/avif`, `image/png`, `image/jpeg`) |
+| `Cache-Control` | Aggressive 1-year cache with `immutable` |
+| `X-Processing-Time` | Server-side processing time in milliseconds |
 
 Image optimization URLs are **content-addressable**: the URL encodes all parameters and a signature, so the same URL always produces the same output. This makes the 1-year cache duration safe — changing any parameter produces a different URL.
 

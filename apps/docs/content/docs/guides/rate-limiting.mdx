@@ -41,7 +41,7 @@ Rate limits are stored per API key in the database:
 | `rateLimitPerMinute` | 1 – 10,000 | 60 |
 | `rateLimitPerDay` | 1 – 1,000,000 | 10,000 |
 
-Changes made through the dashboard take effect **immediately** (the cache is invalidated). Direct database changes take effect within 60 seconds (cache TTL).
+New API keys are created with the default limits. Custom per-key rate limits are not yet configurable through the dashboard UI — this feature is planned for a future release. If you need to adjust limits, modify the database directly; changes take effect within 60 seconds (cache TTL).
 
 ## Response When Rate Limited
 

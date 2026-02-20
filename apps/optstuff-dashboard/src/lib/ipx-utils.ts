@@ -95,7 +95,9 @@ export function parseIpxPath(pathSegments: string[]) {
     return null;
   }
 
-  const operations = pathSegments[0]!;
+  const operations = pathSegments[0];
+  if (!operations) return null;
+
   let imagePath = pathSegments.slice(1).join("/");
 
   try {
@@ -130,6 +132,8 @@ export function parseOperationsString(operationsStr: string) {
   const parts = operationsStr.split(",");
 
   for (const part of parts) {
+    if (!part) continue;
+
     const underscoreIndex = part.indexOf("_");
 
     if (underscoreIndex > 0) {
