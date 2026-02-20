@@ -71,31 +71,24 @@ export function encryptApiKey(plaintext: string) {
   return `${iv.toString("base64")}:${authTag.toString("base64")}:${encrypted.toString("base64")}`;
 }
 
-export class DecryptApiKeyError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "DecryptApiKeyError";
-  }
-}
-
 /**
  * Decrypts an encrypted string using AES-256-GCM.
  *
  * @param encrypted - The encrypted string in format: iv:authTag:ciphertext
- * @returns Result with decrypted plaintext, or {@link DecryptApiKeyError} on failure
+ * @returns Result with decrypted plaintext, or an error message string on failure
  */
 export function decryptApiKey(
   encrypted: string,
-): Result<string, DecryptApiKeyError> {
+): Result<string, string> {
   try {
     const parts = encrypted.split(":");
     if (parts.length !== 3) {
-      return { ok: false, error: new DecryptApiKeyError("Invalid encrypted format") };
+      return { ok: false, error: "Invalid encrypted format" };
     }
 
     const [ivBase64, authTagBase64, ciphertextBase64] = parts;
     if (!ivBase64 || !authTagBase64 || !ciphertextBase64) {
-      return { ok: false, error: new DecryptApiKeyError("Invalid encrypted format: missing parts") };
+      return { ok: false, error: "Invalid encrypted format: missing parts" };
     }
 
     const iv = Buffer.from(ivBase64, "base64");
@@ -118,9 +111,7 @@ export function decryptApiKey(
   } catch (error) {
     return {
       ok: false,
-      error: new DecryptApiKeyError(
-        error instanceof Error ? error.message : String(error),
-      ),
+      error: error instanceof Error ? error.message : String(error),
     };
   }
 }

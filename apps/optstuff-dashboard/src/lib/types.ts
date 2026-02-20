@@ -6,7 +6,7 @@
  * Discriminated union for operations that can succeed or fail.
  * Prefer this over throwing errors in non-framework code.
  */
-export type Result<T, E extends Error> =
+export type Result<T, E = Error> =
   | { readonly ok: true; readonly value: T }
   | { readonly ok: false; readonly error: E };
 

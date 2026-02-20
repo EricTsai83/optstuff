@@ -60,7 +60,7 @@ function parseApiKeyFromCache(cached: CachedApiKeyConfig): ApiKeyConfig | null {
   if (!decryptResult.ok) {
     console.warn(
       `Failed to decrypt cached API key ${cached.publicKey}:`,
-      decryptResult.error.message,
+      decryptResult.error,
     );
     return null;
   }
