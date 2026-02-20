@@ -2,6 +2,7 @@ import "@/styles/globals.css";
 import { TRPCReactProvider } from "@/trpc/react";
 import { AuthProvider } from "@workspace/auth/provider";
 import { ThemeProvider } from "@workspace/ui/components/theme-provider";
+import { TooltipProvider } from "@workspace/ui/components/tooltip";
 import { type Metadata } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
 
@@ -36,7 +37,11 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <AuthProvider afterSignOutUrl="/sign-in">
-            <TRPCReactProvider>{children}</TRPCReactProvider>
+            <TRPCReactProvider>
+              <TooltipProvider>
+                {children}
+              </TooltipProvider>
+            </TRPCReactProvider>
           </AuthProvider>
         </ThemeProvider>
       </body>

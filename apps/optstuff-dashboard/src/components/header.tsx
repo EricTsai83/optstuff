@@ -1,58 +1,83 @@
 "use client";
 
 import { AnimatedLogo } from "@/components/animated-logo";
+import { MobileSidebar } from "@/components/mobile-sidebar";
 import { DOCS_LINKS } from "@/lib/constants";
 import { TeamSwitcher } from "@/modules/team";
 import { ClerkLoaded, ClerkLoading, UserButton } from "@workspace/auth/client";
 import { UserButtonSkeleton } from "@workspace/auth/components/user-button-skeleton";
 import { Button } from "@workspace/ui/components/button";
 import { Input } from "@workspace/ui/components/input";
-import { Bell, BookOpen, Home, Menu, Moon, Search, Sun } from "lucide-react";
+import { useIsMobile } from "@workspace/hooks/use-mobile";
+import { Bell, BookOpen, Home, Menu, Moon, Search, Sun, X } from "lucide-react";
 import { useTheme } from "next-themes";
+import { useEffect, useState } from "react";
 
 type HeaderProps = {
   readonly teamSlug?: string;
 };
 
 export function Header({ teamSlug }: HeaderProps) {
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const isMobile = useIsMobile();
+
+  useEffect(() => {
+    if (!isMobile) {
+      setIsSidebarOpen(false);
+    }
+  }, [isMobile]);
+
+  function handleToggleSidebar() {
+    setIsSidebarOpen((prev) => !prev);
+  }
+
   return (
-    <header className="border-border bg-background flex h-16 items-center justify-between border-b px-4">
-      {/* Desktop: Logo and Team Selector */}
-      <div className="hidden items-center gap-2 md:flex">
-        <AnimatedLogo />
-        <div className="ml-15 flex items-center gap-2">
-          <span className="text-muted-foreground text-lg">/</span>
+    <>
+      <header className="border-border bg-background flex h-16 items-center justify-between border-b px-4">
+        {/* Desktop: Logo and Team Selector */}
+        <div className="hidden items-center gap-2 md:flex">
+          <AnimatedLogo />
+          <div className="ml-15 flex items-center gap-2">
+            <span className="text-muted-foreground text-lg">/</span>
+            <TeamSwitcher currentTeamSlug={teamSlug} />
+          </div>
+        </div>
+
+        {/* Mobile: Team Selector only */}
+        <div className="flex items-center md:hidden">
           <TeamSwitcher currentTeamSlug={teamSlug} />
         </div>
-      </div>
 
-      {/* Mobile: Team Selector only */}
-      <div className="flex items-center md:hidden">
-        <TeamSwitcher currentTeamSlug={teamSlug} />
-      </div>
+        {/* Desktop Actions */}
+        <div className="hidden items-center gap-2 md:flex">
+          <SearchInput />
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-muted-foreground transition-colors duration-200"
+          >
+            Feedback
+          </Button>
+          <IconButton icon={Bell} hasNotification />
+          <IconButton icon={BookOpen} href={DOCS_LINKS.home} />
+          <UserAvatar />
+        </div>
 
-      {/* Desktop Actions */}
-      <div className="hidden items-center gap-2 md:flex">
-        <SearchInput />
-        <Button
-          variant="ghost"
-          size="sm"
-          className="text-muted-foreground transition-colors duration-200"
-        >
-          Feedback
-        </Button>
-        <IconButton icon={Bell} hasNotification />
-        <IconButton icon={BookOpen} href={DOCS_LINKS.home} />
-        <UserAvatar />
-      </div>
+        {/* Mobile Actions */}
+        <div className="flex items-center gap-1 md:hidden">
+          <IconButton icon={Search} size="mobile" />
+          <IconButton icon={Bell} size="mobile" hasNotification />
+          <IconButton
+            icon={isSidebarOpen ? X : Menu}
+            size="mobile"
+            onClick={handleToggleSidebar}
+            ariaLabel={isSidebarOpen ? "Close menu" : "Open menu"}
+          />
+        </div>
+      </header>
 
-      {/* Mobile Actions */}
-      <div className="flex items-center gap-1 md:hidden">
-        <IconButton icon={Search} size="mobile" />
-        <IconButton icon={Bell} size="mobile" hasNotification />
-        <IconButton icon={Menu} size="mobile" />
-      </div>
-    </header>
+      <MobileSidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
+    </>
   );
 }
 
@@ -76,6 +101,8 @@ type IconButtonProps = {
   readonly href?: string;
   readonly hasNotification?: boolean;
   readonly size?: "default" | "mobile";
+  readonly onClick?: () => void;
+  readonly ariaLabel?: string;
 };
 
 function IconButton({
@@ -83,6 +110,8 @@ function IconButton({
   href,
   hasNotification,
   size = "default",
+  onClick,
+  ariaLabel,
 }: IconButtonProps) {
   const isMobile = size === "mobile";
   const buttonSize = isMobile ? "h-9 w-9" : "h-8 w-8";
@@ -95,6 +124,8 @@ function IconButton({
       size="icon"
       className={`relative ${buttonSize} transition-colors duration-200`}
       asChild={!!href}
+      onClick={onClick}
+      aria-label={ariaLabel}
     >
       {href ? (
         <a href={href} target="_blank" rel="noopener noreferrer">
