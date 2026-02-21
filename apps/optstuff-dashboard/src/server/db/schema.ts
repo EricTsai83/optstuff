@@ -1,18 +1,10 @@
 import { relations, sql } from "drizzle-orm";
 import {
   index,
-  pgTableCreator,
+  pgTable,
   unique,
   uniqueIndex,
 } from "drizzle-orm/pg-core";
-
-/**
- * This is an example of how to use the multi-project schema feature of Drizzle ORM. Use the same
- * database instance for multiple projects.
- *
- * @see https://orm.drizzle.team/docs/goodies#multi-project-schema
- */
-export const createTable = pgTableCreator((name) => `optstuff_${name}`);
 
 // ============================================================================
 // Teams (Organizations)
@@ -27,7 +19,7 @@ export const createTable = pgTableCreator((name) => `optstuff_${name}`);
  * - ownerId: User who created and owns the team (used for access control)
  * - isPersonal: Whether this is the user's personal team
  */
-export const teams = createTable(
+export const teams = pgTable(
   "team",
   (d) => ({
     id: d.uuid().primaryKey().defaultRandom(),
@@ -55,7 +47,7 @@ export const teamsRelations = relations(teams, ({ many }) => ({
 // Projects
 // ============================================================================
 
-export const projects = createTable(
+export const projects = pgTable(
   "project",
   (d) => ({
     id: d.uuid().primaryKey().defaultRandom(),
@@ -101,7 +93,7 @@ export const projectsRelations = relations(projects, ({ one, many }) => ({
  * Pinned Projects table - tracks which projects users have pinned.
  * Allows users to quickly access their favorite projects.
  */
-export const pinnedProjects = createTable(
+export const pinnedProjects = pgTable(
   "pinned_project",
   (d) => ({
     id: d.uuid().primaryKey().defaultRandom(),
@@ -129,7 +121,7 @@ export const pinnedProjectsRelations = relations(pinnedProjects, ({ one }) => ({
 // API Keys
 // ============================================================================
 
-export const apiKeys = createTable(
+export const apiKeys = pgTable(
   "api_key",
   (d) => ({
     id: d.uuid().primaryKey().defaultRandom(),
@@ -171,7 +163,7 @@ export const apiKeysRelations = relations(apiKeys, ({ one, many }) => ({
 // Usage Records
 // ============================================================================
 
-export const usageRecords = createTable(
+export const usageRecords = pgTable(
   "usage_record",
   (d) => ({
     id: d.uuid().primaryKey().defaultRandom(),
@@ -221,7 +213,7 @@ export const usageRecordsRelations = relations(usageRecords, ({ one }) => ({
  * - Top images statistics
  * - Bandwidth savings calculation
  */
-export const requestLogs = createTable(
+export const requestLogs = pgTable(
   "request_log",
   (d) => ({
     id: d.uuid().primaryKey().defaultRandom(),

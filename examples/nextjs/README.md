@@ -1,64 +1,254 @@
-# OptStuff + Next.js Example
+# OptStuff + Next.js Integration Example
 
-A standalone Next.js application demonstrating how to integrate [OptStuff](https://optstuff.dev) image optimization API.
+A standalone Next.js application demonstrating how to integrate the [OptStuff](https://optstuff.dev) image optimization service into your Next.js project. With OptStuff, you can dynamically resize images, convert formats, adjust quality on request, and secure URLs with HMAC-SHA256 signatures.
 
 ## Features
 
-- Server-side HMAC-SHA256 URL signing
-- Interactive configuration panel for image operations (resize, format, quality, fit)
-- API route for generating signed URLs
-- Code examples for `next/image` custom loader integration
+- **Server-side URL signing** — Generate signed URLs with HMAC-SHA256; secret keys are never exposed to the client
+- **Dynamic image operations** — Resize, format conversion (WebP / AVIF / PNG / JPG), quality control, and crop modes
+- **API Route integration** — Provides an `/api/optimize` endpoint for the frontend to obtain signed URLs
+- **URL expiration** — Set a time-to-live on signed URLs to prevent permanent exposure
+- **next/image custom loader** — Example code showing how to use OptStuff with `next/image`
 
-## Getting Started
+## Prerequisites
 
-1. **Clone the example**
+- [Node.js](https://nodejs.org/) 18+
+- [npm](https://www.npmjs.com/) or [pnpm](https://pnpm.io/)
+- An OptStuff account (sign up at the [OptStuff Dashboard](https://app.optstuff.dev))
 
-   ```bash
-   git clone https://github.com/optstuff/optstuff.git
-   cd optstuff/examples/nextjs
-   ```
+## Quick Start
 
-2. **Install dependencies**
+### 1. Clone the project
 
-   ```bash
-   npm install
-   ```
+```bash
+git clone https://github.com/optstuff/optstuff.git
+cd optstuff/examples/nextjs
+```
 
-3. **Set up environment variables**
+### 2. Install dependencies
 
-   ```bash
-   cp .env.example .env.local
-   ```
+```bash
+npm install
+```
 
-   Fill in your OptStuff credentials from the [dashboard](https://app.optstuff.dev):
+### 3. Configure environment variables
 
-   - `OPTSTUFF_BASE_URL` — Your OptStuff instance URL
-   - `OPTSTUFF_PROJECT_SLUG` — Your project slug
-   - `OPTSTUFF_PUBLIC_KEY` — Public key (`pk_...`)
-   - `OPTSTUFF_SECRET_KEY` — Secret key (`sk_...`)
+```bash
+cp .env.example .env.local
+```
 
-4. **Run the development server**
+Edit `.env.local` and fill in your OptStuff credentials (available from the [Dashboard](https://app.optstuff.dev)):
 
-   ```bash
-   npm run dev
-   ```
+```bash
+# Base URL for the OptStuff service
+OPTSTUFF_BASE_URL=https://your-optstuff-instance.com
 
-   Open [http://localhost:3000](http://localhost:3000).
+# Your project slug (obtained after creating a project in the Dashboard)
+OPTSTUFF_PROJECT_SLUG=my-project
+
+# Public key (used to identify the request source)
+OPTSTUFF_PUBLIC_KEY=pk_xxx
+
+# Secret key (used to sign URLs — keep this confidential)
+OPTSTUFF_SECRET_KEY=sk_xxx
+```
+
+> **Important:** `OPTSTUFF_SECRET_KEY` must only be used on the server side. Never expose it to the client.
+
+### 4. Start the development server
+
+```bash
+npm run dev
+```
+
+Open [http://localhost:3000](http://localhost:3000) to see the interactive demo page.
 
 ## Project Structure
 
 ```
 src/
 ├── app/
-│   ├── api/optimize/route.ts   # API route for generating signed URLs
-│   ├── layout.tsx
-│   ├── page.tsx                 # Interactive demo page
-│   └── globals.css
+│   ├── api/
+│   │   └── optimize/
+│   │       └── route.ts        # API Route — accepts params, generates signed URL
+│   ├── layout.tsx              # Root layout component
+│   ├── page.tsx                # Interactive demo page
+│   └── globals.css             # Global styles (Tailwind CSS)
 └── lib/
-    └── optstuff.ts              # OptStuff URL signing utility
+    └── optstuff.ts             # OptStuff URL signing utilities
 ```
 
-## Learn More
+## Core Concepts
+
+### URL Structure
+
+OptStuff image optimization URLs follow this format:
+
+```
+{OPTSTUFF_BASE_URL}/api/v1/{project_slug}/{operations}/{image_host/path}?key={public_key}&sig={signature}
+```
+
+Breakdown:
+
+| Part | Description | Example |
+|------|-------------|---------|
+| `OPTSTUFF_BASE_URL` | Your OptStuff service URL | `https://your-optstuff-instance.com` |
+| `project_slug` | Project identifier | `my-project` |
+| `operations` | Comma-separated image operations | `w_800,q_80,f_webp,fit_cover` |
+| `image_host/path` | Original image host and path (without protocol) | `images.unsplash.com/photo-xxx` |
+| `key` | Public key | `pk_xxx` |
+| `sig` | HMAC-SHA256 signature | `a1b2c3...` |
+
+### Supported Image Operations
+
+| Operation | Format | Description | Example |
+|-----------|--------|-------------|---------|
+| Width | `w_{pixels}` | Resize image width (pixels) | `w_800` |
+| Height | `h_{pixels}` | Resize image height (pixels) | `h_600` |
+| Quality | `q_{1-100}` | Compression quality (1 = lowest, 100 = highest) | `q_80` |
+| Format | `f_{format}` | Output format: `webp`, `avif`, `png`, `jpg` | `f_webp` |
+| Fit | `fit_{mode}` | Crop mode: `cover`, `contain`, `fill` | `fit_cover` |
+
+Multiple operations are joined with commas, e.g.: `w_800,q_80,f_webp,fit_cover`
+
+### Signing Process
+
+To prevent unauthorized image operations, OptStuff uses HMAC-SHA256 signatures. The signing process works as follows:
+
+```
+sign_content = path + "?" + query_params (excluding sig)
+signature = HMAC-SHA256(secret_key, sign_content).hex()
+```
+
+## Integration Guide
+
+### Option 1: Using the utility function (recommended)
+
+The `src/lib/optstuff.ts` file provides a `generateOptStuffUrl()` function that encapsulates the full signing logic:
+
+```typescript
+import { generateOptStuffUrl } from "@/lib/optstuff";
+
+const optimizedUrl = generateOptStuffUrl(
+  "https://images.unsplash.com/photo-1506744038136-46273834b3fb",
+  {
+    width: 800,
+    quality: 80,
+    format: "webp",
+    fit: "cover",
+  },
+  3600, // URL time-to-live in seconds (optional)
+);
+```
+
+**Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `imageUrl` | `string` | Yes | Full URL of the original image |
+| `operations` | `ImageOperation` | Yes | Image operation parameters object |
+| `expiresInSeconds` | `number` | No | URL time-to-live in seconds; omit for no expiration |
+
+> **Note:** This function uses the Node.js `crypto` module and can only run on the server side (Server Components, API Routes, `getServerSideProps`, etc.).
+
+### Option 2: Via API Route
+
+If you need to obtain a signed URL from a Client Component, call the `/api/optimize` endpoint:
+
+```typescript
+const response = await fetch("/api/optimize", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    imageUrl: "https://images.unsplash.com/photo-1506744038136-46273834b3fb",
+    width: 800,
+    quality: 80,
+    format: "webp",
+    fit: "cover",
+  }),
+});
+
+const { url } = await response.json();
+// url is the signed OptStuff image URL
+```
+
+**Request parameters (JSON body):**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `imageUrl` | `string` | Yes | Original image URL |
+| `width` | `number` | No | Target width |
+| `height` | `number` | No | Target height |
+| `quality` | `number` | No | Compression quality (1–100) |
+| `format` | `string` | No | Output format: `webp` / `avif` / `png` / `jpg` |
+| `fit` | `string` | No | Crop mode: `cover` / `contain` / `fill` |
+
+**Response format:**
+
+```json
+{ "url": "https://your-optstuff-instance.com/api/v1/my-project/w_800,q_80,f_webp,fit_cover/images.unsplash.com/photo-xxx?key=pk_xxx&exp=1700000000&sig=abc123" }
+```
+
+### Option 3: With a next/image custom loader
+
+You can create a custom loader so that the `next/image` component automatically optimizes images through OptStuff:
+
+**1. Create the loader file `src/lib/optstuff-loader.ts`:**
+
+```typescript
+export default function optStuffLoader({
+  src,
+  width,
+  quality,
+}: {
+  src: string;
+  width: number;
+  quality?: number;
+}) {
+  const ops = `w_${width},q_${quality ?? 80},f_webp`;
+  return `${process.env.NEXT_PUBLIC_OPTSTUFF_URL}/api/v1/${process.env.NEXT_PUBLIC_OPTSTUFF_SLUG}/${ops}/${src}`;
+}
+```
+
+> **Note:** The custom loader runs on the client side, so it uses `NEXT_PUBLIC_` prefixed environment variables. Since the URL is not signed in this approach, you should use OptStuff's Domain Allowlist feature to restrict access.
+
+**2. Configure `next.config.ts`:**
+
+```typescript
+const nextConfig = {
+  images: {
+    loader: "custom",
+    loaderFile: "./src/lib/optstuff-loader.ts",
+  },
+};
+
+export default nextConfig;
+```
+
+**3. Use in a component:**
+
+```tsx
+import Image from "next/image";
+
+<Image
+  src="cdn.example.com/photo.jpg"
+  width={800}
+  height={600}
+  alt="Optimized image"
+/>
+```
+
+`next/image` will automatically call the loader and generate optimized image URLs based on device size.
+
+## Security Considerations
+
+- **Keep the secret key confidential** — `OPTSTUFF_SECRET_KEY` should only exist in server-side environment variables; do not use the `NEXT_PUBLIC_` prefix
+- **Set URL expiration** — Use the `expiresInSeconds` parameter to limit URL validity; this example defaults to 3600 seconds (1 hour)
+- **Enable Domain Allowlist** — Configure allowed domains in the OptStuff Dashboard to prevent hotlinking
+- **Add authentication to the API Route** — In production, add authentication or rate limiting to `/api/optimize`
+
+## Further Reading
 
 - [OptStuff Documentation](https://docs.optstuff.dev)
 - [Next.js Documentation](https://nextjs.org/docs)
+- [next/image Custom Loader](https://nextjs.org/docs/app/api-reference/components/image#loader)
