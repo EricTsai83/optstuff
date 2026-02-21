@@ -3,7 +3,7 @@
 import { DOCS_LINKS } from "@/lib/constants";
 import { api } from "@/trpc/react";
 import { Button } from "@workspace/ui/components/button";
-import { CopyButton } from "@workspace/ui/components/copy-button";
+import { CodeBlock } from "@workspace/ui/components/code-block";
 import {
   Dialog,
   DialogContent,
@@ -17,7 +17,7 @@ import { Input } from "@workspace/ui/components/input";
 import { Label } from "@workspace/ui/components/label";
 import { LoadingButton } from "@workspace/ui/components/loading-button";
 import { cn } from "@workspace/ui/lib/utils";
-import { BookOpen, Eye, EyeOff, FolderOpen, Key, Shield } from "lucide-react";
+import { BookOpen, FolderOpen, Key, Shield } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
@@ -59,7 +59,6 @@ export function CreateProjectDialog({
   const [createdProject, setCreatedProject] = useState<CreatedProject | null>(
     null,
   );
-  const [showSecretKey, setShowSecretKey] = useState(false);
 
   const utils = api.useUtils();
 
@@ -71,8 +70,8 @@ export function CreateProjectDialog({
     reset: resetMutation,
   } = api.project.create.useMutation({
     onSuccess: (project) => {
-      utils.project.list.invalidate();
-      utils.project.listAll.invalidate();
+      void utils.project.list.invalidate();
+      void utils.project.listAll.invalidate();
 
       if (project?.defaultApiKey && project?.defaultSecretKey) {
         setCreatedProject({
@@ -111,7 +110,6 @@ export function CreateProjectDialog({
       setName("");
       setDescription("");
       setCreatedProject(null);
-      setShowSecretKey(false);
     }, 150);
 
     if (projectSlug) {
@@ -209,7 +207,7 @@ export function CreateProjectDialog({
             </DialogFooter>
           </form>
         ) : (
-          <div className="flex flex-col">
+          <div className="flex min-w-0 flex-col">
             {/* Success Header */}
             <div className="flex items-center gap-3 pb-4">
               <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-500/10">
@@ -230,69 +228,27 @@ export function CreateProjectDialog({
               <div className="flex items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2.5 text-sm font-medium text-amber-700 dark:text-amber-400">
                 <Shield className="h-4 w-4 shrink-0" />
                 <span>
-                  Secret key is only shown once. Copy and save it before
-                  closing.
+                  Copy and add these to your <code>.env</code> file before
+                  closing. The secret key is only shown once.
                 </span>
               </div>
 
-              {/* Secret Key Display */}
+              {/* Combined Key Display */}
               <div className="space-y-2">
                 <Label className="text-muted-foreground flex items-center gap-1.5 text-xs uppercase tracking-wider">
                   <Key className="h-3 w-3" />
-                  Secret Key (for signing URLs)
+                  Environment Variables
                 </Label>
-                <div className="bg-muted/50 border-border group relative rounded-lg border p-3">
-                  <code className="block break-all pr-16 font-mono text-sm">
-                    {showSecretKey
-                      ? createdProject?.defaultSecretKey
-                      : "•".repeat(
-                          createdProject?.defaultSecretKey?.length ?? 0,
-                        )}
-                  </code>
-                  <div className="absolute right-2 top-2 flex items-center gap-1">
-                    <button
-                      type="button"
-                      onClick={() => setShowSecretKey((prev) => !prev)}
-                      className="text-muted-foreground hover:text-foreground flex h-8 w-8 items-center justify-center rounded-md transition-colors"
-                      aria-label={
-                        showSecretKey ? "Hide secret key" : "Show secret key"
-                      }
-                      tabIndex={0}
-                    >
-                      {showSecretKey ? (
-                        <EyeOff className="h-4 w-4" />
-                      ) : (
-                        <Eye className="h-4 w-4" />
-                      )}
-                    </button>
-                    <CopyButton
-                      text={createdProject?.defaultSecretKey ?? ""}
-                      className="bg-secondary h-8 w-8 rounded-md shadow-sm"
-                    />
-                  </div>
-                </div>
+                <CodeBlock
+                  content={`OPTSTUFF_SECRET_KEY="${"•".repeat(createdProject?.defaultSecretKey?.length ?? 0)}"\nOPTSTUFF_PUBLIC_KEY="${createdProject?.defaultApiKey ?? ""}"`}
+                  copyText={`OPTSTUFF_SECRET_KEY="${createdProject?.defaultSecretKey ?? ""}"\nOPTSTUFF_PUBLIC_KEY="${createdProject?.defaultApiKey ?? ""}"`}
+                  variant="block"
+                  nowrap
+                />
                 <p className="text-muted-foreground text-xs">
-                  Use this secret in your backend to sign image URLs. Never
-                  expose it in frontend code.
+                  The secret key should only be used server-side. Never expose
+                  it in frontend code.
                 </p>
-              </div>
-
-              {/* Public Key Display */}
-              <div className="space-y-2">
-                <Label className="text-muted-foreground text-xs uppercase tracking-wider">
-                  Public Key (for URL parameter)
-                </Label>
-                <div className="bg-muted/50 border-border group relative rounded-lg border p-3">
-                  <code className="block pr-10 font-mono text-sm">
-                    {createdProject?.defaultApiKey}
-                  </code>
-                  <div className="absolute right-2 top-2">
-                    <CopyButton
-                      text={createdProject?.defaultApiKey ?? ""}
-                      className="bg-secondary h-8 w-8 rounded-md shadow-sm"
-                    />
-                  </div>
-                </div>
               </div>
 
               {/* Next Steps */}

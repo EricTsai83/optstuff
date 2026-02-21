@@ -154,18 +154,23 @@ The dialog uses a two-step pattern (form → success):
 After project creation, the dialog transitions to a success screen showing:
 
 1. **Success header** — "Project Created" with project name
-2. **Warning banner** — "Secret key is only shown once. Copy and save it before closing."
-3. **Secret Key display** — Masked by default, with show/hide toggle and copy button
-4. **Public Key display** — Visible with copy button
-5. **Next Steps** — Link to Integration Guide on the docs site
-6. **Done button** — Navigates to the new project's overview page
+2. **Warning banner** — "Copy and add these to your `.env` file before closing. The secret key is only shown once."
+3. **Combined key display** — Both keys shown in `.env` format (`OPTSTUFF_SECRET_KEY` and `OPTSTUFF_PUBLIC_KEY`) with a single copy button. The secret key is masked by default with a show/hide toggle.
+4. **Next Steps** — Link to Integration Guide on the docs site
+5. **Done button** — Navigates to the new project's overview page
+
+The copy button copies both keys together with their environment variable names, ready to paste into a `.env` file:
+```text
+OPTSTUFF_SECRET_KEY="sk_..."
+OPTSTUFF_PUBLIC_KEY="pk_..."
+```
 
 The dialog is **locked** during the success step:
 - Close button is hidden
 - ESC key is disabled
 - Clicking outside does not close
 
-This ensures users see and copy their secret key before proceeding.
+This ensures users see and copy their keys before proceeding.
 
 ### Backend Behavior
 
