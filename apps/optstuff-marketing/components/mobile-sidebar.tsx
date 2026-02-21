@@ -68,7 +68,7 @@ export function MobileSidebar({
       {/* Sidebar panel */}
       <aside
         className={cn(
-          "bg-background/95 fixed top-0 right-0 z-45 h-full w-[85vw] max-w-[320px] backdrop-blur-xl transition-transform duration-300 ease-out",
+          "bg-background/95 z-45 fixed right-0 top-0 h-full w-[85vw] max-w-[320px] backdrop-blur-xl transition-transform duration-300 ease-out",
           "border-border/50 border-l shadow-2xl",
           isOpen ? "translate-x-0" : "translate-x-full",
         )}
@@ -83,9 +83,11 @@ export function MobileSidebar({
                 key={item.href}
                 href={item.href}
                 onClick={onClose}
-                {...(item.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+                {...(item.external
+                  ? { target: "_blank", rel: "noopener noreferrer" }
+                  : {})}
                 className={cn(
-                  "group border-border/30 text-foreground hover:text-accent flex items-center justify-between border-b py-4 text-lg font-medium transition-all",
+                  "border-border/30 text-foreground hover:text-accent group flex items-center justify-between border-b py-4 text-lg font-medium transition-all",
                   "transform",
                   shouldAnimate
                     ? "translate-x-0 opacity-100"

@@ -1,4 +1,9 @@
 {
   "title": "Internal",
-  "pages": ["system-overview", "redis-schema", "user-onboarding-flow", "create-api-key-flow"]
+  "pages": [
+    "system-overview",
+    "redis-schema",
+    "user-onboarding-flow",
+    "create-api-key-flow"
+  ]
 }

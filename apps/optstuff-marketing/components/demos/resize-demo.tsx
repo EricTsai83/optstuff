@@ -136,7 +136,7 @@ export function ResizeDemo() {
         description="Dynamically resize to any dimension"
         action={
           <div className="text-right">
-            <p className="mb-1 text-xs tracking-wide uppercase">File size</p>
+            <p className="mb-1 text-xs uppercase tracking-wide">File size</p>
             <p className="font-mono text-sm">
               <span className="text-muted-foreground line-through">
                 {formatSize(ORIGINAL_SIZE_KB)}
@@ -232,7 +232,7 @@ export function ResizeDemo() {
                   alt="Sample resized image"
                   fill
                   unoptimized
-                  className="pointer-events-none transition-all duration-300 select-none"
+                  className="pointer-events-none select-none transition-all duration-300"
                   style={{
                     objectFit: getObjectFit(
                       fit,

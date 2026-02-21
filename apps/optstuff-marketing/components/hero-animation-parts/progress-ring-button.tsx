@@ -41,7 +41,7 @@ export function ProgressRingButton({
             ? [
                 "cursor-pointer",
                 "hover:scale-110",
-                "focus-visible:ring-accent/50 focus-visible:rounded-full focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent focus-visible:outline-none",
+                "focus-visible:ring-accent/50 focus-visible:rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent",
                 "active:scale-95",
               ]
             : "cursor-default",

@@ -30,9 +30,7 @@ type ProjectCardListProps = {
 };
 
 /** Renders a list of fake mini project cards used in quick-start step visuals. */
-export function ProjectCardList({
-  variant = "regular",
-}: ProjectCardListProps) {
+export function ProjectCardList({ variant = "regular" }: ProjectCardListProps) {
   const styles = VARIANT_STYLES[variant];
 
   return (

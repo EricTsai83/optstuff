@@ -31,14 +31,12 @@ export function AnimatedLogo() {
     <div
       className={cn(
         "relative md:fixed",
-        "left-10 z-9999 -translate-x-1/2",
+        "z-9999 left-10 -translate-x-1/2",
         "md:-translate-y-1/2",
       )}
       style={{ top: `${top}px` }}
     >
-
       <LogoIcon size={size} />
-
     </div>
   );
 }

@@ -64,7 +64,7 @@ function AlertBadge({ alert }: { readonly alert: AlertItem }) {
       className={cn(
         "text-xs",
         !isDanger &&
-        "border-amber-500/50 bg-amber-500/10 text-amber-600 dark:text-amber-400"
+          "border-amber-500/50 bg-amber-500/10 text-amber-600 dark:text-amber-400",
       )}
     >
       {alert.icon}
@@ -91,9 +91,7 @@ function AlertsOverview({
     });
   } else if (isExpiringSoon && daysUntilExpiry !== null) {
     const expiryText =
-      daysUntilExpiry === 0
-        ? "Expires today"
-        : `${daysUntilExpiry}d left`;
+      daysUntilExpiry === 0 ? "Expires today" : `${daysUntilExpiry}d left`;
     alerts.push({
       id: "expiring-soon",
       severity: "warning",
@@ -126,11 +124,7 @@ function AlertsOverview({
   );
 }
 
-function ExpirationInfo({
-  expiresAt,
-}: {
-  readonly expiresAt: Date | null;
-}) {
+function ExpirationInfo({ expiresAt }: { readonly expiresAt: Date | null }) {
   if (!expiresAt) {
     return <span>No expiration</span>;
   }
@@ -141,11 +135,7 @@ function ExpirationInfo({
   return <span>{formattedDate}</span>;
 }
 
-function DomainDisplay({
-  domains,
-}: {
-  readonly domains: string[] | null;
-}) {
+function DomainDisplay({ domains }: { readonly domains: string[] | null }) {
   const domainCount = domains?.length ?? 0;
 
   if (domainCount === 0) {
@@ -160,7 +150,7 @@ function DomainDisplay({
         </Badge>
       ))}
       {domainCount > 4 && (
-        <span className="text-xs text-muted-foreground">
+        <span className="text-muted-foreground text-xs">
           +{domainCount - 4} more
         </span>
       )}
@@ -182,7 +172,7 @@ function StatusIcon({
       className={cn(
         "flex h-12 w-12 shrink-0 items-center justify-center rounded-xl",
         colors.background,
-        colors.text
+        colors.text,
       )}
       aria-label={statusLabel}
     >
@@ -247,10 +237,14 @@ export function ApiKeyItem({
   isRotating,
 }: ApiKeyItemProps) {
   const { isExpired, isExpiringSoon, daysUntilExpiry } = getExpirationStatus(
-    apiKey.expiresAt
+    apiKey.expiresAt,
   );
   const hasDomains = (apiKey.allowedSourceDomains?.length ?? 0) > 0;
-  const colorScheme = getStatusColorScheme(isExpired, isExpiringSoon, hasDomains);
+  const colorScheme = getStatusColorScheme(
+    isExpired,
+    isExpiringSoon,
+    hasDomains,
+  );
 
   const statusLabel = isExpired
     ? "Expired"
@@ -266,7 +260,7 @@ export function ApiKeyItem({
   const maskedKey = `${apiKey.publicKey.substring(0, visibleChars)}${"•".repeat(repeatCount)}`;
 
   return (
-    <div className="rounded-xl border bg-card p-5 transition-colors hover:bg-muted/30">
+    <div className="bg-card hover:bg-muted/30 rounded-xl border p-5 transition-colors">
       {/* Header row: [Icon] [Content] [Actions] */}
       <div className="grid grid-cols-[auto_1fr_auto] items-start gap-4">
         {/* Left: Status Icon */}
@@ -277,11 +271,14 @@ export function ApiKeyItem({
           {/* Left column: Name + Key */}
           <div className="space-y-1">
             <h3 className="text-base font-semibold">{apiKey.name}</h3>
-            <div className="flex items-center gap-1 text-sm text-muted-foreground">
-              <code className="max-w-[200px] truncate rounded bg-muted px-2 py-0.5 font-mono text-xs">
+            <div className="text-muted-foreground flex items-center gap-1 text-sm">
+              <code className="bg-muted max-w-[200px] truncate rounded px-2 py-0.5 font-mono text-xs">
                 {maskedKey}
               </code>
-              <CopyButton text={apiKey.publicKey} className="h-7 w-7 shrink-0" />
+              <CopyButton
+                text={apiKey.publicKey}
+                className="h-7 w-7 shrink-0"
+              />
             </div>
           </div>
 
@@ -309,7 +306,7 @@ export function ApiKeyItem({
         {/* Column 1: Timestamps */}
         <div className="space-y-2 text-sm">
           <div className="flex items-center gap-2">
-            <Clock className="h-4 w-4 text-muted-foreground" />
+            <Clock className="text-muted-foreground h-4 w-4" />
             <span className="text-muted-foreground">Created</span>
             <span>
               {formatDistanceToNow(new Date(apiKey.createdAt), {
@@ -319,14 +316,14 @@ export function ApiKeyItem({
           </div>
 
           <div className="flex items-center gap-2">
-            <Clock className="h-4 w-4 text-muted-foreground" />
+            <Clock className="text-muted-foreground h-4 w-4" />
             <span className="text-muted-foreground">Expires</span>
             <ExpirationInfo expiresAt={apiKey.expiresAt} />
           </div>
 
           {apiKey.lastUsedAt && (
             <div className="flex items-center gap-2">
-              <Clock className="h-4 w-4 text-muted-foreground" />
+              <Clock className="text-muted-foreground h-4 w-4" />
               <span className="text-muted-foreground">Last used</span>
               <span>
                 {formatDistanceToNow(new Date(apiKey.lastUsedAt), {
@@ -339,17 +336,25 @@ export function ApiKeyItem({
 
         {/* Column 2: Rate Limits */}
         <div className="space-y-2 text-sm">
-          <div className="flex items-center gap-2 text-muted-foreground">
+          <div className="text-muted-foreground flex items-center gap-2">
             <Gauge className="h-4 w-4" />
             <span>Rate Limits</span>
           </div>
           <div className="space-y-1 pl-6">
             <div>
-              <span className="font-medium">{(apiKey.rateLimitPerMinute ?? RATE_LIMITS.perMinute).toLocaleString()}</span>
+              <span className="font-medium">
+                {(
+                  apiKey.rateLimitPerMinute ?? RATE_LIMITS.perMinute
+                ).toLocaleString()}
+              </span>
               <span className="text-muted-foreground"> req/min</span>
             </div>
             <div>
-              <span className="font-medium">{(apiKey.rateLimitPerDay ?? RATE_LIMITS.perDay).toLocaleString()}</span>
+              <span className="font-medium">
+                {(
+                  apiKey.rateLimitPerDay ?? RATE_LIMITS.perDay
+                ).toLocaleString()}
+              </span>
               <span className="text-muted-foreground"> req/day</span>
             </div>
           </div>
@@ -357,7 +362,7 @@ export function ApiKeyItem({
 
         {/* Column 3: Domains */}
         <div className="space-y-2">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <div className="text-muted-foreground flex items-center gap-2 text-sm">
             <Globe className="h-4 w-4" />
             <span>Allowed Domains</span>
           </div>

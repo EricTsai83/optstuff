@@ -7,7 +7,7 @@ export function HeroIntro() {
   return (
     <section
       id="hero"
-      className="mx-auto max-w-6xl px-4 pb-8 text-center sm:px-6 md:pb-46"
+      className="md:pb-46 mx-auto max-w-6xl px-4 pb-8 text-center sm:px-6"
     >
       {/* Badge */}
       <div className="bg-accent/10 text-accent animate-fade-in mb-6 inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-medium sm:text-sm md:mb-14">
@@ -29,7 +29,7 @@ export function HeroIntro() {
       <div className="flex flex-col items-center gap-8 md:flex-row md:items-center md:justify-between md:gap-12">
         {/* Text content */}
         <div className="flex flex-col items-center md:items-start md:justify-center">
-          <h1 className="animate-fade-in-up animation-delay-100 mb-4 text-center text-3xl leading-[1.15] font-bold tracking-tight sm:text-4xl md:mb-6 md:text-left md:text-5xl md:leading-[1.1] lg:text-6xl lg:text-nowrap xl:text-7xl">
+          <h1 className="animate-fade-in-up animation-delay-100 mb-4 text-center text-3xl font-bold leading-[1.15] tracking-tight sm:text-4xl md:mb-6 md:text-left md:text-5xl md:leading-[1.1] lg:text-nowrap lg:text-6xl xl:text-7xl">
             Image optimization <br className="hidden sm:block" />
             <span className="text-muted-foreground">that just works</span>
           </h1>
@@ -56,7 +56,13 @@ export function HeroIntro() {
               className="h-12 w-full rounded-full px-6 hover:shadow-xl sm:w-auto"
               asChild
             >
-              <a href={process.env.NEXT_PUBLIC_DOCS_URL ?? "#"} target="_blank" rel="noopener noreferrer">Documentation</a>
+              <a
+                href={process.env.NEXT_PUBLIC_DOCS_URL ?? "#"}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Documentation
+              </a>
             </Button>
           </div>
         </div>

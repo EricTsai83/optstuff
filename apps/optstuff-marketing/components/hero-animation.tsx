@@ -64,7 +64,7 @@ export function HeroAnimation() {
   return (
     <div className="relative aspect-square w-full">
       {/* Status label (top right) */}
-      <div className="absolute top-7 right-7 z-10">
+      <div className="absolute right-7 top-7 z-10">
         <OptimizationStatusLabel
           shouldStartDecode={shouldStartDecode}
           isOptimized={isOptimized}
@@ -89,7 +89,7 @@ export function HeroAnimation() {
         </ImageArea>
 
         {/* Bottom info section */}
-        <div className="absolute right-0 bottom-0 left-0 h-[72px] px-4 pb-2">
+        <div className="absolute bottom-0 left-0 right-0 h-[72px] px-4 pb-2">
           <FileInfoPanel
             currentFormat={currentFormat}
             currentSize={currentSize}
@@ -148,14 +148,14 @@ function MainCard({ isOptimized, children }: MainCardProps) {
     <div
       className={cn(
         "absolute inset-0 rounded-lg border transition-[box-shadow,background-color,border-color] ease-out will-change-[box-shadow,border-color,background-color]",
-        "before:ring-accent/40 before:pointer-events-none before:absolute before:inset-0 before:rounded-lg before:opacity-0 before:ring-2 before:content-[''] before:ring-inset",
+        "before:ring-accent/40 before:pointer-events-none before:absolute before:inset-0 before:rounded-lg before:opacity-0 before:ring-2 before:ring-inset before:content-['']",
         isOptimized
           ? [
               "border-accent/30 ring-accent/20 bg-popover/78 ring-1 ring-inset",
-              "[transition-delay:500ms] duration-200",
+              "duration-200 [transition-delay:500ms]",
               "before:animate-hero-card-border-flash",
             ]
-          : "border-accent/10 bg-popover/78 [transition-delay:0ms] duration-500",
+          : "border-accent/10 bg-popover/78 duration-500 [transition-delay:0ms]",
       )}
     >
       {children}
@@ -171,7 +171,7 @@ function ImageArea({ children }: ImageAreaProps) {
   return (
     <div
       className={cn(
-        "absolute top-2 right-2 left-2 overflow-hidden rounded transition-colors duration-300",
+        "absolute left-2 right-2 top-2 overflow-hidden rounded transition-colors duration-300",
         "bg-accent/5",
       )}
       style={{ height: "calc(100% - 80px)" }}

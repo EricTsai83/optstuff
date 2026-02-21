@@ -38,7 +38,7 @@ export function NavigationTabs({
           <TabsTrigger
             key={tab}
             value={tab}
-            className="data-[state=active]:border-foreground text-muted-foreground data-[state=active]:text-foreground rounded-none border-b-2 border-transparent px-3 py-3 text-sm whitespace-nowrap shadow-none transition-all duration-200 data-[state=active]:bg-transparent data-[state=active]:font-medium data-[state=active]:shadow-none"
+            className="data-[state=active]:border-foreground text-muted-foreground data-[state=active]:text-foreground whitespace-nowrap rounded-none border-b-2 border-transparent px-3 py-3 text-sm shadow-none transition-all duration-200 data-[state=active]:bg-transparent data-[state=active]:font-medium data-[state=active]:shadow-none"
           >
             {tab}
           </TabsTrigger>

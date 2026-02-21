@@ -31,7 +31,11 @@ type NavigationItem = {
 const NAVIGATION: readonly NavigationItem[] = [
   { href: "#demo", label: "Demo", external: false },
   { href: "/blog", label: "Blog", external: false },
-  { href: process.env.NEXT_PUBLIC_DOCS_URL ?? "#", label: "Docs", external: true },
+  {
+    href: process.env.NEXT_PUBLIC_DOCS_URL ?? "#",
+    label: "Docs",
+    external: true,
+  },
 ] as const;
 
 const HEADER_CONFIG = {
@@ -92,7 +96,9 @@ export function Header() {
               <Link
                 key={item.href}
                 href={item.href}
-                {...(item.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+                {...(item.external
+                  ? { target: "_blank", rel: "noopener noreferrer" }
+                  : {})}
                 className="text-muted-foreground hover:text-foreground dark:text-foreground after:bg-foreground relative text-sm font-medium transition-colors after:absolute after:bottom-0 after:left-0 after:h-px after:w-0 after:transition-all after:duration-300 hover:after:w-full"
               >
                 {item.label}
@@ -114,16 +120,16 @@ export function Header() {
                   className={cn(
                     "absolute h-5 w-5 transition-all duration-300",
                     isMobileMenuOpen
-                      ? "scale-0 rotate-90 opacity-0"
-                      : "scale-100 rotate-0 opacity-100",
+                      ? "rotate-90 scale-0 opacity-0"
+                      : "rotate-0 scale-100 opacity-100",
                   )}
                 />
                 <X
                   className={cn(
                     "absolute h-5 w-5 transition-all duration-300",
                     isMobileMenuOpen
-                      ? "scale-100 rotate-0 opacity-100"
-                      : "scale-0 -rotate-90 opacity-0",
+                      ? "rotate-0 scale-100 opacity-100"
+                      : "-rotate-90 scale-0 opacity-0",
                   )}
                 />
               </button>

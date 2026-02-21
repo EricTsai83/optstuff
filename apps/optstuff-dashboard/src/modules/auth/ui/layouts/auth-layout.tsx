@@ -20,7 +20,7 @@ export function AuthLayout({ children }: { children: React.ReactNode }) {
       {/* Logo */}
       <Link
         href="/"
-        className="absolute top-6 left-6 flex items-center gap-2 transition-opacity hover:opacity-80"
+        className="absolute left-6 top-6 flex items-center gap-2 transition-opacity hover:opacity-80"
       >
         <LogoIcon size={32} />
         <span className="text-lg font-semibold">OptStuff</span>

@@ -56,7 +56,7 @@ export function ProjectList({
   const filteredProjects = projects?.filter((p) =>
     normalizedQuery
       ? p.name.toLowerCase().includes(normalizedQuery) ||
-      p.description?.toLowerCase().includes(normalizedQuery)
+        p.description?.toLowerCase().includes(normalizedQuery)
       : true,
   );
 
@@ -66,7 +66,7 @@ export function ProjectList({
         projects?.some((proj) => proj.id === p.id) &&
         (normalizedQuery
           ? p.name.toLowerCase().includes(normalizedQuery) ||
-          p.description?.toLowerCase().includes(normalizedQuery)
+            p.description?.toLowerCase().includes(normalizedQuery)
           : true),
     ) ?? [];
 
@@ -204,7 +204,7 @@ function ProjectItem({
   return (
     <Link
       href={`/${teamSlug}/${project.slug}`}
-      className="hover:bg-secondary/50 group animate-in fade-in slide-in-from-bottom-2 flex cursor-pointer items-center gap-4 rounded-lg p-3 transition-all duration-200"
+      className="hover:bg-secondary/50 animate-in fade-in slide-in-from-bottom-2 group flex cursor-pointer items-center gap-4 rounded-lg p-3 transition-all duration-200"
       style={{
         animationDelay: `${index * 50}ms`,
         animationFillMode: "both",
@@ -282,10 +282,11 @@ function ProjectItem({
       <Button
         variant="ghost"
         size="icon"
-        className={`h-8 w-8 transition-opacity duration-200 ${isPinned
-          ? "text-amber-500 opacity-100 hover:text-amber-600"
-          : "opacity-0 group-hover:opacity-100"
-          }`}
+        className={`h-8 w-8 transition-opacity duration-200 ${
+          isPinned
+            ? "text-amber-500 opacity-100 hover:text-amber-600"
+            : "opacity-0 group-hover:opacity-100"
+        }`}
         onClick={handlePinToggle}
         disabled={isPinning || isUnpinning}
       >
@@ -369,7 +370,7 @@ function EmptyProjectState({
         <FolderOpen className="text-muted-foreground h-6 w-6" />
       </div>
       <h3 className="font-medium">No projects yet</h3>
-      <p className="text-muted-foreground mt-1 mb-4 max-w-sm text-sm">
+      <p className="text-muted-foreground mb-4 mt-1 max-w-sm text-sm">
         Create your first project to start optimizing images. A default API key
         will be generated automatically.
       </p>

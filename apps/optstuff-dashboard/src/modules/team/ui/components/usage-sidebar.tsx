@@ -1,11 +1,10 @@
 "use client";
 
-import { DOCS_LINKS } from "@/lib/constants";
 import {
   UsageProgressBar,
   UsageProgressBarSkeleton,
 } from "@/components/usage-progress-bar";
-import { USAGE_LIMITS } from "@/lib/constants";
+import { DOCS_LINKS, USAGE_LIMITS } from "@/lib/constants";
 import { formatBytes, formatNumber } from "@/lib/format";
 import { api } from "@/trpc/react";
 import { Button } from "@workspace/ui/components/button";
@@ -93,7 +92,7 @@ export function UsageSidebar({ teamId }: UsageSidebarProps) {
                 </div>
                 {usageData.length > 2 && (
                   <div className="relative flex justify-center">
-                    <Separator className="absolute top-3 left-0 w-full" />
+                    <Separator className="absolute left-0 top-3 w-full" />
                     <Button
                       variant="outline"
                       size="sm"

@@ -116,7 +116,9 @@ export function CreateTeamDialog({
       if (slug.length < 3) {
         setSlugError("Slug must be at least 3 characters");
       } else if (!isSlugFormatValid) {
-        setSlugError("Slug must be lowercase letters, numbers, and hyphens only");
+        setSlugError(
+          "Slug must be lowercase letters, numbers, and hyphens only",
+        );
       }
       // If it's an availability issue, error message is already shown in UI
       return;
@@ -163,7 +165,7 @@ export function CreateTeamDialog({
               </Label>
               <div className="flex gap-2">
                 <div className="relative flex-1">
-                  <span className="text-muted-foreground absolute top-1/2 left-3 -translate-y-1/2 text-sm">
+                  <span className="text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2 text-sm">
                     /
                   </span>
                   <Input
@@ -172,10 +174,10 @@ export function CreateTeamDialog({
                     value={slug}
                     onChange={(e) => handleSlugChange(e.target.value)}
                     disabled={isPending}
-                    className="pr-8 pl-6"
+                    className="pl-6 pr-8"
                   />
                   {slug.length >= 3 && (
-                    <span className="absolute top-1/2 right-3 -translate-y-1/2">
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2">
                       {isCheckingSlug ? (
                         <Loader2 className="text-muted-foreground h-4 w-4 animate-spin" />
                       ) : isSlugValid ? (
@@ -212,14 +214,12 @@ export function CreateTeamDialog({
                   Slug must be at least 3 characters
                 </p>
               )}
-              {!slugError &&
-                slug.length >= 3 &&
-                !slugRegex.test(slug) && (
-                  <p className="text-destructive text-sm">
-                    Slug must start and end with a letter or number, and use
-                    single hyphens to separate words
-                  </p>
-                )}
+              {!slugError && slug.length >= 3 && !slugRegex.test(slug) && (
+                <p className="text-destructive text-sm">
+                  Slug must start and end with a letter or number, and use
+                  single hyphens to separate words
+                </p>
+              )}
             </div>
           </div>
           <DialogFooter>

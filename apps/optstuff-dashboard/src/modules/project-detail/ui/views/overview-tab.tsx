@@ -45,7 +45,10 @@ export function OverviewTab({ project }: OverviewTabProps) {
             <code className="min-w-0 flex-1 truncate font-mono text-xs sm:text-sm">
               {projectEndpoint}
             </code>
-            <CopyButton text={projectEndpoint} className="bg-secondary shrink-0" />
+            <CopyButton
+              text={projectEndpoint}
+              className="bg-secondary shrink-0"
+            />
           </div>
           <p className="text-muted-foreground mt-3 text-xs sm:text-sm">
             <strong>URL Format:</strong>{" "}
@@ -57,7 +60,7 @@ export function OverviewTab({ project }: OverviewTabProps) {
       </Card>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-6">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-6">
         <StatCard
           title="API Keys"
           value={String(apiKeys?.length ?? 0)}

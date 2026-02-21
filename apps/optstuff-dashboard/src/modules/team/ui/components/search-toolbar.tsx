@@ -21,10 +21,10 @@ export function SearchToolbar({
   return (
     <div className="flex items-center gap-2 py-4">
       <div className="relative flex-1">
-        <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
+        <Search className="text-muted-foreground absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2" />
         <Input
           placeholder="Search projects..."
-          className="bg-background h-10 w-full pr-9 pl-9"
+          className="bg-background h-10 w-full pl-9 pr-9"
           value={searchQuery}
           onChange={(e) => onSearchChange(e.target.value)}
         />
@@ -34,7 +34,7 @@ export function SearchToolbar({
             variant="ghost"
             size="icon"
             onClick={() => onSearchChange("")}
-            className="absolute top-1/2 right-1 h-8 w-8 -translate-y-1/2"
+            className="absolute right-1 top-1/2 h-8 w-8 -translate-y-1/2"
           >
             <X className="h-4 w-4" />
           </Button>

@@ -179,10 +179,10 @@ function ProgressBar({
           )}
           style={{ width: `${progress}%` }}
         >
-          <div className="absolute inset-0 rounded-full bg-linear-to-b from-white/40 to-transparent" />
+          <div className="bg-linear-to-b absolute inset-0 rounded-full from-white/40 to-transparent" />
           <div
             className={cn(
-              "opt-particle absolute top-1/2 right-0 size-1 -translate-y-1/2 rounded-full bg-white transition-opacity duration-150",
+              "opt-particle absolute right-0 top-1/2 size-1 -translate-y-1/2 rounded-full bg-white transition-opacity duration-150",
               showParticle ? "opacity-100" : "opacity-0",
             )}
           />
@@ -228,7 +228,7 @@ function FileSizeDisplay({
         {originalSize}KB
         <span
           className={cn(
-            "absolute top-1/2 left-0 h-px bg-white/60 transition-[width] duration-300",
+            "absolute left-0 top-1/2 h-px bg-white/60 transition-[width] duration-300",
             showStrike ? "w-full" : "w-0",
           )}
         />
@@ -299,7 +299,7 @@ export function ImageOptimizationCard({
   return (
     <div
       className={cn(
-        "opt-card group relative flex h-24 w-28 flex-col items-center justify-between overflow-hidden rounded-xl border border-white/10 bg-linear-to-b from-white/10 to-transparent p-3 backdrop-blur-md transition-shadow duration-500",
+        "opt-card bg-linear-to-b group relative flex h-24 w-28 flex-col items-center justify-between overflow-hidden rounded-xl border border-white/10 from-white/10 to-transparent p-3 backdrop-blur-md transition-shadow duration-500",
         className,
       )}
       style={{ "--color": colors.color } as CSSProperties}

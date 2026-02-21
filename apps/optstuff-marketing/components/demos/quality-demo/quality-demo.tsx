@@ -241,7 +241,9 @@ export function QualityDemo() {
 
           <p className="text-muted-foreground text-center text-xs">
             <span className="mr-1.5 inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" />
-            <span className="hidden sm:inline">Hover over images to compare details</span>
+            <span className="hidden sm:inline">
+              Hover over images to compare details
+            </span>
             <span className="sm:hidden">Touch and drag to compare details</span>
           </p>
 

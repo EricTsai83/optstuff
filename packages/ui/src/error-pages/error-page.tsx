@@ -88,27 +88,24 @@ export function ErrorPage({
       </div>
 
       {/* Error label */}
-      <span className="mb-4 font-mono text-xs font-medium uppercase tracking-[0.2em] text-accent">
+      <span className="text-accent mb-4 font-mono text-xs font-medium uppercase tracking-[0.2em]">
         {error.digest ? `Error · ${error.digest}` : "Runtime Error"}
       </span>
 
       {/* Heading */}
-      <h1 className="mb-3 text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
+      <h1 className="text-foreground mb-3 text-3xl font-semibold tracking-tight sm:text-4xl">
         Something went wrong
       </h1>
 
       {/* Description */}
-      <p className="mb-10 max-w-sm text-base leading-relaxed text-muted-foreground">
-        An unexpected error occurred while loading this page. You can try
-        again or return to the homepage.
+      <p className="text-muted-foreground mb-10 max-w-sm text-base leading-relaxed">
+        An unexpected error occurred while loading this page. You can try again
+        or return to the homepage.
       </p>
 
       {/* Actions */}
       <div className="flex items-center gap-3">
-        <Button
-          onClick={reset}
-          aria-label="Try loading the page again"
-        >
+        <Button onClick={reset} aria-label="Try loading the page again">
           <RotateCcw />
           Try Again
         </Button>
@@ -122,10 +119,10 @@ export function ErrorPage({
       </div>
 
       {/* Subtle divider + message */}
-      <div className="mt-12 flex items-center gap-3 text-xs text-muted-foreground/60">
-        <div className="h-px w-8 bg-border" />
+      <div className="text-muted-foreground/60 mt-12 flex items-center gap-3 text-xs">
+        <div className="bg-border h-px w-8" />
         <span>If this persists, contact support</span>
-        <div className="h-px w-8 bg-border" />
+        <div className="bg-border h-px w-8" />
       </div>
     </ErrorLayout>
   );

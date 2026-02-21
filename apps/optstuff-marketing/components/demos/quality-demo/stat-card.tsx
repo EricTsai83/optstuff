@@ -33,12 +33,12 @@ export function StatCard({
         )}
       >
         {icon}
-          <p
-            className={cn(
-              "text-muted-foreground text-[11px] tracking-wider uppercase",
-              highlight && "text-emerald-600 dark:text-emerald-400",
-            )}
-          >
+        <p
+          className={cn(
+            "text-muted-foreground text-[11px] uppercase tracking-wider",
+            highlight && "text-emerald-600 dark:text-emerald-400",
+          )}
+        >
           {label}
         </p>
       </div>

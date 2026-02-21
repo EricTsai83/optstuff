@@ -72,38 +72,32 @@ export function NotFoundPage({
             strokeWidth="1.5"
             opacity="0.6"
           />
-          <circle
-            cx="40"
-            cy="40"
-            r="2.5"
-            fill="currentColor"
-            opacity="0.7"
-          />
+          <circle cx="40" cy="40" r="2.5" fill="currentColor" opacity="0.7" />
         </svg>
       </div>
 
       {/* Large 404 display */}
       <span
-        className="mb-4 select-none text-[7rem] font-bold leading-none tracking-tighter text-foreground/5 sm:text-[9rem]"
+        className="text-foreground/5 mb-4 select-none text-[7rem] font-bold leading-none tracking-tighter sm:text-[9rem]"
         aria-hidden="true"
       >
         404
       </span>
 
       {/* Label */}
-      <span className="mb-4 font-mono text-xs font-medium uppercase tracking-[0.2em] text-accent">
+      <span className="text-accent mb-4 font-mono text-xs font-medium uppercase tracking-[0.2em]">
         Page Not Found
       </span>
 
       {/* Heading */}
-      <h1 className="mb-3 text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
+      <h1 className="text-foreground mb-3 text-3xl font-semibold tracking-tight sm:text-4xl">
         Lost in space
       </h1>
 
       {/* Description */}
-      <p className="mb-10 max-w-sm text-base leading-relaxed text-muted-foreground">
-        The page you&apos;re looking for doesn&apos;t exist or has been moved
-        to a different location.
+      <p className="text-muted-foreground mb-10 max-w-sm text-base leading-relaxed">
+        The page you&apos;re looking for doesn&apos;t exist or has been moved to
+        a different location.
       </p>
 
       {/* Action */}
@@ -115,10 +109,10 @@ export function NotFoundPage({
       </Button>
 
       {/* Subtle footer */}
-      <div className="mt-12 flex items-center gap-3 text-xs text-muted-foreground/60">
-        <div className="h-px w-8 bg-border" />
+      <div className="text-muted-foreground/60 mt-12 flex items-center gap-3 text-xs">
+        <div className="bg-border h-px w-8" />
         <span>{brandName}</span>
-        <div className="h-px w-8 bg-border" />
+        <div className="bg-border h-px w-8" />
       </div>
     </ErrorLayout>
   );

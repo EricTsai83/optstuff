@@ -60,10 +60,7 @@ export function RequestLogsTable({ logs, isLoading }: RequestLogsTableProps) {
         <CardContent>
           <div className="space-y-2">
             {[1, 2, 3, 4, 5].map((i) => (
-              <div
-                key={i}
-                className="bg-muted h-12 animate-pulse rounded-lg"
-              />
+              <div key={i} className="bg-muted h-12 animate-pulse rounded-lg" />
             ))}
           </div>
         </CardContent>

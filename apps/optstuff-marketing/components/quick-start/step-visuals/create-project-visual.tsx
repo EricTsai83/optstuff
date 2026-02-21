@@ -1,14 +1,7 @@
 "use client";
 
 import { cn } from "@workspace/ui/lib/utils";
-import {
-  Check,
-  CheckCircle2,
-  Copy,
-  Eye,
-  EyeOff,
-  Search,
-} from "lucide-react";
+import { Check, CheckCircle2, Copy, Eye, EyeOff, Search } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 import { FakeCursor } from "./fake-cursor";
@@ -49,7 +42,17 @@ export function CreateProjectVisual() {
   // step 8: click copy → "Copied!" feedback (2.5s, then reset)
   useEffect(() => {
     const initialDelay = isFirstRenderRef.current ? 2000 : 1500;
-    const delays = [initialDelay, 1500, 2000, 1200, 1500, 1000, 1200, 1000, 2500];
+    const delays = [
+      initialDelay,
+      1500,
+      2000,
+      1200,
+      1500,
+      1000,
+      1200,
+      1000,
+      2500,
+    ];
 
     const timeout = setTimeout(() => {
       const newStep = step >= 8 ? 0 : step + 1;
@@ -152,10 +155,10 @@ export function CreateProjectVisual() {
 
               {/* Fake cursor on "New Project" button */}
               {showNewProjectCursor && (
-                <div className="pointer-events-none absolute top-1/2 left-1/2 z-20">
+                <div className="pointer-events-none absolute left-1/2 top-1/2 z-20">
                   <FakeCursor isClicking={isClicking} />
                   {isClicking && (
-                    <span className="bg-foreground/15 absolute -top-1.5 -left-1.5 h-4 w-4 animate-ping rounded-full" />
+                    <span className="bg-foreground/15 absolute -left-1.5 -top-1.5 h-4 w-4 animate-ping rounded-full" />
                   )}
                 </div>
               )}
@@ -212,9 +215,7 @@ export function CreateProjectVisual() {
                               </span>
                             )}
                             {isTyping && (
-                              <span className="text-ring animate-pulse">
-                                |
-                              </span>
+                              <span className="text-ring animate-pulse">|</span>
                             )}
                           </span>
                         </div>
@@ -255,10 +256,10 @@ export function CreateProjectVisual() {
 
                         {/* Fake cursor on "Create Project" submit button */}
                         {showSubmitCursor && (
-                          <div className="pointer-events-none absolute top-1/2 left-3/4 z-20">
+                          <div className="pointer-events-none absolute left-3/4 top-1/2 z-20">
                             <FakeCursor isClicking={isSubmitting} />
                             {isSubmitting && (
-                              <span className="bg-foreground/15 absolute -top-1.5 -left-1.5 h-4 w-4 animate-ping rounded-full" />
+                              <span className="bg-foreground/15 absolute -left-1.5 -top-1.5 h-4 w-4 animate-ping rounded-full" />
                             )}
                           </div>
                         )}
@@ -321,10 +322,10 @@ export function CreateProjectVisual() {
                             />
                           )}
                           {showEyeCursor && (
-                            <div className="pointer-events-none absolute top-1/2 left-1/2 z-20">
+                            <div className="pointer-events-none absolute left-1/2 top-1/2 z-20">
                               <FakeCursor isClicking={isClickingEye} />
                               {isClickingEye && (
-                                <span className="bg-foreground/15 absolute -top-1.5 -left-1.5 h-4 w-4 animate-ping rounded-full" />
+                                <span className="bg-foreground/15 absolute -left-1.5 -top-1.5 h-4 w-4 animate-ping rounded-full" />
                               )}
                             </div>
                           )}
@@ -345,15 +346,15 @@ export function CreateProjectVisual() {
                             />
                           )}
                           {isCopied && (
-                            <span className="animate-in fade-in slide-in-from-bottom-1 text-green-500 absolute -top-5 left-1/2 -translate-x-1/2 whitespace-nowrap text-[8px] font-semibold duration-200 sm:text-[10px]">
+                            <span className="animate-in fade-in slide-in-from-bottom-1 absolute -top-5 left-1/2 -translate-x-1/2 whitespace-nowrap text-[8px] font-semibold text-green-500 duration-200 sm:text-[10px]">
                               Copied!
                             </span>
                           )}
                           {showCopyCursor && (
-                            <div className="pointer-events-none absolute top-1/2 left-1/2 z-20">
+                            <div className="pointer-events-none absolute left-1/2 top-1/2 z-20">
                               <FakeCursor isClicking={isClickingCopy} />
                               {isClickingCopy && (
-                                <span className="bg-foreground/15 absolute -top-1.5 -left-1.5 h-4 w-4 animate-ping rounded-full" />
+                                <span className="bg-foreground/15 absolute -left-1.5 -top-1.5 h-4 w-4 animate-ping rounded-full" />
                               )}
                             </div>
                           )}

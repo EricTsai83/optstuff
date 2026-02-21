@@ -1,5 +1,5 @@
-import { defineConfig } from "eslint/config";
 import { nextJsConfig } from "@workspace/eslint-config/next-js";
+import { defineConfig } from "eslint/config";
 // @ts-expect-error -- no types for this plugin
 import drizzle from "eslint-plugin-drizzle";
 import tseslint from "typescript-eslint";

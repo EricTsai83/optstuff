@@ -41,7 +41,7 @@ function LoadingButton({
         aria-hidden="true"
         className={cn(
           "inline-flex shrink-0 overflow-hidden transition-all duration-300 ease-out",
-          loading ? "w-4 opacity-100" : "w-0 -ml-2 opacity-0",
+          loading ? "w-4 opacity-100" : "-ml-2 w-0 opacity-0",
         )}
       >
         <span className="size-4 shrink-0 animate-spin rounded-full border-2 border-current border-r-transparent" />
@@ -53,4 +53,3 @@ function LoadingButton({
 
 export { LoadingButton };
 export type { LoadingButtonProps };
-
