@@ -105,7 +105,7 @@ export function ErrorPage({
 
       {/* Actions */}
       <div className="flex items-center gap-3">
-        <Button onClick={reset} aria-label="Try loading the page again">
+        <Button onClick={reset} aria-label="Try Again — reload the page">
           <RotateCcw />
           Try Again
         </Button>

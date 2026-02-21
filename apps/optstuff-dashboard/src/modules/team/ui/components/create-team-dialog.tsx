@@ -53,7 +53,7 @@ export function CreateTeamDialog({
 
   const { mutate: createTeam, isPending } = api.team.create.useMutation({
     onSuccess: (team) => {
-      utils.team.list.invalidate();
+      void utils.team.list.invalidate();
       setOpen(false);
       resetForm();
       onSuccess?.();
@@ -117,7 +117,7 @@ export function CreateTeamDialog({
         setSlugError("Slug must be at least 3 characters");
       } else if (!isSlugFormatValid) {
         setSlugError(
-          "Slug must be lowercase letters, numbers, and hyphens only",
+          "Slug must start and end with a letter or number, and use single hyphens to separate words",
         );
       }
       // If it's an availability issue, error message is already shown in UI
@@ -203,7 +203,7 @@ export function CreateTeamDialog({
                 <p className="text-destructive text-sm">{slugError}</p>
               )}
               {!slugError &&
-                slug.length >= 3 &&
+                isSlugFormatValid &&
                 slugCheck?.available === false && (
                   <p className="text-destructive text-sm">
                     This slug is already taken
@@ -214,7 +214,7 @@ export function CreateTeamDialog({
                   Slug must be at least 3 characters
                 </p>
               )}
-              {!slugError && slug.length >= 3 && !slugRegex.test(slug) && (
+              {!slugError && slug.length >= 3 && !isSlugFormatValid && (
                 <p className="text-destructive text-sm">
                   Slug must start and end with a letter or number, and use
                   single hyphens to separate words
