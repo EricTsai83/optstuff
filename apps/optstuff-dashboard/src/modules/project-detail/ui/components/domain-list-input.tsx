@@ -13,15 +13,22 @@ type DomainListInputProps = {
   readonly disabled?: boolean;
 };
 
+const PROTOCOL_REGEX = /^(https?):\/\//;
+const DOMAIN_REGEX =
+  /^(\*\.)?[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$/;
+const VALID_FORMAT_MSG =
+  'Include protocol, e.g. "https://example.com", "https://*.example.com", or "http://localhost"';
+
 /**
- * Input component for managing a list of domains.
- * Supports adding domains by pressing Enter or clicking Add button.
- * Displays domains as removable badges.
+ * Input component for managing a list of allowed referer origins.
+ * Requires protocol (http:// or https://) for explicit security intent.
+ * Supports adding entries by pressing Enter or clicking Add button.
+ * Displays entries as removable badges.
  */
 export function DomainListInput({
   value,
   onChange,
-  placeholder = "example.com",
+  placeholder = "https://example.com",
   disabled = false,
 }: DomainListInputProps) {
   const [inputValue, setInputValue] = useState("");
@@ -33,33 +40,40 @@ export function DomainListInput({
   };
 
   const addDomain = (): void => {
-    const domain = inputValue.trim().toLowerCase();
-    if (!domain) return;
+    const raw = inputValue.trim().toLowerCase();
+    if (!raw) return;
 
-    // Domain validation:
-    // - Optional wildcard prefix (*.)
-    // - Must have at least one dot (e.g., example.com, not just "example")
-    // - TLD must be at least 2 characters
-    // - Each segment can contain letters, numbers, and hyphens (but not start/end with hyphen)
-    const domainRegex =
-      /^(\*\.)?[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$/;
-
-    if (!domainRegex.test(domain)) {
-      setError(
-        "Invalid domain format. Use format like: example.com or *.example.com",
-      );
+    const protocolMatch = PROTOCOL_REGEX.exec(raw);
+    if (!protocolMatch) {
+      setError(VALID_FORMAT_MSG);
       return;
     }
 
-    // Validate TLD is at least 2 characters
-    const parts = domain.replace(/^\*\./, "").split(".");
-    const tld = parts[parts.length - 1];
-    if (!tld || tld.length < 2) {
-      setError(
-        "Invalid TLD. Domain must end with a valid TLD (e.g., .com, .org, .io)",
-      );
+    const hostPart = raw.slice(protocolMatch[0].length);
+    if (!hostPart) {
+      setError(VALID_FORMAT_MSG);
       return;
     }
+
+    const isLocalhost = hostPart === "localhost";
+
+    if (!isLocalhost) {
+      if (!DOMAIN_REGEX.test(hostPart)) {
+        setError(VALID_FORMAT_MSG);
+        return;
+      }
+
+      const parts = hostPart.replace(/^\*\./, "").split(".");
+      const tld = parts[parts.length - 1];
+      if (!tld || tld.length < 2) {
+        setError(
+          "Invalid TLD. Domain must end with a valid TLD (e.g., .com, .org, .io)",
+        );
+        return;
+      }
+    }
+
+    const domain = raw;
 
     // Don't add duplicates
     if (value.includes(domain)) {

@@ -1,4 +1,12 @@
 packages:
-  - "apps/*"
-  - "packages/*"
-  - "examples/*"
+  - apps/*
+  - packages/*
+  - examples/*
+
+ignoredBuiltDependencies:
+  - '@clerk/shared'
+  - '@parcel/watcher'
+  - core-js-pure
+  - esbuild
+  - sharp
+  - unrs-resolver

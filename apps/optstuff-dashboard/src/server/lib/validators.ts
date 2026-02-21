@@ -11,25 +11,53 @@
 const isDevelopment = process.env.NODE_ENV === "development";
 
 /**
- * Validate if the referer is in the allowed domains list.
+ * Validate if the referer is in the allowed origins list.
+ *
+ * Each allowed entry must include a protocol, e.g. "https://example.com" or
+ * "http://localhost". The referer's protocol and hostname are both checked.
+ * Wildcard prefixes ("https://*.example.com") match any subdomain.
+ *
+ * Legacy entries without a protocol are treated as hostname-only and matched
+ * against any protocol for backwards compatibility.
  *
  * @param referer - The referer header value
- * @param allowedDomains - List of allowed domains (null or empty = allow all)
+ * @param allowedDomains - List of allowed origins (null or empty = allow all)
  * @returns true if the referer is allowed
  */
 export function validateReferer(
   referer: string | null,
   allowedDomains: readonly string[] | null,
 ) {
-  // If no whitelist is set, allow all
   if (!allowedDomains || allowedDomains.length === 0) return true;
   if (!referer) return false;
 
   try {
-    const refererHost = new URL(referer).hostname;
-    return allowedDomains.some(
-      (domain) => refererHost === domain || refererHost.endsWith(`.${domain}`),
-    );
+    const refererUrl = new URL(referer);
+    const refererProtocol = refererUrl.protocol; // "http:" or "https:"
+    const refererHost = refererUrl.hostname;
+
+    return allowedDomains.some((entry) => {
+      const protoMatch = entry.match(/^(https?):\/\//);
+
+      if (protoMatch) {
+        const allowedProtocol = `${protoMatch[1]}:`;
+        if (refererProtocol !== allowedProtocol) return false;
+
+        const hostPart = entry.slice(protoMatch[0].length);
+        if (hostPart.startsWith("*.")) {
+          const base = hostPart.slice(2);
+          return refererHost === base || refererHost.endsWith(`.${base}`);
+        }
+        return refererHost === hostPart;
+      }
+
+      // Legacy: bare hostname without protocol — match any protocol
+      if (entry.startsWith("*.")) {
+        const base = entry.slice(2);
+        return refererHost === base || refererHost.endsWith(`.${base}`);
+      }
+      return refererHost === entry;
+    });
   } catch {
     return false;
   }

@@ -50,7 +50,7 @@ async function verifyTeamAccess(
     where: eq(teams.id, teamId),
   });
 
-  if (!team || team.ownerId !== userId) {
+  if (team?.ownerId !== userId) {
     return null;
   }
 
@@ -71,7 +71,7 @@ async function verifyProjectAccess(
     with: { team: true },
   });
 
-  if (!project || project.team.ownerId !== userId) {
+  if (project?.team.ownerId !== userId) {
     return null;
   }
 
@@ -89,6 +89,7 @@ export const projectRouter = createTRPCRouter({
         teamId: z.string().uuid(),
         name: z.string().min(1).max(255),
         description: z.string().max(1000).optional(),
+        allowedRefererDomains: z.array(z.string()).optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -118,6 +119,10 @@ export const projectRouter = createTRPCRouter({
         finalSlug = existingProject ? generateUniqueSlug(input.name) : slug;
       }
 
+      const sanitizedDomains = input.allowedRefererDomains
+        ?.map((d) => d.trim().toLowerCase())
+        .filter((d) => d.length > 0);
+
       // Insert project, retrying once on slug collision (TOCTOU with project_team_slug_unique)
       const insertProject = async (slugToUse: string) => {
         const [created] = await ctx.db
@@ -127,6 +132,10 @@ export const projectRouter = createTRPCRouter({
             name: input.name,
             slug: slugToUse,
             description: input.description,
+            allowedRefererDomains:
+              sanitizedDomains && sanitizedDomains.length > 0
+                ? sanitizedDomains
+                : undefined,
             apiKeyCount: 1, // Will have one default key
           })
           .returning();
@@ -264,7 +273,7 @@ export const projectRouter = createTRPCRouter({
       });
 
       // Verify user owns this team
-      if (!team || team.ownerId !== ctx.userId) {
+      if (team?.ownerId !== ctx.userId) {
         return null;
       }
 
