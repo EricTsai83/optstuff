@@ -41,10 +41,13 @@ export function DomainListInput({
     // - Must have at least one dot (e.g., example.com, not just "example")
     // - TLD must be at least 2 characters
     // - Each segment can contain letters, numbers, and hyphens (but not start/end with hyphen)
-    const domainRegex = /^(\*\.)?[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$/;
+    const domainRegex =
+      /^(\*\.)?[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$/;
 
     if (!domainRegex.test(domain)) {
-      setError("Invalid domain format. Use format like: example.com or *.example.com");
+      setError(
+        "Invalid domain format. Use format like: example.com or *.example.com",
+      );
       return;
     }
 
@@ -52,7 +55,9 @@ export function DomainListInput({
     const parts = domain.replace(/^\*\./, "").split(".");
     const tld = parts[parts.length - 1];
     if (!tld || tld.length < 2) {
-      setError("Invalid TLD. Domain must end with a valid TLD (e.g., .com, .org, .io)");
+      setError(
+        "Invalid TLD. Domain must end with a valid TLD (e.g., .com, .org, .io)",
+      );
       return;
     }
 
@@ -130,7 +135,6 @@ export function DomainListInput({
           ))}
         </div>
       )}
-
     </div>
   );
 }

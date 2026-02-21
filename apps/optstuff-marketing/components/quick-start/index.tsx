@@ -48,14 +48,14 @@ export function QuickStart() {
               {/* Connecting line - 當下一個步驟區域進入視野時才延伸 */}
               {!isLast && (
                 <div
-                  className="absolute top-10 left-4 w-0.5 overflow-hidden sm:top-12 sm:left-5 md:left-6"
+                  className="absolute left-4 top-10 w-0.5 overflow-hidden sm:left-5 sm:top-12 md:left-6"
                   style={{
                     height: "calc(100% - 2.5rem)",
                   }}
                 >
                   <div
                     className={cn(
-                      "w-full origin-top bg-accent/30 transition-transform duration-500 ease-out",
+                      "bg-accent/30 w-full origin-top transition-transform duration-500 ease-out",
                     )}
                     style={{
                       height: "100%",

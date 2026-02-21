@@ -6,9 +6,9 @@ import { DOCS_LINKS } from "@/lib/constants";
 import { TeamSwitcher } from "@/modules/team";
 import { ClerkLoaded, ClerkLoading, UserButton } from "@workspace/auth/client";
 import { UserButtonSkeleton } from "@workspace/auth/components/user-button-skeleton";
+import { useIsMobile } from "@workspace/hooks/use-mobile";
 import { Button } from "@workspace/ui/components/button";
 import { Input } from "@workspace/ui/components/input";
-import { useIsMobile } from "@workspace/hooks/use-mobile";
 import { Bell, BookOpen, Home, Menu, Moon, Search, Sun, X } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
@@ -76,7 +76,10 @@ export function Header({ teamSlug }: HeaderProps) {
         </div>
       </header>
 
-      <MobileSidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
+      <MobileSidebar
+        isOpen={isSidebarOpen}
+        onClose={() => setIsSidebarOpen(false)}
+      />
     </>
   );
 }
@@ -84,12 +87,12 @@ export function Header({ teamSlug }: HeaderProps) {
 function SearchInput() {
   return (
     <div className="relative">
-      <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
+      <Search className="text-muted-foreground absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2" />
       <Input
         placeholder="Find..."
-        className="bg-secondary h-8 w-48 border-0 pr-8 pl-9 transition-all duration-200 focus:w-64"
+        className="bg-secondary h-8 w-48 border-0 pl-9 pr-8 transition-all duration-200 focus:w-64"
       />
-      <kbd className="text-muted-foreground bg-background absolute top-1/2 right-2 -translate-y-1/2 rounded border px-1.5 py-0.5 text-xs">
+      <kbd className="text-muted-foreground bg-background absolute right-2 top-1/2 -translate-y-1/2 rounded border px-1.5 py-0.5 text-xs">
         F
       </kbd>
     </div>
@@ -186,10 +189,9 @@ function UserAvatar() {
             <UserButton.Action
               label="Home Page"
               labelIcon={<Home className="h-4 w-4" />}
-              onClick={() => window.location.href = "/"}
+              onClick={() => (window.location.href = "/")}
             />
           </UserButton.MenuItems>
-
         </UserButton>
       </ClerkLoaded>
     </div>

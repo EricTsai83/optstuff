@@ -21,10 +21,7 @@ export function ApiKeyListSkeleton() {
       <CardContent>
         <div className="space-y-4">
           {[1, 2].map((i) => (
-            <div
-              key={i}
-              className="h-24 animate-pulse rounded-lg bg-muted"
-            />
+            <div key={i} className="bg-muted h-24 animate-pulse rounded-lg" />
           ))}
         </div>
       </CardContent>
@@ -34,7 +31,7 @@ export function ApiKeyListSkeleton() {
 
 export function EmptyApiKeyState() {
   return (
-    <div className="flex flex-col items-center justify-center py-12 text-center text-muted-foreground">
+    <div className="text-muted-foreground flex flex-col items-center justify-center py-12 text-center">
       <Key className="mb-4 h-12 w-12 opacity-40" />
       <p className="text-lg font-medium">No API keys yet</p>
       <p className="mt-2 max-w-sm text-sm">

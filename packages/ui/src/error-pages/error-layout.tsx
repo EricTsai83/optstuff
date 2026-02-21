@@ -16,7 +16,7 @@ type ErrorLayoutProps = {
  */
 export function ErrorLayout({ children }: ErrorLayoutProps) {
   return (
-    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-background px-6">
+    <div className="bg-background relative flex min-h-screen items-center justify-center overflow-hidden px-6">
       {/* Background grid */}
       <div
         className="pointer-events-none fixed inset-0 opacity-50"
@@ -32,7 +32,7 @@ export function ErrorLayout({ children }: ErrorLayoutProps) {
       />
 
       {/* Gradient glow */}
-      <div className="pointer-events-none fixed left-1/2 top-1/2 h-[500px] w-[500px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-accent/6 blur-[100px]" />
+      <div className="bg-accent/6 pointer-events-none fixed left-1/2 top-1/2 h-[500px] w-[500px] -translate-x-1/2 -translate-y-1/2 rounded-full blur-[100px]" />
 
       {/* Content */}
       <div className="relative z-10 flex max-w-lg flex-col items-center text-center">

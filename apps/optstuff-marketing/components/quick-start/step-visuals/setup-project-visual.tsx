@@ -77,10 +77,10 @@ export function SetupProjectVisual() {
 
               {/* Fake cursor */}
               {showCursor && (
-                <div className="pointer-events-none absolute top-1/2 left-1/2 z-20">
+                <div className="pointer-events-none absolute left-1/2 top-1/2 z-20">
                   <FakeCursor isClicking={isClicking} />
                   {isClicking && (
-                    <span className="bg-foreground/15 absolute -top-1.5 -left-1.5 h-4 w-4 animate-ping rounded-full" />
+                    <span className="bg-foreground/15 absolute -left-1.5 -top-1.5 h-4 w-4 animate-ping rounded-full" />
                   )}
                 </div>
               )}

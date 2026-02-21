@@ -153,7 +153,9 @@ export function CreateApiKeyDialog({
               </Button>
               <Button
                 type="submit"
-                disabled={isPending || !name.trim() || sourceDomains.length === 0}
+                disabled={
+                  isPending || !name.trim() || sourceDomains.length === 0
+                }
               >
                 Create Key
               </Button>
@@ -186,22 +188,24 @@ export function CreateApiKeyDialog({
               </div>
               {/* Secret Key Display */}
               <div className="space-y-2">
-                <Label className="text-muted-foreground flex items-center gap-1.5 text-xs tracking-wider uppercase">
+                <Label className="text-muted-foreground flex items-center gap-1.5 text-xs uppercase tracking-wider">
                   <Key className="h-3 w-3" />
                   Secret Key (for signing URLs)
                 </Label>
                 <div className="bg-muted/50 border-border group relative rounded-lg border p-3">
-                  <code className="block pr-16 font-mono text-sm break-all">
+                  <code className="block break-all pr-16 font-mono text-sm">
                     {showSecretKey
                       ? createdSecretKey
                       : "•".repeat(createdSecretKey?.length ?? 0)}
                   </code>
-                  <div className="absolute top-2 right-2 flex items-center gap-1">
+                  <div className="absolute right-2 top-2 flex items-center gap-1">
                     <button
                       type="button"
                       onClick={() => setShowSecretKey((prev) => !prev)}
                       className="text-muted-foreground hover:text-foreground flex h-8 w-8 items-center justify-center rounded-md transition-colors"
-                      aria-label={showSecretKey ? "Hide secret key" : "Show secret key"}
+                      aria-label={
+                        showSecretKey ? "Hide secret key" : "Show secret key"
+                      }
                       tabIndex={0}
                     >
                       {showSecretKey ? (
@@ -212,7 +216,7 @@ export function CreateApiKeyDialog({
                     </button>
                     <CopyButton
                       text={createdSecretKey ?? ""}
-                      className="h-8 w-8 rounded-md bg-secondary shadow-sm"
+                      className="bg-secondary h-8 w-8 rounded-md shadow-sm"
                     />
                   </div>
                 </div>
@@ -224,17 +228,17 @@ export function CreateApiKeyDialog({
 
               {/* Public Key Display */}
               <div className="space-y-2">
-                <Label className="text-muted-foreground text-xs tracking-wider uppercase">
+                <Label className="text-muted-foreground text-xs uppercase tracking-wider">
                   Public Key (for URL parameter)
                 </Label>
                 <div className="bg-muted/50 border-border group relative rounded-lg border p-3">
                   <code className="block pr-10 font-mono text-sm">
                     {createdPublicKey}
                   </code>
-                  <div className="absolute top-2 right-2">
+                  <div className="absolute right-2 top-2">
                     <CopyButton
                       text={createdPublicKey ?? ""}
-                      className="h-8 w-8 rounded-md bg-secondary shadow-sm"
+                      className="bg-secondary h-8 w-8 rounded-md shadow-sm"
                     />
                   </div>
                 </div>
@@ -242,7 +246,7 @@ export function CreateApiKeyDialog({
 
               {/* Usage Example */}
               <div className="space-y-2">
-                <Label className="text-muted-foreground text-xs tracking-wider uppercase">
+                <Label className="text-muted-foreground text-xs uppercase tracking-wider">
                   Example Usage (Backend)
                 </Label>
                 <div className="bg-muted/50 border-border overflow-x-auto rounded-lg border p-3">

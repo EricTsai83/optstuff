@@ -46,7 +46,7 @@ function TrendIcon({ isRising, isShaking, className = "" }: TrendIconProps) {
     <span
       className={cn(
         "inline-flex transition-transform duration-300",
-        isRising && "-scale-x-100 -rotate-180",
+        isRising && "-rotate-180 -scale-x-100",
       )}
     >
       <TrendingDown className={cn(className, isShaking && "animate-shake")} />
@@ -126,7 +126,7 @@ export function SavingsVisualizer({
   const iconColorClass = isRising ? "text-red-500" : "text-accent";
 
   return (
-    <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/10 dark:bg-white/2">
+    <div className="dark:bg-white/2 overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/10">
       {/* Header */}
       <div
         role="button"
@@ -195,15 +195,13 @@ export function SavingsVisualizer({
           <div className="border-t border-gray-100 p-3 dark:border-white/5">
             {/* Size Comparison */}
             <div className="mb-3">
-              <p className="text-muted-foreground mb-2 text-center text-xs tracking-wider uppercase">
+              <p className="text-muted-foreground mb-2 text-center text-xs uppercase tracking-wider">
                 Total Size Comparison
               </p>
               <div className="flex items-center justify-center gap-4">
                 <div className="text-center">
-                  <p className="text-muted-foreground mb-0.5 text-xs">
-                    Before
-                  </p>
-                  <p className="font-mono text-lg font-semibold text-gray-400 tabular-nums line-through">
+                  <p className="text-muted-foreground mb-0.5 text-xs">Before</p>
+                  <p className="font-mono text-lg font-semibold tabular-nums text-gray-400 line-through">
                     {formatFileSize(totalOriginalKB)}
                   </p>
                 </div>

@@ -1,10 +1,14 @@
-'use client';
-import { useEffect, useMemo, useState } from 'react';
-import { Check, ChevronDown, Copy, ExternalLinkIcon } from 'lucide-react';
-import { cn } from '@workspace/ui/lib/utils';
-import { useCopyButton } from 'fumadocs-ui/utils/use-copy-button';
-import { buttonVariants } from 'fumadocs-ui/components/ui/button';
-import { Popover, PopoverContent, PopoverTrigger } from 'fumadocs-ui/components/ui/popover';
+"use client";
+import { cn } from "@workspace/ui/lib/utils";
+import { buttonVariants } from "fumadocs-ui/components/ui/button";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "fumadocs-ui/components/ui/popover";
+import { useCopyButton } from "fumadocs-ui/utils/use-copy-button";
+import { Check, ChevronDown, Copy, ExternalLinkIcon } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 
 const cache = new Map<string, string>();
 
@@ -36,7 +40,7 @@ export function LLMCopyButton({
       await navigator.clipboard.writeText(content);
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : 'Failed to copy markdown';
+        error instanceof Error ? error.message : "Failed to copy markdown";
       setCopyError(message);
     } finally {
       setLoading(false);
@@ -48,16 +52,16 @@ export function LLMCopyButton({
       disabled={isLoading}
       className={cn(
         buttonVariants({
-          color: 'secondary',
-          size: 'sm',
-          className: 'gap-2 [&_svg]:size-3.5 [&_svg]:text-fd-muted-foreground',
+          color: "secondary",
+          size: "sm",
+          className: "[&_svg]:text-fd-muted-foreground gap-2 [&_svg]:size-3.5",
         }),
       )}
       onClick={onClick}
       title={copyError}
     >
       {checked && !copyError ? <Check /> : <Copy />}
-      {copyError ? 'Copy Failed' : 'Copy Markdown'}
+      {copyError ? "Copy Failed" : "Copy Markdown"}
     </button>
   );
 }
@@ -92,7 +96,7 @@ export function ViewOptions({
 
     return [
       {
-        title: 'Open in GitHub',
+        title: "Open in GitHub",
         href: githubUrl,
         icon: (
           <svg fill="currentColor" role="img" viewBox="0 0 24 24">
@@ -102,10 +106,8 @@ export function ViewOptions({
         ),
       },
       {
-        title: 'Open in Scira AI',
-        href: q
-          ? `https://scira.ai/?${new URLSearchParams({ q })}`
-          : undefined,
+        title: "Open in Scira AI",
+        href: q ? `https://scira.ai/?${new URLSearchParams({ q })}` : undefined,
         icon: (
           <svg
             width="910"
@@ -166,9 +168,9 @@ export function ViewOptions({
         ),
       },
       {
-        title: 'Open in ChatGPT',
+        title: "Open in ChatGPT",
         href: q
-          ? `https://chatgpt.com/?${new URLSearchParams({ hints: 'search', q })}`
+          ? `https://chatgpt.com/?${new URLSearchParams({ hints: "search", q })}`
           : undefined,
         icon: (
           <svg
@@ -183,7 +185,7 @@ export function ViewOptions({
         ),
       },
       {
-        title: 'Open in Claude',
+        title: "Open in Claude",
         href: q
           ? `https://claude.ai/new?${new URLSearchParams({ q })}`
           : undefined,
@@ -200,7 +202,7 @@ export function ViewOptions({
         ),
       },
       {
-        title: 'Open in Cursor',
+        title: "Open in Cursor",
         icon: (
           <svg
             fill="currentColor"
@@ -224,14 +226,14 @@ export function ViewOptions({
       <PopoverTrigger
         className={cn(
           buttonVariants({
-            color: 'secondary',
-            size: 'sm',
-            className: 'gap-2',
+            color: "secondary",
+            size: "sm",
+            className: "gap-2",
           }),
         )}
       >
         Open
-        <ChevronDown className="size-3.5 text-fd-muted-foreground" />
+        <ChevronDown className="text-fd-muted-foreground size-3.5" />
       </PopoverTrigger>
       <PopoverContent className="flex flex-col">
         {items.map((item) => (
@@ -242,15 +244,15 @@ export function ViewOptions({
             target="_blank"
             aria-disabled={!item.href}
             className={cn(
-              'text-sm p-2 rounded-lg inline-flex items-center gap-2 [&_svg]:size-4',
+              "inline-flex items-center gap-2 rounded-lg p-2 text-sm [&_svg]:size-4",
               item.href
-                ? 'hover:text-fd-accent-foreground hover:bg-fd-accent'
-                : 'opacity-50 pointer-events-none',
+                ? "hover:text-fd-accent-foreground hover:bg-fd-accent"
+                : "pointer-events-none opacity-50",
             )}
           >
             {item.icon}
             {item.title}
-            <ExternalLinkIcon className="text-fd-muted-foreground size-3.5 ms-auto" />
+            <ExternalLinkIcon className="text-fd-muted-foreground ms-auto size-3.5" />
           </a>
         ))}
       </PopoverContent>

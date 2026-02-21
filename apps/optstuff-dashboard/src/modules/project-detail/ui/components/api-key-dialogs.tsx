@@ -1,6 +1,7 @@
 "use client";
 
 import { Button } from "@workspace/ui/components/button";
+import { CopyButton } from "@workspace/ui/components/copy-button";
 import {
   Dialog,
   DialogContent,
@@ -13,7 +14,6 @@ import { Label } from "@workspace/ui/components/label";
 import { Key, RotateCcw, Shield } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { EditingKeyData, RotatedKeyData } from "./api-key-types";
-import { CopyButton } from "@workspace/ui/components/copy-button";
 import { DomainListInput } from "./domain-list-input";
 import { ExpirationSelect } from "./expiration-select";
 
@@ -37,7 +37,10 @@ type EditApiKeyDialogProps = {
 // Rotated Key Dialog
 // ============================================================================
 
-export function RotatedKeyDialog({ rotatedKey, onClose }: RotatedKeyDialogProps) {
+export function RotatedKeyDialog({
+  rotatedKey,
+  onClose,
+}: RotatedKeyDialogProps) {
   return (
     <Dialog open={!!rotatedKey} onOpenChange={(open) => !open && onClose()}>
       <DialogContent
@@ -72,22 +75,22 @@ export function RotatedKeyDialog({ rotatedKey, onClose }: RotatedKeyDialogProps)
             </div>
             {/* Secret Key Display */}
             <div className="space-y-2">
-              <Label className="flex items-center gap-1.5 text-xs uppercase tracking-wider text-muted-foreground">
+              <Label className="text-muted-foreground flex items-center gap-1.5 text-xs uppercase tracking-wider">
                 <Key className="h-3 w-3" />
                 New Secret Key (for signing URLs)
               </Label>
-              <div className="group relative rounded-lg border border-border bg-muted/50 p-3">
+              <div className="border-border bg-muted/50 group relative rounded-lg border p-3">
                 <code className="block break-all pr-10 font-mono text-sm">
                   {rotatedKey?.secretKey}
                 </code>
                 <div className="absolute right-2 top-2">
                   <CopyButton
                     text={rotatedKey?.secretKey ?? ""}
-                    className="h-8 w-8 rounded-md bg-secondary shadow-sm"
+                    className="bg-secondary h-8 w-8 rounded-md shadow-sm"
                   />
                 </div>
               </div>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-muted-foreground text-xs">
                 The old key is now invalid. Update your backend with this new
                 secret key.
               </p>
@@ -95,17 +98,17 @@ export function RotatedKeyDialog({ rotatedKey, onClose }: RotatedKeyDialogProps)
 
             {/* Public Key Display */}
             <div className="space-y-2">
-              <Label className="text-xs uppercase tracking-wider text-muted-foreground">
+              <Label className="text-muted-foreground text-xs uppercase tracking-wider">
                 New Public Key (for URL parameter)
               </Label>
-              <div className="group relative rounded-lg border border-border bg-muted/50 p-3">
+              <div className="border-border bg-muted/50 group relative rounded-lg border p-3">
                 <code className="block pr-10 font-mono text-sm">
                   {rotatedKey?.publicKey}
                 </code>
                 <div className="absolute right-2 top-2">
                   <CopyButton
                     text={rotatedKey?.publicKey ?? ""}
-                    className="h-8 w-8 rounded-md bg-secondary shadow-sm"
+                    className="bg-secondary h-8 w-8 rounded-md shadow-sm"
                   />
                 </div>
               </div>
@@ -168,7 +171,7 @@ export function EditApiKeyDialog({
         <div className="grid gap-6 py-4">
           <div className="grid gap-3">
             <Label>Allowed Source Domains</Label>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-muted-foreground text-sm">
               Which image sources can this key access? Subdomains are
               automatically included.
             </p>

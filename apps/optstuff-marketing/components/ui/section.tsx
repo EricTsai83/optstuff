@@ -31,7 +31,7 @@ export function SectionWrapper({
     >
       {/* Background decorations */}
       <div className="pointer-events-none absolute inset-0">
-        <div className="bg-accent/5 absolute top-1/4 right-1/4 h-64 w-64 rounded-full blur-3xl sm:h-96 sm:w-96" />
+        <div className="bg-accent/5 absolute right-1/4 top-1/4 h-64 w-64 rounded-full blur-3xl sm:h-96 sm:w-96" />
         <div className="bg-accent/3 absolute bottom-1/4 left-1/4 h-48 w-48 rounded-full blur-3xl sm:h-64 sm:w-64" />
       </div>
 

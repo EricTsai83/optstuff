@@ -6,7 +6,11 @@ const FOOTER_NAVIGATION = {
   product: [
     { href: "#demo", label: "Demo", external: false },
     { href: "/blog", label: "Blog", external: false },
-    { href: process.env.NEXT_PUBLIC_DOCS_URL ?? "#", label: "Docs", external: true },
+    {
+      href: process.env.NEXT_PUBLIC_DOCS_URL ?? "#",
+      label: "Docs",
+      external: true,
+    },
   ],
   social: [
     {
@@ -35,7 +39,9 @@ export function Footer() {
                 key={item.href}
                 href={item.href}
                 className="hover:text-foreground after:bg-foreground relative transition-colors after:absolute after:bottom-0 after:left-0 after:h-px after:w-0 after:transition-all after:duration-300 hover:after:w-full"
-                {...(item.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+                {...(item.external
+                  ? { target: "_blank", rel: "noopener noreferrer" }
+                  : {})}
               >
                 {item.label}
               </a>

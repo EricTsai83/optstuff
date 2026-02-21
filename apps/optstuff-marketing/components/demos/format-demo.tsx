@@ -30,7 +30,7 @@ export function FormatDemo() {
         description="Convert to modern formats like WebP and AVIF"
         action={
           <div className="text-right">
-            <p className="text-muted-foreground mb-1 text-xs tracking-wide uppercase">
+            <p className="text-muted-foreground mb-1 text-xs uppercase tracking-wide">
               Original: {ORIGINAL_SIZE_KB} KB
             </p>
             <p className="text-accent font-mono text-sm font-semibold">

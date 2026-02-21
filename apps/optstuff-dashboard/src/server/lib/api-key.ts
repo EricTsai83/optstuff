@@ -77,9 +77,7 @@ export function encryptApiKey(plaintext: string) {
  * @param encrypted - The encrypted string in format: iv:authTag:ciphertext
  * @returns Result with decrypted plaintext, or an error message string on failure
  */
-export function decryptApiKey(
-  encrypted: string,
-): Result<string, string> {
+export function decryptApiKey(encrypted: string): Result<string, string> {
   try {
     const parts = encrypted.split(":");
     if (parts.length !== 3) {

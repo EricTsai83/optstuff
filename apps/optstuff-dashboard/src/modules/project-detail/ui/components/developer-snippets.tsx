@@ -7,13 +7,13 @@ import {
   CardHeader,
   CardTitle,
 } from "@workspace/ui/components/card";
+import { CopyButton } from "@workspace/ui/components/copy-button";
 import {
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
 } from "@workspace/ui/components/tabs";
-import { CopyButton } from "@workspace/ui/components/copy-button";
 
 type DeveloperSnippetsProps = {
   readonly projectSlug: string;
@@ -152,8 +152,11 @@ _            → No operations`;
                 <pre className="bg-muted overflow-x-auto rounded-lg p-4 text-sm">
                   <code>{envExample}</code>
                 </pre>
-                <div className="absolute top-2 right-2">
-                  <CopyButton text={envExample} className="h-8 w-8 rounded-md bg-secondary" />
+                <div className="absolute right-2 top-2">
+                  <CopyButton
+                    text={envExample}
+                    className="bg-secondary h-8 w-8 rounded-md"
+                  />
                 </div>
               </div>
             </TabsContent>
@@ -163,8 +166,11 @@ _            → No operations`;
                 <pre className="bg-muted max-h-[400px] overflow-auto rounded-lg p-4 text-sm">
                   <code>{loaderExample}</code>
                 </pre>
-                <div className="absolute top-2 right-2">
-                  <CopyButton text={loaderExample} className="h-8 w-8 rounded-md bg-secondary" />
+                <div className="absolute right-2 top-2">
+                  <CopyButton
+                    text={loaderExample}
+                    className="bg-secondary h-8 w-8 rounded-md"
+                  />
                 </div>
               </div>
             </TabsContent>
@@ -174,8 +180,11 @@ _            → No operations`;
                 <pre className="bg-muted overflow-x-auto rounded-lg p-4 text-sm">
                   <code>{usageExample}</code>
                 </pre>
-                <div className="absolute top-2 right-2">
-                  <CopyButton text={usageExample} className="h-8 w-8 rounded-md bg-secondary" />
+                <div className="absolute right-2 top-2">
+                  <CopyButton
+                    text={usageExample}
+                    className="bg-secondary h-8 w-8 rounded-md"
+                  />
                 </div>
               </div>
             </TabsContent>
@@ -185,8 +194,11 @@ _            → No operations`;
                 <pre className="bg-muted overflow-x-auto rounded-lg p-4 text-sm">
                   <code>{directUrlExample}</code>
                 </pre>
-                <div className="absolute top-2 right-2">
-                  <CopyButton text={directUrlExample} className="h-8 w-8 rounded-md bg-secondary" />
+                <div className="absolute right-2 top-2">
+                  <CopyButton
+                    text={directUrlExample}
+                    className="bg-secondary h-8 w-8 rounded-md"
+                  />
                 </div>
               </div>
             </TabsContent>

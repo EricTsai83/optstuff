@@ -259,7 +259,8 @@ export function SettingsTab({ project, team }: SettingsTabProps) {
                 </AlertDialogHeader>
                 <div className="py-4">
                   <p className="text-sm font-medium">
-                    Type <strong className="select-all">{project.name}</strong> to confirm
+                    Type <strong className="select-all">{project.name}</strong>{" "}
+                    to confirm
                   </p>
                   <Input
                     id={`confirm-delete-${project.id}`}

@@ -99,17 +99,14 @@ type SectionHeaderProps = {
 function SectionHeader({ title, enabled, onToggle }: SectionHeaderProps) {
   return (
     <div className="mb-3 flex items-center justify-between">
-      <h4 className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+      <h4 className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
         {title}
       </h4>
       <div className="flex items-center gap-1.5">
         <span className="text-muted-foreground text-xs">
           {enabled ? "On" : "Off"}
         </span>
-        <Switch
-          checked={enabled}
-          onCheckedChange={onToggle}
-        />
+        <Switch checked={enabled} onCheckedChange={onToggle} />
       </div>
     </div>
   );

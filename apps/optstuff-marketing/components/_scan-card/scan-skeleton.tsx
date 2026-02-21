@@ -7,10 +7,10 @@
 export function ScanSkeleton() {
   return (
     <div className="absolute inset-0 overflow-hidden bg-black/10">
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
+      <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
         {/* Blur glow layer */}
         <div
-          className="absolute top-1/2 left-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full"
+          className="absolute left-1/2 top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full"
           style={{
             background: "rgba(255, 255, 255, 0.8)",
             filter: "blur(4px)",

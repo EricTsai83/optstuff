@@ -18,7 +18,7 @@ export const nextJsConfig = defineConfig(
     languageOptions: {
       ...reactFlatRecommended?.languageOptions,
       globals: {
-        ...reactFlatRecommended?.languageOptions?.globals,
+        .../** @type {any} */ (reactFlatRecommended?.languageOptions)?.globals,
         ...globals.browser,
         ...globals.serviceworker,
       },

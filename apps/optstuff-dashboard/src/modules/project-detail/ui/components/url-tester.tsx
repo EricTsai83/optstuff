@@ -8,6 +8,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@workspace/ui/components/card";
+import { CopyButton } from "@workspace/ui/components/copy-button";
 import { Input } from "@workspace/ui/components/input";
 import { Label } from "@workspace/ui/components/label";
 import { LoadingButton } from "@workspace/ui/components/loading-button";
@@ -21,7 +22,6 @@ import {
 import { Slider } from "@workspace/ui/components/slider";
 import { ExternalLink, ImageIcon } from "lucide-react";
 import { useState } from "react";
-import { CopyButton } from "@workspace/ui/components/copy-button";
 
 type UrlTesterProps = {
   readonly projectSlug: string;
@@ -64,7 +64,9 @@ export function UrlTester({ projectSlug, apiEndpoint }: UrlTesterProps) {
       if (response.ok) {
         setPreviewUrl(optimizedUrl);
       } else {
-        setError(`Failed to load image: ${response.status} ${response.statusText}`);
+        setError(
+          `Failed to load image: ${response.status} ${response.statusText}`,
+        );
         setPreviewUrl(null);
       }
     } catch (err) {
@@ -147,7 +149,10 @@ export function UrlTester({ projectSlug, apiEndpoint }: UrlTesterProps) {
             <Label>Generated URL</Label>
             <div className="bg-muted flex items-center gap-2 rounded-lg p-3">
               <code className="flex-1 truncate text-sm">{optimizedUrl}</code>
-              <CopyButton text={optimizedUrl} className="h-8 w-8 rounded-md bg-secondary" />
+              <CopyButton
+                text={optimizedUrl}
+                className="bg-secondary h-8 w-8 rounded-md"
+              />
               <Button
                 variant="secondary"
                 size="sm"
@@ -160,7 +165,11 @@ export function UrlTester({ projectSlug, apiEndpoint }: UrlTesterProps) {
         )}
 
         <div className="flex gap-2">
-          <LoadingButton onClick={handleTest} loading={isLoading} disabled={!imageUrl}>
+          <LoadingButton
+            onClick={handleTest}
+            loading={isLoading}
+            disabled={!imageUrl}
+          >
             Test Image
           </LoadingButton>
         </div>

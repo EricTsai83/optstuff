@@ -38,9 +38,7 @@ export default function RootLayout({
         >
           <AuthProvider afterSignOutUrl="/sign-in">
             <TRPCReactProvider>
-              <TooltipProvider>
-                {children}
-              </TooltipProvider>
+              <TooltipProvider>{children}</TooltipProvider>
             </TRPCReactProvider>
           </AuthProvider>
         </ThemeProvider>

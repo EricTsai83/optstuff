@@ -103,7 +103,7 @@ export function SlidingToggleGroup<TValue extends string>({
             }}
             className={cn(
               "text-foreground hover:text-foreground relative z-10 flex-1 cursor-pointer bg-transparent text-xs hover:bg-transparent data-[state=on]:bg-transparent sm:text-sm",
-              isFirst(index) && "rounded-l-md! border-r-0 border-l!",
+              isFirst(index) && "rounded-l-md! border-l! border-r-0",
               !isFirst(index) && !isLast(index) && "border-r-0",
               isLast(index) && "rounded-r-md",
             )}

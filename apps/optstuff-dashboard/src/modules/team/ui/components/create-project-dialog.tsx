@@ -186,7 +186,8 @@ export function CreateProjectDialog({
             </div>
             {isError && (
               <p className="text-destructive text-sm" role="alert">
-                {mutationError?.message ?? "Failed to create project. Please try again."}
+                {mutationError?.message ??
+                  "Failed to create project. Please try again."}
               </p>
             )}
             <DialogFooter>
@@ -236,19 +237,19 @@ export function CreateProjectDialog({
 
               {/* Secret Key Display */}
               <div className="space-y-2">
-                <Label className="text-muted-foreground flex items-center gap-1.5 text-xs tracking-wider uppercase">
+                <Label className="text-muted-foreground flex items-center gap-1.5 text-xs uppercase tracking-wider">
                   <Key className="h-3 w-3" />
                   Secret Key (for signing URLs)
                 </Label>
                 <div className="bg-muted/50 border-border group relative rounded-lg border p-3">
-                  <code className="block pr-16 font-mono text-sm break-all">
+                  <code className="block break-all pr-16 font-mono text-sm">
                     {showSecretKey
                       ? createdProject?.defaultSecretKey
                       : "•".repeat(
                           createdProject?.defaultSecretKey?.length ?? 0,
                         )}
                   </code>
-                  <div className="absolute top-2 right-2 flex items-center gap-1">
+                  <div className="absolute right-2 top-2 flex items-center gap-1">
                     <button
                       type="button"
                       onClick={() => setShowSecretKey((prev) => !prev)}
@@ -266,7 +267,7 @@ export function CreateProjectDialog({
                     </button>
                     <CopyButton
                       text={createdProject?.defaultSecretKey ?? ""}
-                      className="h-8 w-8 rounded-md bg-secondary shadow-sm"
+                      className="bg-secondary h-8 w-8 rounded-md shadow-sm"
                     />
                   </div>
                 </div>
@@ -278,17 +279,17 @@ export function CreateProjectDialog({
 
               {/* Public Key Display */}
               <div className="space-y-2">
-                <Label className="text-muted-foreground text-xs tracking-wider uppercase">
+                <Label className="text-muted-foreground text-xs uppercase tracking-wider">
                   Public Key (for URL parameter)
                 </Label>
                 <div className="bg-muted/50 border-border group relative rounded-lg border p-3">
                   <code className="block pr-10 font-mono text-sm">
                     {createdProject?.defaultApiKey}
                   </code>
-                  <div className="absolute top-2 right-2">
+                  <div className="absolute right-2 top-2">
                     <CopyButton
                       text={createdProject?.defaultApiKey ?? ""}
-                      className="h-8 w-8 rounded-md bg-secondary shadow-sm"
+                      className="bg-secondary h-8 w-8 rounded-md shadow-sm"
                     />
                   </div>
                 </div>

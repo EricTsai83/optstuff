@@ -1,6 +1,7 @@
 "use client";
 
 import { DOCS_LINKS } from "@/lib/constants";
+import { CopyButton } from "@workspace/ui/components/copy-button";
 import {
   Tabs,
   TabsContent,
@@ -9,7 +10,6 @@ import {
 } from "@workspace/ui/components/tabs";
 import { ExternalLink } from "lucide-react";
 import { useState } from "react";
-import { CopyButton } from "@workspace/ui/components/copy-button";
 
 type Tab = "curl" | "node" | "python";
 
@@ -65,10 +65,10 @@ response = requests.get(
             <pre className="overflow-x-auto pr-10 text-xs">
               <code>{codeExamples[tab.id]}</code>
             </pre>
-            <div className="absolute top-2 right-2">
+            <div className="absolute right-2 top-2">
               <CopyButton
                 text={codeExamples[tab.id]}
-                className="h-7 w-7 rounded-md bg-secondary opacity-0 shadow-sm transition-opacity group-hover:opacity-100"
+                className="bg-secondary h-7 w-7 rounded-md opacity-0 shadow-sm transition-opacity group-hover:opacity-100"
               />
             </div>
           </div>

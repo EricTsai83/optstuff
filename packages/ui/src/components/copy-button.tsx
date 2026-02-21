@@ -33,7 +33,7 @@ export function CopyButton({ text, className }: CopyButtonProps) {
         "hover:border-border hover:cursor-pointer hover:border",
         "active:scale-95",
         "text-accent-foreground",
-        "focus-visible:ring-ring focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none",
+        "focus-visible:ring-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2",
         className,
       )}
     >

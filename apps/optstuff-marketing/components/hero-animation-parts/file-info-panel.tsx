@@ -24,14 +24,14 @@ export function FileInfoPanel({
   isOptimized,
 }: FileInfoPanelProps) {
   return (
-    <div className="absolute right-4 bottom-2.5 flex flex-col items-end gap-1 font-mono text-xs">
+    <div className="absolute bottom-2.5 right-4 flex flex-col items-end gap-1 font-mono text-xs">
       <StatRow label="Format">{currentFormat}</StatRow>
       <StatRow label="Size">{currentSize.toLocaleString()}KB</StatRow>
       <HighlightValue
         isHighlighted={isOptimized}
         delay={OPTIMIZATION_HIGHLIGHT_DELAY_MS}
         className={cn(
-          "text-accent text-right text-[10px] font-semibold text-nowrap",
+          "text-accent text-nowrap text-right text-[10px] font-semibold",
         )}
       >
         Reduced by
@@ -58,7 +58,7 @@ type StatRowProps = {
 function StatRow({ label, children }: StatRowProps) {
   return (
     <div className="flex items-center gap-1.5">
-      <span className="text-accent w-18 text-right text-[10px] font-bold tracking-wide uppercase">
+      <span className="text-accent w-18 text-right text-[10px] font-bold uppercase tracking-wide">
         {label}:
       </span>
       <span

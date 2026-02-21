@@ -40,7 +40,7 @@ export function ThemeToggleButton() {
       type="button"
       aria-label={isDark ? "toggle to light mode" : "toggle to dark mode"}
       className={cn(
-        "border-border bg-secondary hover:border-accent hover:bg-accent/10 hover:text-accent focus-visible:ring-ring focus-visible:ring-offset-background relative flex h-8 w-8 cursor-pointer items-center justify-center overflow-hidden rounded-full border focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none",
+        "border-border bg-secondary hover:border-accent hover:bg-accent/10 hover:text-accent focus-visible:ring-ring focus-visible:ring-offset-background relative flex h-8 w-8 cursor-pointer items-center justify-center overflow-hidden rounded-full border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2",
         isDark
           ? "text-accent-foreground"
           : "text-muted-foreground dark:text-accent-foreground",

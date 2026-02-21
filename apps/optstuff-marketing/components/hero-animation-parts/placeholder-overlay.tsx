@@ -21,9 +21,9 @@ export function PlaceholderOverlay({ isVisible }: PlaceholderOverlayProps) {
       )}
     >
       {/* Gradient background layers */}
-      <div className="from-accent/12 to-accent/10 absolute inset-0 bg-linear-to-b via-transparent" />
+      <div className="from-accent/12 to-accent/10 bg-linear-to-b absolute inset-0 via-transparent" />
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_30%,rgba(16,185,129,0.18)_0%,transparent_68%)]" />
-      <div className="animate-pulse-soft absolute inset-0 bg-white/4 dark:bg-black/6" />
+      <div className="animate-pulse-soft bg-white/4 dark:bg-black/6 absolute inset-0" />
 
       {/* Soundwave ripple rings */}
       <SoundwaveRipples />
@@ -36,9 +36,9 @@ export function PlaceholderOverlay({ isVisible }: PlaceholderOverlayProps) {
  */
 function SoundwaveRipples() {
   return (
-    <div className="absolute top-1/2 left-1/2 h-[280px] w-[280px] -translate-x-1/2 -translate-y-1/2">
+    <div className="absolute left-1/2 top-1/2 h-[280px] w-[280px] -translate-x-1/2 -translate-y-1/2">
       {/* Core pulse dot */}
-      <div className="bg-accent/50 absolute top-1/2 left-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full shadow-[0_0_16px_rgba(16,185,129,0.7)]" />
+      <div className="bg-accent/50 absolute left-1/2 top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full shadow-[0_0_16px_rgba(16,185,129,0.7)]" />
 
       {/* Wave rings with staggered delays */}
       <RippleWave

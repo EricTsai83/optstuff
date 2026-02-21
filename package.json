@@ -6,7 +6,8 @@
     "build": "turbo build",
     "dev": "turbo dev",
     "lint": "turbo lint",
-    "format": "prettier --plugin=prettier-plugin-organize-imports --plugin=prettier-plugin-tailwindcss --write \"**/*.{ts,tsx,md}\""
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
   },
   "devDependencies": {
     "@workspace/eslint-config": "workspace:*",
@@ -15,7 +16,7 @@
     "prettier-plugin-organize-imports": "^4.3.0",
     "prettier-plugin-tailwindcss": "^0.6.14",
     "turbo": "^2.6.3",
-    "typescript": "5.7.3"
+    "typescript": "^5.9.3"
   },
   "packageManager": "pnpm@10.28.0+sha512.05df71d1421f21399e053fde567cea34d446fa02c76571441bfc1c7956e98e363088982d940465fd34480d4d90a0668bc12362f8aa88000a64e83d0b0e47be48",
   "engines": {

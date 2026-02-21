@@ -74,7 +74,7 @@ export function ApiDemoSection() {
         {/* Copy Button */}
         <button
           onClick={handleCopy}
-          className="absolute top-2 right-2 flex items-center gap-1.5 rounded-lg bg-white/10 px-3 py-2 text-xs font-medium text-white/80 backdrop-blur-sm transition-all hover:bg-white/20 hover:text-white sm:top-4 sm:right-4 sm:px-3 sm:py-1.5 sm:text-xs"
+          className="absolute right-2 top-2 flex items-center gap-1.5 rounded-lg bg-white/10 px-3 py-2 text-xs font-medium text-white/80 backdrop-blur-sm transition-all hover:bg-white/20 hover:text-white sm:right-4 sm:top-4 sm:px-3 sm:py-1.5 sm:text-xs"
         >
           {copied ? (
             <>

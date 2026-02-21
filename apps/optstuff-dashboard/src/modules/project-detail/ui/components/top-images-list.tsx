@@ -37,10 +37,7 @@ export function TopImagesList({ images, isLoading }: TopImagesListProps) {
         <CardContent>
           <div className="space-y-3">
             {[1, 2, 3].map((i) => (
-              <div
-                key={i}
-                className="bg-muted h-12 animate-pulse rounded-lg"
-              />
+              <div key={i} className="bg-muted h-12 animate-pulse rounded-lg" />
             ))}
           </div>
         </CardContent>

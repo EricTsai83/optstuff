@@ -31,7 +31,7 @@ export function ComparisonMagnifier({
 
   return (
     <div
-      className="pointer-events-none absolute right-0 bottom-0 left-0 z-30 col-span-2 translate-y-full overflow-hidden rounded-2xl border border-gray-200 bg-gray-50 shadow-xl transition-all duration-300 ease-out dark:border-white/10 dark:bg-gray-900"
+      className="pointer-events-none absolute bottom-0 left-0 right-0 z-30 col-span-2 translate-y-full overflow-hidden rounded-2xl border border-gray-200 bg-gray-50 shadow-xl transition-all duration-300 ease-out dark:border-white/10 dark:bg-gray-900"
       style={{
         height: isVisible ? `${height}px` : "0px",
         marginTop: "12px",
@@ -50,7 +50,7 @@ export function ComparisonMagnifier({
               backgroundRepeat: "no-repeat",
             }}
           />
-          <div className="absolute inset-x-0 bottom-0 bg-linear-to-t from-black/60 to-transparent px-3 pt-6 pb-2">
+          <div className="bg-linear-to-t absolute inset-x-0 bottom-0 from-black/60 to-transparent px-3 pb-2 pt-6">
             <Badge
               variant="secondary"
               className="border-white/20 bg-white/10 text-[10px] text-white/90 backdrop-blur-sm"
@@ -61,7 +61,7 @@ export function ComparisonMagnifier({
         </div>
 
         {/* Center divider */}
-        <div className="absolute top-0 bottom-0 left-1/2 z-10 flex -translate-x-1/2 flex-col items-center">
+        <div className="absolute bottom-0 left-1/2 top-0 z-10 flex -translate-x-1/2 flex-col items-center">
           <div className="h-full w-px bg-white shadow-sm" />
           <div className="absolute top-1/2 -translate-y-1/2 rounded-full border-2 border-white bg-gray-900 px-2 py-0.5 text-[10px] font-bold text-white shadow-lg">
             VS
@@ -79,7 +79,7 @@ export function ComparisonMagnifier({
               backgroundRepeat: "no-repeat",
             }}
           />
-          <div className="absolute inset-x-0 bottom-0 flex justify-end bg-linear-to-t from-black/50 to-transparent px-3 pt-6 pb-2">
+          <div className="bg-linear-to-t absolute inset-x-0 bottom-0 flex justify-end from-black/50 to-transparent px-3 pb-2 pt-6">
             <Badge
               variant="secondary"
               className="border-white/20 bg-white/10 text-[10px] text-white/90 backdrop-blur-sm"
@@ -91,7 +91,7 @@ export function ComparisonMagnifier({
       </div>
 
       {/* Zoom indicator */}
-      <div className="absolute top-2 right-2 rounded-md bg-black/50 px-1.5 py-0.5 text-[10px] font-medium text-white/80 backdrop-blur-sm">
+      <div className="absolute right-2 top-2 rounded-md bg-black/50 px-1.5 py-0.5 text-[10px] font-medium text-white/80 backdrop-blur-sm">
         {validZoom}x
       </div>
     </div>
