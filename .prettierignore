@@ -1,0 +1,15 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+.next/
+.turbo/
+out/
+
+# Package manager
+pnpm-lock.yaml
+
+# Markdown / MDX
+*.md
+*.mdx
