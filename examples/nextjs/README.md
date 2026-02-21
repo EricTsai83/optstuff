@@ -74,6 +74,8 @@ src/
 │   ├── layout.tsx              # Root layout component
 │   ├── page.tsx                # Interactive demo page
 │   └── globals.css             # Global styles (Tailwind CSS)
+├── components/
+│   └── optstuff-image.tsx      # Drop-in <OptStuffImage> component (Server Component)
 └── lib/
     └── optstuff.ts             # OptStuff URL signing utilities
 ```
@@ -122,7 +124,59 @@ signature = HMAC-SHA256(secret_key, sign_content).hex()
 
 ## Integration Guide
 
-### Option 1: Using the utility function (recommended)
+### Option 1: Using the `<OptStuffImage>` component (recommended)
+
+The `src/components/optstuff-image.tsx` file provides a drop-in `next/image` wrapper. It is a **Server Component** — the signed URL is generated on the server so the secret key is never exposed to the client.
+
+```tsx
+import { OptStuffImage } from "@/components/optstuff-image";
+
+// Basic — same API as next/image, just swap the import
+<OptStuffImage
+  src="https://images.unsplash.com/photo-1506744038136-46273834b3fb"
+  width={800}
+  height={600}
+  alt="Landscape"
+/>
+
+// With OptStuff-specific options
+<OptStuffImage
+  src="https://images.unsplash.com/photo-1506744038136-46273834b3fb"
+  width={400}
+  height={300}
+  alt="Retina landscape"
+  optimizeWidth={800}   // fetch 800px wide for 2x retina
+  format="avif"
+  quality={90}
+  fit="contain"
+  expiresIn={7200}      // URL valid for 2 hours
+/>
+
+// Fill mode (responsive container)
+<div style={{ position: "relative", width: "100%", height: 400 }}>
+  <OptStuffImage
+    src="https://images.unsplash.com/photo-1506744038136-46273834b3fb"
+    fill
+    alt="Full-width hero"
+    optimizeWidth={1920}
+    style={{ objectFit: "cover" }}
+  />
+</div>
+```
+
+**Props** (in addition to all standard `next/image` props):
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `src` | `string` | — | Full URL of the original image |
+| `optimizeWidth` | `number` | `width` prop | Override the optimization width (e.g. 2x for retina) |
+| `optimizeHeight` | `number` | `height` prop | Override the optimization height |
+| `format` | `"webp" \| "avif" \| "png" \| "jpg"` | `"webp"` | Output format |
+| `fit` | `"cover" \| "contain" \| "fill"` | `"cover"` | Crop / fit mode |
+| `quality` | `number` | `80` | Compression quality (1–100) |
+| `expiresIn` | `number` | `3600` | Signed URL time-to-live in seconds |
+
+### Option 2: Using the utility function
 
 The `src/lib/optstuff.ts` file provides a `generateOptStuffUrl()` function that encapsulates the full signing logic:
 
@@ -151,7 +205,7 @@ const optimizedUrl = generateOptStuffUrl(
 
 > **Note:** This function uses the Node.js `crypto` module and can only run on the server side (Server Components, API Routes, `getServerSideProps`, etc.).
 
-### Option 2: Via API Route
+### Option 3: Via API Route
 
 If you need to obtain a signed URL from a Client Component, call the `/api/optimize` endpoint:
 
@@ -189,7 +243,7 @@ const { url } = await response.json();
 { "url": "https://your-optstuff-instance.com/api/v1/my-project/w_800,q_80,f_webp,fit_cover/images.unsplash.com/photo-xxx?key=pk_xxx&exp=1700000000&sig=abc123" }
 ```
 
-### Option 3: With a next/image custom loader
+### Option 4: With a next/image custom loader
 
 You can create a custom loader so that the `next/image` component automatically optimizes images through OptStuff:
 

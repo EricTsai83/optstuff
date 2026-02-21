@@ -13,7 +13,7 @@ import {
   getProjectConfig,
   getProjectConfigById,
 } from "@/server/lib/config-cache";
-import { getProjectIPX } from "@/server/lib/ipx-factory";
+import { createProjectIPX } from "@/server/lib/ipx-factory";
 import { checkRateLimit } from "@/server/lib/rate-limiter";
 import { logRequest } from "@/server/lib/request-logger";
 import { updateApiKeyLastUsed } from "@/server/lib/usage-tracker";
@@ -235,7 +235,7 @@ export async function GET(
     }
 
     // 9. Process image with IPX
-    const ipx = getProjectIPX(apiKey.allowedSourceDomains);
+    const ipx = createProjectIPX();
     const operations = parseOperationsString(parsed.operations);
     const processedImage = await ipx(imageUrl, operations).process();
 
@@ -272,7 +272,7 @@ export async function GET(
       }).catch(() => {
         // Ignore logging errors
       });
-    })().catch(() => {});
+    })().catch(() => undefined);
 
     // 12. Return optimized image
     return new Response(imageData as Uint8Array<ArrayBuffer>, {
@@ -294,15 +294,28 @@ export async function GET(
         logRequest(project.id, {
           sourceUrl: path.join("/"),
           status: "error",
-        }).catch(() => {});
+        }).catch(() => undefined);
       }
     } catch {
       // Ignore
     }
 
+    const statusCode =
+      error instanceof Error && "statusCode" in error
+        ? (error as { statusCode: number }).statusCode
+        : 500;
+    const statusText =
+      error instanceof Error && "statusText" in error
+        ? (error as { statusText: string }).statusText
+        : undefined;
+
     return NextResponse.json(
-      { error: "Image processing failed" },
-      { status: 500 },
+      {
+        error: "Image processing failed",
+        ...(statusText && { code: statusText }),
+        details: error instanceof Error ? error.message : String(error),
+      },
+      { status: statusCode },
     );
   }
 }

@@ -50,23 +50,27 @@ export function generateOptStuffUrl(
     .replace(/^https?:\/\//, "")
     .replace(/\/$/, "");
 
-  const path = `/api/v1/${OPTSTUFF_PROJECT_SLUG}/${opString}/${normalizedImageUrl}`;
+  const signingPath = `${opString}/${normalizedImageUrl}`;
+  const urlPath = `/api/v1/${OPTSTUFF_PROJECT_SLUG}/${signingPath}`;
 
   const params = new URLSearchParams();
   params.set("key", OPTSTUFF_PUBLIC_KEY);
 
+  let exp: number | undefined;
   if (expiresInSeconds) {
-    const exp = Math.floor(Date.now() / 1000) + expiresInSeconds;
+    exp = Math.floor(Date.now() / 1000) + expiresInSeconds;
     params.set("exp", exp.toString());
   }
 
-  const signPayload = `${path}?${params.toString()}`;
+  const signPayload = exp ? `${signingPath}?exp=${exp}` : signingPath;
   const sig = crypto
     .createHmac("sha256", OPTSTUFF_SECRET_KEY)
     .update(signPayload)
-    .digest("hex");
+    .digest()
+    .toString("base64url")
+    .substring(0, 32);
 
   params.set("sig", sig);
 
-  return `${OPTSTUFF_BASE_URL}${path}?${params.toString()}`;
+  return `${OPTSTUFF_BASE_URL}${urlPath}?${params.toString()}`;
 }

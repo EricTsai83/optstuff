@@ -10,6 +10,11 @@
 
 const isDevelopment = process.env.NODE_ENV === "development";
 
+/** Strip an optional "http://" or "https://" prefix, returning the bare host. */
+function stripProtocol(domain: string) {
+  return domain.replace(/^https?:\/\//, "");
+}
+
 /**
  * Validate if the referer is in the allowed origins list.
  *
@@ -37,7 +42,7 @@ export function validateReferer(
     const refererHost = refererUrl.hostname;
 
     return allowedDomains.some((entry) => {
-      const protoMatch = entry.match(/^(https?):\/\//);
+      const protoMatch = /^(https?):\/\//.exec(entry);
 
       if (protoMatch) {
         const allowedProtocol = `${protoMatch[1]}:`;
@@ -83,10 +88,11 @@ export function validateSourceDomain(
     return isDevelopment;
   }
 
-  // Allowlist-only: domain must match exactly or be a subdomain of an allowed domain
-  return allowedDomains.some(
-    (domain) => sourceHost === domain || sourceHost.endsWith(`.${domain}`),
-  );
+  // Strip protocol prefix so entries like "https://example.com" match hostname "example.com"
+  return allowedDomains.some((raw) => {
+    const domain = stripProtocol(raw);
+    return sourceHost === domain || sourceHost.endsWith(`.${domain}`);
+  });
 }
 
 /**
