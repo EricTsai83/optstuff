@@ -13,15 +13,15 @@ This page lists all error codes returned by the OptStuff API and provides troubl
 | 400 | Invalid image URL | Unable to parse image URL from path | Verify the image URL is valid and does not include the protocol (`https://`) |
 | 401 | Missing signature parameters | `key` or `sig` query parameter not provided | Include both `?key={publicKey}&sig={signature}` in the URL |
 | 401 | Invalid API key | API key not found in database | Verify the public key (`pk_...`) is correct |
-| 401 | API key has been revoked | Key was explicitly revoked | Create a new API key from the [dashboard](/docs/getting-started/dashboard-setup) |
-| 401 | API key has expired | Key is past its `expiresAt` date | Create a new key or [rotate](/docs/guides/key-management#rotation) the existing one |
+| 401 | API key has been revoked | Key was explicitly revoked | Create a new API key from the [dashboard](/getting-started/dashboard-setup) |
+| 401 | API key has expired | Key is past its `expiresAt` date | Create a new key or [rotate](/guides/key-management#rotation) the existing one |
 | 401 | API key does not belong to this project | Public key is valid but bound to a different project | Use the correct key for the project, or check `projectSlug` in the URL |
 | 403 | Invalid or expired signature | HMAC-SHA256 verification failed, or `exp` has passed | See [Troubleshooting Signature Errors](#troubleshooting-signature-errors) below |
-| 403 | Forbidden: Invalid referer | Referer header doesn't match project's allowed domains | Add your domain in project settings (see [Domain Whitelisting](/docs/guides/domain-whitelisting)) |
-| 403 | Forbidden: Source domain not allowed | Image source domain not in key's allowed list | Add the domain in key settings (see [Domain Whitelisting](/docs/guides/domain-whitelisting)) |
+| 403 | Forbidden: Invalid referer | Referer header doesn't match project's allowed domains | Add your domain in project settings (see [Domain Whitelisting](/guides/domain-whitelisting)) |
+| 403 | Forbidden: Source domain not allowed | Image source domain not in key's allowed list | Add the domain in key settings (see [Domain Whitelisting](/guides/domain-whitelisting)) |
 | 404 | Project not found | `projectSlug` doesn't match any project | Check the project slug is correct |
-| 429 | Rate limit exceeded | Per-minute or per-day limit reached | Wait for `Retry-After` seconds, or [increase limits](/docs/guides/rate-limiting) |
-| 500 | Image processing failed | Internal error during optimization | Check that the source image is accessible and in a [supported format](/docs/api-reference/image-operations#supported-formats) |
+| 429 | Rate limit exceeded | Per-minute or per-day limit reached | Wait for `Retry-After` seconds, or [increase limits](/guides/rate-limiting) |
+| 500 | Image processing failed | Internal error during optimization | Check that the source image is accessible and in a [supported format](/api-reference/image-operations#supported-formats) |
 
 ## Troubleshooting Signature Errors
 
@@ -122,7 +122,7 @@ X-RateLimit-Remaining: 0
 
 ## Related Documentation
 
-- [API Endpoint](/docs/api-reference/endpoint) — Endpoint format and authentication flow
-- [URL Signing](/docs/guides/url-signing) — Signature formula and code examples
-- [Domain Whitelisting](/docs/guides/domain-whitelisting) — Configuring allowed domains
-- [Rate Limiting](/docs/guides/rate-limiting) — Rate limit configuration and tuning
+- [API Endpoint](/api-reference/endpoint) — Endpoint format and authentication flow
+- [URL Signing](/guides/url-signing) — Signature formula and code examples
+- [Domain Whitelisting](/guides/domain-whitelisting) — Configuring allowed domains
+- [Rate Limiting](/guides/rate-limiting) — Rate limit configuration and tuning

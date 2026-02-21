@@ -1,0 +1,196 @@
+---
+title: TypeScript / Node.js
+description: Step-by-step guide to integrating OptStuff image optimization into any TypeScript or Node.js application, including a signing utility, Express example, and Fastify example.
+---
+
+This guide shows how to integrate OptStuff into a TypeScript or Node.js application. The same signing principles apply to any server-side runtime.
+
+For the security principles that apply to all integrations, see the [Integration Guide overview](/getting-started/integration-guide).
+
+## Environment Variables
+
+Add to your `.env` file:
+
+```bash
+OPTSTUFF_SECRET_KEY="sk_your_secret_key_here"
+OPTSTUFF_PUBLIC_KEY="pk_abc123..."
+OPTSTUFF_PROJECT_SLUG="your-project-slug"
+OPTSTUFF_ENDPOINT="https://your-optstuff-deployment.com/api/v1"
+```
+
+## Create a Signing Utility
+
+Create `src/optstuff.ts`:
+
+```typescript
+import { createHmac } from "crypto";
+
+const SECRET_KEY = process.env.OPTSTUFF_SECRET_KEY!;
+const PUBLIC_KEY = process.env.OPTSTUFF_PUBLIC_KEY!;
+const ENDPOINT = process.env.OPTSTUFF_ENDPOINT!;
+const PROJECT_SLUG = process.env.OPTSTUFF_PROJECT_SLUG!;
+
+/**
+ * Generates a signed image optimization URL.
+ *
+ * @param imagePath - Source image path (e.g., "images.example.com/photo.jpg")
+ * @param operations - Image operations (e.g., "w_800,f_webp")
+ * @param expiresIn - Signature validity in seconds (optional)
+ *
+ * @example
+ * signImageUrl("cdn.example.com/photo.jpg", "w_800,f_webp")
+ *
+ * @example
+ * signImageUrl("cdn.example.com/photo.jpg", "w_800", 3600) // expires in 1 hour
+ */
+export function signImageUrl(
+  imagePath: string,
+  operations: string = "_",
+  expiresIn?: number
+): string {
+  const path = `${operations}/${imagePath}`;
+
+  const exp = expiresIn
+    ? Math.floor(Date.now() / 1000) + expiresIn
+    : undefined;
+
+  const payload = exp ? `${path}?exp=${exp}` : path;
+  const sig = createHmac("sha256", SECRET_KEY)
+    .update(payload)
+    .digest("base64url")
+    .substring(0, 32);
+
+  let url = `${ENDPOINT}/${PROJECT_SLUG}/${path}?key=${PUBLIC_KEY}&sig=${sig}`;
+  if (exp) url += `&exp=${exp}`;
+
+  return url;
+}
+```
+
+## Usage Examples
+
+### Standalone Script
+
+```typescript
+import { signImageUrl } from "./optstuff";
+
+const url = signImageUrl(
+  "images.unsplash.com/photo-1506744038136-46273834b3fb",
+  "w_800,f_webp",
+  3600
+);
+
+console.log(url);
+// → https://your-optstuff-deployment.com/api/v1/your-project/w_800,f_webp/images.unsplash.com/photo-1506744038136-46273834b3fb?key=pk_...&sig=...&exp=...
+```
+
+### Express
+
+```typescript
+import express from "express";
+import { signImageUrl } from "./optstuff";
+
+const app = express();
+
+app.get("/image", (req, res) => {
+  const { src, w, h, f } = req.query;
+  if (!src || typeof src !== "string") {
+    return res.status(400).json({ error: "Missing src" });
+  }
+
+  const ops =
+    [
+      w && `w_${w}`,
+      h && `h_${h}`,
+      `f_${(f as string) || "webp"}`,
+    ]
+      .filter(Boolean)
+      .join(",") || "_";
+
+  const url = signImageUrl(src, ops, 3600);
+  res.json({ url });
+});
+
+app.listen(3000, () => {
+  console.log("Server running on http://localhost:3000");
+});
+```
+
+### Fastify
+
+```typescript
+import Fastify from "fastify";
+import { signImageUrl } from "./optstuff";
+
+const app = Fastify();
+
+app.get("/image", async (request, reply) => {
+  const { src, w, h, f } = request.query as Record<string, string>;
+  if (!src) {
+    return reply.status(400).send({ error: "Missing src" });
+  }
+
+  const ops =
+    [w && `w_${w}`, h && `h_${h}`, `f_${f || "webp"}`]
+      .filter(Boolean)
+      .join(",") || "_";
+
+  const url = signImageUrl(src, ops, 3600);
+  return { url };
+});
+
+app.listen({ port: 3000 });
+```
+
+### HTML Template (Server-Side Rendering)
+
+If you use a template engine like EJS, Handlebars, or Pug, generate signed URLs in your route handler and pass them to the template:
+
+```typescript
+import express from "express";
+import { signImageUrl } from "./optstuff";
+
+const app = express();
+app.set("view engine", "ejs");
+
+app.get("/", (req, res) => {
+  const heroImage = signImageUrl("cdn.example.com/hero.jpg", "w_1200,f_webp", 86400);
+  const thumbnail = signImageUrl("cdn.example.com/thumb.jpg", "w_300,q_80,f_webp", 86400);
+
+  res.render("index", { heroImage, thumbnail });
+});
+```
+
+```html
+<!-- views/index.ejs -->
+<img src="<%= heroImage %>" alt="Hero" width="1200" />
+<img src="<%= thumbnail %>" alt="Thumbnail" width="300" />
+```
+
+## Pre-Launch Checklist
+
+Before going to production, verify:
+
+- [ ] `secretKey` (`sk_...`) is in an environment variable, not hardcoded
+- [ ] `.env` file is in `.gitignore`
+- [ ] Signing logic runs only on the server — never in client-side code
+- [ ] No frontend-bundled code references the `secretKey`
+- [ ] Appropriate `exp` expiration is set for signed URLs
+- [ ] Domain whitelists are configured in the dashboard
+
+## Troubleshooting
+
+| Error | Likely Cause | Solution |
+|-------|-------------|----------|
+| `403` Invalid signature | Wrong key, wrong path order, or wrong encoding | See [Troubleshooting Signature Errors](/api-reference/error-codes#troubleshooting-signature-errors) |
+| `403` Source domain not allowed | Image origin not in key's allowed domains | Add the domain in Dashboard → API Key settings |
+| `403` Invalid referer | Your website not in project's allowed domains | Add the domain in Dashboard → Project settings |
+
+For the complete error reference, see [Error Codes](/api-reference/error-codes).
+
+## Further Reading
+
+- [Next.js Integration](/getting-started/integration-guide/nextjs) — Next.js-specific integration with Server Components and `next/image`
+- [Code Examples](/guides/code-examples) — URL signing in Python, Go, Ruby, and PHP
+- [URL Signing](/guides/url-signing) — Signature formula and security properties
+- [CDN and Caching](/guides/cdn-caching) — CDN integration and caching strategies

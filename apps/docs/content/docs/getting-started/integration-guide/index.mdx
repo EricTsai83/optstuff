@@ -1,0 +1,54 @@
+---
+title: Integration Guide
+description: Choose a framework-specific guide to integrate OptStuff image optimization into your application.
+---
+
+OptStuff can be integrated into any server-side application that supports HMAC-SHA256 signing. Choose the guide that matches your stack:
+
+<Cards>
+  <Card title="TypeScript / Node.js" href="/getting-started/integration-guide/typescript">
+    Integrate OptStuff into any TypeScript or Node.js application — Express, Fastify, standalone scripts, and more.
+  </Card>
+  <Card title="Next.js" href="/getting-started/integration-guide/nextjs">
+    Integrate OptStuff into a Next.js application with Server Components, API Routes, and the next/image loader.
+  </Card>
+</Cards>
+
+## Security Principles
+
+```
+⚠️ Important
+
+1. The secretKey must remain confidential
+   - Store it in server-side environment variables only
+   - Never expose it in frontend JavaScript
+   - Never commit it to Git
+
+2. URL signing must happen server-side
+   - Server-side code ✅
+   - API Route ✅
+   - Frontend JavaScript ❌
+```
+
+## Operations Quick Reference
+
+| Operation | Description | Example |
+|-----------|-------------|---------|
+| `w_{n}` | Width | `w_800` → 800px wide |
+| `h_{n}` | Height | `h_600` → 600px tall |
+| `s_{w}x{h}` | Size | `s_800x600` → 800×600 |
+| `q_{n}` | Quality (1-100) | `q_80` → 80% quality |
+| `f_{format}` | Format | `f_webp`, `f_avif`, `f_png`, `f_jpg` |
+| `fit_{mode}` | Fit mode | `fit_cover`, `fit_contain`, `fit_fill` |
+| `embed` | Embed mode | `embed` |
+| `_` | No operations | Forwards the original image |
+
+For the full operations reference (including fit modes and combination examples), see [Image Operations](/api-reference/image-operations).
+
+## Further Reading
+
+- [URL Signing](/guides/url-signing) — Signature formula and security properties
+- [Domain Whitelisting](/guides/domain-whitelisting) — Configure allowed domains
+- [CDN and Caching](/guides/cdn-caching) — CDN integration and caching strategies
+- [Security Best Practices](/guides/security-best-practices) — Recommendations for production
+- [Code Examples](/guides/code-examples) — URL signing in Python, Go, Ruby, and PHP

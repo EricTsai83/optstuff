@@ -46,7 +46,7 @@ In short: **additive changes are allowed; breaking changes require a new version
 
 When a new API version is released:
 
-1. **Announcement** — The new version is announced in the [Changelog](/docs/changelog) with a migration guide
+1. **Announcement** — The new version is announced in the [Changelog](/changelog) with a migration guide
 2. **Overlap period** — Both the old and new versions run simultaneously for at least **6 months**
 3. **Deprecation warning** — The old version adds a `Deprecation` response header with the sunset date
 4. **Sunset** — After the overlap period, the old version returns `410 Gone` with a message pointing to the new version
@@ -75,6 +75,6 @@ Since signed URLs include the version in the path, old and new URLs can coexist 
 
 ## Related Documentation
 
-- [Changelog](/docs/changelog) — Release notes and version announcements
-- [API Endpoint](/docs/api-reference/endpoint) — Current endpoint format
-- [URL Signing](/docs/guides/url-signing) — Signature formula for the current version
+- [Changelog](/changelog) — Release notes and version announcements
+- [API Endpoint](/api-reference/endpoint) — Current endpoint format
+- [URL Signing](/guides/url-signing) — Signature formula for the current version

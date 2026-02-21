@@ -3,7 +3,7 @@ title: API Endpoint
 description: Complete API endpoint reference — URL format, path and query parameters, authentication flow, and request/response details.
 ---
 
-This page is the complete reference for the OptStuff image optimization API endpoint. For a step-by-step integration tutorial, see the [Integration Guide](/docs/getting-started/integration-guide).
+This page is the complete reference for the OptStuff image optimization API endpoint. For a step-by-step integration tutorial, see the [Integration Guide](/getting-started/integration-guide).
 
 ## Endpoint Format
 
@@ -24,7 +24,7 @@ GET /api/v1/{projectSlug}/{operations}/{imageUrl}?key={publicKey}&sig={signature
 | Parameter | Required | Description |
 |-----------|----------|-------------|
 | `key` | Yes | Public key (e.g., `pk_abc123`) |
-| `sig` | Yes | HMAC-SHA256 signature (see [URL Signing](/docs/guides/url-signing)) |
+| `sig` | Yes | HMAC-SHA256 signature (see [URL Signing](/guides/url-signing)) |
 | `exp` | No | Expiration timestamp (Unix seconds) |
 
 ## Example Request
@@ -65,7 +65,7 @@ Image optimization URLs are **content-addressable**: the URL encodes all paramet
 | 429 | Rate limit exceeded |
 | 500 | Image processing failed |
 
-For the full error reference, see [Error Codes](/docs/api-reference/error-codes).
+For the full error reference, see [Error Codes](/api-reference/error-codes).
 
 ## Authentication Flow
 
@@ -87,7 +87,7 @@ When a request arrives, the server validates it in this order:
 
 ## Related Documentation
 
-- [Image Operations](/docs/api-reference/image-operations) — Full list of supported transformations
-- [Error Codes](/docs/api-reference/error-codes) — Complete error reference with troubleshooting
-- [URL Signing](/docs/guides/url-signing) — How to generate signatures
-- [Integration Guide](/docs/getting-started/integration-guide) — Step-by-step integration
+- [Image Operations](/api-reference/image-operations) — Full list of supported transformations
+- [Error Codes](/api-reference/error-codes) — Complete error reference with troubleshooting
+- [URL Signing](/guides/url-signing) — How to generate signatures
+- [Integration Guide](/getting-started/integration-guide) — Step-by-step integration

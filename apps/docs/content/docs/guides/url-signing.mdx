@@ -5,7 +5,7 @@ description: How to generate HMAC-SHA256 signed URLs for OptStuff image requests
 
 Every OptStuff image request requires a cryptographic signature to prove the URL was authorized. This guide covers how signing works and how to implement it.
 
-For a higher-level overview, see [Core Concepts](/docs/introduction/core-concepts). For a complete integration walkthrough, see the [Integration Guide](/docs/getting-started/integration-guide).
+For a higher-level overview, see [Core Concepts](/introduction/core-concepts). For a complete integration walkthrough, see the [Integration Guide](/getting-started/integration-guide).
 
 ## How It Works
 
@@ -100,10 +100,10 @@ When `exp` is set, it **must** be included in both the signed payload and the UR
 
 ## Common Mistakes
 
-If you get `403 Invalid or expired signature`, see [Troubleshooting Signature Errors](/docs/api-reference/error-codes#troubleshooting-signature-errors) in Error Codes.
+If you get `403 Invalid or expired signature`, see [Troubleshooting Signature Errors](/api-reference/error-codes#troubleshooting-signature-errors) in Error Codes.
 
 ## Related Documentation
 
-- [Integration Guide](/docs/getting-started/integration-guide) — Full integration walkthrough with signing utility
-- [API Endpoint](/docs/api-reference/endpoint) — URL format and parameter reference
-- [Error Codes](/docs/api-reference/error-codes) — Troubleshooting failed requests
+- [Integration Guide](/getting-started/integration-guide) — Full integration walkthrough ([TypeScript](/getting-started/integration-guide/typescript) · [Next.js](/getting-started/integration-guide/nextjs))
+- [API Endpoint](/api-reference/endpoint) — URL format and parameter reference
+- [Error Codes](/api-reference/error-codes) — Troubleshooting failed requests

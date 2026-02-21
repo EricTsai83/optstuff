@@ -1,29 +1,15 @@
 ---
-title: Integration Guide
-description: Step-by-step guide to integrating OptStuff image optimization into your Next.js application, including a signing utility, Server Component, and API Route examples.
+title: Next.js
+description: Step-by-step guide to integrating OptStuff image optimization into a Next.js application, including a signing utility, Server Component, API Route, and next/image loader examples.
 ---
 
-This guide shows how to integrate OptStuff into a Next.js application. The same signing principles apply to any server-side framework.
+This guide shows how to integrate OptStuff into a Next.js application using the App Router.
 
-## Security Principles
-
-```
-⚠️ Important
-
-1. The secretKey must remain confidential
-   - Store it in server-side environment variables only
-   - Never expose it in frontend JavaScript
-   - Never commit it to Git
-
-2. URL signing must happen server-side
-   - Server Component ✅
-   - API Route ✅
-   - Frontend JavaScript ❌
-```
+For the security principles that apply to all integrations, see the [Integration Guide overview](/getting-started/integration-guide).
 
 ## Environment Variables
 
-Add to your `.env` or `.env.local`:
+Add to your `.env.local`:
 
 ```bash
 # Server-side only — secret! Never use the NEXT_PUBLIC_ prefix
@@ -92,6 +78,8 @@ export function signImageUrl(
 
 ### Option 1: Server Component (Recommended)
 
+The simplest approach — signing happens during server-side rendering:
+
 ```tsx
 import { signImageUrl } from "@/lib/optstuff";
 
@@ -112,7 +100,7 @@ export default function HomePage() {
 
 ### Option 2: API Route + Client Component
 
-Create an API route:
+For client components that need to load images dynamically, create an API route to handle signing:
 
 ```typescript
 // app/api/image-url/route.ts
@@ -182,22 +170,49 @@ export function OptimizedImage({ src, width, alt }: OptimizedImageProps) {
 
 ### Option 3: `next/image` Loader
 
-You can use OptStuff as a custom loader for `next/image`. See the [CDN and Caching guide](/docs/guides/cdn-caching#using-with-nextimage) for a ready-to-use `optstuffLoader` implementation.
+You can use OptStuff as a custom loader for `next/image`, which lets Next.js handle responsive `srcSet` generation automatically.
 
-## Operations Reference
+Create `lib/optstuff-loader.ts`:
 
-| Operation | Description | Example |
-|-----------|-------------|---------|
-| `w_{n}` | Width | `w_800` → 800px wide |
-| `h_{n}` | Height | `h_600` → 600px tall |
-| `s_{w}x{h}` | Size | `s_800x600` → 800×600 |
-| `q_{n}` | Quality (1-100) | `q_80` → 80% quality |
-| `f_{format}` | Format | `f_webp`, `f_avif`, `f_png`, `f_jpg` |
-| `fit_{mode}` | Fit mode | `fit_cover`, `fit_contain`, `fit_fill` |
-| `embed` | Embed mode | `embed` |
-| `_` | No operations | Forwards the original image |
+```typescript
+import { signImageUrl } from "@/lib/optstuff";
 
-For the full operations reference (including fit modes and combination examples), see [Image Operations](/docs/api-reference/image-operations).
+export function optstuffLoader({
+  src,
+  width,
+  quality,
+}: {
+  readonly src: string;
+  readonly width: number;
+  readonly quality?: number;
+}) {
+  const ops = [`w_${width}`, "f_webp", quality ? `q_${quality}` : null]
+    .filter(Boolean)
+    .join(",");
+  return signImageUrl(src, ops, 86400);
+}
+```
+
+Use it with the `next/image` component:
+
+```tsx
+import Image from "next/image";
+import { optstuffLoader } from "@/lib/optstuff-loader";
+
+export function Hero() {
+  return (
+    <Image
+      loader={optstuffLoader}
+      src="cdn.example.com/hero.jpg"
+      alt="Hero"
+      width={1200}
+      height={630}
+    />
+  );
+}
+```
+
+For more details on CDN caching with `next/image`, see the [CDN and Caching guide](/guides/cdn-caching#using-with-nextimage).
 
 ## Pre-Launch Checklist
 
@@ -205,7 +220,7 @@ Before going to production, verify:
 
 - [ ] `secretKey` (`sk_...`) is in an environment variable **without** `NEXT_PUBLIC_` prefix
 - [ ] `publicKey` (`pk_...`) is also in an environment variable for easy management
-- [ ] `.env` file is in `.gitignore`
+- [ ] `.env.local` file is in `.gitignore`
 - [ ] Signing logic runs only in Server Components or API Routes
 - [ ] No frontend code references the `secretKey`
 - [ ] Appropriate `exp` expiration is set for signed URLs
@@ -215,15 +230,16 @@ Before going to production, verify:
 
 | Error | Likely Cause | Solution |
 |-------|-------------|----------|
-| `403` Invalid signature | Wrong key, wrong path order, or wrong encoding | See [Troubleshooting Signature Errors](/docs/api-reference/error-codes#troubleshooting-signature-errors) |
+| `403` Invalid signature | Wrong key, wrong path order, or wrong encoding | See [Troubleshooting Signature Errors](/api-reference/error-codes#troubleshooting-signature-errors) |
 | `403` Source domain not allowed | Image origin not in key's allowed domains | Add the domain in Dashboard → API Key settings |
 | `403` Invalid referer | Your website not in project's allowed domains | Add the domain in Dashboard → Project settings |
 
-For the complete error reference, see [Error Codes](/docs/api-reference/error-codes).
+For the complete error reference, see [Error Codes](/api-reference/error-codes).
 
 ## Further Reading
 
-- [URL Signing](/docs/guides/url-signing) — Signature formula and security properties
-- [Domain Whitelisting](/docs/guides/domain-whitelisting) — Configure allowed domains
-- [CDN and Caching](/docs/guides/cdn-caching) — CDN integration and `next/image` loader
-- [Security Best Practices](/docs/guides/security-best-practices) — Recommendations for production
+- [TypeScript / Node.js Integration](/getting-started/integration-guide/typescript) — For Express, Fastify, or standalone Node.js applications
+- [URL Signing](/guides/url-signing) — Signature formula and security properties
+- [Domain Whitelisting](/guides/domain-whitelisting) — Configure allowed domains
+- [CDN and Caching](/guides/cdn-caching) — CDN integration and `next/image` loader
+- [Security Best Practices](/guides/security-best-practices) — Recommendations for production
