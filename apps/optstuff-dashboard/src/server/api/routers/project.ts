@@ -25,10 +25,13 @@ const DOMAIN_PATTERN =
 
 const allowedRefererDomainsSchema = z
   .array(
-    z.string().regex(
-      DOMAIN_PATTERN,
-      "Invalid domain format. Use a hostname like 'example.com', optionally with protocol (http/https), wildcard (*.example.com), or port (:8080)",
-    ),
+    z
+      .string()
+      .regex(
+        DOMAIN_PATTERN,
+        "Invalid domain format. Use a hostname like 'example.com', optionally with protocol (http/https), wildcard (*.example.com), or port (:8080)",
+      )
+      .transform((s) => s.toLowerCase()),
   )
   .optional();
 
@@ -139,10 +142,6 @@ export const projectRouter = createTRPCRouter({
         finalSlug = existingProject ? generateUniqueSlug(input.name) : slug;
       }
 
-      const sanitizedDomains = input.allowedRefererDomains
-        ?.map((d) => d.trim().toLowerCase())
-        .filter((d) => d.length > 0);
-
       // Insert project, retrying once on slug collision (TOCTOU with project_team_slug_unique)
       const insertProject = async (slugToUse: string) => {
         const [created] = await ctx.db
@@ -153,8 +152,9 @@ export const projectRouter = createTRPCRouter({
             slug: slugToUse,
             description: input.description,
             allowedRefererDomains:
-              sanitizedDomains && sanitizedDomains.length > 0
-                ? sanitizedDomains
+              input.allowedRefererDomains &&
+              input.allowedRefererDomains.length > 0
+                ? input.allowedRefererDomains
                 : undefined,
             apiKeyCount: 1, // Will have one default key
           })
@@ -383,9 +383,7 @@ export const projectRouter = createTRPCRouter({
       } = {};
 
       if (input.allowedRefererDomains !== undefined) {
-        updateData.allowedRefererDomains = input.allowedRefererDomains
-          .map((d) => d.trim().toLowerCase())
-          .filter((d) => d.length > 0);
+        updateData.allowedRefererDomains = input.allowedRefererDomains;
       }
 
       if (Object.keys(updateData).length === 0) {

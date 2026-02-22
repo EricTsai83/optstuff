@@ -140,12 +140,19 @@ export function createProjectIPX() {
   return createIPX({
     storage: ipxFSStorage({ dir: path.join(process.cwd(), "public") }),
     httpStorage: ipxHttpStorage({
+      // Safe only because (1) domain validation happens upstream in the route
+      // handler, and (2) redirect: "error" below prevents redirect-based
+      // bypasses. Removing redirect: "error" turns this into an open proxy.
+      // Prefer allowAllDomains: false with an explicit domain allowlist unless
+      // you have equivalent upstream controls.
       allowAllDomains: true,
       fetchOptions: { redirect: "error" },
     }),
   });
 }
 ```
+
+Note that `allowAllDomains: true` is intentionally set here because IPX's built-in domain check only performs exact hostname matching, while our upstream validation supports subdomain matching (e.g., allowing `images.unsplash.com` when `unsplash.com` is on the allowlist). This is safe **only** because `redirect: "error"` ensures the URL that passed upstream validation is exactly the URL that gets fetched — no redirect can reroute the request to an unvalidated host. If you remove or change the `redirect` option, `allowAllDomains: true` creates an open-proxy vulnerability. If your system does not have equivalent upstream domain validation, keep `allowAllDomains: false` and pass an explicit domain allowlist to IPX instead.
 
 `ipxHttpStorage` accepts a `fetchOptions` field (typed as `RequestInit`) that is forwarded to every internal `fetch` call. Setting `redirect: "error"` means any `3xx` response immediately throws an error, which propagates up through IPX and is caught by the route handler's `catch` block, returning a `500` to the client.
 
