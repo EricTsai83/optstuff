@@ -3,66 +3,62 @@ title: System Overview
 description: Comprehensive technical overview of the OptStuff image optimization service — architecture, security model, core components, and request lifecycle.
 ---
 
-This document provides a comprehensive technical overview of the OptStuff image optimization service, covering its architecture, security model, and core components.
+OptStuff is a multi-tenant image optimization API with on-the-fly transformation, cryptographic URL signing, and fine-grained access control. This overview covers the system architecture, security model, and core components — each section links to the relevant detailed documentation.
 
-## Introduction
-
-OptStuff is an enterprise-grade image optimization API service that enables developers and teams to deliver optimized images at scale. The system provides on-the-fly image transformation with fine-grained access control, robust security mechanisms, and multi-tenant support.
-
-### Core Value Proposition
+## Key Capabilities
 
 - **On-Demand Optimization**: Transform images dynamically via URL parameters
-- **Enterprise Security**: Multi-layer authentication and encryption
+- **Multi-Layer Security**: HMAC-SHA256 URL signing, AES-256-GCM encryption, domain whitelisting
 - **Multi-Tenant Architecture**: Teams, projects, and API keys hierarchy
 - **Usage Analytics**: Real-time monitoring and bandwidth tracking
-- **CDN-Friendly**: Aggressive caching headers for edge deployment
+- **CDN-Friendly**: Long-lived caching headers for edge deployment
 
 ## System Architecture
 
-```text
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                              CLIENT LAYER                                   │
-│                                                                             │
-│  ┌─────────────┐    ┌─────────────┐    ┌─────────────┐                      │
-│  │   Team A    │    │   Team B    │    │   Team C    │                      │
-│  │  (Owner)    │    │  (Owner)    │    │  (Owner)    │                      │
-│  └──────┬──────┘    └──────┬──────┘    └──────┬──────┘                      │
-│         │                  │                  │                             │
-│  ┌──────┴──────┐    ┌──────┴──────┐    ┌──────┴──────┐                      │
-│  │  Project 1  │    │  Project 3  │    │  Project 5  │                      │
-│  │  Project 2  │    │  Project 4  │    │             │                      │
-│  └──────┬──────┘    └─────────────┘    └─────────────┘                      │
-│         │                                                                   │
-│  ┌──────┴──────┐                                                            │
-│  │  API Keys   │                                                            │
-│  └─────────────┘                                                            │
-└─────────────────────────────────────────────────────────────────────────────┘
-                                    │
-                                    ▼
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                            API GATEWAY                                      │
-│                                                                             │
-│  Endpoint: /api/v1/{projectSlug}/{operations}/{imageUrl}                    │
-│  Query Params: ?key={publicKey}&sig={signature}&exp={expiration}            │
-│                                                                             │
-│  Validation Pipeline:                                                       │
-│  ┌───────┐  ┌───────┐  ┌───────┐  ┌───────┐  ┌───────┐  ┌───────┐           │
-│  │API Key│→ │Project│→ │ Sig   │→ │ Rate  │→ │Referer│→ │Source │           │
-│  │Valid  │  │Exists │  │Verify │  │Limit  │  │Domain │  │Domain │           │
-│  └───────┘  └───────┘  └───────┘  └───────┘  └───────┘  └───────┘           │
-└─────────────────────────────────────────────────────────────────────────────┘
-                                    │
-                                    ▼
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                        IMAGE PROCESSING ENGINE                              │
-│                                                                             │
-│  ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐          │
-│  │  IPX (Sharp)    │    │  Format Conv.   │    │  Cache Layer    │          │
-│  │  - Resize       │    │  - WebP         │    │  - CDN Headers  │          │
-│  │  - Crop         │    │  - AVIF         │    │  - ETag         │          │
-│  │  - Quality      │    │  - PNG/JPEG     │    │  - Cache-Control│          │
-│  └─────────────────┘    └─────────────────┘    └─────────────────┘          │
-└─────────────────────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+  subgraph clientLayer ["Client Layer"]
+    TeamA["Team A\n(Owner)"] --> ProjectA1["Project 1"]
+    TeamA --> ProjectA2["Project 2"]
+    TeamB["Team B\n(Owner)"] --> ProjectB1["Project 3"]
+    TeamB --> ProjectB2["Project 4"]
+    TeamC["Team C\n(Owner)"] --> ProjectC1["Project 5"]
+    ProjectA1 --> ApiKeys["API Keys"]
+    ProjectA2 --> ApiKeys
+  end
+
+  subgraph gateway ["API Gateway"]
+    Endpoint["Endpoint: /api/v1/{projectSlug}/{operations}/{imageUrl}\nQuery: ?key={publicKey}&sig={signature}&exp={expiresAt}\nValidation Pipeline (see flowchart below)"]
+  end
+
+  subgraph engine ["Image Processing Engine"]
+    IPX["IPX (Sharp)\nResize, Crop, Quality"]
+    FormatConv["Format Conversion\nWebP, AVIF, PNG, JPEG"]
+    CacheLayer["Cache Layer\nCDN Headers, Cache-Control"]
+  end
+
+  clientLayer --> gateway --> engine
+```
+
+### Validation Pipeline
+
+Each request passes through six validation steps before processing. For the full step-by-step breakdown, see [API Endpoint — Authentication Flow](/api-reference/endpoint#authentication-flow).
+
+```mermaid
+flowchart LR
+  A["API Key\nValid?"] -->|Pass| B["Project\nExists?"]
+  B -->|Pass| C["Signature\nVerify"]
+  C -->|Pass| D["Rate\nLimit"]
+  D -->|Pass| E["Referer\nDomain"]
+  E -->|Pass| F["Source\nDomain"]
+  F -->|Pass| G["Process\nImage"]
+
+  A -->|Fail| X1["401"]
+  B -->|Fail| X2["404"]
+  C -->|Fail| X3["403"]
+  D -->|Fail| X4["429"]
+  E -->|Fail| X5["403"]
+  F -->|Fail| X6["403"]
 ```
 
 ## Core Components
@@ -88,12 +84,7 @@ User authentication is handled by **Clerk**, providing:
 
 ### 3. API Key Management
 
-Each API key consists of a dual-key system:
-
-| Key Type | Format | Purpose | Visibility |
-|----------|--------|---------|------------|
-| Public Key | `pk_<22 base64url chars>` | Request identification and URL lookup | Safe to expose in URLs, stored in plaintext |
-| Secret Key | `sk_<43 base64url chars>` | URL signature generation | **Must be kept secret**, stored encrypted |
+Each API key consists of a dual-key pair: a public key (`pk_...`) for identification and a secret key (`sk_...`) for URL signing. For the full key lifecycle (creation, rotation, revocation, expiration), see [Key Management](/guides/key-management). For the internal creation flow, see [Create API Key Flow](/internal/create-api-key-flow).
 
 ### 4. Image Processing Engine
 
@@ -123,29 +114,16 @@ Real-time tracking and monitoring includes:
 
 ### Three-Tier Key Hierarchy
 
-```text
-Level 0: System Key (Environment Variable)
-┌─────────────────────────────────────────────────────────────────────────────┐
-│  API_KEY_ENCRYPTION_SECRET                                                  │
-│  Purpose: Encrypt/decrypt all sensitive data in database                    │
-│  Scope: System-wide singleton                                               │
-└───────────────────────────────┬─────────────────────────────────────────────┘
-                                │ Protects
-                                ▼
-Level 1: API Key Secrets (Per API Key)
-┌─────────────────────────────────────────────────────────────────────────────┐
-│  publicKey (pk_xxx)        │ secretKey (sk_xxx)                             │
-│  Purpose: Identify API Key │ Purpose: Generate/verify URL signatures        │
-│  Exposure: Can be known    │ Exposure: Must remain confidential              │
-└────────────────────────────┴────────────────────────────────────────────────┘
-                                │ Used for
-                                ▼
-Level 2: Request Signatures (Per Request)
-┌─────────────────────────────────────────────────────────────────────────────┐
-│  signature (sig)                                                            │
-│  Purpose: Prove possession of secretKey                                     │
-│  Property: One-way hash, cannot reverse to secretKey                        │
-└─────────────────────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+  L0["Level 0: System Key\nAPI_KEY_ENCRYPTION_SECRET\nEncrypt/decrypt all sensitive data\nSystem-wide singleton"]
+  L1pk["Level 1: publicKey (pk_xxx)\nIdentify API Key\nCan be known"]
+  L1sk["Level 1: secretKey (sk_xxx)\nGenerate/verify URL signatures\nMust remain confidential"]
+  L2["Level 2: Request Signature (sig)\nProve possession of secretKey\nOne-way hash, cannot reverse"]
+
+  L0 -->|Protects| L1pk
+  L0 -->|Protects| L1sk
+  L1sk -->|"Used for"| L2
 ```
 
 ### Encryption Mechanisms
@@ -159,36 +137,19 @@ Level 2: Request Signatures (Per Request)
 
 ### Four-Layer Permission Model
 
-```text
-┌─────────────────────────────────────────────────────────────────────────────┐
-│ Level 1: User Layer (Clerk Authentication)                                  │
-│ → User login and identity verification                                      │
-└─────────────────────────────┬───────────────────────────────────────────────┘
-                              │
-                              ▼
-┌─────────────────────────────────────────────────────────────────────────────┐
-│ Level 2: Team Layer                                                         │
-│ → Resource ownership: team.ownerId === userId                               │
-│ → Permissions: Create/delete projects, manage API keys, view stats          │
-└─────────────────────────────┬───────────────────────────────────────────────┘
-                              │
-                              ▼
-┌─────────────────────────────────────────────────────────────────────────────┐
-│ Level 3: Project Layer                                                      │
-│ → allowedRefererDomains: Control which websites can use the service         │
-│ → Validation: HTTP Referer header check                                     │
-└─────────────────────────────┬───────────────────────────────────────────────┘
-                              │
-                              ▼
-┌─────────────────────────────────────────────────────────────────────────────┐
-│ Level 4: API Key Layer                                                      │
-│ → allowedSourceDomains: Restrict image sources                              │
-│ → Rate limits: rateLimitPerMinute, rateLimitPerDay                         │
-│ → Expiration: expiresAt                                                     │
-└─────────────────────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+  UserLayer["Level 1: User Layer\nClerk Authentication\nLogin and identity verification"]
+  TeamLayer["Level 2: Team Layer\nOwnership: team.ownerId === userId\nCreate/delete projects, manage keys, view stats"]
+  ProjectLayer["Level 3: Project Layer\nallowedRefererDomains: control which websites can use the service\nValidation: HTTP Referer header check"]
+  ApiKeyLayer["Level 4: API Key Layer\nallowedSourceDomains: restrict image sources\nRate limits: rateLimitPerMinute, rateLimitPerDay\nExpiration: expiresAt"]
+
+  UserLayer --> TeamLayer --> ProjectLayer --> ApiKeyLayer
 ```
 
 ### Domain Whitelist Architecture
+
+Two layers of domain whitelisting protect the service. For configuration details, see [Domain Whitelisting](/guides/domain-whitelisting).
 
 | Layer | Setting | Question Answered | Validation Method |
 |-------|---------|-------------------|-------------------|
@@ -199,33 +160,34 @@ Level 2: Request Signatures (Per Request)
 
 ### Image Request Lifecycle
 
-```text
-1. Client Preparation
-   ┌─────────────────────────────────────────────────────────────────────────┐
-   │ path = "w_800,f_webp/images.example.com/photo.jpg"                      │
-   │ sig = HMAC-SHA256(secretKey, path)                                      │
-   │ url = /api/v1/{slug}/{path}?key={publicKey}&sig={sig}&exp={exp}           │
-   └─────────────────────────────────────────────────────────────────────────┘
-                                    │
-                                    ▼
-2. Server Validation
-   ┌─────────────────────────────────────────────────────────────────────────┐
-   │ a. Parse URL parameters (publicKey, signature)                            │
-   │ b. Lookup API Key by publicKey                                            │
-   │ c. Validate project exists and slug matches                             │
-   │ d. Verify signature: HMAC-SHA256(secretKey, path) === signature         │
-   │ e. Check rate limits (only authenticated requests consume quota)        │
-   │ f. Validate referer domain, source domain                               │
-   └─────────────────────────────────────────────────────────────────────────┘
-                                    │
-                                    ▼
-3. Image Processing
-   ┌─────────────────────────────────────────────────────────────────────────┐
-   │ a. Fetch source image                                                   │
-   │ b. Apply transformations (resize, format, quality)                      │
-   │ c. Set cache headers                                                    │
-   │ d. Return optimized image                                               │
-   └─────────────────────────────────────────────────────────────────────────┘
+```mermaid
+sequenceDiagram
+  participant Client
+  participant OptStuff as OptStuff Server
+  participant Origin as Source Image Server
+
+  Note over Client: 1. Client Preparation
+  Client->>Client: Build path = "w_800,f_webp/images.example.com/photo.jpg"
+  Client->>Client: sig = HMAC-SHA256(secretKey, path)
+  Client->>Client: url = /api/v1/{slug}/{path}?key={pk}&sig={sig}
+
+  Client->>OptStuff: GET /api/v1/{slug}/{path}?key=...&sig=...
+
+  Note over OptStuff: 2. Server Validation
+  OptStuff->>OptStuff: Parse URL parameters
+  OptStuff->>OptStuff: Lookup API Key by publicKey
+  OptStuff->>OptStuff: Validate project exists & slug matches
+  OptStuff->>OptStuff: Verify HMAC-SHA256 signature
+  OptStuff->>OptStuff: Check rate limits
+  OptStuff->>OptStuff: Validate referer & source domains
+
+  Note over OptStuff,Origin: 3. Image Processing
+  OptStuff->>Origin: Fetch source image
+  Origin-->>OptStuff: Original image
+  OptStuff->>OptStuff: Apply transformations (resize, format, quality)
+  OptStuff->>OptStuff: Set cache headers
+
+  OptStuff-->>Client: Optimized image + Cache-Control headers
 ```
 
 ### API Key Lifecycle

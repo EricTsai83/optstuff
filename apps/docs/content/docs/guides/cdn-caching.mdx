@@ -3,7 +3,7 @@ title: CDN and Caching
 description: How to use OptStuff with a CDN for edge-cached image delivery — cache behavior, CDN setup guides for Cloudflare, Vercel, and CloudFront, and cache invalidation strategies.
 ---
 
-OptStuff returns aggressive cache headers designed for CDN edge caching. This guide explains how caching works and how to configure popular CDNs for optimal performance.
+OptStuff returns long-lived cache headers optimized for CDN edge caching.
 
 ## How OptStuff Caching Works
 
@@ -29,16 +29,29 @@ OptStuff URLs are **content-addressable**: the URL encodes all transformation pa
 - There is no risk of serving stale content
 - A 1-year TTL is safe and optimal
 
-To "invalidate" a cached image, generate a new URL with different parameters or a different `exp` timestamp.
+Since URLs are content-addressable, traditional cache invalidation is unnecessary. To serve a different version of an image, generate a new URL with different parameters or a different `exp` timestamp — the new URL is a different cache entry.
 
 ## CDN Architecture
 
-```text
-Browser ──→ CDN Edge ──→ OptStuff Origin ──→ Source Image
-              │                                    │
-              │ (cache HIT)                        │ (fetch + optimize)
-              ▼                                    ▼
-         Cached Image                      Optimized Image
+```mermaid
+sequenceDiagram
+  participant Browser
+  participant CDN as CDN Edge
+  participant OptStuff as OptStuff Origin
+  participant Source as Source Image
+
+  Browser->>CDN: GET /api/v1/.../image.jpg?key=...&sig=...
+
+  alt Cache HIT
+    CDN-->>Browser: Cached optimized image
+  else Cache MISS
+    CDN->>OptStuff: Forward request
+    OptStuff->>Source: Fetch original image
+    Source-->>OptStuff: Original image
+    OptStuff->>OptStuff: Apply transformations
+    OptStuff-->>CDN: Optimized image + Cache-Control headers
+    CDN-->>Browser: Optimized image (now cached at edge)
+  end
 ```
 
 On the first request, the CDN fetches from OptStuff, which fetches and optimizes the source image. Subsequent requests for the same URL are served directly from the CDN edge — no origin request needed.
@@ -85,8 +98,10 @@ No additional configuration needed. Vercel's Edge Network respects `Cache-Contro
 
 You can use OptStuff as a custom image loader with `next/image` by pointing the
 loader to an API Route that signs URLs server-side. This keeps the secret key on
-the server while giving you full responsive `srcSet` support — and completely
-bypasses Vercel's paid image optimization.
+the server while giving you full responsive `srcSet` support — without requiring
+Vercel's built-in image optimization.
+
+The loader below only builds the URL on the client. The actual URL signing (using the secret key) happens inside the `/api/optstuff` API Route on the server — the secret key is never exposed to the browser.
 
 See the [Custom next/image Loader guide](/guides/nextjs-image-loader) for the
 full implementation.
@@ -114,6 +129,7 @@ export function Hero() {
       alt="Hero"
       width={1200}
       height={630}
+      sizes="(max-width: 768px) 100vw, 1200px"
     />
   );
 }

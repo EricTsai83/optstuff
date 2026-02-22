@@ -14,60 +14,16 @@ When a new user signs up for OptStuff, they go through a streamlined journey:
 3. **Copy their API key** — Shown immediately in the project creation dialog
 4. **Integrate** — Documentation links are provided at every step
 
-```text
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                           USER ONBOARDING FLOW                              │
-└─────────────────────────────────────────────────────────────────────────────┘
-
-                              ┌──────────────┐
-                              │   User       │
-                              │   Sign Up    │
-                              └──────┬───────┘
-                                     │
-                                     ▼
-                              ┌──────────────┐
-                              │  Clerk Auth  │
-                              │  (External)  │
-                              └──────┬───────┘
-                                     │
-                                     ▼
-                       ┌─────────────────────────────┐
-                       │  Has personal team already? │
-                       └─────────────┬───────────────┘
-                                     │
-                    ┌────────────────┴────────────────┐
-                    │ NO                          YES │
-                    ▼                                 ▼
-           ┌────────────────┐                ┌────────────────┐
-           │   /onboarding  │                │   /[team]      │
-           │   page         │                │   dashboard    │
-           └───────┬────────┘                └────────────────┘
-                   │
-                   ▼
-           ┌────────────────┐
-           │  User enters:  │
-           │  - Team name   │
-           │  - Team slug   │
-           └───────┬────────┘
-                   │
-                   ▼
-           ┌────────────────┐
-           │  Validate &    │
-           │  Check slug    │
-           │  availability  │
-           └───────┬────────┘
-                   │
-                   ▼
-           ┌────────────────┐
-           │ Create personal│
-           │ team in DB     │
-           └───────┬────────┘
-                   │
-                   ▼
-           ┌────────────────┐
-           │  Redirect to   │
-           │  /[team-slug]  │
-           └────────────────┘
+```mermaid
+flowchart TD
+  A["User Sign Up"] --> B["Clerk Auth"]
+  B --> C{"Has personal\nteam already?"}
+  C -->|Yes| D["/[team] dashboard"]
+  C -->|No| E["/onboarding page"]
+  E --> F["User enters:\nTeam name + Team slug"]
+  F --> G["Validate & check\nslug availability"]
+  G --> H["Create personal\nteam in DB"]
+  H --> I["Redirect to\n/[team-slug]"]
 ```
 
 ## Phase 1: Team Creation (Onboarding)

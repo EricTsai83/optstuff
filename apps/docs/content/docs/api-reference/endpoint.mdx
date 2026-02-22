@@ -3,12 +3,12 @@ title: API Endpoint
 description: Complete API endpoint reference — URL format, path and query parameters, authentication flow, and request/response details.
 ---
 
-This page is the complete reference for the OptStuff image optimization API endpoint. For a step-by-step integration tutorial, see the [Integration Guide](/getting-started/integration-guide).
+OptStuff exposes a single REST endpoint for image optimization. All transformations, authentication, and caching are encoded in the URL. For a step-by-step integration tutorial, see the [Integration Guide](/getting-started/integration-guide).
 
 ## Endpoint Format
 
 ```
-GET /api/v1/{projectSlug}/{operations}/{imageUrl}?key={publicKey}&sig={signature}&exp={expiry}
+GET /api/v1/{projectSlug}/{operations}/{imageUrl}?key={publicKey}&sig={signature}&exp={expiresAt}
 ```
 
 ## Path Parameters
@@ -37,7 +37,7 @@ GET /api/v1/my-blog/w_800,f_webp/images.example.com/photo.jpg?key=pk_abc123&sig=
 
 ### Success (200)
 
-Returns the optimized image binary with aggressive caching headers:
+Returns the optimized image binary with long-lived caching headers:
 
 ```text
 HTTP/1.1 200 OK
@@ -49,15 +49,15 @@ X-Processing-Time: 42ms
 | Header | Description |
 |--------|-------------|
 | `Content-Type` | Output format (`image/webp`, `image/avif`, `image/png`, `image/jpeg`) |
-| `Cache-Control` | Aggressive 1-year cache with `immutable` |
+| `Cache-Control` | 1-year cache with `immutable` |
 | `X-Processing-Time` | Server-side processing time in milliseconds |
 
 Image optimization URLs are **content-addressable**: the URL encodes all parameters and a signature, so the same URL always produces the same output. This makes the 1-year cache duration safe — changing any parameter produces a different URL.
 
 ### Errors
 
-| Status | When |
-|--------|------|
+| Status | Cause |
+|--------|-------|
 | 400 | Invalid URL format or image URL |
 | 401 | Missing/invalid/revoked/expired API key |
 | 403 | Invalid signature, forbidden referer, or blocked source domain |
@@ -70,6 +70,26 @@ For the full error reference, see [Error Codes](/api-reference/error-codes).
 ## Authentication Flow
 
 When a request arrives, the server validates it in this order:
+
+```mermaid
+flowchart TD
+  A["Parse key, sig, exp"] -->|Invalid| E1["401"]
+  A -->|OK| B["Lookup API key\nCheck not revoked/expired"]
+  B -->|Invalid| E2["401"]
+  B -->|OK| C["Find project by projectId\nMatch slug"]
+  C -->|"Not found / mismatch"| E3["404 / 401"]
+  C -->|OK| D["Parse operations\nand image URL"]
+  D -->|Invalid| E4["400"]
+  D -->|OK| F["Verify HMAC-SHA256\nsignature"]
+  F -->|Invalid| E5["403"]
+  F -->|OK| G["Check rate limits"]
+  G -->|Exceeded| E6["429"]
+  G -->|OK| H["Validate Referer\ndomain"]
+  H -->|Blocked| E7["403"]
+  H -->|OK| I["Validate source\ndomain"]
+  I -->|Blocked| E8["403"]
+  I -->|OK| J["Process and return\noptimized image"]
+```
 
 | Step | Check | Failure |
 |------|-------|---------|
