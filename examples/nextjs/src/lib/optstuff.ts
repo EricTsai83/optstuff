@@ -14,6 +14,10 @@ export type ImageOperation = {
   fit?: "cover" | "contain" | "fill";
 };
 
+/**
+ * Serialise image operations into a URL path segment.
+ * Returns `"_"` (the server-side no-op marker) when no operations are specified.
+ */
 function buildOperationString(ops: ImageOperation): string {
   const parts: string[] = [];
 
@@ -57,7 +61,7 @@ export function generateOptStuffUrl(
   params.set("key", OPTSTUFF_PUBLIC_KEY);
 
   let exp: number | undefined;
-  if (expiresInSeconds) {
+  if (expiresInSeconds !== undefined && expiresInSeconds > 0) {
     exp = Math.floor(Date.now() / 1000) + expiresInSeconds;
     params.set("exp", exp.toString());
   }

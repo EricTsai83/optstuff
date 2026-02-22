@@ -94,7 +94,7 @@ async function verifyProjectAccess(
     with: { team: true },
   });
 
-  if (!project?.team || project.team.ownerId !== userId) {
+  if (project?.team?.ownerId !== userId) {
     return null;
   }
 

@@ -10,12 +10,18 @@ import path from "path";
  * matching and would reject valid subdomains (e.g. images.unsplash.com when
  * unsplash.com is allowed).
  */
-export function createProjectIPX() {
-  return createIPX({
+let _ipxInstance: ReturnType<typeof createIPX> | undefined;
+
+export function getProjectIPX() {
+  _ipxInstance ??= createIPX({
     storage: ipxFSStorage({ dir: path.join(process.cwd(), "public") }),
     httpStorage: ipxHttpStorage({
       allowAllDomains: true,
       fetchOptions: { redirect: "error" },
     }),
   });
+  return _ipxInstance;
 }
+
+/** @deprecated Use {@link getProjectIPX} instead. */
+export const createProjectIPX = getProjectIPX;

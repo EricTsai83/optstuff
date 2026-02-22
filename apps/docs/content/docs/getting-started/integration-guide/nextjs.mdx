@@ -31,10 +31,16 @@ Create `lib/optstuff.ts` (server-side only):
 ```typescript
 import crypto from "crypto";
 
-const SECRET_KEY = process.env.OPTSTUFF_SECRET_KEY!;
-const PUBLIC_KEY = process.env.OPTSTUFF_PUBLIC_KEY!;
-const ENDPOINT = process.env.NEXT_PUBLIC_OPTSTUFF_ENDPOINT!;
-const PROJECT_SLUG = process.env.NEXT_PUBLIC_OPTSTUFF_PROJECT_SLUG!;
+function requireEnv(name: string): string {
+  const value = process.env[name];
+  if (!value) throw new Error(`Missing required env var: ${name}`);
+  return value;
+}
+
+const SECRET_KEY = requireEnv("OPTSTUFF_SECRET_KEY");
+const PUBLIC_KEY = requireEnv("OPTSTUFF_PUBLIC_KEY");
+const ENDPOINT = requireEnv("NEXT_PUBLIC_OPTSTUFF_ENDPOINT");
+const PROJECT_SLUG = requireEnv("NEXT_PUBLIC_OPTSTUFF_PROJECT_SLUG");
 
 /**
  * Generates a signed image optimization URL.
@@ -107,6 +113,8 @@ For client components that need to load images dynamically, create an API route 
 import { signImageUrl } from "@/lib/optstuff";
 import { NextRequest, NextResponse } from "next/server";
 
+const ALLOWED_SOURCE_HOSTS = ["cdn.example.com", "images.example.com"];
+
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   const src = searchParams.get("src");
@@ -118,6 +126,14 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(
       { error: "Missing src parameter" },
       { status: 400 }
+    );
+  }
+
+  const hostname = src.includes("/") ? src.split("/")[0] : src;
+  if (!ALLOWED_SOURCE_HOSTS.includes(hostname)) {
+    return NextResponse.json(
+      { error: "Source domain not allowed" },
+      { status: 403 }
     );
   }
 
@@ -148,23 +164,40 @@ type OptimizedImageProps = {
 
 export function OptimizedImage({ src, width, alt }: OptimizedImageProps) {
   const [imageUrl, setImageUrl] = useState<string>("");
+  const [error, setError] = useState(false);
 
   useEffect(() => {
     const fetchUrl = async () => {
-      const params = new URLSearchParams({ src });
-      if (width) params.set("w", width.toString());
+      try {
+        const params = new URLSearchParams({ src });
+        if (width) params.set("w", width.toString());
 
-      const res = await fetch(`/api/image-url?${params}`);
-      const { url } = await res.json();
-      setImageUrl(url);
+        const res = await fetch(`/api/image-url?${params}`);
+        if (!res.ok) {
+          setError(true);
+          return;
+        }
+        const { url } = await res.json();
+        setImageUrl(url);
+      } catch {
+        setError(true);
+      }
     };
 
     fetchUrl();
   }, [src, width]);
 
+  if (error) return <div>Failed to load image</div>;
   if (!imageUrl) return <div>Loading...</div>;
 
-  return <img src={imageUrl} alt={alt} width={width} />;
+  return (
+    <img
+      src={imageUrl}
+      alt={alt}
+      width={width}
+      style={{ aspectRatio: "4 / 3" }}
+    />
+  );
 }
 ```
 

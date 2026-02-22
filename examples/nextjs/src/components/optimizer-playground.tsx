@@ -62,9 +62,13 @@ export function OptimizerPlayground() {
 
   async function handleCopy() {
     if (!generatedUrl) return;
-    await navigator.clipboard.writeText(generatedUrl);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    try {
+      await navigator.clipboard.writeText(generatedUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      window.prompt("Copy the URL below:", generatedUrl);
+    }
   }
 
   return (
@@ -279,7 +283,7 @@ export default function optStuffLoader({
   src, width, quality,
 }: { src: string; width: number; quality?: number }) {
   const ops = \`w_\${width},q_\${quality ?? 80},f_webp\`;
-  return \`\${OPTSTUFF_URL}/api/v1/\${slug}/\${ops}/\${src}\`;
+  return \`\${process.env.NEXT_PUBLIC_OPTSTUFF_URL}/api/v1/\${process.env.NEXT_PUBLIC_OPTSTUFF_SLUG}/\${ops}/\${src}\`;
 }
 
 // Usage

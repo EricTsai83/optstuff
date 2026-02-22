@@ -12,7 +12,7 @@ import {
   getApiKeyConfig,
   getProjectConfigById,
 } from "@/server/lib/config-cache";
-import { createProjectIPX } from "@/server/lib/ipx-factory";
+import { getProjectIPX } from "@/server/lib/ipx-factory";
 import { checkRateLimit } from "@/server/lib/rate-limiter";
 import { logRequest } from "@/server/lib/request-logger";
 import { updateApiKeyLastUsed } from "@/server/lib/usage-tracker";
@@ -49,7 +49,6 @@ function mapUpstreamErrorStatus(error: unknown): number {
 
   if (typeof raw !== "number" || raw < 400 || raw > 599) return 500;
   if (PASSTHROUGH_STATUS_CODES.has(raw)) return raw;
-  if (raw >= 400 && raw < 500) return 502;
   return 502;
 }
 
@@ -248,7 +247,7 @@ export async function GET(
 
   // 9. Process image with IPX
   try {
-    const ipx = createProjectIPX();
+    const ipx = getProjectIPX();
     const operations = parseOperationsString(parsed.operations);
     const processedImage = await ipx(imageUrl, operations).process();
 
@@ -300,7 +299,7 @@ export async function GET(
   } catch (error) {
     console.error("Image processing error:", error);
 
-    logRequest(project.id, {
+    void logRequest(project.id, {
       sourceUrl: imageUrl,
       status: "error",
     }).catch(() => undefined);

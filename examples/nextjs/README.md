@@ -51,6 +51,10 @@ OPTSTUFF_PUBLIC_KEY=pk_xxx
 
 # Secret key (used to sign URLs — keep this confidential)
 OPTSTUFF_SECRET_KEY=sk_xxx
+
+# Public env vars (used by the optional next/image custom loader — see Option 4)
+NEXT_PUBLIC_OPTSTUFF_URL=https://your-optstuff-instance.com
+NEXT_PUBLIC_OPTSTUFF_SLUG=my-project
 ```
 
 > **Important:** `OPTSTUFF_SECRET_KEY` must only be used on the server side. Never expose it to the client.
@@ -65,7 +69,7 @@ Open [http://localhost:3000](http://localhost:3000) to see the interactive demo 
 
 ## Project Structure
 
-```
+```text
 src/
 ├── app/
 │   ├── api/
@@ -86,7 +90,7 @@ src/
 
 OptStuff image optimization URLs follow this format:
 
-```
+```text
 {OPTSTUFF_BASE_URL}/api/v1/{project_slug}/{operations}/{image_host/path}?key={public_key}&sig={signature}
 ```
 
@@ -117,7 +121,7 @@ Multiple operations are joined with commas, e.g.: `w_800,q_80,f_webp,fit_cover`
 
 To prevent unauthorized image operations, OptStuff uses HMAC-SHA256 signatures. The signing process works as follows:
 
-```
+```text
 sign_content = "{ops}/{image}"                        # e.g. "w_800,q_80,f_webp/images.unsplash.com/photo-xxx"
 sign_content = sign_content + "?exp={exp}"            # append only when the URL has an expiration timestamp
 signature    = HMAC-SHA256(secret_key, sign_content)  # raw digest → base64url → take first 32 characters
