@@ -71,6 +71,26 @@ For the full error reference, see [Error Codes](/api-reference/error-codes).
 
 When a request arrives, the server validates it in this order:
 
+```mermaid
+flowchart TD
+  A["Parse key, sig, exp"] -->|Invalid| E1["401"]
+  A -->|OK| B["Lookup API key\nCheck not revoked/expired"]
+  B -->|Invalid| E2["401"]
+  B -->|OK| C["Find project by projectId\nMatch slug"]
+  C -->|Not found| E3["404"]
+  C -->|OK| D["Parse operations\nand image URL"]
+  D -->|Invalid| E4["400"]
+  D -->|OK| F["Verify HMAC-SHA256\nsignature"]
+  F -->|Invalid| E5["403"]
+  F -->|OK| G["Check rate limits"]
+  G -->|Exceeded| E6["429"]
+  G -->|OK| H["Validate Referer\ndomain"]
+  H -->|Blocked| E7["403"]
+  H -->|OK| I["Validate source\ndomain"]
+  I -->|Blocked| E8["403"]
+  I -->|OK| J["Process and return\noptimized image"]
+```
+
 | Step | Check | Failure |
 |------|-------|---------|
 | 1 | Parse `key`, `sig`, `exp` from query string | `401` |

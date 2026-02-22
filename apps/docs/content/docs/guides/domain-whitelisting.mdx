@@ -7,24 +7,19 @@ OptStuff provides two layers of domain whitelisting, each serving a different pu
 
 ## Two-Layer Architecture
 
-```text
-┌─────────────────────────────────────────────────────────────────────────────┐
-│ Layer 1: Project — allowedRefererDomains                                    │
-│                                                                             │
-│ Question: WHO can use this service?                                         │
-│ Validation: HTTP Referer header                                             │
-│ Protection: Blocks other websites from embedding your images                │
-└──────────────────────────────┬──────────────────────────────────────────────┘
-                               │
-                               ▼
-┌─────────────────────────────────────────────────────────────────────────────┐
-│ Layer 2: API Key — allowedSourceDomains                                     │
-│                                                                             │
-│ Question: WHAT image sources can be processed?                              │
-│ Validation: Image URL in the request                                        │
-│ Protection: Prevents processing unauthorized images                         │
-└─────────────────────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+  A["Incoming Request"] --> B{"Layer 1: Project\nallowedRefererDomains"}
+  B -->|"Referer not allowed"| X1["403 Forbidden"]
+  B -->|"Referer OK (or list empty)"| C{"Layer 2: API Key\nallowedSourceDomains"}
+  C -->|"Source domain not allowed"| X2["403 Forbidden"]
+  C -->|"Source domain OK"| D["Process Image"]
 ```
+
+| Layer | Question | Validation |
+|-------|----------|------------|
+| **Project** (`allowedRefererDomains`) | WHO can use this service? | HTTP Referer header |
+| **API Key** (`allowedSourceDomains`) | WHAT image sources can be processed? | Image URL in request |
 
 **Why two layers?**
 

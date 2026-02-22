@@ -11,101 +11,24 @@ Users create API keys to authenticate image transformation requests. Each API ke
 
 ## Flow Diagram
 
-```text
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                          CREATE API KEY FLOW                                │
-└─────────────────────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+  A["User clicks 'Create API Key'"] --> B["Dialog opens (Form Step)"]
+  B --> C["User enters:\nKey name, Allowed source domains,\nExpiration (optional)"]
+  C --> D["Validate form inputs"]
+  D --> E["Submit to Backend API"]
 
-                              ┌──────────────────┐
-                              │  User clicks     │
-                              │  "Create API Key"│
-                              └────────┬─────────┘
-                                       │
-                                       ▼
-                              ┌──────────────────┐
-                              │  Dialog opens    │
-                              │  (Form Step)     │
-                              └────────┬─────────┘
-                                       │
-                                       ▼
-                      ┌────────────────────────────────┐
-                      │  User enters:                  │
-                      │  - Key name                    │
-                      │  - Allowed source domains      │
-                      │  - Expiration (optional)       │
-                      └────────────────┬───────────────┘
-                                       │
-                                       ▼
-                      ┌────────────────────────────────┐
-                      │  Validate form inputs          │
-                      │  - Name required               │
-                      │  - At least 1 domain required  │
-                      └────────────────┬───────────────┘
-                                       │
-                                       ▼
-                              ┌──────────────────┐
-                              │  Submit to       │
-                              │  Backend API     │
-                              └────────┬─────────┘
-                                       │
-           ┌───────────────────────────┴───────────────────────────┐
-           │                                                       │
-           ▼                                                       ▼
-┌─────────────────────┐                              ┌─────────────────────┐
-│  generateApiKey()   │                              │  Error Response     │
-│                     │                              │                     │
-│  Generate:          │                              │  Show error toast   │
-│  - publicKey (pk_x) │                              │  User can retry     │
-│  - secretKey (sk_x) │                              │                     │
-│                     │                              └─────────────────────┘
-└──────────┬──────────┘
-           │
-           ▼
-┌─────────────────────┐
-│  encryptApiKey()    │
-│                     │
-│  Encrypt:           │
-│  - secretKey only   │
-│  (AES-256-GCM)      │
-└──────────┬──────────┘
-           │
-           ├──────────────────────────────────┐
-           ▼                                  ▼
-┌─────────────────────┐            ┌─────────────────────┐
-│  Store in Database  │            │  Return to Client   │
-│                     │            │                     │
-│  - id               │            │  - publicKey        │
-│  - name             │            │    (plaintext)      │
-│  - publicKey        │            │  - secretKey        │
-│    (plaintext)      │            │    (plaintext)      │
-│  - secretKey        │            │                     │
-│    (encrypted)      │            │  ⚠️ secretKey only  │
-│  - allowedDomains   │            │    shown once!      │
-│  - expiresAt        │            └──────────┬──────────┘
-└─────────────────────┘                       │
-                                              ▼
-                                   ┌─────────────────────┐
-                                   │  Dialog switches    │
-                                   │  to Success Step    │
-                                   └──────────┬──────────┘
-                                              │
-                                              ▼
-                                   ┌─────────────────────┐
-                                   │  Display:           │
-                                   │  - Secret Key       │
-                                   │  - Public Key       │
-                                   │  - Usage Example    │
-                                   │                     │
-                                   │  Copy buttons for   │
-                                   │  easy copying       │
-                                   └──────────┬──────────┘
-                                              │
-                                              ▼
-                                   ┌─────────────────────┐
-                                   │  User clicks "Done" │
-                                   │  Dialog closes      │
-                                   │  List refreshes     │
-                                   └─────────────────────┘
+  E -->|Error| ERR["Show error toast\nUser can retry"]
+  E -->|Success| F["generateApiKey()\npk_... + sk_..."]
+
+  F --> G["encryptApiKey()\nAES-256-GCM on secretKey"]
+
+  G --> H["Store in Database\npublicKey (plaintext)\nsecretKey (encrypted)"]
+  G --> I["Return to Client\npublicKey + secretKey\n(both plaintext)"]
+
+  I --> J["Dialog switches to Success Step"]
+  J --> K["Display:\nSecret Key + Public Key\n+ Usage Example"]
+  K --> L["User clicks 'Done'\nDialog closes, list refreshes"]
 ```
 
 ## Key Concepts

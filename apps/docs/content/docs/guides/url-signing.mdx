@@ -17,6 +17,30 @@ There are three actors in the signing system:
 
 The server doesn't maintain a list of valid URLs. A matching signature **is** the authorization proof.
 
+```mermaid
+sequenceDiagram
+  participant Dashboard
+  participant YourServer as Your Server
+  participant OptStuff as OptStuff Server
+
+  Dashboard->>YourServer: publicKey + secretKey (one-time setup)
+
+  Note over YourServer: For each image request:
+  YourServer->>YourServer: Build path (operations + imageUrl)
+  YourServer->>YourServer: sig = HMAC-SHA256(secretKey, path)
+  YourServer->>YourServer: Embed sig + publicKey in URL
+
+  YourServer->>OptStuff: GET /api/v1/.../path?key=pk&sig=...
+  OptStuff->>OptStuff: Recompute expected signature
+  OptStuff->>OptStuff: Compare signatures (constant-time)
+
+  alt Signature matches
+    OptStuff-->>YourServer: Optimized image
+  else Signature mismatch
+    OptStuff-->>YourServer: 403 Forbidden
+  end
+```
+
 ## Signature Formula
 
 ```

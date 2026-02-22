@@ -45,11 +45,7 @@ OptStuff is an enterprise-grade image optimization API service that enables deve
 │  Endpoint: /api/v1/{projectSlug}/{operations}/{imageUrl}                    │
 │  Query Params: ?key={publicKey}&sig={signature}&exp={expiration}            │
 │                                                                             │
-│  Validation Pipeline:                                                       │
-│  ┌───────┐  ┌───────┐  ┌───────┐  ┌───────┐  ┌───────┐  ┌───────┐           │
-│  │API Key│→ │Project│→ │ Sig   │→ │ Rate  │→ │Referer│→ │Source │           │
-│  │Valid  │  │Exists │  │Verify │  │Limit  │  │Domain │  │Domain │           │
-│  └───────┘  └───────┘  └───────┘  └───────┘  └───────┘  └───────┘           │
+│  Validation Pipeline (see flowchart below)                                  │
 └─────────────────────────────────────────────────────────────────────────────┘
                                     │
                                     ▼
@@ -63,6 +59,25 @@ OptStuff is an enterprise-grade image optimization API service that enables deve
 │  │  - Quality      │    │  - PNG/JPEG     │    │  - Cache-Control│          │
 │  └─────────────────┘    └─────────────────┘    └─────────────────┘          │
 └─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Validation Pipeline
+
+```mermaid
+flowchart LR
+  A["API Key\nValid?"] -->|Pass| B["Project\nExists?"]
+  B -->|Pass| C["Signature\nVerify"]
+  C -->|Pass| D["Rate\nLimit"]
+  D -->|Pass| E["Referer\nDomain"]
+  E -->|Pass| F["Source\nDomain"]
+  F -->|Pass| G["Process\nImage"]
+
+  A -->|Fail| X1["401"]
+  B -->|Fail| X2["404"]
+  C -->|Fail| X3["403"]
+  D -->|Fail| X4["429"]
+  E -->|Fail| X5["403"]
+  F -->|Fail| X6["403"]
 ```
 
 ## Core Components
@@ -199,33 +214,40 @@ Level 2: Request Signatures (Per Request)
 
 ### Image Request Lifecycle
 
-```text
-1. Client Preparation
-   ┌─────────────────────────────────────────────────────────────────────────┐
-   │ path = "w_800,f_webp/images.example.com/photo.jpg"                      │
-   │ sig = HMAC-SHA256(secretKey, path)                                      │
-   │ url = /api/v1/{slug}/{path}?key={publicKey}&sig={sig}&exp={exp}           │
-   └─────────────────────────────────────────────────────────────────────────┘
-                                    │
-                                    ▼
-2. Server Validation
-   ┌─────────────────────────────────────────────────────────────────────────┐
-   │ a. Parse URL parameters (publicKey, signature)                            │
-   │ b. Lookup API Key by publicKey                                            │
-   │ c. Validate project exists and slug matches                             │
-   │ d. Verify signature: HMAC-SHA256(secretKey, path) === signature         │
-   │ e. Check rate limits (only authenticated requests consume quota)        │
-   │ f. Validate referer domain, source domain                               │
-   └─────────────────────────────────────────────────────────────────────────┘
-                                    │
-                                    ▼
-3. Image Processing
-   ┌─────────────────────────────────────────────────────────────────────────┐
-   │ a. Fetch source image                                                   │
-   │ b. Apply transformations (resize, format, quality)                      │
-   │ c. Set cache headers                                                    │
-   │ d. Return optimized image                                               │
-   └─────────────────────────────────────────────────────────────────────────┘
+```mermaid
+sequenceDiagram
+  participant Client
+  participant OptStuff as OptStuff Server
+  participant Origin as Source Image Server
+
+  rect rgb(240, 240, 255)
+  Note over Client: 1. Client Preparation
+  Client->>Client: Build path = "w_800,f_webp/images.example.com/photo.jpg"
+  Client->>Client: sig = HMAC-SHA256(secretKey, path)
+  Client->>Client: url = /api/v1/{slug}/{path}?key={pk}&sig={sig}
+  end
+
+  Client->>OptStuff: GET /api/v1/{slug}/{path}?key=...&sig=...
+
+  rect rgb(255, 240, 240)
+  Note over OptStuff: 2. Server Validation
+  OptStuff->>OptStuff: Parse URL parameters
+  OptStuff->>OptStuff: Lookup API Key by publicKey
+  OptStuff->>OptStuff: Validate project exists & slug matches
+  OptStuff->>OptStuff: Verify HMAC-SHA256 signature
+  OptStuff->>OptStuff: Check rate limits
+  OptStuff->>OptStuff: Validate referer & source domains
+  end
+
+  rect rgb(240, 255, 240)
+  Note over OptStuff,Origin: 3. Image Processing
+  OptStuff->>Origin: Fetch source image
+  Origin-->>OptStuff: Original image
+  OptStuff->>OptStuff: Apply transformations (resize, format, quality)
+  OptStuff->>OptStuff: Set cache headers
+  end
+
+  OptStuff-->>Client: Optimized image + Cache-Control headers
 ```
 
 ### API Key Lifecycle

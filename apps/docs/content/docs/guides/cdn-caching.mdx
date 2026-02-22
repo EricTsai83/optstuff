@@ -33,12 +33,25 @@ To "invalidate" a cached image, generate a new URL with different parameters or 
 
 ## CDN Architecture
 
-```text
-Browser ──→ CDN Edge ──→ OptStuff Origin ──→ Source Image
-              │                                    │
-              │ (cache HIT)                        │ (fetch + optimize)
-              ▼                                    ▼
-         Cached Image                      Optimized Image
+```mermaid
+sequenceDiagram
+  participant Browser
+  participant CDN as CDN Edge
+  participant OptStuff as OptStuff Origin
+  participant Source as Source Image
+
+  Browser->>CDN: GET /api/v1/.../image.jpg?key=...&sig=...
+
+  alt Cache HIT
+    CDN-->>Browser: Cached optimized image
+  else Cache MISS
+    CDN->>OptStuff: Forward request
+    OptStuff->>Source: Fetch original image
+    Source-->>OptStuff: Original image
+    OptStuff->>OptStuff: Apply transformations
+    OptStuff-->>CDN: Optimized image + Cache-Control headers
+    CDN-->>Browser: Optimized image (now cached at edge)
+  end
 ```
 
 On the first request, the CDN fetches from OptStuff, which fetches and optimizes the source image. Subsequent requests for the same URL are served directly from the CDN edge — no origin request needed.

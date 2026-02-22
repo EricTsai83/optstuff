@@ -40,25 +40,16 @@ Every image request requires two database lookups before processing:
 
 ### Read Flow
 
-```text
-getProjectConfigById("uuid-123")          ← used by API route (lookup by API key's projectId)
-│
-├─ Redis GET cache:project:id:uuid-123
-│  ├─ HIT (config)       → return cached config
-│  ├─ HIT (__NOT_FOUND__) → return null (negative cache hit)
-│  └─ MISS → SELECT from PostgreSQL WHERE id = ?
-│            ├─ not found → Redis SET __NOT_FOUND__ (EX 10s) → return null
-│            └─ found     → Redis SET config (EX 60s) → return config
-
-getApiKeyConfig("pk_abc123")              ← used by API route
-│
-├─ Redis GET cache:apikey:pk:pk_abc123
-│  ├─ HIT (cached config) → decrypt secretKey → return ApiKeyConfig
-│  ├─ HIT (__NOT_FOUND__)  → return null (negative cache hit)
-│  └─ MISS → SELECT from PostgreSQL WHERE publicKey = ?
-│            ├─ not found → Redis SET __NOT_FOUND__ (EX 10s) → return null
-│            └─ found     → Redis SET config with encrypted secret (EX 60s)
-│                          → decrypt secretKey → return ApiKeyConfig
+```mermaid
+flowchart TD
+  A["getProjectConfigById(id)\nor getApiKeyConfig(pk)"] --> B["Redis GET cache key"]
+  B -->|HIT config| C["Return cached config"]
+  B -->|"HIT __NOT_FOUND__"| D["Return null\n(negative cache hit)"]
+  B -->|MISS| E["SELECT from PostgreSQL"]
+  E -->|Not found| F["Redis SET __NOT_FOUND__\n(TTL 10s)"]
+  F --> D
+  E -->|Found| G["Redis SET config\n(TTL 60s)"]
+  G --> H["Return config\n(decrypt secretKey if API key)"]
 ```
 
 ### TTL Values
@@ -124,16 +115,13 @@ Active invalidation via `invalidateApiKeyCache` remains the primary revocation m
 
 ### Implementation Flow
 
-```text
-checkRateLimit({ publicKey: "pk_abc", limitPerMinute: 60, limitPerDay: 10000 })
-│
-├─ 1. Per-day check (wider window, checked first)
-│     slidingWindow.limit("pk_abc")
-│     └─ exceeded? → { allowed: false, reason: "day", retryAfter: Ns }
-│
-└─ 2. Per-minute check (stricter)
-      slidingWindow.limit("pk_abc")
-      └─ exceeded? → { allowed: false, reason: "minute", retryAfter: Ns }
+```mermaid
+flowchart TD
+  A["checkRateLimit(publicKey, limitPerMinute, limitPerDay)"] --> B["1. Per-day check\n(wider window, checked first)"]
+  B -->|Exceeded| C["Denied\nreason: day\nretryAfter: Ns"]
+  B -->|OK| D["2. Per-minute check\n(stricter)"]
+  D -->|Exceeded| E["Denied\nreason: minute\nretryAfter: Ns"]
+  D -->|OK| F["Allowed"]
 ```
 
 ### Redis Key Prefixes
@@ -187,16 +175,15 @@ Rate limit instances are created with `analytics: true`, which sends usage metri
 
 ### Implementation Flow
 
-```text
-updateApiKeyLastUsed("apikey-uuid", "project-uuid")
-│
-├─ Redis SET usage:apikey:{id} "1" NX EX 30
-│  ├─ "OK" (key didn't exist) → UPDATE apiKeys SET lastUsedAt = now()
-│  └─ null  (key exists)      → skip DB write
-│
-├─ Redis SET usage:project:{id} "1" NX EX 30
-│  ├─ "OK" (key didn't exist) → UPDATE projects SET lastActivityAt = now()
-│  └─ null  (key exists)      → skip DB write
+```mermaid
+flowchart TD
+  A["updateApiKeyLastUsed(apiKeyId, projectId)"] --> B["Redis SET usage:apikey:id\n'1' NX EX 30"]
+  B -->|"OK (key didn't exist)"| C["UPDATE apiKeys\nSET lastUsedAt = now()"]
+  B -->|"null (key exists)"| D["Skip DB write"]
+
+  A --> E["Redis SET usage:project:id\n'1' NX EX 30"]
+  E -->|"OK (key didn't exist)"| F["UPDATE projects\nSET lastActivityAt = now()"]
+  E -->|"null (key exists)"| G["Skip DB write"]
 ```
 
 ### Atomicity Guarantee

@@ -18,6 +18,18 @@ For details on how keys are used in requests, see [URL Signing](/guides/url-sign
 
 ## Key Lifecycle
 
+```mermaid
+stateDiagram-v2
+  [*] --> Active: Create key
+  Active --> Active: Sign URLs
+  Active --> Rotated: Rotate (revoke old + create new)
+  Active --> Revoked: Revoke
+  Active --> Expired: Expiration date reached
+  Rotated --> [*]
+  Revoked --> [*]
+  Expired --> [*]
+```
+
 ### Creation
 
 1. Create a key from the dashboard (see [Dashboard Setup](/getting-started/dashboard-setup))

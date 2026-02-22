@@ -80,20 +80,14 @@ GET /api/v1/my-project/w_800/cdn.example.com/go?url=http://169.254.169.254/lates
 
 Here is what happens at each layer:
 
-```text
-┌──────────────────────────────────────────────────────────────────────┐
-│ API Gateway Layer                                                    │
-│  Signature valid ✅ · API key active ✅ · Rate limit OK ✅            │
-├──────────────────────────────────────────────────────────────────────┤
-│ Validation Layer                                                     │
-│  Source domain: "cdn.example.com" ∈ allowlist ✅                      │
-├──────────────────────────────────────────────────────────────────────┤
-│ Processing Layer (IPX)                                               │
-│  fetch("https://cdn.example.com/go?url=http://169.254.169.254/...") │
-│    → 302 Found → Location: http://169.254.169.254/latest/meta-data/ │
-│    → fetch("http://169.254.169.254/latest/meta-data/")   ← NO CHECK │
-│    → Response: IAM credentials                                       │
-└──────────────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+  A["API Gateway Layer"] -->|"Signature valid, API key active, Rate limit OK"| B["Validation Layer"]
+  B -->|"cdn.example.com in allowlist"| C["Processing Layer (IPX)"]
+  C --> D["fetch cdn.example.com/go?url=http://169.254.169.254/..."]
+  D --> E["302 Found\nLocation: http://169.254.169.254/latest/meta-data/"]
+  E --> F["fetch 169.254.169.254/latest/meta-data/\nNO DOMAIN CHECK"]
+  F --> G["Response: IAM credentials leaked"]
 ```
 
 The server has just made an HTTP request to the cloud provider's instance metadata endpoint — an address that should never be reachable from user-controlled input. The attacker can use the same technique to reach any host visible from the server's network: internal microservices, databases with HTTP APIs, Kubernetes endpoints, or admin panels.
@@ -158,17 +152,13 @@ Note that `allowAllDomains: true` is intentionally set here because IPX's built-
 
 After the fix, the system enforces a strict invariant: **the URL that passes domain validation is precisely the URL that the server contacts**. No transformation happens between validation and execution.
 
-```text
-┌──────────────────────────────────────────────────────────────────────┐
-│ Validation Layer                                                     │
-│  Source domain: "cdn.example.com" ∈ allowlist ✅                      │
-├──────────────────────────────────────────────────────────────────────┤
-│ Processing Layer (IPX)                                               │
-│  fetch("https://cdn.example.com/go?url=...")                         │
-│    → 302 Found                                                       │
-│    → redirect: "error" → TypeError thrown 🛑                         │
-│    → Request aborted, 500 returned to client                         │
-└──────────────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+  A["Validation Layer"] -->|"cdn.example.com in allowlist"| B["Processing Layer (IPX)"]
+  B --> C["fetch cdn.example.com/go?url=..."]
+  C --> D["302 Found"]
+  D --> E["redirect: 'error'\nTypeError thrown"]
+  E --> F["Request aborted\n500 returned to client"]
 ```
 
 ---
