@@ -22,6 +22,3 @@ export function getProjectIPX() {
   });
   return _ipxInstance;
 }
-
-/** @deprecated Use {@link getProjectIPX} instead. */
-export const createProjectIPX = getProjectIPX;

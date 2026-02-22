@@ -23,16 +23,16 @@ import {
 const DOMAIN_PATTERN =
   /^(https?:\/\/)?(\*\.)?([a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?\.)*[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?(:(6553[0-5]|655[0-2]\d|65[0-4]\d{2}|6[0-4]\d{3}|[1-5]\d{0,4}|[1-9]\d{0,3}))?$/;
 
-const allowedRefererDomainsSchema = z
-  .array(
-    z
-      .string()
-      .regex(
-        DOMAIN_PATTERN,
-        "Invalid domain format. Use a hostname like 'example.com', optionally with protocol (http/https), wildcard (*.example.com), or port (:8080)",
-      )
-      .transform((s) => s.toLowerCase()),
+const refererDomainEntrySchema = z
+  .string()
+  .regex(
+    DOMAIN_PATTERN,
+    "Invalid domain format. Use a hostname like 'example.com', optionally with protocol (http/https), wildcard (*.example.com), or port (:8080)",
   )
+  .transform((s) => s.toLowerCase());
+
+const allowedRefererDomainsSchema = z
+  .array(refererDomainEntrySchema)
   .optional();
 
 /**
@@ -361,16 +361,7 @@ export const projectRouter = createTRPCRouter({
     .input(
       z.object({
         projectId: z.string().uuid(),
-        allowedRefererDomains: z
-          .array(
-            z
-              .string()
-              .regex(
-                DOMAIN_PATTERN,
-                "Invalid domain format. Use a hostname like 'example.com', optionally with protocol (http/https), wildcard (*.example.com), or port (:8080)",
-              )
-              .transform((s) => s.toLowerCase()),
-          ),
+        allowedRefererDomains: z.array(refererDomainEntrySchema),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -387,9 +378,14 @@ export const projectRouter = createTRPCRouter({
         });
       }
 
+      const normalizedDomains =
+        input.allowedRefererDomains.length > 0
+          ? input.allowedRefererDomains
+          : undefined;
+
       const [updatedProject] = await ctx.db
         .update(projects)
-        .set({ allowedRefererDomains: input.allowedRefererDomains })
+        .set({ allowedRefererDomains: normalizedDomains })
         .where(eq(projects.id, input.projectId))
         .returning();
 

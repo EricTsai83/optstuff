@@ -21,7 +21,7 @@ A standalone Next.js application demonstrating how to integrate the [OptStuff](h
 ### 1. Clone the project
 
 ```bash
-git clone https://github.com/optstuff/optstuff.git
+git clone https://github.com/EricTsai83/optstuff.git
 cd optstuff/examples/nextjs
 ```
 
@@ -62,7 +62,7 @@ NEXT_PUBLIC_OPTSTUFF_SLUG=my-project
 ### 4. Start the development server
 
 ```bash
-npm run dev
+pnpm dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) to see the interactive demo page.
@@ -91,7 +91,7 @@ src/
 OptStuff image optimization URLs follow this format:
 
 ```text
-{OPTSTUFF_BASE_URL}/api/v1/{project_slug}/{operations}/{image_host/path}?key={public_key}&sig={signature}
+{OPTSTUFF_BASE_URL}/api/v1/{project_slug}/{operations}/{image_host/path}?key={public_key}&sig={signature}&exp={expiry}
 ```
 
 Breakdown:
@@ -104,6 +104,7 @@ Breakdown:
 | `image_host/path` | Original image host and path (without protocol) | `images.unsplash.com/photo-xxx` |
 | `key` | Public key | `pk_xxx` |
 | `sig` | HMAC-SHA256 signature | `a1b2c3...` |
+| `exp` | HMAC expiry timestamp (optional) | `1700000000` |
 
 ### Supported Image Operations
 
@@ -233,11 +234,17 @@ const { url } = await response.json();
 // url is the signed OptStuff image URL
 ```
 
+> **Security warning:** The `/api/optimize` endpoint acts as a **signing oracle** — it signs whatever `imageUrl` the caller provides. Without server-side validation, an attacker can submit arbitrary URLs (including internal network addresses) and receive a valid signed URL, which the OptStuff proxy will then fetch on the server side (**SSRF risk**). To mitigate this:
+>
+> - **Validate / whitelist `imageUrl` origins** — Only sign URLs whose hostname belongs to an approved set of image sources (e.g., `images.unsplash.com`).
+> - **Require authentication** — Protect `/api/optimize` behind session-based auth or an API token so only your own frontend can call it.
+> - **Rate-limit the endpoint** — Prevent abuse by limiting how many signed URLs a single client can request.
+
 **Request parameters (JSON body):**
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `imageUrl` | `string` | Yes | Original image URL |
+| `imageUrl` | `string` | Yes | Original image URL — **validate the origin server-side** (see warning above) |
 | `width` | `number` | No | Target width |
 | `height` | `number` | No | Target height |
 | `quality` | `number` | No | Compression quality (1–100) |
@@ -272,6 +279,12 @@ export default function optStuffLoader({
 ```
 
 > **Note:** The custom loader runs on the client side, so it uses `NEXT_PUBLIC_` prefixed environment variables. Since the URL is not signed in this approach, you should use OptStuff's Domain Allowlist feature to restrict access.
+>
+> **Important:** `optStuffLoader` concatenates `src` directly into the URL path (`.../${ops}/${src}`), so `src` must **not** include a protocol or leading slashes. Passing a full URL like `https://cdn.example.com/photo.jpg` will produce a malformed OptStuff URL. Use the bare host + path form instead (e.g., `cdn.example.com/photo.jpg`). If your image URLs include a protocol, strip it before passing to the loader:
+>
+> ```typescript
+> const bare = url.replace(/^https?:\/\//, "");
+> ```
 
 **2. Configure `next.config.ts`:**
 

@@ -29,6 +29,7 @@ NEXT_PUBLIC_OPTSTUFF_ENDPOINT="https://your-optstuff-deployment.com/api/v1"
 Create `lib/optstuff.ts` (server-side only):
 
 ```typescript
+import "server-only";
 import crypto from "crypto";
 
 function requireEnv(name: string): string {
@@ -137,6 +138,19 @@ export async function GET(request: NextRequest) {
     );
   }
 
+  const ALLOWED_FORMATS = ["webp", "png", "jpeg", "jpg", "avif"];
+  const NUMERIC = /^\d+$/;
+
+  if (width && (!NUMERIC.test(width) || +width > 8192)) {
+    return NextResponse.json({ error: "Invalid width" }, { status: 400 });
+  }
+  if (height && (!NUMERIC.test(height) || +height > 8192)) {
+    return NextResponse.json({ error: "Invalid height" }, { status: 400 });
+  }
+  if (!ALLOWED_FORMATS.includes(format)) {
+    return NextResponse.json({ error: "Invalid format" }, { status: 400 });
+  }
+
   const ops = [
     width && `w_${width}`,
     height && `h_${height}`,
@@ -167,24 +181,36 @@ export function OptimizedImage({ src, width, alt }: OptimizedImageProps) {
   const [error, setError] = useState(false);
 
   useEffect(() => {
+    setError(false);
+    setImageUrl("");
+
+    const controller = new AbortController();
+
     const fetchUrl = async () => {
       try {
         const params = new URLSearchParams({ src });
         if (width) params.set("w", width.toString());
 
-        const res = await fetch(`/api/image-url?${params}`);
+        const res = await fetch(`/api/image-url?${params}`, {
+          signal: controller.signal,
+        });
         if (!res.ok) {
           setError(true);
           return;
         }
         const { url } = await res.json();
-        setImageUrl(url);
-      } catch {
+        if (!controller.signal.aborted) {
+          setImageUrl(url);
+        }
+      } catch (err) {
+        if (err instanceof Error && err.name === "AbortError") return;
         setError(true);
       }
     };
 
     fetchUrl();
+
+    return () => controller.abort();
   }, [src, width]);
 
   if (error) return <div>Failed to load image</div>;

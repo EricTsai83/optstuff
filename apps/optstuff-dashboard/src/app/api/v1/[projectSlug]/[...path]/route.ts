@@ -150,10 +150,10 @@ export async function GET(
       sigParams.expiresAt,
     )
   ) {
-    await logRequest(project.id, {
+    void logRequest(project.id, {
       sourceUrl: path.join("/"),
       status: "forbidden",
-    });
+    }).catch(() => undefined);
     return NextResponse.json(
       { error: "Invalid or expired signature" },
       { status: 403 },
@@ -169,10 +169,10 @@ export async function GET(
   });
 
   if (!rateLimitResult.allowed) {
-    await logRequest(project.id, {
+    void logRequest(project.id, {
       sourceUrl: path.join("/"),
       status: "rate_limited",
-    });
+    }).catch(() => undefined);
     return NextResponse.json(
       {
         error: "Rate limit exceeded",
@@ -197,10 +197,10 @@ export async function GET(
   // 7. Validate Referer (project-level)
   const referer = request.headers.get("referer");
   if (!validateReferer(referer, project.allowedRefererDomains)) {
-    await logRequest(project.id, {
+    void logRequest(project.id, {
       sourceUrl: path.join("/"),
       status: "forbidden",
-    });
+    }).catch(() => undefined);
     return NextResponse.json(
       { error: "Forbidden: Invalid referer" },
       { status: 403 },
@@ -235,10 +235,10 @@ export async function GET(
   }
 
   if (!validateSourceDomain(sourceHost, apiKey.allowedSourceDomains)) {
-    await logRequest(project.id, {
+    void logRequest(project.id, {
       sourceUrl: imageUrl,
       status: "forbidden",
-    });
+    }).catch(() => undefined);
     return NextResponse.json(
       { error: "Forbidden: Source domain not allowed" },
       { status: 403 },

@@ -53,7 +53,7 @@ if (!validateSourceDomain(sourceHost, apiKey.allowedSourceDomains)) {
 The Processing Layer then hands that same URL to IPX, which calls `fetch()` internally:
 
 ```typescript
-const ipx = createProjectIPX();
+const ipx = getProjectIPX();
 const result = await ipx(imageUrl, operations).process();
 ```
 
@@ -136,7 +136,7 @@ The Fetch API provides a `redirect` option with three modes:
 We configured IPX's HTTP storage layer to reject redirects:
 
 ```typescript
-export function createProjectIPX() {
+export function getProjectIPX() {
   return createIPX({
     storage: ipxFSStorage({ dir: path.join(process.cwd(), "public") }),
     httpStorage: ipxHttpStorage({
@@ -156,7 +156,7 @@ Note that `allowAllDomains: true` is intentionally set here because IPX's built-
 
 `ipxHttpStorage` accepts a `fetchOptions` field (typed as `RequestInit`) that is forwarded to every internal `fetch` call. Setting `redirect: "error"` means any `3xx` response immediately throws an error, which propagates up through IPX and is caught by the route handler's `catch` block, returning a `500` to the client.
 
-After the fix, the system enforces a strict invariant: **the URL that passes domain validation is exactly the URL that the server contacts**. No transformation happens between validation and execution.
+After the fix, the system enforces a strict invariant: **the URL that passes domain validation is precisely the URL that the server contacts**. No transformation happens between validation and execution.
 
 ```text
 ┌──────────────────────────────────────────────────────────────────────┐
