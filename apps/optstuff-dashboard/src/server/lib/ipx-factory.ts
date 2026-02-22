@@ -13,6 +13,9 @@ import path from "path";
 export function createProjectIPX() {
   return createIPX({
     storage: ipxFSStorage({ dir: path.join(process.cwd(), "public") }),
-    httpStorage: ipxHttpStorage({ allowAllDomains: true }),
+    httpStorage: ipxHttpStorage({
+      allowAllDomains: true,
+      fetchOptions: { redirect: "error" },
+    }),
   });
 }
