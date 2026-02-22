@@ -361,7 +361,16 @@ export const projectRouter = createTRPCRouter({
     .input(
       z.object({
         projectId: z.string().uuid(),
-        allowedRefererDomains: allowedRefererDomainsSchema,
+        allowedRefererDomains: z
+          .array(
+            z
+              .string()
+              .regex(
+                DOMAIN_PATTERN,
+                "Invalid domain format. Use a hostname like 'example.com', optionally with protocol (http/https), wildcard (*.example.com), or port (:8080)",
+              )
+              .transform((s) => s.toLowerCase()),
+          ),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -378,24 +387,9 @@ export const projectRouter = createTRPCRouter({
         });
       }
 
-      const updateData: {
-        allowedRefererDomains?: string[];
-      } = {};
-
-      if (input.allowedRefererDomains !== undefined) {
-        updateData.allowedRefererDomains = input.allowedRefererDomains;
-      }
-
-      if (Object.keys(updateData).length === 0) {
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: "No settings to update",
-        });
-      }
-
       const [updatedProject] = await ctx.db
         .update(projects)
-        .set(updateData)
+        .set({ allowedRefererDomains: input.allowedRefererDomains })
         .where(eq(projects.id, input.projectId))
         .returning();
 
