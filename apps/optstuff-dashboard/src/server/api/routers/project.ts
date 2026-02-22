@@ -13,6 +13,26 @@ import {
 } from "@/server/lib/config-cache";
 
 /**
+ * Matches a valid referer domain entry:
+ *   - Optional protocol: http:// or https://
+ *   - Optional wildcard prefix: *.
+ *   - Standard hostname labels (alphanumeric, hyphens, no leading/trailing hyphen)
+ *   - Optional port: :1-65535
+ * Rejects schemes like javascript:/data:, paths, query strings, and whitespace.
+ */
+const DOMAIN_PATTERN =
+  /^(https?:\/\/)?(\*\.)?([a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?\.)*[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?(:\d{1,5})?$/;
+
+const allowedRefererDomainsSchema = z
+  .array(
+    z.string().regex(
+      DOMAIN_PATTERN,
+      "Invalid domain format. Use a hostname like 'example.com', optionally with protocol (http/https), wildcard (*.example.com), or port (:8080)",
+    ),
+  )
+  .optional();
+
+/**
  * Checks if an error is a Postgres unique-constraint violation for the given constraint name.
  * Postgres error code "23505" = unique_violation.
  */
@@ -89,7 +109,7 @@ export const projectRouter = createTRPCRouter({
         teamId: z.string().uuid(),
         name: z.string().min(1).max(255),
         description: z.string().max(1000).optional(),
-        allowedRefererDomains: z.array(z.string()).optional(),
+        allowedRefererDomains: allowedRefererDomainsSchema,
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -341,7 +361,7 @@ export const projectRouter = createTRPCRouter({
     .input(
       z.object({
         projectId: z.string().uuid(),
-        allowedRefererDomains: z.array(z.string()).optional(),
+        allowedRefererDomains: allowedRefererDomainsSchema,
       }),
     )
     .mutation(async ({ ctx, input }) => {
