@@ -21,7 +21,7 @@ import {
  * Rejects schemes like javascript:/data:, paths, query strings, and whitespace.
  */
 const DOMAIN_PATTERN =
-  /^(https?:\/\/)?(\*\.)?([a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?\.)*[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?(:\d{1,5})?$/;
+  /^(https?:\/\/)?(\*\.)?([a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?\.)*[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?(:(6553[0-5]|655[0-2]\d|65[0-4]\d{2}|6[0-4]\d{3}|[1-5]\d{0,4}|[1-9]\d{0,3}))?$/;
 
 const allowedRefererDomainsSchema = z
   .array(
@@ -94,7 +94,7 @@ async function verifyProjectAccess(
     with: { team: true },
   });
 
-  if (project?.team.ownerId !== userId) {
+  if (!project?.team || project.team.ownerId !== userId) {
     return null;
   }
 

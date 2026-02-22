@@ -10,7 +10,7 @@ The service accepts a signed URL containing an image address and a set of transf
 
 At a high level, the architecture has three layers:
 
-```
+```text
 ┌─────────────────────────────────────────────────────┐
 │                   API Gateway Layer                  │
 │   Authentication · Rate Limiting · Input Validation  │
@@ -74,13 +74,13 @@ This is a **TOCTOU (Time-of-Check to Time-of-Use)** gap. The security check vali
 
 An attacker who holds a valid API key with `cdn.example.com` in their allowlist discovers an open redirect on that domain — say, `https://cdn.example.com/go?url=<target>`. They construct a signed request:
 
-```
+```text
 GET /api/v1/my-project/w_800/cdn.example.com/go?url=http://169.254.169.254/latest/meta-data/
 ```
 
 Here is what happens at each layer:
 
-```
+```text
 ┌──────────────────────────────────────────────────────────────────────┐
 │ API Gateway Layer                                                    │
 │  Signature valid ✅ · API key active ✅ · Rate limit OK ✅            │
@@ -158,7 +158,7 @@ Note that `allowAllDomains: true` is intentionally set here because IPX's built-
 
 After the fix, the system enforces a strict invariant: **the URL that passes domain validation is exactly the URL that the server contacts**. No transformation happens between validation and execution.
 
-```
+```text
 ┌──────────────────────────────────────────────────────────────────────┐
 │ Validation Layer                                                     │
 │  Source domain: "cdn.example.com" ∈ allowlist ✅                      │
@@ -177,7 +177,7 @@ After the fix, the system enforces a strict invariant: **the URL that passes dom
 
 If the system needed to support legitimate redirects (e.g., CDNs that use `302` for geographic load balancing), the alternative is `redirect: "manual"` with a validation loop:
 
-```
+```text
 fetch(url, { redirect: "manual" })
   → if 3xx:
       extract Location header
