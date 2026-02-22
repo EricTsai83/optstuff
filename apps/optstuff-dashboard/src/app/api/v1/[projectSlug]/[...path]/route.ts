@@ -10,7 +10,6 @@ import {
 import { verifyUrlSignature } from "@/server/lib/api-key";
 import {
   getApiKeyConfig,
-  getProjectConfig,
   getProjectConfigById,
 } from "@/server/lib/config-cache";
 import { createProjectIPX } from "@/server/lib/ipx-factory";
@@ -40,6 +39,20 @@ import {
 
 export const dynamic = "force-dynamic";
 
+const PASSTHROUGH_STATUS_CODES = new Set([404, 410]);
+
+function mapUpstreamErrorStatus(error: unknown): number {
+  const raw =
+    error instanceof Error && "statusCode" in error
+      ? (error as { statusCode: number }).statusCode
+      : undefined;
+
+  if (typeof raw !== "number" || raw < 400 || raw > 599) return 500;
+  if (PASSTHROUGH_STATUS_CODES.has(raw)) return raw;
+  if (raw >= 400 && raw < 500) return 502;
+  return 502;
+}
+
 /**
  * Handle GET requests to serve IPX-optimized images for a project using signed URLs.
  *
@@ -58,183 +71,183 @@ export async function GET(
   const { projectSlug, path } = resolvedParams;
   const url = new URL(request.url);
 
-  try {
-    // 1. Parse and validate signature parameters
-    const sigParams = parseSignatureParams(url.searchParams);
-    if (!sigParams) {
-      return NextResponse.json(
-        {
-          error: "Missing signature parameters",
-          usage:
-            "/api/v1/{projectSlug}/{operations}/{imageUrl}?key={publicKey}&sig={signature}",
-        },
-        { status: 401 },
-      );
-    }
+  // 1. Parse and validate signature parameters
+  const sigParams = parseSignatureParams(url.searchParams);
+  if (!sigParams) {
+    return NextResponse.json(
+      {
+        error: "Missing signature parameters",
+        usage:
+          "/api/v1/{projectSlug}/{operations}/{imageUrl}?key={publicKey}&sig={signature}",
+      },
+      { status: 401 },
+    );
+  }
 
-    // 2. Get API key configuration
-    const apiKey = await getApiKeyConfig(sigParams.publicKey);
-    if (!apiKey) {
-      return NextResponse.json({ error: "Invalid API key" }, { status: 401 });
-    }
+  // 2. Get API key configuration
+  const apiKey = await getApiKeyConfig(sigParams.publicKey);
+  if (!apiKey) {
+    return NextResponse.json({ error: "Invalid API key" }, { status: 401 });
+  }
 
-    // Check if API key is revoked (defense in depth — cache may be stale)
-    if (apiKey.revokedAt) {
-      return NextResponse.json(
-        { error: "API key has been revoked" },
-        { status: 401 },
-      );
-    }
+  // Check if API key is revoked (defense in depth — cache may be stale)
+  if (apiKey.revokedAt) {
+    return NextResponse.json(
+      { error: "API key has been revoked" },
+      { status: 401 },
+    );
+  }
 
-    // Check if API key is expired
-    if (apiKey.expiresAt && new Date() > apiKey.expiresAt) {
-      return NextResponse.json(
-        { error: "API key has expired" },
-        { status: 401 },
-      );
-    }
+  // Check if API key is expired
+  if (apiKey.expiresAt && new Date() > apiKey.expiresAt) {
+    return NextResponse.json(
+      { error: "API key has expired" },
+      { status: 401 },
+    );
+  }
 
-    // 3. Get project configuration by the API key's projectId (not by slug)
-    //    This avoids slug collisions across teams — the project is always
-    //    the one the API key was issued for.
-    const project = await getProjectConfigById(apiKey.projectId);
+  // 3. Get project configuration by the API key's projectId (not by slug)
+  //    This avoids slug collisions across teams — the project is always
+  //    the one the API key was issued for.
+  const project = await getProjectConfigById(apiKey.projectId);
 
-    if (!project) {
-      return NextResponse.json({ error: "Project not found" }, { status: 404 });
-    }
+  if (!project) {
+    return NextResponse.json({ error: "Project not found" }, { status: 404 });
+  }
 
-    // Verify the URL slug matches the project's actual slug to prevent
-    // URL confusion (e.g. using team-A's slug with team-B's API key).
-    if (project.slug !== projectSlug) {
-      return NextResponse.json(
-        { error: "API key does not belong to this project" },
-        { status: 401 },
-      );
-    }
+  // Verify the URL slug matches the project's actual slug to prevent
+  // URL confusion (e.g. using team-A's slug with team-B's API key).
+  if (project.slug !== projectSlug) {
+    return NextResponse.json(
+      { error: "API key does not belong to this project" },
+      { status: 401 },
+    );
+  }
 
-    // 4. Parse path to get the signing payload
-    const parsed = parseIpxPath(path);
-    if (!parsed) {
-      return NextResponse.json(
-        {
-          error: "Invalid path format",
-          usage:
-            "/api/v1/{projectSlug}/{operations}/{imageUrl}?key={publicKey}&sig={signature}",
-          examples: [
-            "/api/v1/my-blog/w_800,f_webp/images.example.com/photo.jpg?key=pk_abc&sig=xyz",
-          ],
-        },
-        { status: 400 },
-      );
-    }
+  // 4. Parse path to get the signing payload
+  const parsed = parseIpxPath(path);
+  if (!parsed) {
+    return NextResponse.json(
+      {
+        error: "Invalid path format",
+        usage:
+          "/api/v1/{projectSlug}/{operations}/{imageUrl}?key={publicKey}&sig={signature}",
+        examples: [
+          "/api/v1/my-blog/w_800,f_webp/images.example.com/photo.jpg?key=pk_abc&sig=xyz",
+        ],
+      },
+      { status: 400 },
+    );
+  }
 
-    // 5. Verify signature (before rate limit to prevent quota exhaustion
-    //    by unauthenticated requests that only know the public key)
-    const signaturePath = `${parsed.operations}/${parsed.imagePath}`;
-    if (
-      !verifyUrlSignature(
-        apiKey.secretKey,
-        signaturePath,
-        sigParams.signature,
-        sigParams.expiresAt,
-      )
-    ) {
-      await logRequest(project.id, {
-        sourceUrl: path.join("/"),
-        status: "forbidden",
-      });
-      return NextResponse.json(
-        { error: "Invalid or expired signature" },
-        { status: 403 },
-      );
-    }
-
-    // 6. Check rate limit (after signature verification so only
-    //    authenticated requests consume quota)
-    const rateLimitResult = await checkRateLimit({
-      publicKey: apiKey.publicKey,
-      limitPerMinute: apiKey.rateLimitPerMinute,
-      limitPerDay: apiKey.rateLimitPerDay,
+  // 5. Verify signature (before rate limit to prevent quota exhaustion
+  //    by unauthenticated requests that only know the public key)
+  const signaturePath = `${parsed.operations}/${parsed.imagePath}`;
+  if (
+    !verifyUrlSignature(
+      apiKey.secretKey,
+      signaturePath,
+      sigParams.signature,
+      sigParams.expiresAt,
+    )
+  ) {
+    await logRequest(project.id, {
+      sourceUrl: path.join("/"),
+      status: "forbidden",
     });
+    return NextResponse.json(
+      { error: "Invalid or expired signature" },
+      { status: 403 },
+    );
+  }
 
-    if (!rateLimitResult.allowed) {
-      await logRequest(project.id, {
-        sourceUrl: path.join("/"),
-        status: "rate_limited",
-      });
-      return NextResponse.json(
-        {
-          error: "Rate limit exceeded",
-          reason:
-            rateLimitResult.reason === "minute"
-              ? "Too many requests per minute"
-              : "Daily limit exceeded",
-          retryAfter: rateLimitResult.retryAfterSeconds,
-          limit: rateLimitResult.limit,
+  // 6. Check rate limit (after signature verification so only
+  //    authenticated requests consume quota)
+  const rateLimitResult = await checkRateLimit({
+    publicKey: apiKey.publicKey,
+    limitPerMinute: apiKey.rateLimitPerMinute,
+    limitPerDay: apiKey.rateLimitPerDay,
+  });
+
+  if (!rateLimitResult.allowed) {
+    await logRequest(project.id, {
+      sourceUrl: path.join("/"),
+      status: "rate_limited",
+    });
+    return NextResponse.json(
+      {
+        error: "Rate limit exceeded",
+        reason:
+          rateLimitResult.reason === "minute"
+            ? "Too many requests per minute"
+            : "Daily limit exceeded",
+        retryAfter: rateLimitResult.retryAfterSeconds,
+        limit: rateLimitResult.limit,
+      },
+      {
+        status: 429,
+        headers: {
+          "Retry-After": String(rateLimitResult.retryAfterSeconds),
+          "X-RateLimit-Limit": String(rateLimitResult.limit),
+          "X-RateLimit-Remaining": String(rateLimitResult.remaining),
         },
-        {
-          status: 429,
-          headers: {
-            "Retry-After": String(rateLimitResult.retryAfterSeconds),
-            "X-RateLimit-Limit": String(rateLimitResult.limit),
-            "X-RateLimit-Remaining": String(rateLimitResult.remaining),
-          },
-        },
-      );
-    }
+      },
+    );
+  }
 
-    // 7. Validate Referer (project-level)
-    const referer = request.headers.get("referer");
-    if (!validateReferer(referer, project.allowedRefererDomains)) {
-      await logRequest(project.id, {
-        sourceUrl: path.join("/"),
-        status: "forbidden",
-      });
-      return NextResponse.json(
-        { error: "Forbidden: Invalid referer" },
-        { status: 403 },
-      );
-    }
+  // 7. Validate Referer (project-level)
+  const referer = request.headers.get("referer");
+  if (!validateReferer(referer, project.allowedRefererDomains)) {
+    await logRequest(project.id, {
+      sourceUrl: path.join("/"),
+      status: "forbidden",
+    });
+    return NextResponse.json(
+      { error: "Forbidden: Invalid referer" },
+      { status: 403 },
+    );
+  }
 
-    // 8. Build full image URL and validate source domain (API key-level)
-    let imageUrl: string;
-    try {
-      imageUrl = ensureProtocol(parsed.imagePath);
-    } catch (error) {
-      return NextResponse.json(
-        {
-          error: "Invalid image URL",
-          details: error instanceof Error ? error.message : String(error),
-        },
-        { status: 400 },
-      );
-    }
+  // 8. Build full image URL and validate source domain (API key-level)
+  let imageUrl: string;
+  try {
+    imageUrl = ensureProtocol(parsed.imagePath);
+  } catch (error) {
+    return NextResponse.json(
+      {
+        error: "Invalid image URL",
+        details: error instanceof Error ? error.message : String(error),
+      },
+      { status: 400 },
+    );
+  }
 
-    let sourceHost: string;
-    try {
-      sourceHost = new URL(imageUrl).hostname;
-    } catch {
-      return NextResponse.json(
-        {
-          error: "Invalid image URL",
-          details: `Unable to parse URL: ${imageUrl}`,
-        },
-        { status: 400 },
-      );
-    }
+  let sourceHost: string;
+  try {
+    sourceHost = new URL(imageUrl).hostname;
+  } catch {
+    return NextResponse.json(
+      {
+        error: "Invalid image URL",
+        details: `Unable to parse URL: ${imageUrl}`,
+      },
+      { status: 400 },
+    );
+  }
 
-    if (!validateSourceDomain(sourceHost, apiKey.allowedSourceDomains)) {
-      await logRequest(project.id, {
-        sourceUrl: imageUrl,
-        status: "forbidden",
-      });
-      return NextResponse.json(
-        { error: "Forbidden: Source domain not allowed" },
-        { status: 403 },
-      );
-    }
+  if (!validateSourceDomain(sourceHost, apiKey.allowedSourceDomains)) {
+    await logRequest(project.id, {
+      sourceUrl: imageUrl,
+      status: "forbidden",
+    });
+    return NextResponse.json(
+      { error: "Forbidden: Source domain not allowed" },
+      { status: 403 },
+    );
+  }
 
-    // 9. Process image with IPX
+  // 9. Process image with IPX
+  try {
     const ipx = createProjectIPX();
     const operations = parseOperationsString(parsed.operations);
     const processedImage = await ipx(imageUrl, operations).process();
@@ -287,35 +300,14 @@ export async function GET(
   } catch (error) {
     console.error("Image processing error:", error);
 
-    // Log error (fire-and-forget)
-    try {
-      const project = await getProjectConfig(projectSlug);
-      if (project) {
-        logRequest(project.id, {
-          sourceUrl: path.join("/"),
-          status: "error",
-        }).catch(() => undefined);
-      }
-    } catch {
-      // Ignore
-    }
-
-    const statusCode =
-      error instanceof Error && "statusCode" in error
-        ? (error as { statusCode: number }).statusCode
-        : 500;
-    const statusText =
-      error instanceof Error && "statusText" in error
-        ? (error as { statusText: string }).statusText
-        : undefined;
+    logRequest(project.id, {
+      sourceUrl: imageUrl,
+      status: "error",
+    }).catch(() => undefined);
 
     return NextResponse.json(
-      {
-        error: "Image processing failed",
-        ...(statusText && { code: statusText }),
-        details: error instanceof Error ? error.message : String(error),
-      },
-      { status: statusCode },
+      { error: "Image processing failed" },
+      { status: mapUpstreamErrorStatus(error) },
     );
   }
 }
