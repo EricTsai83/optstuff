@@ -38,6 +38,8 @@ flowchart TD
 | Empty (default) | All referers allowed |
 | Non-empty | Only listed domains allowed |
 
+> **Note:** When the list is non-empty but a request arrives without a `Referer` header (e.g., direct browser navigation, server-to-server API calls), the request is **rejected**. If you need to support requests without a `Referer` header, leave the list empty and rely on API key-level source domain restrictions instead.
+
 ## Configuring Source Domains (API Key Level)
 
 1. Navigate to **Dashboard → Project → API Keys**

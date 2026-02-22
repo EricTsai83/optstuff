@@ -65,7 +65,7 @@ function createSignedUrl(options: {
   readonly secretKey: string;
   readonly operations: string;
   readonly imageUrl: string;
-  readonly expiresAt?: number;
+  readonly expiresAt: number | undefined;
 }): string {
   const path = `${options.operations}/${options.imageUrl}`;
   const payload = options.expiresAt

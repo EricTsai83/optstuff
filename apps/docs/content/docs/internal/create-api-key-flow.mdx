@@ -3,7 +3,7 @@ title: Create API Key Flow
 description: Internal documentation — API key creation flow, dual-key system, AES-256-GCM encryption, form validation, and database schema.
 ---
 
-This document explains the API key creation flow in OptStuff Dashboard.
+When a user creates an API key, the system generates a dual-key pair, encrypts the secret key with AES-256-GCM, and presents both keys in a one-time success screen. This document covers the full flow: UI interaction, backend processing, encryption, and database storage.
 
 ## Overview
 
@@ -157,8 +157,6 @@ The `api_keys` table stores:
 4. **Domain Restrictions** — Keys are scoped to specific source domains
 5. **Expiration** — Optional automatic key invalidation
 6. **Audit Trail** — `createdAt`, `lastUsedAt`, `revokedAt` timestamps
-
----
 
 ## Related Documentation
 

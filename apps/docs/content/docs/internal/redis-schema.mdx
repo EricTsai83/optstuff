@@ -3,7 +3,7 @@ title: Redis Schema
 description: Internal documentation — Redis key schema, cache-aside pattern, sliding window rate limiting, write throttling, and data durability.
 ---
 
-Internal documentation for contributors. This document covers the Redis key schema, implementation patterns, serialization strategies, and atomicity guarantees used by the caching layer.
+The caching layer uses Redis for three purposes: configuration caching, rate limiting, and write throttling. All keys have a TTL — nothing persists indefinitely.
 
 For the user-facing rate limiting guide (behavior, configuration, tuning), see [Rate Limiting](/guides/rate-limiting).
 
@@ -142,8 +142,8 @@ The per-day limit is checked **first**. This is deliberate: Upstash's `.limit()`
 Rate limits are per API key and stored in the database. When `null`, fallback values are applied in `config-cache.ts`:
 
 ```typescript
-rateLimitPerMinute: apiKey.rateLimitPerMinute ?? 60,    // ← change 60
-rateLimitPerDay: apiKey.rateLimitPerDay ?? 10000,       // ← change 10000
+rateLimitPerMinute: apiKey.rateLimitPerMinute ?? 60,    // default fallback
+rateLimitPerDay: apiKey.rateLimitPerDay ?? 10000,       // default fallback
 ```
 
 ### Instance Lifecycle
