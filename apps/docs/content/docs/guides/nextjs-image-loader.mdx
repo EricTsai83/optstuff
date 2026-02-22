@@ -1,0 +1,292 @@
+---
+title: Custom next/image Loader
+description: Replace Vercel's paid image optimization with OptStuff while keeping all next/image benefits — responsive srcSet, priority preloading, lazy loading, and layout shift prevention.
+---
+
+`next/image` provides responsive `srcSet` generation, priority preloading, lazy loading, and automatic layout shift prevention. However, its **default loader** routes images through Vercel's `/_next/image` endpoint, which [bills per optimization](https://vercel.com/docs/image-optimization/limits-and-pricing).
+
+This guide shows how to use OptStuff as a **custom loader** — keeping every `next/image` benefit while avoiding Vercel's image optimization costs entirely.
+
+## The Problem
+
+When integrating OptStuff with `next/image`, the obvious approach is to generate a signed URL server-side and pass it with `unoptimized`:
+
+```tsx
+<Image src={signedOptStuffUrl} unoptimized width={800} height={600} alt="Photo" />
+```
+
+This works, but `unoptimized` tells Next.js to skip its entire image pipeline. You lose:
+
+- **Responsive `srcSet`** — the browser gets a single URL instead of multiple sizes
+- **Automatic format/size negotiation** — no viewport-aware image selection
+- **`sizes`-driven loading** — the browser cannot pick the optimal image for the layout
+
+You're left with a glorified `<img>` tag that happens to prevent layout shift.
+
+## Three Approaches Compared
+
+| | Default loader | `unoptimized` | **Custom loader** |
+|---|---|---|---|
+| Hits `/_next/image` | Yes | No | **No** |
+| Vercel optimization cost | **Yes** | No | **No** |
+| Responsive `srcSet` | Yes | **No** | **Yes** |
+| `sizes` + viewport selection | Yes | **No** | **Yes** |
+| Priority preloading | Yes | Yes | **Yes** |
+| Lazy loading | Yes | Yes | **Yes** |
+| Layout shift prevention | Yes | Yes | **Yes** |
+| Placeholder / blur support | Yes | Partial | **Yes** |
+
+The custom loader approach gives you everything — without the Vercel bill.
+
+## Architecture
+
+```text
+Browser
+  │
+  │  <img srcSet="/api/optstuff?url=...&w=640 640w,
+  │               /api/optstuff?url=...&w=1080 1080w,
+  │               /api/optstuff?url=...&w=1920 1920w"
+  │       sizes="(min-width: 768px) 50vw, 100vw" />
+  │
+  ▼  (browser picks the best width for viewport + DPR)
+┌─────────────────────────────────────┐
+│  GET /api/optstuff?url=…&w=1080 │  ← Next.js API Route
+│  Signs URL server-side (sk_… safe)  │
+│  Returns 302 → signed OptStuff URL  │
+└──────────────┬──────────────────────┘
+               ▼
+┌──────────────────────────────────────┐
+│  OptStuff: fetch, resize, encode     │
+│  Returns optimized image + 1yr cache │
+└──────────────────────────────────────┘
+```
+
+Key points:
+
+- The `secretKey` never leaves the server — signing happens in the API Route
+- `next/image` generates the full `srcSet` by calling the loader with each width from `deviceSizes`
+- The browser only fetches **one** entry from the `srcSet` (the best match for the current viewport and DPR), so there is only one redirect per visible image
+- OptStuff returns `Cache-Control: public, immutable` — subsequent loads are served from browser/CDN cache with zero network requests
+
+## Implementation
+
+### Step 1: Signing Utility
+
+If you don't have one yet, create `lib/optstuff.ts`. See the [Next.js Integration Guide](/getting-started/integration-guide/nextjs#create-a-signing-utility) for details.
+
+### Step 2: API Route for Signing
+
+Create an API route that accepts image parameters, signs the URL server-side, and returns a redirect:
+
+```typescript
+// app/api/optstuff/route.ts
+import { type NextRequest, NextResponse } from "next/server";
+import { signImageUrl } from "@/lib/optstuff";
+
+export function GET(request: NextRequest) {
+  const sp = request.nextUrl.searchParams;
+  const url = sp.get("url");
+
+  if (!url) {
+    return NextResponse.json({ error: "url is required" }, { status: 400 });
+  }
+
+  const width = sp.get("w");
+  const height = sp.get("h");
+  const quality = sp.get("q") ?? "80";
+  const format = sp.get("f") ?? "webp";
+  const fit = sp.get("fit") ?? "cover";
+
+  const ops = [
+    width && `w_${width}`,
+    height && `h_${height}`,
+    `q_${quality}`,
+    `f_${format}`,
+    `fit_${fit}`,
+  ]
+    .filter(Boolean)
+    .join(",");
+
+  const signedUrl = signImageUrl(url, ops, 3600);
+
+  return NextResponse.redirect(signedUrl, 302);
+}
+```
+
+The 302 redirect is lightweight (headers only, no body). The browser follows it transparently and caches the final image response from OptStuff.
+
+<Callout type="info">
+The signing secret stays in the API Route. The client-side loader only constructs URLs to
+`/api/optstuff` — it never sees `OPTSTUFF_SECRET_KEY`.
+</Callout>
+
+### Step 3: Image Component
+
+Create a Client Component that wraps `next/image` with a custom loader pointing to the API route:
+
+```tsx
+// components/optstuff-image.tsx
+"use client";
+
+import Image, { type ImageProps, type ImageLoaderProps } from "next/image";
+
+type OptStuffImageProps = Omit<ImageProps, "src" | "loader"> & {
+  src: string;
+  format?: "webp" | "avif" | "png" | "jpg";
+  fit?: "cover" | "contain" | "fill";
+};
+
+export function OptStuffImage({
+  src,
+  alt,
+  format = "webp",
+  fit = "cover",
+  quality = 80,
+  ...rest
+}: OptStuffImageProps) {
+  const loader = ({ src: loaderSrc, width, quality: q }: ImageLoaderProps) => {
+    const params = new URLSearchParams({
+      url: loaderSrc,
+      w: String(width),
+      q: String(q ?? 80),
+      f: format,
+      fit,
+    });
+    return `/api/optstuff?${params}`;
+  };
+
+  return (
+    <Image {...rest} src={src} alt={alt} quality={quality} loader={loader} />
+  );
+}
+```
+
+<Callout type="warn">
+The component must be `"use client"` because the `loader` prop is a function that cannot
+be serialized across the Server/Client boundary. This does **not** mean the component is
+client-only — it still server-side renders and hydrates normally.
+</Callout>
+
+### Step 4: Usage
+
+Use `<OptStuffImage>` exactly like `next/image`. All standard props (`fill`, `sizes`, `priority`, `placeholder`, etc.) work as expected:
+
+```tsx
+// Fixed dimensions
+<OptStuffImage
+  src="https://images.unsplash.com/photo-xxx"
+  width={800}
+  height={600}
+  alt="Landscape"
+  format="avif"
+  quality={90}
+/>
+
+// Fill mode with responsive sizes
+<div style={{ position: "relative", width: "100%", aspectRatio: "16 / 9" }}>
+  <OptStuffImage
+    src="https://images.unsplash.com/photo-xxx"
+    fill
+    sizes="(min-width: 1024px) 50vw, 100vw"
+    priority
+    alt="Hero image"
+    style={{ objectFit: "cover" }}
+  />
+</div>
+
+// Grid of images — each card is roughly 1/3 of the viewport
+<div className="grid grid-cols-3 gap-4">
+  {images.map((img) => (
+    <div key={img.id} style={{ position: "relative", aspectRatio: "4 / 3" }}>
+      <OptStuffImage
+        src={img.url}
+        fill
+        sizes="(min-width: 640px) 33vw, 100vw"
+        priority
+        alt={img.alt}
+      />
+    </div>
+  ))}
+</div>
+```
+
+## How `srcSet` Generation Works
+
+When you render `<OptStuffImage>` with `fill` and `sizes`, Next.js generates a `srcSet` by calling your loader once per configured width. The default `deviceSizes` are:
+
+```text
+640, 750, 828, 1080, 1200, 1920, 2048, 3840
+```
+
+For each width, the loader returns a URL like `/api/optstuff?url=...&w=1080&q=80&f=webp&fit=cover`. Next.js assembles these into a standard `<img srcSet="...">` attribute.
+
+The browser then picks **exactly one** URL from the `srcSet` based on the `sizes` attribute and the device's pixel ratio. A phone on a 3-column grid at 1x DPR might request `w=640`; a retina laptop showing the same grid might request `w=1080`. No wasted bandwidth.
+
+You can customise these widths in `next.config.ts`:
+
+```typescript
+const nextConfig: NextConfig = {
+  images: {
+    deviceSizes: [640, 828, 1080, 1280, 1920],
+    imageSizes: [16, 32, 64, 128, 256],
+  },
+};
+```
+
+<Callout type="info">
+Fewer unique widths mean fewer unique URLs, which improves CDN cache hit rates. Choose a
+set that matches your common layout breakpoints.
+</Callout>
+
+## Cost Comparison
+
+Vercel charges **$5 per 1,000 source images** with the default optimization. For a site serving 100k unique images per month, that's **$500/month** just for image optimization.
+
+With the custom loader approach:
+
+- **Vercel image optimization cost: $0** — `/_next/image` is never called
+- **OptStuff cost**: your own infrastructure (self-hosted) or usage-based pricing
+- **Redirect overhead**: one extra 302 hop per unique image per browser session — typically < 10ms
+
+## FAQ
+
+### Does this actually bypass Vercel billing?
+
+Yes. Vercel bills for requests to `/_next/image`. When you provide a custom `loader`, Next.js generates `srcSet` URLs that point directly to your loader's return value — in this case `/api/optstuff`. The `/_next/image` endpoint is never invoked. You can verify by checking the Network tab: no requests to `/_next/image` should appear.
+
+### Is the secret key safe?
+
+Yes. The `loader` function runs in the browser, but it only constructs URLs to `/api/optstuff` — a Next.js API Route that runs server-side. The actual signing (using `OPTSTUFF_SECRET_KEY`) happens entirely within that API Route.
+
+### What about the redirect overhead?
+
+Each image request adds one 302 redirect before reaching OptStuff. This redirect is headers-only (no body) and typically completes in under 10ms. After the first load, the browser caches the final image (OptStuff returns `Cache-Control: public, immutable`), so subsequent page views have zero redirect overhead.
+
+### Can I avoid the redirect entirely?
+
+Yes — make the API Route proxy the image bytes instead of redirecting:
+
+```typescript
+export async function GET(request: NextRequest) {
+  // ... same signing logic ...
+  const response = await fetch(signedUrl);
+  return new NextResponse(response.body, {
+    headers: {
+      "Content-Type": response.headers.get("Content-Type") ?? "image/webp",
+      "Cache-Control": "public, max-age=31536000, immutable",
+    },
+  });
+}
+```
+
+This eliminates the redirect hop but routes all image traffic through your Next.js server. The redirect approach is better for production since it offloads bandwidth to OptStuff / your CDN.
+
+### Why `"use client"` if it still SSRs?
+
+The `"use client"` directive marks the component as part of the client bundle — it can use hooks, event handlers, and function props (like `loader`). It does **not** mean the component is client-rendered only. Next.js still server-side renders it; the HTML includes the fully resolved `<img>` tag with the `srcSet`. The directive is required solely because `loader` is a function that cannot be serialized across the React Server Components boundary.
+
+## Related Documentation
+
+- [Next.js Integration Guide](/getting-started/integration-guide/nextjs) — Environment setup, signing utility, and other integration options
+- [CDN and Caching](/guides/cdn-caching) — Cache behavior and CDN configuration
+- [URL Signing](/guides/url-signing) — Signature formula and security properties

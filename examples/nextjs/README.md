@@ -6,7 +6,7 @@ A standalone Next.js application demonstrating how to integrate the [OptStuff](h
 
 - **Server-side URL signing** — Generate signed URLs with HMAC-SHA256; secret keys are never exposed to the client
 - **Dynamic image operations** — Resize, format conversion (WebP / AVIF / PNG / JPG), quality control, and crop modes
-- **API Route integration** — Provides an `/api/optimize` endpoint for the frontend to obtain signed URLs
+- **API Route integration** — Provides an `/api/optstuff` endpoint for the frontend to obtain signed URLs
 - **URL expiration** — Set a time-to-live on signed URLs to prevent permanent exposure
 - **next/image custom loader** — Example code showing how to use OptStuff with `next/image`
 
@@ -215,10 +215,10 @@ const optimizedUrl = generateOptStuffUrl(
 
 ### Option 3: Via API Route
 
-If you need to obtain a signed URL from a Client Component, call the `/api/optimize` endpoint:
+If you need to obtain a signed URL from a Client Component, call the `/api/optstuff` endpoint:
 
 ```typescript
-const response = await fetch("/api/optimize", {
+const response = await fetch("/api/optstuff", {
   method: "POST",
   headers: { "Content-Type": "application/json" },
   body: JSON.stringify({
@@ -234,10 +234,10 @@ const { url } = await response.json();
 // url is the signed OptStuff image URL
 ```
 
-> **Security warning:** The `/api/optimize` endpoint acts as a **signing oracle** — it signs whatever `imageUrl` the caller provides. Without server-side validation, an attacker can submit arbitrary URLs (including internal network addresses) and receive a valid signed URL, which the OptStuff proxy will then fetch on the server side (**SSRF risk**). To mitigate this:
+> **Security warning:** The `/api/optstuff` endpoint acts as a **signing oracle** — it signs whatever `imageUrl` the caller provides. Without server-side validation, an attacker can submit arbitrary URLs (including internal network addresses) and receive a valid signed URL, which the OptStuff proxy will then fetch on the server side (**SSRF risk**). To mitigate this:
 >
 > - **Validate / whitelist `imageUrl` origins** — Only sign URLs whose hostname belongs to an approved set of image sources (e.g., `images.unsplash.com`).
-> - **Require authentication** — Protect `/api/optimize` behind session-based auth or an API token so only your own frontend can call it.
+> - **Require authentication** — Protect `/api/optstuff` behind session-based auth or an API token so only your own frontend can call it.
 > - **Rate-limit the endpoint** — Prevent abuse by limiting how many signed URLs a single client can request.
 
 **Request parameters (JSON body):**
@@ -319,7 +319,7 @@ import Image from "next/image";
 - **Keep the secret key confidential** — `OPTSTUFF_SECRET_KEY` should only exist in server-side environment variables; do not use the `NEXT_PUBLIC_` prefix
 - **Set URL expiration** — Use the `expiresInSeconds` parameter to limit URL validity; this example defaults to 3600 seconds (1 hour)
 - **Enable Domain Allowlist** — Configure allowed domains in the OptStuff Dashboard to prevent hotlinking
-- **Add authentication to the API Route** — In production, add authentication or rate limiting to `/api/optimize`
+- **Add authentication to the API Route** — In production, add authentication or rate limiting to `/api/optstuff`
 
 ## Further Reading
 

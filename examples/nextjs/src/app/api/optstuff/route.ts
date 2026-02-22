@@ -1,8 +1,39 @@
+import { type NextRequest, NextResponse } from "next/server";
 import { generateOptStuffUrl, type ImageOperation } from "@/lib/optstuff";
-import { NextRequest, NextResponse } from "next/server";
 
 const VALID_FORMATS = new Set(["webp", "avif", "png", "jpg"] as const);
 const VALID_FITS = new Set(["cover", "contain", "fill"] as const);
+
+/**
+ * GET — Signing endpoint for the `next/image` custom loader.
+ *
+ * Accepts image parameters as query strings, generates a signed OptStuff URL,
+ * and returns a 302 redirect. This lets `next/image` build a full responsive
+ * `srcSet` while keeping signing on the server.
+ */
+export function GET(request: NextRequest) {
+  const sp = request.nextUrl.searchParams;
+  const url = sp.get("url");
+
+  if (!url) {
+    return NextResponse.json({ error: "url is required" }, { status: 400 });
+  }
+
+  const signedUrl = generateOptStuffUrl(
+    url,
+    {
+      width: sp.has("w") ? Number(sp.get("w")) : undefined,
+      height: sp.has("h") ? Number(sp.get("h")) : undefined,
+      quality: sp.has("q") ? Number(sp.get("q")) : 80,
+      format:
+        (sp.get("f") as "webp" | "avif" | "png" | "jpg" | null) ?? "webp",
+      fit: (sp.get("fit") as "cover" | "contain" | "fill" | null) ?? "cover",
+    },
+    3600,
+  );
+
+  return NextResponse.redirect(signedUrl, 302);
+}
 
 function parseOptionalNumber(
   value: unknown,
@@ -15,6 +46,12 @@ function parseOptionalNumber(
   return { value: Math.round(n) };
 }
 
+/**
+ * POST — Returns a signed URL as JSON for the optimizer playground.
+ *
+ * Accepts a JSON body with `imageUrl`, `width`, `height`, `quality`,
+ * `format`, and `fit`, then returns `{ url: "<signed-url>" }`.
+ */
 export async function POST(request: NextRequest) {
   let body: Record<string, unknown>;
   try {

@@ -3,6 +3,7 @@
   "pages": [
     "url-signing",
     "code-examples",
+    "nextjs-image-loader",
     "cdn-caching",
     "domain-whitelisting",
     "rate-limiting",

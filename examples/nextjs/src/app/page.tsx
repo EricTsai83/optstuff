@@ -1,26 +1,23 @@
-import { OptStuffImage } from "@/components/optstuff-image";
 import { OptimizerPlayground } from "@/components/optimizer-playground";
+import { OptStuffImage } from "@/components/optstuff-image";
 
 const DEMO_IMAGES = [
   {
     label: "Landscape",
     url: "https://images.unsplash.com/photo-1506744038136-46273834b3fb",
     format: "webp" as const,
-    width: 600,
     quality: 80,
   },
   {
     label: "Portrait",
     url: "https://images.unsplash.com/photo-1534528741775-53994a69daeb",
     format: "avif" as const,
-    width: 600,
     quality: 85,
   },
   {
     label: "Product",
     url: "https://images.unsplash.com/photo-1523275335684-37898b6baf30",
     format: "webp" as const,
-    width: 600,
     quality: 90,
   },
 ];
@@ -86,8 +83,14 @@ export default function Home() {
             <code className="rounded bg-zinc-100 px-1.5 py-0.5 font-mono text-xs text-emerald-600 dark:bg-zinc-800 dark:text-emerald-400">
               {"<OptStuffImage>"}
             </code>{" "}
-            — a Server Component that generates signed URLs at build/request
-            time. No client-side API calls needed.
+            — a wrapper around{" "}
+            <code className="rounded bg-zinc-100 px-1.5 py-0.5 font-mono text-xs text-emerald-600 dark:bg-zinc-800 dark:text-emerald-400">
+              next/image
+            </code>{" "}
+            that signs URLs server-side via an API route. You get full
+            responsive <code className="rounded bg-zinc-100 px-1.5 py-0.5 font-mono text-xs text-emerald-600 dark:bg-zinc-800 dark:text-emerald-400">srcSet</code>,
+            priority preloading, and lazy loading — all optimised through
+            OptStuff.
           </p>
 
           <div className="grid gap-6 sm:grid-cols-3">
@@ -96,12 +99,13 @@ export default function Home() {
                 key={img.label}
                 className="group overflow-hidden rounded-xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900"
               >
-                <div className="relative aspect-4/3 overflow-hidden bg-zinc-100 dark:bg-zinc-800">
+                <div className="aspect-4/3 relative overflow-hidden bg-zinc-100 dark:bg-zinc-800">
                   <OptStuffImage
                     src={img.url}
                     fill
+                    sizes="(min-width: 640px) 33vw, 100vw"
+                    priority
                     alt={img.label}
-                    optimizeWidth={img.width}
                     format={img.format}
                     quality={img.quality}
                     style={{ objectFit: "cover" }}
@@ -122,9 +126,9 @@ export default function Home() {
                       <code>{`<OptStuffImage
   src="...unsplash/${img.url.split("/").pop()}"
   fill
+  sizes="(min-width: 640px) 33vw, 100vw"
   format="${img.format}"
   quality={${img.quality}}
-  optimizeWidth={${img.width}}
 />`}</code>
                     </pre>
                   </div>

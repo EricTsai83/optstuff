@@ -265,6 +265,7 @@ export async function GET(
       try {
         const headResponse = await fetch(imageUrl, {
           method: "HEAD",
+          redirect: "error",
           signal: AbortSignal.timeout(3_000),
         });
         const contentLength = headResponse.headers.get("content-length");

@@ -36,7 +36,7 @@ export function OptimizerPlayground() {
     setError(null);
     setGeneratedUrl(null);
     try {
-      const res = await fetch("/api/optimize", {
+      const res = await fetch("/api/optstuff", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ imageUrl, width, quality, format, fit }),

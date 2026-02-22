@@ -381,7 +381,7 @@ export const projectRouter = createTRPCRouter({
       const normalizedDomains =
         input.allowedRefererDomains.length > 0
           ? input.allowedRefererDomains
-          : undefined;
+          : [];
 
       const [updatedProject] = await ctx.db
         .update(projects)

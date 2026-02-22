@@ -130,7 +130,10 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const hostname = src.includes("/") ? src.split("/")[0] : src;
+  // Strip query string and fragment so they don't leak into the signed path
+  const cleanSrc = src.split(/[?#]/)[0];
+
+  const hostname = cleanSrc.includes("/") ? cleanSrc.split("/")[0] : cleanSrc;
   if (!ALLOWED_SOURCE_HOSTS.includes(hostname)) {
     return NextResponse.json(
       { error: "Source domain not allowed" },
@@ -157,11 +160,18 @@ export async function GET(request: NextRequest) {
     `f_${format}`,
   ].filter(Boolean).join(",");
 
-  const signedUrl = signImageUrl(src, ops, 3600);
+  const signedUrl = signImageUrl(cleanSrc, ops, 3600);
 
   return NextResponse.json({ url: signedUrl });
 }
 ```
+
+<Callout type="warn">
+This signing endpoint is **public by default**. In production you should protect it
+with session authentication (e.g. verify a cookie or `Authorization` header and
+return 401/403 for unauthenticated callers) and/or request rate-limiting to prevent
+abuse as an open signing oracle.
+</Callout>
 
 Call it from a client component:
 
@@ -227,46 +237,57 @@ export function OptimizedImage({ src, width, alt }: OptimizedImageProps) {
 }
 ```
 
-### Option 3: Server Component with `next/image`
+### Option 3: Custom `next/image` Loader (Recommended)
 
-You can use `next/image` with OptStuff while keeping all signing server-side.
-Sign the URL in a Server Component, then pass the signed URL as `src` with
-`unoptimized` so Next.js won't re-optimize the already-optimized image.
-You still get `next/image` benefits like lazy loading, layout shift prevention,
-and responsive sizing.
+Use a custom `loader` backed by an API Route to get **all** `next/image` benefits — responsive `srcSet`, priority preloading, lazy loading, layout shift prevention — while signing URLs server-side and **completely bypassing Vercel's paid image optimization**.
+
+The loader constructs URLs to an API Route (`/api/optstuff`), which signs the request and returns a 302 redirect to the signed OptStuff URL. The `/_next/image` endpoint is never called, so Vercel does not charge for image optimization.
 
 ```tsx
-import Image from "next/image";
-import { signImageUrl } from "@/lib/optstuff";
+// components/optstuff-image.tsx
+"use client";
 
-export function Hero() {
-  const heroSrc = signImageUrl(
-    "cdn.example.com/hero.jpg",
-    "w_1200,f_webp",
-    86400 // 24 hours
-  );
+import Image, { type ImageProps, type ImageLoaderProps } from "next/image";
+
+type OptStuffImageProps = Omit<ImageProps, "src" | "loader"> & {
+  src: string;
+  format?: "webp" | "avif" | "png" | "jpg";
+  fit?: "cover" | "contain" | "fill";
+};
+
+export function OptStuffImage({
+  src,
+  alt,
+  format = "webp",
+  fit = "cover",
+  quality = 80,
+  ...rest
+}: OptStuffImageProps) {
+  const loader = ({ src: loaderSrc, width, quality: q }: ImageLoaderProps) => {
+    const params = new URLSearchParams({
+      url: loaderSrc,
+      w: String(width),
+      q: String(q ?? 80),
+      f: format,
+      fit,
+    });
+    return `/api/optstuff?${params}`;
+  };
 
   return (
-    <Image
-      src={heroSrc}
-      alt="Hero"
-      width={1200}
-      height={630}
-      unoptimized
-    />
+    <Image {...rest} src={src} alt={alt} quality={quality} loader={loader} />
   );
 }
 ```
 
 <Callout type="warn">
-Do **not** pass `signImageUrl` (or any function that uses your secret key) as a
-`loader` prop to `next/image`. The `loader` function runs client-side, which
-would expose `OPTSTUFF_SECRET_KEY` and fail because Node.js `crypto` is
-unavailable in the browser. Always sign URLs on the server and pass the result
-as a plain string `src`.
+Do **not** pass `signImageUrl` (or any function that uses your secret key) directly as
+a `loader` prop. The `loader` function runs client-side, which would expose
+`OPTSTUFF_SECRET_KEY`. Instead, have the loader point to an API Route that handles
+signing server-side.
 </Callout>
 
-For more details on CDN caching with `next/image`, see the [CDN and Caching guide](/guides/cdn-caching#using-with-nextimage).
+For the full implementation (API Route, architecture diagram, `srcSet` tuning, and FAQ), see the dedicated [Custom next/image Loader guide](/guides/nextjs-image-loader).
 
 ## Pre-Launch Checklist
 

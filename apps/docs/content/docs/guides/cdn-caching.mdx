@@ -83,31 +83,28 @@ No additional configuration needed. Vercel's Edge Network respects `Cache-Contro
 
 ### Using with `next/image`
 
-You can use OptStuff as a custom image loader with `next/image`:
+You can use OptStuff as a custom image loader with `next/image` by pointing the
+loader to an API Route that signs URLs server-side. This keeps the secret key on
+the server while giving you full responsive `srcSet` support — and completely
+bypasses Vercel's paid image optimization.
 
-```typescript
-// lib/optstuff-loader.ts
-import { signImageUrl } from "@/lib/optstuff";
-
-export function optstuffLoader({
-  src,
-  width,
-  quality,
-}: {
-  readonly src: string;
-  readonly width: number;
-  readonly quality?: number;
-}) {
-  const ops = [`w_${width}`, "f_webp", quality ? `q_${quality}` : null]
-    .filter(Boolean)
-    .join(",");
-  return signImageUrl(src, ops, 86400);
-}
-```
+See the [Custom next/image Loader guide](/guides/nextjs-image-loader) for the
+full implementation.
 
 ```tsx
-import Image from "next/image";
-import { optstuffLoader } from "@/lib/optstuff-loader";
+"use client";
+
+import Image, { type ImageLoaderProps } from "next/image";
+
+function optstuffLoader({ src, width, quality }: ImageLoaderProps) {
+  const params = new URLSearchParams({
+    url: src,
+    w: String(width),
+    q: String(quality ?? 80),
+    f: "webp",
+  });
+  return `/api/optstuff?${params}`;
+}
 
 export function Hero() {
   return (

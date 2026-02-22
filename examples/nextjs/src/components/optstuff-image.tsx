@@ -1,62 +1,44 @@
-import Image, { type ImageProps } from "next/image";
+"use client";
 
-import { generateOptStuffUrl } from "@/lib/optstuff";
+import Image, { type ImageProps, type ImageLoaderProps } from "next/image";
 
 type OptStuffImageProps = Omit<ImageProps, "src" | "loader"> & {
   /** Full URL of the original image (e.g. "https://images.unsplash.com/photo-xxx") */
   src: string;
-  /**
-   * Optimization width override — useful when the display size differs from
-   * the desired optimization size (e.g. 2x for retina).
-   * Falls back to the `width` prop if omitted.
-   */
-  optimizeWidth?: number;
-  /** Optimization height override. Falls back to the `height` prop if omitted. */
-  optimizeHeight?: number;
   /** Output format (default: "webp") */
   format?: "webp" | "avif" | "png" | "jpg";
   /** Crop / fit mode (default: "cover") */
   fit?: "cover" | "contain" | "fill";
-  /** Signed URL time-to-live in seconds (default: 3600) */
-  expiresIn?: number;
 };
 
 /**
  * Drop-in `next/image` wrapper that serves images through OptStuff.
  *
- * This is a **Server Component** — the signed URL is generated on the server
- * so the secret key is never exposed to the client.
+ * Uses a custom `loader` backed by `/api/optstuff` — an API route that
+ * signs the URL server-side, then 302-redirects to the optimised image.
+ *
+ * This preserves **all** `next/image` benefits (responsive `srcSet`, priority
+ * preloading, lazy loading, `sizes`, placeholder support, etc.) while keeping
+ * the signing secret on the server.
  *
  * @example
  * ```tsx
- * // Basic usage (same as next/image, just swap the import)
  * <OptStuffImage
  *   src="https://images.unsplash.com/photo-xxx"
  *   width={800}
  *   height={600}
  *   alt="Landscape"
- * />
- *
- * // With OptStuff-specific options
- * <OptStuffImage
- *   src="https://images.unsplash.com/photo-xxx"
- *   width={400}
- *   height={300}
- *   alt="Retina landscape"
- *   optimizeWidth={800}   // fetch 800px wide for 2x retina
  *   format="avif"
  *   quality={90}
- *   fit="contain"
- *   expiresIn={7200}
  * />
  *
- * // Fill mode (responsive container)
+ * // Fill mode — Next.js generates srcSet from deviceSizes automatically
  * <div style={{ position: "relative", width: "100%", height: 400 }}>
  *   <OptStuffImage
  *     src="https://images.unsplash.com/photo-xxx"
  *     fill
- *     alt="Full-width hero"
- *     optimizeWidth={1920}
+ *     sizes="(min-width: 768px) 50vw, 100vw"
+ *     alt="Hero"
  *     style={{ objectFit: "cover" }}
  *   />
  * </div>
@@ -64,44 +46,22 @@ type OptStuffImageProps = Omit<ImageProps, "src" | "loader"> & {
  */
 export function OptStuffImage({
   src,
-  optimizeWidth,
-  optimizeHeight,
-  quality,
+  alt,
   format = "webp",
   fit = "cover",
-  expiresIn = 3600,
-  width,
-  height,
-  alt,
+  quality = 80,
   ...rest
 }: OptStuffImageProps) {
-  const effectiveWidth =
-    optimizeWidth ?? (typeof width === "number" ? width : undefined);
-  const effectiveHeight =
-    optimizeHeight ?? (typeof height === "number" ? height : undefined);
-  const effectiveQuality =
-    typeof quality === "string" ? parseInt(quality, 10) : (quality ?? 80);
-
-  const optimizedSrc = generateOptStuffUrl(
-    src,
-    {
-      width: effectiveWidth,
-      height: effectiveHeight,
-      quality: effectiveQuality,
-      format,
+  const loader = ({ src: loaderSrc, width, quality: q }: ImageLoaderProps) => {
+    const params = new URLSearchParams({
+      url: loaderSrc,
+      w: String(width),
+      q: String(q ?? 80),
+      f: format,
       fit,
-    },
-    expiresIn,
-  );
+    });
+    return `/api/optstuff?${params}`;
+  };
 
-  return (
-    <Image
-      {...rest}
-      src={optimizedSrc}
-      width={width}
-      height={height}
-      alt={alt}
-      unoptimized
-    />
-  );
+  return <Image {...rest} src={src} alt={alt} quality={quality} loader={loader} />;
 }
