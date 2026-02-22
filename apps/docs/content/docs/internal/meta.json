@@ -4,6 +4,7 @@
     "system-overview",
     "redis-schema",
     "user-onboarding-flow",
-    "create-api-key-flow"
+    "create-api-key-flow",
+    "ssrf-prevention"
   ]
 }

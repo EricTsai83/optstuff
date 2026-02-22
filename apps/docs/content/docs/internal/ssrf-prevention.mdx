@@ -1,4 +1,7 @@
-# Designing a Server-Side Image Proxy That Doesn't Become an SSRF Gateway
+---
+title: "SSRF Prevention: Image Proxy Design"
+description: How our image proxy architecture prevents Server-Side Request Forgery (SSRF) — the design flaw, the attack vector, and the fix.
+---
 
 When you design a service that fetches external resources on behalf of users, you're building a proxy — whether you intend to or not. Every proxy is one misconfiguration away from being an open gateway into your private network. This article walks through the system design of a real image optimization API, shows how a seemingly correct architecture left a gap that enables Server-Side Request Forgery (SSRF), and explains the design principle we applied to close it.
 
