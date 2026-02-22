@@ -28,18 +28,33 @@ export function OptimizerPlayground() {
   const [fit, setFit] = useState<(typeof FIT_MODES)[number]>("cover");
   const [generatedUrl, setGeneratedUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
   async function handleGenerate() {
     setLoading(true);
+    setError(null);
+    setGeneratedUrl(null);
     try {
       const res = await fetch("/api/optimize", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ imageUrl, width, quality, format, fit }),
       });
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        const message =
+          (body as { error?: string } | null)?.error ??
+          `Request failed (${res.status})`;
+        setError(message);
+        return;
+      }
       const data = (await res.json()) as { url: string };
       setGeneratedUrl(data.url);
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "An unexpected error occurred",
+      );
     } finally {
       setLoading(false);
     }
@@ -180,7 +195,13 @@ export function OptimizerPlayground() {
           <h2 className="mb-4 text-lg font-semibold text-zinc-900 dark:text-zinc-100">
             Signed URL
           </h2>
-          {generatedUrl ? (
+          {error ? (
+            <div className="rounded-lg border border-red-200 bg-red-50 p-4 dark:border-red-900/50 dark:bg-red-950/30">
+              <p className="text-sm font-medium text-red-700 dark:text-red-400">
+                {error}
+              </p>
+            </div>
+          ) : generatedUrl ? (
             <div>
               <div className="relative rounded-lg bg-zinc-950 p-4">
                 <code className="block break-all font-mono text-xs text-emerald-400">
