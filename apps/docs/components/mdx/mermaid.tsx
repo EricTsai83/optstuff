@@ -10,9 +10,26 @@ export function Mermaid({ chart }: { readonly chart: string }) {
     setMounted(true);
   }, []);
 
-  if (!mounted) return null;
+  if (!mounted) {
+    return (
+      <div
+        className="h-40 w-full animate-pulse rounded-lg bg-fd-muted"
+        role="img"
+        aria-label="Loading diagram"
+      />
+    );
+  }
+
   return (
-    <Suspense fallback={null}>
+    <Suspense
+      fallback={
+        <div
+          className="h-40 w-full animate-pulse rounded-lg bg-fd-muted"
+          role="img"
+          aria-label="Loading diagram"
+        />
+      }
+    >
       <MermaidContent chart={chart} />
     </Suspense>
   );
@@ -29,6 +46,18 @@ function cachePromise<T>(key: string, setPromise: () => Promise<T>): Promise<T> 
   return promise;
 }
 
+/**
+ * SECURITY: The `chart` prop is rendered as raw SVG via `dangerouslySetInnerHTML`
+ * (see the returned JSX below) with mermaid's `securityLevel: "loose"`.
+ *
+ * This is safe **only** because `chart` content is author-controlled MDX — it is
+ * never sourced from user input.
+ *
+ * If `chart` ever becomes user-supplied:
+ *  1. Switch `securityLevel` to `"strict"` or `"sandbox"`.
+ *  2. Remove `dangerouslySetInnerHTML` and use a sandboxed iframe or DOMPurify.
+ *  3. Validate / sanitize the Mermaid markup before rendering.
+ */
 function MermaidContent({ chart }: { readonly chart: string }) {
   const id = useId();
   const { resolvedTheme } = useTheme();
