@@ -118,9 +118,12 @@ Multiple operations are joined with commas, e.g.: `w_800,q_80,f_webp,fit_cover`
 To prevent unauthorized image operations, OptStuff uses HMAC-SHA256 signatures. The signing process works as follows:
 
 ```
-sign_content = path + "?" + query_params (excluding sig)
-signature = HMAC-SHA256(secret_key, sign_content).hex()
+sign_content = "{ops}/{image}"                        # e.g. "w_800,q_80,f_webp/images.unsplash.com/photo-xxx"
+sign_content = sign_content + "?exp={exp}"            # append only when the URL has an expiration timestamp
+signature    = HMAC-SHA256(secret_key, sign_content)  # raw digest → base64url → take first 32 characters
 ```
+
+> **Note:** `sign_content` does **not** include the `/api/v1/{project_slug}/` prefix or the `key` query parameter — only the operations + image path (and, if present, the `exp` value). The signature is the raw HMAC-SHA256 digest encoded as **base64url** and **truncated to 32 characters**.
 
 ## Integration Guide
 
