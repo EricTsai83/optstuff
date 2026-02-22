@@ -145,9 +145,10 @@ function createUrlSignature(
   expiresAt?: number,
 ) {
   const payload = expiresAt ? `${path}?exp=${expiresAt}` : path;
-  const signature = createHmac("sha256", secretKey).update(payload).digest();
-  // Use base64url encoding for URL-safe signatures
-  return signature.toString("base64url").substring(0, 32); // Truncate for shorter URLs
+  return createHmac("sha256", secretKey)
+    .update(payload)
+    .digest("base64url")
+    .substring(0, 32);
 }
 
 /**

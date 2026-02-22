@@ -237,16 +237,24 @@ export function OptimizerPlayground() {
               <code>{`// Server Component or API Route
 import crypto from "crypto";
 
-const path = "/api/v1/${"{slug}"}/${`w_${width},q_${quality},f_${format},fit_${fit}`}/${"{imageHost/path}"}";
-const params = "key=${"{publicKey}"}";
+const ops = "${`w_${width},q_${quality},f_${format},fit_${fit}`}";
+const imageHost = "${"{imageHost/path}"}"; // e.g. images.unsplash.com/photo.jpg
+const signingPath = \`\${ops}/\${imageHost}\`;
+const urlPath = \`/api/v1/\${process.env.OPTSTUFF_PROJECT_SLUG}/\${signingPath}\`;
 
 const sig = crypto
-  .createHmac("sha256", process.env.OPTSTUFF_SECRET_KEY)
-  .update(path + "?" + params)
-  .digest("hex");
+  .createHmac("sha256", process.env.OPTSTUFF_SECRET_KEY!)
+  .update(signingPath)
+  .digest("base64url")
+  .substring(0, 32);
+
+const params = new URLSearchParams({
+  key: process.env.OPTSTUFF_PUBLIC_KEY!,
+  sig,
+});
 
 // Use in <img> or next/image
-const url = \`\${OPTSTUFF_URL}\${path}?\${params}&sig=\${sig}\`;`}</code>
+const url = \`\${process.env.OPTSTUFF_BASE_URL}\${urlPath}?\${params}\`;`}</code>
             </pre>
           </div>
         </div>

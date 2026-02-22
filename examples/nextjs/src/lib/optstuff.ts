@@ -66,8 +66,7 @@ export function generateOptStuffUrl(
   const sig = crypto
     .createHmac("sha256", OPTSTUFF_SECRET_KEY)
     .update(signPayload)
-    .digest()
-    .toString("base64url")
+    .digest("base64url")
     .substring(0, 32);
 
   params.set("sig", sig);
