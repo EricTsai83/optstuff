@@ -54,6 +54,7 @@ Public keys (`pk_...`) are safe to expose in URLs. Secret keys (`sk_...`) never 
 | Hotlinking | Referer domain whitelist |
 | Unauthorized Sources | Source domain whitelist |
 | Resource Exhaustion | Per-key rate limiting |
+| SSRF | Image proxy validation/whitelisting and request sanitization ([details](/internal/ssrf-prevention)) |
 
 ## Secure Defaults
 
@@ -78,3 +79,4 @@ Public keys (`pk_...`) are safe to expose in URLs. Secret keys (`sk_...`) never 
 - [Domain Whitelisting](/guides/domain-whitelisting) — Domain configuration
 - [Rate Limiting](/guides/rate-limiting) — Rate limit configuration
 - [Key Management](/guides/key-management) — API key lifecycle best practices
+- [SSRF Prevention: Image Proxy Design](/internal/ssrf-prevention) — How the image proxy prevents Server-Side Request Forgery
