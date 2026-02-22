@@ -14,13 +14,13 @@ Each API key consists of a **dual-key pair**:
 | Public Key | `pk_` + 22 characters (25 total) | Identifies requests in URLs | Viewable anytime in dashboard |
 | Secret Key | `sk_` + base64url | Signs URLs (HMAC-SHA256) | **Shown only once** at creation/rotation |
 
-For details on how keys are used in requests, see [URL Signing](/docs/guides/url-signing).
+For details on how keys are used in requests, see [URL Signing](/guides/url-signing).
 
 ## Key Lifecycle
 
 ### Creation
 
-1. Create a key from the dashboard (see [Dashboard Setup](/docs/getting-started/dashboard-setup))
+1. Create a key from the dashboard (see [Dashboard Setup](/getting-started/dashboard-setup))
 2. Configure: name, allowed source domains, optional expiration
 3. **Copy the secret key immediately** — it cannot be retrieved later
 
@@ -77,6 +77,6 @@ Set an optional expiration date when creating a key. After this date, the key is
 
 ## Related Documentation
 
-- [Dashboard Setup](/docs/getting-started/dashboard-setup) — How to create and manage keys in the UI
-- [URL Signing](/docs/guides/url-signing) — How keys are used to sign requests
-- [Security Best Practices](/docs/guides/security-best-practices) — Broader security context
+- [Dashboard Setup](/getting-started/dashboard-setup) — How to create and manage keys in the UI
+- [URL Signing](/guides/url-signing) — How keys are used to sign requests
+- [Security Best Practices](/guides/security-best-practices) — Broader security context

@@ -7,14 +7,14 @@ description: Frequently asked questions about OptStuff — pricing, CDN usage, m
 
 ### What is OptStuff?
 
-OptStuff is a secure image optimization API that resizes, compresses, and converts images on-the-fly via URL parameters. See [What is OptStuff?](/docs/introduction/what-is-optstuff) for a full overview.
+OptStuff is a secure image optimization API that resizes, compresses, and converts images on-the-fly via URL parameters. See [What is OptStuff?](/introduction/what-is-optstuff) for a full overview.
 
 ### What image formats are supported?
 
 **Input:** JPEG, PNG, WebP, AVIF, GIF
 **Output:** JPEG, PNG, WebP, AVIF
 
-See [Image Operations](/docs/api-reference/image-operations) for the complete reference.
+See [Image Operations](/api-reference/image-operations) for the complete reference.
 
 ### Is OptStuff open source?
 
@@ -26,7 +26,7 @@ Yes. The source code is available on [GitHub](https://github.com/EricTsai83/opts
 
 ### What's included in the free plan?
 
-10,000 requests and 1 GB bandwidth per month, with full access to all features (signed URLs, domain whitelisting, analytics, etc.). See [Pricing and Limits](/docs/introduction/pricing-and-limits).
+10,000 requests and 1 GB bandwidth per month, with full access to all features (signed URLs, domain whitelisting, analytics, etc.). See [Pricing and Limits](/introduction/pricing-and-limits).
 
 ### What happens when I exceed the free plan?
 
@@ -34,7 +34,7 @@ When your team's monthly request or bandwidth limit is reached, new optimization
 
 ### Can I increase rate limits on the free plan?
 
-Yes — rate limits are configurable per API key in the dashboard. The free plan's overall monthly request and bandwidth caps still apply. See [Rate Limiting](/docs/guides/rate-limiting).
+Yes — rate limits are configurable per API key in the dashboard. The free plan's overall monthly request and bandwidth caps still apply. See [Rate Limiting](/guides/rate-limiting).
 
 ---
 
@@ -42,15 +42,15 @@ Yes — rate limits are configurable per API key in the dashboard. The free plan
 
 ### Can I use OptStuff with a CDN?
 
-Yes, and it's recommended. OptStuff returns `Cache-Control: public, s-maxage=31536000, immutable` headers, making it compatible with any CDN. See the [CDN and Caching](/docs/guides/cdn-caching) guide for setup instructions with Cloudflare, Vercel, and CloudFront.
+Yes, and it's recommended. OptStuff returns `Cache-Control: public, s-maxage=31536000, immutable` headers, making it compatible with any CDN. See the [CDN and Caching](/guides/cdn-caching) guide for setup instructions with Cloudflare, Vercel, and CloudFront.
 
 ### Does OptStuff work with frameworks other than Next.js?
 
-Yes. OptStuff is a standard HTTP API — any server-side language that can compute HMAC-SHA256 can generate signed URLs. See [Code Examples](/docs/guides/code-examples) for implementations in Node.js, Python, Go, Ruby, and PHP.
+Yes. OptStuff is a standard HTTP API — any server-side language that can compute HMAC-SHA256 can generate signed URLs. See [Code Examples](/guides/code-examples) for implementations in Node.js, Python, Go, Ruby, and PHP.
 
 ### Can I use OptStuff from the browser?
 
-URL **signing** must happen server-side because it requires the secret key. The signed URL itself can be used in `<img>` tags, CSS `background-image`, or any client-side context. See the [Integration Guide](/docs/getting-started/integration-guide) for the recommended pattern.
+URL **signing** must happen server-side because it requires the secret key. The signed URL itself can be used in `<img>` tags, CSS `background-image`, or any client-side context. See the [Integration Guide](/getting-started/integration-guide) for the recommended pattern.
 
 ### How do I migrate from Cloudinary / Imgix / another service?
 
@@ -59,7 +59,7 @@ URL **signing** must happen server-side because it requires the secret key. The 
 3. Replace your existing image URL generation with OptStuff's signing utility
 4. Update your CDN origin to point to your OptStuff deployment
 
-The URL structure is different, so you'll need to update your image components. See the [Quick Start](/docs/getting-started/quickstart) for the basic integration pattern.
+The URL structure is different, so you'll need to update your image components. See the [Quick Start](/getting-started/quickstart) for the basic integration pattern.
 
 ---
 
@@ -67,11 +67,11 @@ The URL structure is different, so you'll need to update your image components. 
 
 ### Is my secret key stored securely?
 
-Yes. Secret keys are encrypted with AES-256-GCM before storage. The encryption master key is derived via HKDF (RFC 5869) and stored separately from the database. See [Security Best Practices](/docs/guides/security-best-practices).
+Yes. Secret keys are encrypted with AES-256-GCM before storage. The encryption master key is derived via HKDF (RFC 5869) and stored separately from the database. See [Security Best Practices](/guides/security-best-practices).
 
 ### What if I lose my secret key?
 
-The secret key is only shown once at creation or rotation. If you've lost it, **rotate** the key from the dashboard to generate a new pair. The old key is immediately revoked. See [Key Management](/docs/guides/key-management#rotation).
+The secret key is only shown once at creation or rotation. If you've lost it, **rotate** the key from the dashboard to generate a new pair. The old key is immediately revoked. See [Key Management](/guides/key-management#rotation).
 
 ### Can someone forge requests if they see a signed URL?
 
@@ -106,15 +106,15 @@ This is the most common error. Check these causes in order:
 3. **Wrong encoding** — Use `base64url`, not standard `base64`
 4. **Expired signature** — If using `exp`, ensure the timestamp is in Unix seconds (not milliseconds)
 
-See [Troubleshooting Signature Errors](/docs/api-reference/error-codes#troubleshooting-signature-errors) for the full checklist.
+See [Troubleshooting Signature Errors](/api-reference/error-codes#troubleshooting-signature-errors) for the full checklist.
 
 ### I'm getting `403 Source domain not allowed`
 
-The image source domain is not in the API key's allowed source domains list. Add it in **Dashboard → Project → API Key settings**. See [Domain Whitelisting](/docs/guides/domain-whitelisting).
+The image source domain is not in the API key's allowed source domains list. Add it in **Dashboard → Project → API Key settings**. See [Domain Whitelisting](/guides/domain-whitelisting).
 
 ### I'm getting `429 Too Many Requests`
 
-You've exceeded per-minute or per-day rate limits for this API key. Check the `Retry-After` header in the response and wait before retrying. See [Rate Limiting](/docs/guides/rate-limiting) to adjust limits.
+You've exceeded per-minute or per-day rate limits for this API key. Check the `Retry-After` header in the response and wait before retrying. See [Rate Limiting](/guides/rate-limiting) to adjust limits.
 
 ### Images are not being cached by my CDN
 
@@ -123,4 +123,4 @@ Verify that:
 2. Query strings (`key`, `sig`, `exp`) are included in the cache key
 3. The CDN is not stripping or overriding cache headers
 
-See [CDN and Caching](/docs/guides/cdn-caching) for CDN-specific configuration.
+See [CDN and Caching](/guides/cdn-caching) for CDN-specific configuration.

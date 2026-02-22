@@ -13,6 +13,29 @@ import {
 } from "@/server/lib/config-cache";
 
 /**
+ * Matches a valid referer domain entry:
+ *   - Optional protocol: http:// or https://
+ *   - Optional wildcard prefix: *.
+ *   - Standard hostname labels (alphanumeric, hyphens, no leading/trailing hyphen)
+ *   - Optional port: :1-65535
+ * Rejects schemes like javascript:/data:, paths, query strings, and whitespace.
+ */
+const DOMAIN_PATTERN =
+  /^(https?:\/\/)?(\*\.)?([a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?\.)*[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?(:(6553[0-5]|655[0-2]\d|65[0-4]\d{2}|6[0-4]\d{3}|[1-5]\d{0,4}|[1-9]\d{0,3}))?$/;
+
+const refererDomainEntrySchema = z
+  .string()
+  .regex(
+    DOMAIN_PATTERN,
+    "Invalid domain format. Use a hostname like 'example.com', optionally with protocol (http/https), wildcard (*.example.com), or port (:8080)",
+  )
+  .transform((s) => s.toLowerCase());
+
+const allowedRefererDomainsSchema = z
+  .array(refererDomainEntrySchema)
+  .optional();
+
+/**
  * Checks if an error is a Postgres unique-constraint violation for the given constraint name.
  * Postgres error code "23505" = unique_violation.
  */
@@ -50,7 +73,7 @@ async function verifyTeamAccess(
     where: eq(teams.id, teamId),
   });
 
-  if (!team || team.ownerId !== userId) {
+  if (team?.ownerId !== userId) {
     return null;
   }
 
@@ -71,7 +94,7 @@ async function verifyProjectAccess(
     with: { team: true },
   });
 
-  if (!project || project.team.ownerId !== userId) {
+  if (project?.team?.ownerId !== userId) {
     return null;
   }
 
@@ -89,6 +112,7 @@ export const projectRouter = createTRPCRouter({
         teamId: z.string().uuid(),
         name: z.string().min(1).max(255),
         description: z.string().max(1000).optional(),
+        allowedRefererDomains: allowedRefererDomainsSchema,
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -127,6 +151,11 @@ export const projectRouter = createTRPCRouter({
             name: input.name,
             slug: slugToUse,
             description: input.description,
+            allowedRefererDomains:
+              input.allowedRefererDomains &&
+              input.allowedRefererDomains.length > 0
+                ? input.allowedRefererDomains
+                : undefined,
             apiKeyCount: 1, // Will have one default key
           })
           .returning();
@@ -264,7 +293,7 @@ export const projectRouter = createTRPCRouter({
       });
 
       // Verify user owns this team
-      if (!team || team.ownerId !== ctx.userId) {
+      if (team?.ownerId !== ctx.userId) {
         return null;
       }
 
@@ -332,7 +361,7 @@ export const projectRouter = createTRPCRouter({
     .input(
       z.object({
         projectId: z.string().uuid(),
-        allowedRefererDomains: z.array(z.string()).optional(),
+        allowedRefererDomains: z.array(refererDomainEntrySchema),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -349,26 +378,14 @@ export const projectRouter = createTRPCRouter({
         });
       }
 
-      const updateData: {
-        allowedRefererDomains?: string[];
-      } = {};
-
-      if (input.allowedRefererDomains !== undefined) {
-        updateData.allowedRefererDomains = input.allowedRefererDomains
-          .map((d) => d.trim().toLowerCase())
-          .filter((d) => d.length > 0);
-      }
-
-      if (Object.keys(updateData).length === 0) {
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: "No settings to update",
-        });
-      }
+      const normalizedDomains =
+        input.allowedRefererDomains.length > 0
+          ? input.allowedRefererDomains
+          : [];
 
       const [updatedProject] = await ctx.db
         .update(projects)
-        .set(updateData)
+        .set({ allowedRefererDomains: normalizedDomains })
         .where(eq(projects.id, input.projectId))
         .returning();
 

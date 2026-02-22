@@ -204,9 +204,16 @@ export function SettingsTab({ project, team }: SettingsTabProps) {
                 <DomainListInput
                   value={refererDomains}
                   onChange={setRefererDomains}
-                  placeholder="myapp.com"
+                  placeholder="https://example.com"
                   disabled={isUpdatingSettings}
                 />
+                <p className="text-muted-foreground text-xs">
+                  <strong>Tip:</strong> Add{" "}
+                  <code className="bg-muted rounded px-1 py-0.5">
+                    http://localhost
+                  </code>{" "}
+                  to allow requests from your local development server.
+                </p>
               </div>
 
               <div className="flex justify-end">

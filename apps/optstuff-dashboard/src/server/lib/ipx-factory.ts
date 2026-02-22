@@ -2,22 +2,23 @@ import { createIPX, ipxFSStorage, ipxHttpStorage } from "ipx";
 import path from "path";
 
 /**
- * Get or create an IPX instance for a set of allowed domains
+ * Create an IPX instance for image processing.
  *
- * @param allowedDomains - List of allowed source domains
- * @returns IPX instance configured for the given domains
+ * Domain validation is handled upstream by `validateSourceDomain` in the route
+ * handler (which supports subdomain matching). IPX is configured with
+ * `allowAllDomains` because its built-in check only does exact hostname
+ * matching and would reject valid subdomains (e.g. images.unsplash.com when
+ * unsplash.com is allowed).
  */
-export function getProjectIPX(allowedDomains: readonly string[] | null) {
-  // If no domains specified, use a wildcard instance
-  const domains =
-    allowedDomains && allowedDomains.length > 0 ? [...allowedDomains] : ["*"];
+let _ipxInstance: ReturnType<typeof createIPX> | undefined;
 
-  return createIPX({
-    // Local storage (required but not used for remote images)
+export function getProjectIPX() {
+  _ipxInstance ??= createIPX({
     storage: ipxFSStorage({ dir: path.join(process.cwd(), "public") }),
-    // HTTP storage for remote images
     httpStorage: ipxHttpStorage({
-      domains: domains[0] === "*" ? undefined : domains,
+      allowAllDomains: true,
+      fetchOptions: { redirect: "error" },
     }),
   });
+  return _ipxInstance;
 }

@@ -1,0 +1,320 @@
+---
+title: Next.js
+description: Step-by-step guide to integrating OptStuff image optimization into a Next.js application using server-side URL signing, with examples for a signing utility, Server Component, API Route, and next/image with unoptimized pre-signed URLs.
+---
+
+This guide shows how to integrate OptStuff into a Next.js application using the App Router.
+
+For the security principles that apply to all integrations, see the [Integration Guide overview](/getting-started/integration-guide).
+
+## Environment Variables
+
+Add to your `.env.local`:
+
+```bash
+# Server-side only — secret! Never use the NEXT_PUBLIC_ prefix
+OPTSTUFF_SECRET_KEY="sk_your_secret_key_here"
+
+# Server-side only — not secret, but no need for NEXT_PUBLIC_ prefix
+# The publicKey appears in generated URLs (?key=pk_...) and is not a secret
+OPTSTUFF_PUBLIC_KEY="pk_abc123..."
+
+# Public configuration
+NEXT_PUBLIC_OPTSTUFF_PROJECT_SLUG="your-project-slug"
+NEXT_PUBLIC_OPTSTUFF_ENDPOINT="https://your-optstuff-deployment.com/api/v1"
+```
+
+## Create a Signing Utility
+
+Create `lib/optstuff.ts` (server-side only):
+
+```typescript
+import "server-only";
+import crypto from "crypto";
+
+function requireEnv(name: string): string {
+  const value = process.env[name];
+  if (!value) throw new Error(`Missing required env var: ${name}`);
+  return value;
+}
+
+const SECRET_KEY = requireEnv("OPTSTUFF_SECRET_KEY");
+const PUBLIC_KEY = requireEnv("OPTSTUFF_PUBLIC_KEY");
+const ENDPOINT = requireEnv("NEXT_PUBLIC_OPTSTUFF_ENDPOINT");
+const PROJECT_SLUG = requireEnv("NEXT_PUBLIC_OPTSTUFF_PROJECT_SLUG");
+
+/**
+ * Generates a signed image optimization URL.
+ *
+ * @param imagePath - Source image path (e.g., "images.example.com/photo.jpg")
+ * @param operations - Image operations (e.g., "w_800,f_webp")
+ * @param expiresIn - Signature validity in seconds (optional)
+ *
+ * @example
+ * signImageUrl("cdn.example.com/photo.jpg", "w_800,f_webp")
+ *
+ * @example
+ * signImageUrl("cdn.example.com/photo.jpg", "w_800", 3600) // expires in 1 hour
+ */
+export function signImageUrl(
+  imagePath: string,
+  operations: string = "_",
+  expiresIn?: number
+): string {
+  const path = `${operations}/${imagePath}`;
+
+  const exp = expiresIn
+    ? Math.floor(Date.now() / 1000) + expiresIn
+    : undefined;
+
+  const payload = exp ? `${path}?exp=${exp}` : path;
+  const sig = crypto
+    .createHmac("sha256", SECRET_KEY)
+    .update(payload)
+    .digest("base64url")
+    .substring(0, 32);
+
+  let url = `${ENDPOINT}/${PROJECT_SLUG}/${path}?key=${PUBLIC_KEY}&sig=${sig}`;
+  if (exp) url += `&exp=${exp}`;
+
+  return url;
+}
+```
+
+## Usage in Next.js
+
+### Option 1: Server Component (Recommended)
+
+The simplest approach — signing happens during server-side rendering:
+
+```tsx
+import { signImageUrl } from "@/lib/optstuff";
+
+export default function HomePage() {
+  const heroImage = signImageUrl(
+    "cdn.example.com/hero.jpg",
+    "w_1200,f_webp",
+    86400 // 24 hours
+  );
+
+  return (
+    <main>
+      <img src={heroImage} alt="Hero" width={1200} height={600} />
+    </main>
+  );
+}
+```
+
+### Option 2: API Route + Client Component
+
+For client components that need to load images dynamically, create an API route to handle signing:
+
+```typescript
+// app/api/image-url/route.ts
+import { signImageUrl } from "@/lib/optstuff";
+import { NextRequest, NextResponse } from "next/server";
+
+const ALLOWED_SOURCE_HOSTS = ["cdn.example.com", "images.example.com"];
+
+export async function GET(request: NextRequest) {
+  const searchParams = request.nextUrl.searchParams;
+  const src = searchParams.get("src");
+  const width = searchParams.get("w");
+  const height = searchParams.get("h");
+  const format = searchParams.get("f") || "webp";
+
+  if (!src) {
+    return NextResponse.json(
+      { error: "Missing src parameter" },
+      { status: 400 }
+    );
+  }
+
+  // Strip query string and fragment so they don't leak into the signed path
+  const cleanSrc = src.split(/[?#]/)[0];
+
+  const hostname = cleanSrc.includes("/") ? cleanSrc.split("/")[0] : cleanSrc;
+  if (!ALLOWED_SOURCE_HOSTS.includes(hostname)) {
+    return NextResponse.json(
+      { error: "Source domain not allowed" },
+      { status: 403 }
+    );
+  }
+
+  const ALLOWED_FORMATS = ["webp", "png", "jpeg", "jpg", "avif"];
+  const NUMERIC = /^\d+$/;
+
+  if (width && (!NUMERIC.test(width) || +width > 8192)) {
+    return NextResponse.json({ error: "Invalid width" }, { status: 400 });
+  }
+  if (height && (!NUMERIC.test(height) || +height > 8192)) {
+    return NextResponse.json({ error: "Invalid height" }, { status: 400 });
+  }
+  if (!ALLOWED_FORMATS.includes(format)) {
+    return NextResponse.json({ error: "Invalid format" }, { status: 400 });
+  }
+
+  const ops = [
+    width && `w_${width}`,
+    height && `h_${height}`,
+    `f_${format}`,
+  ].filter(Boolean).join(",");
+
+  const signedUrl = signImageUrl(cleanSrc, ops, 3600);
+
+  return NextResponse.json({ url: signedUrl });
+}
+```
+
+<Callout type="warn">
+This signing endpoint is **public by default**. In production you should protect it
+with session authentication (e.g. verify a cookie or `Authorization` header and
+return 401/403 for unauthenticated callers) and/or request rate-limiting to prevent
+abuse as an open signing oracle.
+</Callout>
+
+Call it from a client component:
+
+```tsx
+"use client";
+
+import { useState, useEffect } from "react";
+
+type OptimizedImageProps = {
+  readonly src: string;
+  readonly width?: number;
+  readonly alt: string;
+};
+
+export function OptimizedImage({ src, width, alt }: OptimizedImageProps) {
+  const [imageUrl, setImageUrl] = useState<string>("");
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    setError(false);
+    setImageUrl("");
+
+    const controller = new AbortController();
+
+    const fetchUrl = async () => {
+      try {
+        const params = new URLSearchParams({ src });
+        if (width) params.set("w", width.toString());
+
+        const res = await fetch(`/api/image-url?${params}`, {
+          signal: controller.signal,
+        });
+        if (!res.ok) {
+          setError(true);
+          return;
+        }
+        const { url } = await res.json();
+        if (!controller.signal.aborted) {
+          setImageUrl(url);
+        }
+      } catch (err) {
+        if (err instanceof Error && err.name === "AbortError") return;
+        setError(true);
+      }
+    };
+
+    fetchUrl();
+
+    return () => controller.abort();
+  }, [src, width]);
+
+  if (error) return <div>Failed to load image</div>;
+  if (!imageUrl) return <div>Loading...</div>;
+
+  return (
+    <img
+      src={imageUrl}
+      alt={alt}
+      width={width}
+      style={{ aspectRatio: "4 / 3" }}
+    />
+  );
+}
+```
+
+### Option 3: Custom `next/image` Loader (Recommended)
+
+Use a custom `loader` backed by an API Route to get **all** `next/image` benefits — responsive `srcSet`, priority preloading, lazy loading, layout shift prevention — while signing URLs server-side and **completely bypassing Vercel's paid image optimization**.
+
+The loader constructs URLs to an API Route (`/api/optstuff`), which signs the request and returns a 302 redirect to the signed OptStuff URL. The `/_next/image` endpoint is never called, so Vercel does not charge for image optimization.
+
+```tsx
+// components/optstuff-image.tsx
+"use client";
+
+import Image, { type ImageProps, type ImageLoaderProps } from "next/image";
+
+type OptStuffImageProps = Omit<ImageProps, "src" | "loader"> & {
+  src: string;
+  format?: "webp" | "avif" | "png" | "jpg";
+  fit?: "cover" | "contain" | "fill";
+};
+
+export function OptStuffImage({
+  src,
+  alt,
+  format = "webp",
+  fit = "cover",
+  quality = 80,
+  ...rest
+}: OptStuffImageProps) {
+  const loader = ({ src: loaderSrc, width, quality: q }: ImageLoaderProps) => {
+    const params = new URLSearchParams({
+      url: loaderSrc,
+      w: String(width),
+      q: String(q ?? 80),
+      f: format,
+      fit,
+    });
+    return `/api/optstuff?${params}`;
+  };
+
+  return (
+    <Image {...rest} src={src} alt={alt} quality={quality} loader={loader} />
+  );
+}
+```
+
+<Callout type="warn">
+Do **not** pass `signImageUrl` (or any function that uses your secret key) directly as
+a `loader` prop. The `loader` function runs client-side, which would expose
+`OPTSTUFF_SECRET_KEY`. Instead, have the loader point to an API Route that handles
+signing server-side.
+</Callout>
+
+For the full implementation (API Route, architecture diagram, `srcSet` tuning, and FAQ), see the dedicated [Custom next/image Loader guide](/guides/nextjs-image-loader).
+
+## Pre-Launch Checklist
+
+Before going to production, verify:
+
+- [ ] `secretKey` (`sk_...`) is in an environment variable **without** `NEXT_PUBLIC_` prefix
+- [ ] `publicKey` (`pk_...`) is also in an environment variable for easy management
+- [ ] `.env.local` file is in `.gitignore`
+- [ ] Signing logic runs only in Server Components or API Routes
+- [ ] No frontend code references the `secretKey`
+- [ ] Appropriate `exp` expiration is set for signed URLs
+- [ ] Domain whitelists are configured in the dashboard
+
+## Troubleshooting
+
+| Error | Likely Cause | Solution |
+|-------|-------------|----------|
+| `403` Invalid signature | Wrong key, wrong path order, or wrong encoding | See [Troubleshooting Signature Errors](/api-reference/error-codes#troubleshooting-signature-errors) |
+| `403` Source domain not allowed | Image origin not in key's allowed domains | Add the domain in Dashboard → API Key settings |
+| `403` Invalid referer | Your website not in project's allowed domains | Add the domain in Dashboard → Project settings |
+
+For the complete error reference, see [Error Codes](/api-reference/error-codes).
+
+## Further Reading
+
+- [TypeScript / Node.js Integration](/getting-started/integration-guide/typescript) — For Express, Fastify, or standalone Node.js applications
+- [URL Signing](/guides/url-signing) — Signature formula and security properties
+- [Domain Whitelisting](/guides/domain-whitelisting) — Configure allowed domains
+- [CDN and Caching](/guides/cdn-caching) — CDN integration and `next/image` best practices
+- [Security Best Practices](/guides/security-best-practices) — Recommendations for production

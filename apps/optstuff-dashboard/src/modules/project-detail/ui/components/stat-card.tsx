@@ -18,9 +18,7 @@ export function StatCard({ title, value, subtitle, icon }: StatCardProps) {
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between px-3 pb-1 sm:px-6 sm:pb-2">
-        <CardTitle className="text-muted-foreground text-xs font-normal sm:text-sm">
-          {title}
-        </CardTitle>
+        <CardTitle>{title}</CardTitle>
         {icon && <span className="hidden sm:inline">{icon}</span>}
       </CardHeader>
       <CardContent className="px-3 sm:px-6">

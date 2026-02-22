@@ -10,26 +10,59 @@
 
 const isDevelopment = process.env.NODE_ENV === "development";
 
+/** Strip an optional "http://" or "https://" prefix, returning the bare host. */
+function stripProtocol(domain: string) {
+  return domain.replace(/^https?:\/\//, "");
+}
+
 /**
- * Validate if the referer is in the allowed domains list.
+ * Validate if the referer is in the allowed origins list.
+ *
+ * Each allowed entry must include a protocol, e.g. "https://example.com" or
+ * "http://localhost". The referer's protocol and hostname are both checked.
+ * Wildcard prefixes ("https://*.example.com") match any subdomain.
+ *
+ * Legacy entries without a protocol are treated as hostname-only and matched
+ * against any protocol for backwards compatibility.
  *
  * @param referer - The referer header value
- * @param allowedDomains - List of allowed domains (null or empty = allow all)
+ * @param allowedDomains - List of allowed origins (null or empty = allow all)
  * @returns true if the referer is allowed
  */
 export function validateReferer(
   referer: string | null,
   allowedDomains: readonly string[] | null,
 ) {
-  // If no whitelist is set, allow all
   if (!allowedDomains || allowedDomains.length === 0) return true;
   if (!referer) return false;
 
   try {
-    const refererHost = new URL(referer).hostname;
-    return allowedDomains.some(
-      (domain) => refererHost === domain || refererHost.endsWith(`.${domain}`),
-    );
+    const refererUrl = new URL(referer);
+    const refererProtocol = refererUrl.protocol; // "http:" or "https:"
+    const refererHost = refererUrl.hostname;
+
+    return allowedDomains.some((entry) => {
+      const protoMatch = /^(https?):\/\//.exec(entry);
+
+      if (protoMatch) {
+        const allowedProtocol = `${protoMatch[1]}:`;
+        if (refererProtocol !== allowedProtocol) return false;
+
+        const hostPart = entry.slice(protoMatch[0].length);
+        if (hostPart.startsWith("*.")) {
+          const base = hostPart.slice(2);
+          return refererHost === base || refererHost.endsWith(`.${base}`);
+        }
+        return refererHost === hostPart;
+      }
+
+      // Legacy: bare hostname without protocol — match any protocol
+      if (entry.startsWith("*.")) {
+        const base = entry.slice(2);
+        return refererHost === base || refererHost.endsWith(`.${base}`);
+      }
+      return refererHost === entry;
+    });
   } catch {
     return false;
   }
@@ -55,10 +88,11 @@ export function validateSourceDomain(
     return isDevelopment;
   }
 
-  // Allowlist-only: domain must match exactly or be a subdomain of an allowed domain
-  return allowedDomains.some(
-    (domain) => sourceHost === domain || sourceHost.endsWith(`.${domain}`),
-  );
+  // Strip protocol prefix so entries like "https://example.com" match hostname "example.com"
+  return allowedDomains.some((raw) => {
+    const domain = stripProtocol(raw);
+    return sourceHost === domain || sourceHost.endsWith(`.${domain}`);
+  });
 }
 
 /**

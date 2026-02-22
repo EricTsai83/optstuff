@@ -50,26 +50,30 @@ A **default API key** is generated automatically with your new project.
 
 ### Copying Your Keys
 
-After project creation, a success dialog displays your API key pair:
+After project creation, a success dialog displays both keys together in `.env` format with a single copy button:
 
 ```text
 ┌─────────────────────────────────────────────────────┐
 │              Project Created!                        │
 │                                                      │
-│  Secret Key:  sk_••••••••••••••••  [Show] [Copy]    │
-│  Public Key:  pk_abc123def456ghi   [Copy]           │
+│  ⚠ Copy and add these to your .env file before      │
+│     closing. The secret key is only shown once.      │
 │                                                      │
-│  ⚠ The secret key is only shown once.               │
-│     Save it to your environment variables now.       │
+│  ENVIRONMENT VARIABLES              [Show] │
+│  ┌────────────────────────────────────────┐ [Copy]  │
+│  │ OPTSTUFF_SECRET_KEY="sk_••••••••••••"  │         │
+│  │ OPTSTUFF_PUBLIC_KEY="pk_abc123def456"  │         │
+│  └────────────────────────────────────────┘         │
 │                                                      │
-│              [I've Saved My Keys]                    │
+│              [Done]                                  │
 └─────────────────────────────────────────────────────┘
 ```
 
-- **Secret Key** (`sk_...`) — masked by default, with show/hide toggle and copy button
-- **Public Key** (`pk_...`) — visible with copy button
+- **One-click copy** — the copy button copies both keys with their environment variable names, ready to paste into your `.env` file
+- **Secret Key** (`OPTSTUFF_SECRET_KEY`) — masked by default, with show/hide toggle
+- **Public Key** (`OPTSTUFF_PUBLIC_KEY`) — always visible
 
-> **The secret key is only shown once.** Copy and save it to your environment variables before closing the dialog.
+> **The secret key is only shown once.** Copy and add the environment variables to your `.env` file before closing the dialog.
 
 The dialog is locked during this step — you cannot close it accidentally.
 
@@ -128,9 +132,9 @@ From your project's **Settings** tab, you can configure:
 
 - **Allowed Referer Domains** — which websites can embed your optimized images
 
-See [Domain Whitelisting](/docs/guides/domain-whitelisting) for details.
+See [Domain Whitelisting](/guides/domain-whitelisting) for details.
 
 ## Next Steps
 
-- [Integration Guide](/docs/getting-started/integration-guide) — Add OptStuff to your application
-- [Key Management](/docs/guides/key-management) — Best practices for API key lifecycle
+- [Integration Guide](/getting-started/integration-guide) — Add OptStuff to your application
+- [Key Management](/guides/key-management) — Best practices for API key lifecycle

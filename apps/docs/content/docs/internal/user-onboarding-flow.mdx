@@ -154,18 +154,23 @@ The dialog uses a two-step pattern (form → success):
 After project creation, the dialog transitions to a success screen showing:
 
 1. **Success header** — "Project Created" with project name
-2. **Warning banner** — "Secret key is only shown once. Copy and save it before closing."
-3. **Secret Key display** — Masked by default, with show/hide toggle and copy button
-4. **Public Key display** — Visible with copy button
-5. **Next Steps** — Link to Integration Guide on the docs site
-6. **Done button** — Navigates to the new project's overview page
+2. **Warning banner** — "Copy and add these to your `.env` file before closing. The secret key is only shown once."
+3. **Combined key display** — Both keys shown in `.env` format (`OPTSTUFF_SECRET_KEY` and `OPTSTUFF_PUBLIC_KEY`) with a single copy button. The secret key is masked by default with a show/hide toggle.
+4. **Next Steps** — Link to Integration Guide on the docs site
+5. **Done button** — Navigates to the new project's overview page
+
+The copy button copies both keys together with their environment variable names, ready to paste into a `.env` file:
+```text
+OPTSTUFF_SECRET_KEY="sk_..."
+OPTSTUFF_PUBLIC_KEY="pk_..."
+```
 
 The dialog is **locked** during the success step:
 - Close button is hidden
 - ESC key is disabled
 - Clicking outside does not close
 
-This ensures users see and copy their secret key before proceeding.
+This ensures users see and copy their keys before proceeding.
 
 ### Backend Behavior
 
@@ -201,11 +206,16 @@ import { env } from "@/env";
 /** Centralized documentation links — driven by `NEXT_PUBLIC_DOCS_URL` env var */
 export const DOCS_LINKS = {
   home: env.NEXT_PUBLIC_DOCS_URL,
-  gettingStarted: `${env.NEXT_PUBLIC_DOCS_URL}/getting-started`,
-  integration: `${env.NEXT_PUBLIC_DOCS_URL}/integration`,
-  apiKeys: `${env.NEXT_PUBLIC_DOCS_URL}/api-keys`,
-  security: `${env.NEXT_PUBLIC_DOCS_URL}/security`,
-  urlSigning: `${env.NEXT_PUBLIC_DOCS_URL}/url-signing`,
+  quickstart: `${env.NEXT_PUBLIC_DOCS_URL}/getting-started/quickstart`,
+  integration: `${env.NEXT_PUBLIC_DOCS_URL}/getting-started/integration-guide`,
+  keyManagement: `${env.NEXT_PUBLIC_DOCS_URL}/guides/key-management`,
+  security: `${env.NEXT_PUBLIC_DOCS_URL}/guides/security-best-practices`,
+  urlSigning: `${env.NEXT_PUBLIC_DOCS_URL}/guides/url-signing`,
+  codeExamples: `${env.NEXT_PUBLIC_DOCS_URL}/guides/code-examples`,
+  cdnCaching: `${env.NEXT_PUBLIC_DOCS_URL}/guides/cdn-caching`,
+  pricing: `${env.NEXT_PUBLIC_DOCS_URL}/introduction/pricing-and-limits`,
+  faq: `${env.NEXT_PUBLIC_DOCS_URL}/faq`,
+  changelog: `${env.NEXT_PUBLIC_DOCS_URL}/changelog`,
 } as const;
 ```
 
@@ -257,7 +267,7 @@ The `teams` table enforces:
 
 ## Related Documentation
 
-- [Create API Key Flow](/docs/internal/create-api-key-flow) — Detailed API key creation and encryption flow
-- [URL Signing](/docs/guides/url-signing) — Request signing and authentication
-- [Domain Whitelisting](/docs/guides/domain-whitelisting) — Domain whitelist configuration
-- [Integration Guide](/docs/getting-started/integration-guide) — How to integrate OptStuff
+- [Create API Key Flow](/internal/create-api-key-flow) — Detailed API key creation and encryption flow
+- [URL Signing](/guides/url-signing) — Request signing and authentication
+- [Domain Whitelisting](/guides/domain-whitelisting) — Domain whitelist configuration
+- [Integration Guide](/getting-started/integration-guide) — How to integrate OptStuff

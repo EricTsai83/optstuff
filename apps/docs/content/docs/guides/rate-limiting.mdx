@@ -46,7 +46,7 @@ New API keys are created with the default limits. Custom per-key rate limits are
 - **`rate_limit_per_minute`** — valid range: 1 – 10,000
 - **`rate_limit_per_day`** — valid range: 1 – 1,000,000
 
-> **Before modifying:** back up the `api_keys` table and validate that your values fall within the ranges above (the schema enforces integer type but not range — out-of-range values may cause unexpected behaviour). If you are unsure about the correct limits for your use case, contact support or consult the internal [Rate Limit Runbook](/docs/internal/rate-limit-runbook).
+> **Before modifying:** back up the `api_keys` table and validate that your values fall within the ranges above (the schema enforces integer type but not range — out-of-range values may cause unexpected behaviour). If you are unsure about the correct limits for your use case, contact support.
 
 Changes take effect within 60 seconds (cache TTL).
 
@@ -85,10 +85,10 @@ Clients should respect the `Retry-After` header to avoid further 429 responses.
 ## Design Notes
 
 - Rate limits are checked **after** signature verification so that unauthenticated requests cannot exhaust quota.
-- The per-day limit is checked **before** the per-minute limit to minimize token waste (see [Redis Schema](/docs/internal/redis-schema) for details).
+- The per-day limit is checked **before** the per-minute limit to minimize token waste (see [Redis Schema](/internal/redis-schema) for details).
 
 ## Related Documentation
 
-- [Key Management](/docs/guides/key-management) — Managing API keys (per-key rate limits not configurable in dashboard yet)
-- [Error Codes](/docs/api-reference/error-codes) — Rate limit error details
-- [Security Best Practices](/docs/guides/security-best-practices) — Broader security context
+- [Key Management](/guides/key-management) — Managing API keys (per-key rate limits not configurable in dashboard yet)
+- [Error Codes](/api-reference/error-codes) — Rate limit error details
+- [Security Best Practices](/guides/security-best-practices) — Broader security context

@@ -24,19 +24,19 @@ Secret keys are encrypted with **AES-256-GCM** before storage. The encryption ke
 
 Every request must include an HMAC-SHA256 signature. The signature is a one-way function — intercepting it cannot reveal the secret key. Signatures are compared using constant-time comparison (`timingSafeEqual`) to prevent timing attacks.
 
-See [URL Signing](/docs/guides/url-signing) for implementation details.
+See [URL Signing](/guides/url-signing) for implementation details.
 
 ### Signature Expiration
 
-The optional `exp` parameter limits how long a signed URL is valid. Recommended expiration times depend on the use case — see [URL Signing](/docs/guides/url-signing#signature-expiration).
+The optional `exp` parameter limits how long a signed URL is valid. Recommended expiration times depend on the use case — see [URL Signing](/guides/url-signing#signature-expiration).
 
 ### Domain Whitelisting
 
-Two-layer domain control restricts both who can use the service (referer domains) and which images can be processed (source domains). See [Domain Whitelisting](/docs/guides/domain-whitelisting) for configuration.
+Two-layer domain control restricts both who can use the service (referer domains) and which images can be processed (source domains). See [Domain Whitelisting](/guides/domain-whitelisting) for configuration.
 
 ### Rate Limiting
 
-Per-key rate limits prevent abuse and contain the impact of compromised keys. See [Rate Limiting](/docs/guides/rate-limiting) for configuration.
+Per-key rate limits prevent abuse and contain the impact of compromised keys. See [Rate Limiting](/guides/rate-limiting) for configuration.
 
 ### Dual-Key System
 
@@ -74,7 +74,7 @@ Public keys (`pk_...`) are safe to expose in URLs. Secret keys (`sk_...`) never 
 
 ## Related Documentation
 
-- [URL Signing](/docs/guides/url-signing) — Signature generation and code examples
-- [Domain Whitelisting](/docs/guides/domain-whitelisting) — Domain configuration
-- [Rate Limiting](/docs/guides/rate-limiting) — Rate limit configuration
-- [Key Management](/docs/guides/key-management) — API key lifecycle best practices
+- [URL Signing](/guides/url-signing) — Signature generation and code examples
+- [Domain Whitelisting](/guides/domain-whitelisting) — Domain configuration
+- [Rate Limiting](/guides/rate-limiting) — Rate limit configuration
+- [Key Management](/guides/key-management) — API key lifecycle best practices
