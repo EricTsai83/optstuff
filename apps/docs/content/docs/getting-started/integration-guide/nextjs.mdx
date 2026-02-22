@@ -168,49 +168,44 @@ export function OptimizedImage({ src, width, alt }: OptimizedImageProps) {
 }
 ```
 
-### Option 3: `next/image` Loader
+### Option 3: Server Component with `next/image`
 
-You can use OptStuff as a custom loader for `next/image`, which lets Next.js handle responsive `srcSet` generation automatically.
-
-Create `lib/optstuff-loader.ts`:
-
-```typescript
-import { signImageUrl } from "@/lib/optstuff";
-
-export function optstuffLoader({
-  src,
-  width,
-  quality,
-}: {
-  readonly src: string;
-  readonly width: number;
-  readonly quality?: number;
-}) {
-  const ops = [`w_${width}`, "f_webp", quality ? `q_${quality}` : null]
-    .filter(Boolean)
-    .join(",");
-  return signImageUrl(src, ops, 86400);
-}
-```
-
-Use it with the `next/image` component:
+You can use `next/image` with OptStuff while keeping all signing server-side.
+Sign the URL in a Server Component, then pass the signed URL as `src` with
+`unoptimized` so Next.js won't re-optimize the already-optimized image.
+You still get `next/image` benefits like lazy loading, layout shift prevention,
+and responsive sizing.
 
 ```tsx
 import Image from "next/image";
-import { optstuffLoader } from "@/lib/optstuff-loader";
+import { signImageUrl } from "@/lib/optstuff";
 
 export function Hero() {
+  const heroSrc = signImageUrl(
+    "cdn.example.com/hero.jpg",
+    "w_1200,f_webp",
+    86400 // 24 hours
+  );
+
   return (
     <Image
-      loader={optstuffLoader}
-      src="cdn.example.com/hero.jpg"
+      src={heroSrc}
       alt="Hero"
       width={1200}
       height={630}
+      unoptimized
     />
   );
 }
 ```
+
+<Callout type="warn">
+Do **not** pass `signImageUrl` (or any function that uses your secret key) as a
+`loader` prop to `next/image`. The `loader` function runs client-side, which
+would expose `OPTSTUFF_SECRET_KEY` and fail because Node.js `crypto` is
+unavailable in the browser. Always sign URLs on the server and pass the result
+as a plain string `src`.
+</Callout>
 
 For more details on CDN caching with `next/image`, see the [CDN and Caching guide](/guides/cdn-caching#using-with-nextimage).
 
