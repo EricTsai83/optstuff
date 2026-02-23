@@ -539,12 +539,16 @@ export default async function Home() {
           </div>
           <p className="text-muted text-xs">
             Built with Next.js &middot; Tailwind CSS &middot;{" "}
-            <a
-              href={process.env.OPTSTUFF_BASE_URL}
-              className="text-emerald-600 hover:underline"
-            >
-              {new URL(process.env.OPTSTUFF_BASE_URL!).hostname}
-            </a>
+            {process.env.OPTSTUFF_BASE_URL ? (
+              <a
+                href={process.env.OPTSTUFF_BASE_URL}
+                className="text-emerald-600 hover:underline"
+              >
+                {new URL(process.env.OPTSTUFF_BASE_URL).hostname}
+              </a>
+            ) : (
+              <span className="text-emerald-600">OptStuff</span>
+            )}
           </p>
         </div>
       </footer>
