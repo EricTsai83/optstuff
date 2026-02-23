@@ -3,8 +3,12 @@ import { NextResponse } from "next/server";
 
 const isPublicRoute = createRouteMatcher(["/sign-in(.*)", "/sign-up(.*)"]);
 
+const isServiceApiRoute = (req: { nextUrl: { pathname: string } }) =>
+  req.nextUrl.pathname.startsWith("/api/") && // service API routes
+  !req.nextUrl.pathname.startsWith("/api/trpc"); // private API routes
+
 export default authMiddleware(async (auth, req) => {
-  if (!isPublicRoute(req)) {
+  if (!isPublicRoute(req) && !isServiceApiRoute(req)) {
     await auth.protect();
   }
   return NextResponse.next();

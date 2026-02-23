@@ -1,26 +1,231 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #fafafa;
+  --foreground: #18181b;
+  --muted: #71717a;
+  --border: #e4e4e7;
+  --card: #ffffff;
+  --card-hover: #f4f4f5;
+  --accent: #10b981;
+  --accent-dim: #065f46;
+  --accent-light: #d1fae5;
+  --code-bg: #18181b;
+  --code-text: #d4d4d8;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #09090b;
+    --foreground: #fafafa;
+    --muted: #a1a1aa;
+    --border: #27272a;
+    --card: #18181b;
+    --card-hover: #27272a;
+    --accent: #34d399;
+    --accent-dim: #065f46;
+    --accent-light: #064e3b;
+    --code-bg: #0c0c0e;
+    --code-text: #d4d4d8;
+  }
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-border: var(--border);
+  --color-card: var(--card);
+  --color-card-hover: var(--card-hover);
+  --color-accent: var(--accent);
+  --color-accent-dim: var(--accent-dim);
+  --color-accent-light: var(--accent-light);
+  --color-code-bg: var(--code-bg);
+  --color-code-text: var(--code-text);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  scroll-behavior: smooth;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+}
+
+/* Fade-in-up animation for scroll reveals */
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-6px); }
+}
+
+@keyframes draw-line {
+  from { stroke-dashoffset: 100; }
+  to { stroke-dashoffset: 0; }
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.animate-fade-in {
+  animation: fade-in 0.5s ease-out both;
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+/* Stagger delays for children */
+.stagger-1 { animation-delay: 0.1s; }
+.stagger-2 { animation-delay: 0.2s; }
+.stagger-3 { animation-delay: 0.3s; }
+.stagger-4 { animation-delay: 0.4s; }
+.stagger-5 { animation-delay: 0.5s; }
+.stagger-6 { animation-delay: 0.6s; }
+
+/* Hero gradient — richer emerald wash with dot pattern */
+.hero-gradient {
+  background:
+    radial-gradient(circle 1px at center, rgba(16, 185, 129, 0.08) 0%, transparent 1px),
+    radial-gradient(ellipse 80% 50% at 50% -10%, rgba(16, 185, 129, 0.15) 0%, transparent 70%),
+    radial-gradient(ellipse 50% 40% at 80% 10%, rgba(52, 211, 153, 0.08) 0%, transparent 60%),
+    radial-gradient(ellipse 40% 30% at 20% 60%, rgba(6, 182, 212, 0.06) 0%, transparent 50%),
+    var(--background);
+  background-size: 24px 24px, 100% 100%, 100% 100%, 100% 100%, 100% 100%;
+}
+
+/* Hero stat chips */
+.hero-stat-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 9999px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--foreground);
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--border);
+  transition: all 0.2s ease;
+}
+.hero-stat-chip:hover {
+  border-color: rgba(16, 185, 129, 0.4);
+  box-shadow: 0 0 0 1px rgba(16, 185, 129, 0.08);
+}
+@media (prefers-color-scheme: dark) {
+  .hero-stat-chip {
+    background: rgba(24, 24, 27, 0.7);
+  }
+}
+
+/* Floating decorative orbs */
+@keyframes float-slow {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(10px, -15px) scale(1.05); }
+  66% { transform: translate(-8px, 8px) scale(0.95); }
+}
+@keyframes float-reverse {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); }
+  33% { transform: translate(-12px, 10px) rotate(60deg); }
+  66% { transform: translate(8px, -12px) rotate(120deg); }
+}
+.animate-float-slow {
+  animation: float-slow 8s ease-in-out infinite;
+}
+.animate-float-reverse {
+  animation: float-reverse 10s ease-in-out infinite;
+}
+
+/* Code block styling — always dark */
+.code-block {
+  background: var(--code-bg);
+  border: 1px solid #27272a;
+  color: var(--code-text);
+}
+
+/* Feature card hover glow */
+.feature-card {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.feature-card:hover {
+  border-color: rgba(16, 185, 129, 0.4);
+  box-shadow: 0 0 0 1px rgba(16, 185, 129, 0.1), 0 8px 32px -8px rgba(16, 185, 129, 0.08);
+  transform: translateY(-2px);
+}
+
+/* How-it-works step card */
+.step-card {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.step-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 40px -12px rgba(0, 0, 0, 0.08);
+}
+@media (prefers-color-scheme: dark) {
+  .step-card:hover {
+    box-shadow: 0 20px 40px -12px rgba(0, 0, 0, 0.4);
+  }
+}
+
+/* Gradient text utility */
+.text-gradient {
+  background: linear-gradient(135deg, #10b981 0%, #06b6d4 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Glass card for playground */
+.glass-card {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--border);
+}
+@media (prefers-color-scheme: dark) {
+  .glass-card {
+    background: rgba(24, 24, 27, 0.7);
+  }
+}
+
+/* Playground gradient background */
+.playground-bg {
+  background:
+    radial-gradient(ellipse 60% 50% at 20% 80%, rgba(16, 185, 129, 0.06) 0%, transparent 60%),
+    radial-gradient(ellipse 40% 30% at 80% 20%, rgba(6, 182, 212, 0.05) 0%, transparent 60%),
+    var(--background);
+}
+
+/* Pulse dot */
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(1.5); }
+}
+.animate-pulse-dot {
+  animation: pulse-dot 2s ease-in-out infinite;
 }

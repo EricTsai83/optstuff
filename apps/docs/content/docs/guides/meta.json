@@ -6,6 +6,7 @@
     "nextjs-image-loader",
     "cdn-caching",
     "domain-whitelisting",
+    "referer-security-model",
     "rate-limiting",
     "key-management",
     "security-best-practices"

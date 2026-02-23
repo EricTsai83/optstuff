@@ -25,6 +25,12 @@ function stripProtocol(domain: string) {
  * Legacy entries without a protocol are treated as hostname-only and matched
  * against any protocol for backwards compatibility.
  *
+ * When the referer is absent (null), the request is allowed. A missing referer
+ * typically indicates a server-to-server call, a privacy-stripping browser
+ * policy, or a direct tool request — none of which are hotlinking. The signed
+ * URL already authenticates the request; referer validation only guards against
+ * browser-based hotlinking where the header IS reliably sent by the browser.
+ *
  * @param referer - The referer header value
  * @param allowedDomains - List of allowed origins (null or empty = allow all)
  * @returns true if the referer is allowed
@@ -34,7 +40,7 @@ export function validateReferer(
   allowedDomains: readonly string[] | null,
 ) {
   if (!allowedDomains || allowedDomains.length === 0) return true;
-  if (!referer) return false;
+  if (!referer) return true;
 
   try {
     const refererUrl = new URL(referer);
