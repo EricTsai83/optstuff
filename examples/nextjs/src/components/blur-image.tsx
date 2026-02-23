@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 function buildOptStuffUrl(
   src: string,
@@ -64,11 +64,14 @@ export function BlurImage({
   loadDelay = 0,
   blurDataUrl,
 }: BlurImageProps) {
-  const [phase, setPhase] = useState<"blur" | "loading" | "sharp">("blur");
+  const [phase, setPhase] = useState<"blur" | "loading" | "sharp">(
+    blurDataUrl && loadDelay === 0 ? "loading" : "blur",
+  );
   const [key, setKey] = useState(0);
   const fullImgRef = useRef<HTMLImageElement>(null);
 
-  const blurSrc = blurDataUrl ?? buildOptStuffUrl(src, blurWidth, blurQuality, format, fit);
+  const blurSrc =
+    blurDataUrl ?? buildOptStuffUrl(src, blurWidth, blurQuality, format, fit);
   const fullSrc = buildOptStuffUrl(src, width, quality, format, fit);
 
   const handleFullLoad = useCallback(() => {
@@ -127,11 +130,7 @@ export function BlurImage({
           onClick={replay}
           className="absolute bottom-3 right-3 z-10 flex items-center gap-1.5 rounded-full bg-black/60 px-3 py-1.5 text-xs font-medium text-white/90 opacity-0 backdrop-blur-sm transition-opacity duration-200 group-hover:opacity-100"
         >
-          <svg
-            viewBox="0 0 16 16"
-            fill="currentColor"
-            className="size-3.5"
-          >
+          <svg viewBox="0 0 16 16" fill="currentColor" className="size-3.5">
             <path d="M5.23 1.644A8.004 8.004 0 0 1 14 8c0 4.418-3.582 8-8 8s-8-3.582-8-8 3.582-8 8-8V0L9 3 6 6V3.5a4.5 4.5 0 1 0 4.798 2.15l1.376-.826A6 6 0 1 1 5.23 1.644z" />
           </svg>
           Replay
@@ -171,7 +170,7 @@ export function BlurImageComparison({
   return (
     <div className="grid grid-cols-2 gap-4">
       <div className="space-y-2">
-        <div className="relative aspect-4/3 overflow-hidden rounded-lg">
+        <div className="aspect-4/3 relative overflow-hidden rounded-lg">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={blurSrc}
@@ -191,7 +190,7 @@ export function BlurImageComparison({
         </p>
       </div>
       <div className="space-y-2">
-        <div className="relative aspect-4/3 overflow-hidden rounded-lg">
+        <div className="aspect-4/3 relative overflow-hidden rounded-lg">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={fullSrc} alt={alt} className="h-full w-full object-cover" />
         </div>
