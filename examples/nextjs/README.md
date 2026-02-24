@@ -1,6 +1,6 @@
 # OptStuff + Next.js Integration Example
 
-A standalone Next.js application demonstrating how to integrate the [OptStuff](https://optstuff.dev) image optimization service into your Next.js project. With OptStuff, you can dynamically resize images, convert formats, adjust quality on request, and secure URLs with HMAC-SHA256 signatures.
+A standalone Next.js application demonstrating how to integrate the [OptStuff](https://optstuff.vercel.app) image optimization service into your Next.js project. With OptStuff, you can dynamically resize images, convert formats, adjust quality on request, and secure URLs with HMAC-SHA256 signatures.
 
 ## Features
 
@@ -14,7 +14,7 @@ A standalone Next.js application demonstrating how to integrate the [OptStuff](h
 
 - [Node.js](https://nodejs.org/) 18+
 - [npm](https://www.npmjs.com/) or [pnpm](https://pnpm.io/)
-- An OptStuff account (sign up at the [OptStuff Dashboard](https://app.optstuff.dev))
+- An OptStuff account (sign up at the [OptStuff Dashboard](https://optstuff.vercel.app))
 
 ## Quick Start
 
@@ -37,7 +37,7 @@ pnpm install
 cp .env.example .env.local
 ```
 
-Edit `.env.local` and fill in your OptStuff credentials (available from the [Dashboard](https://app.optstuff.dev)):
+Edit `.env.local` and fill in your OptStuff credentials (available from the [Dashboard](https://optstuff.vercel.app)):
 
 ```bash
 # Base URL for the OptStuff service
@@ -323,6 +323,6 @@ import Image from "next/image";
 
 ## Further Reading
 
-- [OptStuff Documentation](https://docs.optstuff.dev)
+- [OptStuff Documentation](https://docs-optstuff.vercel.app)
 - [Next.js Documentation](https://nextjs.org/docs)
 - [next/image Custom Loader](https://nextjs.org/docs/app/api-reference/components/image#loader)

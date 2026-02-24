@@ -10,7 +10,7 @@ import {
   TabsTrigger,
 } from "@workspace/ui/components/tabs";
 import { ExternalLink } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 type Tab = "curl" | "node" | "python";
 
@@ -20,29 +20,33 @@ const TABS: { id: Tab; label: string }[] = [
   { id: "python", label: "Python" },
 ];
 
+const baseUrl = env.NEXT_PUBLIC_APP_URL.replace(/\/+$/, "");
+
 type ApiCodeExamplesProps = {
   readonly apiKey: string;
 };
 
 export function ApiCodeExamples({ apiKey }: ApiCodeExamplesProps) {
   const [activeTab, setActiveTab] = useState<Tab>("curl");
-  const baseUrl = env.NEXT_PUBLIC_APP_URL.replace(/\/+$/, "");
 
-  const codeExamples: Record<Tab, string> = {
-    curl: `curl -X GET "${baseUrl}/api/v1/optimize?url=https://example.com/image.jpg&width=800&quality=80" \\
+  const codeExamples = useMemo<Record<Tab, string>>(
+    () => ({
+      curl: `curl -X GET "${baseUrl}/api/v1/optimize?url=https://example.com/image.jpg&width=800&quality=80" \\
   -H "Authorization: Bearer ${apiKey}"`,
-    node: `const response = await fetch(
+      node: `const response = await fetch(
   "${baseUrl}/api/v1/optimize?url=https://example.com/image.jpg&width=800&quality=80",
   { headers: { Authorization: "Bearer ${apiKey}" } }
 );`,
-    python: `import requests
+      python: `import requests
 
 response = requests.get(
     "${baseUrl}/api/v1/optimize",
     params={"url": "https://example.com/image.jpg", "width": 800, "quality": 80},
     headers={"Authorization": f"Bearer ${apiKey}"}
 )`,
-  };
+    }),
+    [apiKey],
+  );
 
   return (
     <Tabs

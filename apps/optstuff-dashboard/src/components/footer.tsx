@@ -20,7 +20,6 @@ const appDomain = new URL(env.NEXT_PUBLIC_APP_URL).hostname;
 const FOOTER_LINKS = [
   { name: "Home", href: "/" },
   { name: "Docs", href: DOCS_LINKS.home, external: true },
-  { name: "Contact", href: `mailto:support@${appDomain}` },
   { name: "Legal", href: "#", hasDropdown: true },
 ];
 
