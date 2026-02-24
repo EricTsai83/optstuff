@@ -67,6 +67,7 @@ export function OptStuffImage({
   blurTransitionDuration = 600,
   className = "",
   style,
+  onLoad,
   ...rest
 }: OptStuffImageProps) {
   const [loaded, setLoaded] = useState(!blurPlaceholder);
@@ -79,9 +80,13 @@ export function OptStuffImage({
   }
   const loader = makeLoader(format, fit);
 
-  const handleLoad = useCallback(() => {
-    setLoaded(true);
-  }, []);
+  const handleLoad = useCallback<React.ReactEventHandler<HTMLImageElement>>(
+    (e) => {
+      setLoaded(true);
+      onLoad?.(e);
+    },
+    [onLoad],
+  );
 
   if (!blurPlaceholder) {
     return (
@@ -93,6 +98,7 @@ export function OptStuffImage({
         loader={loader}
         className={className}
         style={style}
+        onLoad={onLoad}
       />
     );
   }
