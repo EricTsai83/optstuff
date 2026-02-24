@@ -14,6 +14,8 @@ import {
 import { CopyButton } from "@workspace/ui/components/copy-button";
 import {
   Activity,
+  ArrowUpRight,
+  BookOpen,
   CheckCircle2,
   Circle,
   Code,
@@ -59,7 +61,7 @@ function SetupChecklist({
   if (completedCount === steps.length) return null;
 
   return (
-    <Card className="border-amber-500/30 bg-amber-500/2">
+    <Card className="border-amber-500/30 bg-amber-500/5">
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-base">
           <Settings className="h-4 w-4" />
@@ -96,19 +98,25 @@ function SetupChecklist({
             </li>
           ))}
         </ul>
-        <a
-          href={DOCS_LINKS.integration}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-primary mt-4 inline-flex items-center gap-1 text-sm hover:underline"
-        >
-          <Code className="h-3.5 w-3.5" />
-          Integration Guide →
-        </a>
       </CardContent>
     </Card>
   );
 }
+
+const RESOURCE_LINKS = [
+  {
+    href: DOCS_LINKS.projectSetup,
+    icon: BookOpen,
+    title: "Project Setup Guide",
+    description: "Teams, projects, and API keys",
+  },
+  {
+    href: DOCS_LINKS.integration,
+    icon: Code,
+    title: "Integration Guide",
+    description: "Add OptStuff to your application",
+  },
+];
 
 export function OverviewTab({ project }: OverviewTabProps) {
   const { data: apiKeys } = api.apiKey.list.useQuery({ projectId: project.id });
@@ -125,7 +133,7 @@ export function OverviewTab({ project }: OverviewTabProps) {
 
   return (
     <div className="space-y-6">
-      {/* Endpoint Info */}
+      {/* Endpoint */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -155,8 +163,8 @@ export function OverviewTab({ project }: OverviewTabProps) {
         </CardContent>
       </Card>
 
-      {/* Setup Checklist */}
-      {settings && (
+      {/* Setup Checklist — only render once all data is loaded to avoid flash */}
+      {settings && apiKeys !== undefined && (
         <SetupChecklist
           hasSourceDomains={hasSourceDomains}
           hasApiKeys={hasApiKeys}
@@ -184,6 +192,30 @@ export function OverviewTab({ project }: OverviewTabProps) {
           subtitle="Last 30 days"
           icon={<HardDrive className="text-muted-foreground h-4 w-4" />}
         />
+      </div>
+
+      {/* Resources */}
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
+        {RESOURCE_LINKS.map((link) => (
+          <a
+            key={link.href}
+            href={link.href}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="group border-border hover:border-primary/30 hover:bg-muted/50 flex items-center gap-3 rounded-lg border p-4 transition-colors"
+          >
+            <div className="bg-muted text-muted-foreground group-hover:text-primary flex h-9 w-9 shrink-0 items-center justify-center rounded-md transition-colors">
+              <link.icon className="h-4 w-4" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="text-sm font-medium">{link.title}</div>
+              <div className="text-muted-foreground text-xs">
+                {link.description}
+              </div>
+            </div>
+            <ArrowUpRight className="text-muted-foreground h-4 w-4 shrink-0 opacity-0 transition-opacity group-hover:opacity-100" />
+          </a>
+        ))}
       </div>
     </div>
   );

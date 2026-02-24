@@ -13,7 +13,7 @@ This page lists all error codes returned by the OptStuff API and provides troubl
 | 400 | Invalid image URL | Unable to parse image URL from path | Verify the image URL is valid and does not include the protocol (`https://`) |
 | 401 | Missing signature parameters | `key` or `sig` query parameter not provided | Include both `?key={publicKey}&sig={signature}` in the URL |
 | 401 | Invalid API key | API key not found in database | Verify the public key (`pk_...`) is correct |
-| 401 | API key has been revoked | Key was explicitly revoked | Create a new API key from the [dashboard](/getting-started/dashboard-setup) |
+| 401 | API key has been revoked | Key was explicitly revoked | Create a new API key from the [dashboard](/getting-started/project-setup) |
 | 401 | API key has expired | Key is past its `expiresAt` date | Create a new key or [rotate](/guides/key-management#rotation) the existing one |
 | 401 | API key does not belong to this project | Public key is valid but bound to a different project | Use the correct key for the project, or check `projectSlug` in the URL |
 | 403 | Invalid or expired signature | HMAC-SHA256 verification failed, or `exp` has passed | See [Troubleshooting Signature Errors](#troubleshooting-signature-errors) below |
