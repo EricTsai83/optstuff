@@ -70,6 +70,13 @@ export function OptStuffImage({
   ...rest
 }: OptStuffImageProps) {
   const [loaded, setLoaded] = useState(!blurPlaceholder);
+  const [prevSrc, setPrevSrc] = useState(src);
+  const [prevBlur, setPrevBlur] = useState(blurPlaceholder);
+  if (src !== prevSrc || blurPlaceholder !== prevBlur) {
+    setPrevSrc(src);
+    setPrevBlur(blurPlaceholder);
+    setLoaded(false);
+  }
   const loader = makeLoader(format, fit);
 
   const handleLoad = useCallback(() => {
