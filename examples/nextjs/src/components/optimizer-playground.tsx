@@ -48,9 +48,13 @@ export function OptimizerPlayground() {
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
-  const previewUrl = buildPreviewUrl(imageUrl, width, quality, format, fit);
+  const hasInput = imageUrl.trim() !== "";
+  const previewUrl = hasInput
+    ? buildPreviewUrl(imageUrl, width, quality, format, fit)
+    : null;
 
   async function handleGenerate() {
+    if (!hasInput) return;
     setLoading(true);
     setError(null);
     setGeneratedUrl(null);
@@ -195,7 +199,7 @@ export function OptimizerPlayground() {
           {/* Generate */}
           <button
             onClick={handleGenerate}
-            disabled={loading || !imageUrl}
+            disabled={loading || !hasInput}
             className="w-full rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {loading ? "Generating..." : "Generate Signed URL"}
@@ -218,13 +222,19 @@ export function OptimizerPlayground() {
           </div>
           <div className="p-4">
             <div className="relative aspect-4/3 overflow-hidden rounded-lg bg-card-hover">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                key={previewUrl}
-                src={previewUrl}
-                alt="Preview"
-                className="h-full w-full object-contain"
-              />
+              {previewUrl ? (
+                /* eslint-disable-next-line @next/next/no-img-element */
+                <img
+                  key={previewUrl}
+                  src={previewUrl}
+                  alt="Preview"
+                  className="h-full w-full object-contain"
+                />
+              ) : (
+                <div className="flex h-full items-center justify-center text-sm text-muted">
+                  Enter an image URL to preview
+                </div>
+              )}
             </div>
           </div>
         </div>
