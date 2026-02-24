@@ -52,7 +52,6 @@ export const apiKeyRouter = createTRPCRouter({
       z.object({
         projectId: z.string().uuid(),
         name: z.string().min(1).max(255),
-        allowedSourceDomains: z.array(z.string()).optional(),
         expiresAt: z.date().optional(),
       }),
     )
@@ -75,11 +74,6 @@ export const apiKeyRouter = createTRPCRouter({
       // Encrypt secret key before storing (public key is stored in plaintext)
       const encryptedSecretKey = encryptApiKey(secretKey);
 
-      // Clean up domain entries
-      const allowedSourceDomains = input.allowedSourceDomains
-        ?.map((d) => d.trim().toLowerCase())
-        .filter((d) => d.length > 0);
-
       const [newApiKey] = await ctx.db
         .insert(apiKeys)
         .values({
@@ -87,10 +81,6 @@ export const apiKeyRouter = createTRPCRouter({
           name: input.name,
           publicKey,
           secretKey: encryptedSecretKey,
-          allowedSourceDomains:
-            allowedSourceDomains && allowedSourceDomains.length > 0
-              ? allowedSourceDomains
-              : null,
           createdBy: ctx.userId,
           expiresAt: input.expiresAt,
           rateLimitPerMinute: RATE_LIMITS.perMinute,
@@ -289,7 +279,6 @@ export const apiKeyRouter = createTRPCRouter({
             name: oldApiKey.name,
             publicKey,
             secretKey: encryptedSecretKey,
-            allowedSourceDomains: oldApiKey.allowedSourceDomains,
             createdBy: ctx.userId,
             expiresAt: oldApiKey.expiresAt,
             rateLimitPerMinute: oldApiKey.rateLimitPerMinute,
@@ -323,7 +312,6 @@ export const apiKeyRouter = createTRPCRouter({
       z.object({
         apiKeyId: z.string().uuid(),
         name: z.string().min(1).max(255).optional(),
-        allowedSourceDomains: z.array(z.string()).optional(),
         expiresAt: z.date().nullable().optional(),
       }),
     )
@@ -354,17 +342,10 @@ export const apiKeyRouter = createTRPCRouter({
 
       const updateData: {
         name?: string;
-        allowedSourceDomains?: string[] | null;
         expiresAt?: Date | null;
       } = {};
 
       if (input.name !== undefined) updateData.name = input.name;
-      if (input.allowedSourceDomains !== undefined) {
-        const cleaned = input.allowedSourceDomains
-          .map((d) => d.trim().toLowerCase())
-          .filter((d) => d.length > 0);
-        updateData.allowedSourceDomains = cleaned.length > 0 ? cleaned : null;
-      }
       if (input.expiresAt !== undefined) updateData.expiresAt = input.expiresAt;
 
       if (Object.keys(updateData).length === 0) {

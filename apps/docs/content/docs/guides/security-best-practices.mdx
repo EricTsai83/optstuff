@@ -32,7 +32,7 @@ The optional `exp` parameter limits how long a signed URL is valid. Recommended 
 
 ### Domain Whitelisting
 
-Two-layer domain control restricts both who can use the service (referer domains) and which images can be processed (source domains). Referer validation targets browser-based hotlinking specifically — requests without a `Referer` header are allowed since they indicate server-to-server calls or privacy-stripping policies, not hotlinking. See [Domain Whitelisting](/guides/domain-whitelisting) for configuration and [Understanding Referer-Based Protection](/guides/referer-security-model) for the trust model.
+Two-layer domain control restricts both who can use the service (referer domains) and which images can be processed (source domains). Both settings are configured at the project level in **Settings → Domain Security**. Referer validation targets browser-based hotlinking specifically — requests without a `Referer` header are allowed since they indicate server-to-server calls or privacy-stripping policies, not hotlinking. See [Domain Whitelisting](/guides/domain-whitelisting) for configuration and [Understanding Referer-Based Protection](/guides/referer-security-model) for the trust model.
 
 ### Rate Limiting
 

@@ -33,7 +33,7 @@ stateDiagram-v2
 ### Creation
 
 1. Create a key from the dashboard (see [Dashboard Setup](/getting-started/dashboard-setup))
-2. Configure: name, allowed source domains, optional expiration
+2. Configure: name and optional expiration
 3. **Copy the secret key immediately** — it cannot be retrieved later
 
 The public key can always be viewed and copied from the API key list.
@@ -74,7 +74,6 @@ Set an optional expiration date when creating a key. After this date, the key is
 | **Set expiration dates** | Limits damage window if a key is compromised |
 | **Rotate every 90 days** | Reduces long-term exposure risk |
 | **Use separate keys per environment** | Isolates production from development/staging |
-| **Restrict source domains** | Principle of least privilege — each key only allows necessary domains |
 | **Revoke compromised keys immediately** | Stops unauthorized access instantly |
 | **Sign URLs server-side only** | Secret key never exposed to browsers |
 | **Store secret keys in environment variables** | Never hard-code or commit to version control |
@@ -83,9 +82,9 @@ Set an optional expiration date when creating a key. After this date, the key is
 
 | Environment | Recommended Setup |
 |-------------|-------------------|
-| Development | Separate key with relaxed source domains, short expiration |
-| Staging | Separate key matching production domain restrictions |
-| Production | Restricted source domains, rate limits tuned for expected traffic |
+| Development | Separate key with short expiration |
+| Staging | Separate key matching production configuration |
+| Production | Rate limits tuned for expected traffic, appropriate expiration |
 
 ## Related Documentation
 

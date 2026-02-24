@@ -55,7 +55,7 @@ URL **signing** must happen server-side because it requires the secret key. The 
 ### How do I migrate from Cloudinary / Imgix / another service?
 
 1. Create an OptStuff project and API key
-2. Add your image source domains to the key's allowed source domains
+2. Add your image source domains in project **Settings → Domain Security → Image Sources**
 3. Replace your existing image URL generation with OptStuff's signing utility
 4. Update your CDN origin to point to your OptStuff deployment
 
@@ -110,7 +110,7 @@ See [Troubleshooting Signature Errors](/api-reference/error-codes#troubleshootin
 
 ### I'm getting `403 Source domain not allowed`
 
-The image source domain is not in the API key's allowed source domains list. Add it in **Dashboard → Project → API Key settings**. See [Domain Whitelisting](/guides/domain-whitelisting).
+The image source domain is not in the project's allowed source domains list. Add it in **Dashboard → Project → Settings → Domain Security → Image Sources**. See [Domain Whitelisting](/guides/domain-whitelisting).
 
 ### I'm getting `429 Too Many Requests`
 

@@ -18,7 +18,6 @@ import { Label } from "@workspace/ui/components/label";
 import { cn } from "@workspace/ui/lib/utils";
 import { Eye, EyeOff, Key, Plus, Shield } from "lucide-react";
 import { useState } from "react";
-import { DomainListInput } from "./domain-list-input";
 import { ExpirationSelect } from "./expiration-select";
 
 type CreateApiKeyDialogProps = {
@@ -33,7 +32,6 @@ export function CreateApiKeyDialog({
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState<"form" | "success">("form");
   const [name, setName] = useState("");
-  const [sourceDomains, setSourceDomains] = useState<string[]>([]);
   const [expiresAt, setExpiresAt] = useState<Date | undefined>(undefined);
   const [createdPublicKey, setCreatedPublicKey] = useState<string | null>(null);
   const [createdSecretKey, setCreatedSecretKey] = useState<string | null>(null);
@@ -58,7 +56,6 @@ export function CreateApiKeyDialog({
     createKey({
       projectId,
       name: name.trim(),
-      allowedSourceDomains: sourceDomains,
       expiresAt: expiresAt,
     });
   };
@@ -69,7 +66,6 @@ export function CreateApiKeyDialog({
     setTimeout(() => {
       setStep("form");
       setName("");
-      setSourceDomains([]);
       setExpiresAt(undefined);
       setCreatedPublicKey(null);
       setCreatedSecretKey(null);
@@ -106,7 +102,8 @@ export function CreateApiKeyDialog({
             <DialogHeader>
               <DialogTitle>Create API Key</DialogTitle>
               <DialogDescription>
-                Create a new API key with specific source domain permissions.
+                Create a new API key for this project. Image source
+                restrictions are managed in project Settings.
               </DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
@@ -119,20 +116,6 @@ export function CreateApiKeyDialog({
                   onChange={(e) => setName(e.target.value)}
                   disabled={isPending}
                   autoFocus
-                />
-              </div>
-
-              <div className="grid gap-2">
-                <Label>Allowed Source Domains</Label>
-                <p className="text-muted-foreground text-xs">
-                  Which image sources can this key access? Subdomains are
-                  automatically included.
-                </p>
-                <DomainListInput
-                  value={sourceDomains}
-                  onChange={setSourceDomains}
-                  placeholder="images.example.com"
-                  disabled={isPending}
                 />
               </div>
 
@@ -153,9 +136,7 @@ export function CreateApiKeyDialog({
               </Button>
               <Button
                 type="submit"
-                disabled={
-                  isPending || !name.trim() || sourceDomains.length === 0
-                }
+                disabled={isPending || !name.trim()}
               >
                 Create Key
               </Button>

@@ -318,7 +318,7 @@ import Image from "next/image";
 
 - **Keep the secret key confidential** — `OPTSTUFF_SECRET_KEY` should only exist in server-side environment variables; do not use the `NEXT_PUBLIC_` prefix
 - **Set URL expiration** — Use the `expiresInSeconds` parameter to limit URL validity; this example defaults to 3600 seconds (1 hour)
-- **Enable Domain Allowlist** — Configure allowed domains in the OptStuff Dashboard to prevent hotlinking
+- **Configure domain security** — In the OptStuff Dashboard, go to project Settings → Domain Security to configure Image Sources (which domains can be fetched) and Authorized Websites (which sites can embed optimized images)
 - **Add authentication to the API Route** — In production, add authentication or rate limiting to `/api/optstuff`
 
 ## Further Reading

@@ -17,7 +17,7 @@ import {
   AlertTriangle,
   Clock,
   Gauge,
-  Globe,
+
   Key,
   MoreHorizontal,
   Pencil,
@@ -77,11 +77,9 @@ function AlertsOverview({
   isExpired,
   isExpiringSoon,
   daysUntilExpiry,
-  hasDomains,
-}: ExpirationStatus & { readonly hasDomains: boolean }) {
+}: ExpirationStatus) {
   const alerts: AlertItem[] = [];
 
-  // 过期相关提醒
   if (isExpired) {
     alerts.push({
       id: "expired",
@@ -100,17 +98,6 @@ function AlertsOverview({
     });
   }
 
-  // 域名配置提醒
-  if (!hasDomains) {
-    alerts.push({
-      id: "no-domains",
-      severity: "warning",
-      icon: <Globe className="h-3 w-3" />,
-      label: "No domains",
-    });
-  }
-
-  // 没有任何提醒时不显示
   if (alerts.length === 0) {
     return null;
   }
@@ -133,29 +120,6 @@ function ExpirationInfo({ expiresAt }: { readonly expiresAt: Date | null }) {
   const formattedDate = format(expiryDate, "MMM d, yyyy");
 
   return <span>{formattedDate}</span>;
-}
-
-function DomainDisplay({ domains }: { readonly domains: string[] | null }) {
-  const domainCount = domains?.length ?? 0;
-
-  if (domainCount === 0) {
-    return null;
-  }
-
-  return (
-    <div className="flex flex-wrap items-center gap-2">
-      {domains!.slice(0, 4).map((domain) => (
-        <Badge key={domain} variant="outline" className="font-mono text-xs">
-          {domain}
-        </Badge>
-      ))}
-      {domainCount > 4 && (
-        <span className="text-muted-foreground text-xs">
-          +{domainCount - 4} more
-        </span>
-      )}
-    </div>
-  );
 }
 
 function StatusIcon({
@@ -239,18 +203,11 @@ export function ApiKeyItem({
   const { isExpired, isExpiringSoon, daysUntilExpiry } = getExpirationStatus(
     apiKey.expiresAt,
   );
-  const hasDomains = (apiKey.allowedSourceDomains?.length ?? 0) > 0;
-  const colorScheme = getStatusColorScheme(
-    isExpired,
-    isExpiringSoon,
-    hasDomains,
-  );
+  const colorScheme = getStatusColorScheme(isExpired, isExpiringSoon);
 
   const statusLabel = isExpired
     ? "Expired"
-    : !hasDomains
-      ? "No domains configured"
-      : isExpiringSoon
+    : isExpiringSoon
         ? "Expiring soon"
         : "Active";
 
@@ -287,7 +244,6 @@ export function ApiKeyItem({
             isExpired={isExpired}
             isExpiringSoon={isExpiringSoon}
             daysUntilExpiry={daysUntilExpiry}
-            hasDomains={hasDomains}
           />
         </div>
 
@@ -360,14 +316,6 @@ export function ApiKeyItem({
           </div>
         </div>
 
-        {/* Column 3: Domains */}
-        <div className="space-y-2">
-          <div className="text-muted-foreground flex items-center gap-2 text-sm">
-            <Globe className="h-4 w-4" />
-            <span>Allowed Domains</span>
-          </div>
-          <DomainDisplay domains={apiKey.allowedSourceDomains} />
-        </div>
       </div>
     </div>
   );

@@ -13,6 +13,7 @@ export type ProjectConfig = {
   readonly id: string;
   readonly slug: string;
   readonly teamId: string;
+  readonly allowedSourceDomains: readonly string[] | null;
   readonly allowedRefererDomains: readonly string[] | null;
 };
 
@@ -180,6 +181,7 @@ export async function getProjectConfig(
     id: project.id,
     slug: project.slug,
     teamId: project.teamId,
+    allowedSourceDomains: project.allowedSourceDomains,
     allowedRefererDomains: project.allowedRefererDomains,
   };
 
@@ -248,6 +250,7 @@ export async function getProjectConfigById(
     id: project.id,
     slug: project.slug,
     teamId: project.teamId,
+    allowedSourceDomains: project.allowedSourceDomains,
     allowedRefererDomains: project.allowedRefererDomains,
   };
 
@@ -332,6 +335,7 @@ export async function getProjectConfigByTeamAndSlug(
     id: project.id,
     slug: project.slug,
     teamId: project.teamId,
+    allowedSourceDomains: project.allowedSourceDomains,
     allowedRefererDomains: project.allowedRefererDomains,
   };
 

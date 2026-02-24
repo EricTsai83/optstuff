@@ -207,7 +207,7 @@ export async function GET(
     );
   }
 
-  // 8. Build full image URL and validate source domain (API key-level)
+  // 8. Build full image URL and validate source domain (project-level)
   let imageUrl: string;
   try {
     imageUrl = ensureProtocol(parsed.imagePath);
@@ -234,7 +234,7 @@ export async function GET(
     );
   }
 
-  if (!validateSourceDomain(sourceHost, apiKey.allowedSourceDomains)) {
+  if (!validateSourceDomain(sourceHost, project.allowedSourceDomains)) {
     void logRequest(project.id, {
       sourceUrl: imageUrl,
       status: "forbidden",

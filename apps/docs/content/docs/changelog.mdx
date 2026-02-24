@@ -9,6 +9,16 @@ Subscribe to updates by watching the [GitHub repository](https://github.com/Eric
 
 ---
 
+## 2026-02-25
+
+### Unified Domain Configuration
+
+- **Breaking Change:** `allowedSourceDomains` (Image Sources) has been moved from per-API-key to project level. Both **Image Sources** and **Authorized Websites** (referer domains) are now configured in the project's **Settings → Domain Security** tab.
+- API keys are simplified to name, expiration, and rate limits — domain restrictions are no longer per-key.
+- Existing per-key source domain configurations have been migrated to their respective projects.
+
+---
+
 ## 2026-02-20
 
 ### Documentation
@@ -30,7 +40,7 @@ Subscribe to updates by watching the [GitHub repository](https://github.com/Eric
 - **Image Optimization API** — On-the-fly resize, format conversion (WebP, AVIF), and quality adjustment
 - **Signed URL Security** — HMAC-SHA256 signatures for every request
 - **Multi-Tenant Architecture** — Teams, projects, and API keys hierarchy
-- **Domain Whitelisting** — Project-level referer domains and API key-level source domains
+- **Domain Whitelisting** — Project-level referer domains and source domains
 - **Encrypted Key Storage** — AES-256-GCM encryption for secret keys at rest
 - **Rate Limiting** — Configurable per-minute and per-day limits per API key
 - **Usage Analytics** — Request logs, bandwidth tracking, and top images

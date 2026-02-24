@@ -35,6 +35,16 @@ const allowedRefererDomainsSchema = z
   .array(refererDomainEntrySchema)
   .optional();
 
+const sourceDomainEntrySchema = z
+  .string()
+  .min(1)
+  .transform((s) => s.trim().toLowerCase())
+  .pipe(z.string().min(1, "Domain cannot be empty"));
+
+const allowedSourceDomainsSchema = z
+  .array(sourceDomainEntrySchema)
+  .optional();
+
 /**
  * Checks if an error is a Postgres unique-constraint violation for the given constraint name.
  * Postgres error code "23505" = unique_violation.
@@ -112,6 +122,7 @@ export const projectRouter = createTRPCRouter({
         teamId: z.string().uuid(),
         name: z.string().min(1).max(255),
         description: z.string().max(1000).optional(),
+        allowedSourceDomains: allowedSourceDomainsSchema,
         allowedRefererDomains: allowedRefererDomainsSchema,
       }),
     )
@@ -151,6 +162,11 @@ export const projectRouter = createTRPCRouter({
             name: input.name,
             slug: slugToUse,
             description: input.description,
+            allowedSourceDomains:
+              input.allowedSourceDomains &&
+              input.allowedSourceDomains.length > 0
+                ? input.allowedSourceDomains
+                : undefined,
             allowedRefererDomains:
               input.allowedRefererDomains &&
               input.allowedRefererDomains.length > 0
@@ -354,13 +370,13 @@ export const projectRouter = createTRPCRouter({
     }),
 
   /**
-   * Update project authorization settings (referer domain whitelist).
-   * Note: Source domain restrictions are now configured per API key.
+   * Update project domain security settings (source domains + referer domains).
    */
   updateSettings: protectedProcedure
     .input(
       z.object({
         projectId: z.string().uuid(),
+        allowedSourceDomains: z.array(sourceDomainEntrySchema),
         allowedRefererDomains: z.array(refererDomainEntrySchema),
       }),
     )
@@ -378,28 +394,31 @@ export const projectRouter = createTRPCRouter({
         });
       }
 
-      const normalizedDomains =
-        input.allowedRefererDomains.length > 0
-          ? input.allowedRefererDomains
-          : [];
-
       const [updatedProject] = await ctx.db
         .update(projects)
-        .set({ allowedRefererDomains: normalizedDomains })
+        .set({
+          allowedSourceDomains:
+            input.allowedSourceDomains.length > 0
+              ? input.allowedSourceDomains
+              : [],
+          allowedRefererDomains:
+            input.allowedRefererDomains.length > 0
+              ? input.allowedRefererDomains
+              : [],
+        })
         .where(eq(projects.id, input.projectId))
         .returning();
 
       // Invalidate cache so IPX service picks up new settings
       if (updatedProject) {
-        await invalidateProjectCache(updatedProject.slug);
+        await invalidateProjectCache(updatedProject.slug, updatedProject.id);
       }
 
       return updatedProject;
     }),
 
   /**
-   * Get project settings (referer domain whitelist).
-   * Note: Source domain restrictions are now configured per API key.
+   * Get project domain security settings (source domains + referer domains).
    */
   getSettings: protectedProcedure
     .input(z.object({ projectId: z.string().uuid() }))
@@ -415,6 +434,7 @@ export const projectRouter = createTRPCRouter({
       }
 
       return {
+        allowedSourceDomains: project.allowedSourceDomains ?? [],
         allowedRefererDomains: project.allowedRefererDomains ?? [],
       };
     }),

@@ -29,7 +29,9 @@ A team is the top-level organization unit. When you sign up, a **personal team**
 A project represents an application or environment. Each project has:
 
 - A unique **slug** used in API URLs (e.g., `/api/v1/my-blog/...`)
-- **Allowed referer domains** — controls which websites can use this project's API
+- **Domain Security** settings (configured in the project's Settings tab):
+  - **Authorized Websites** (`allowedRefererDomains`) — controls which websites can use this project's API
+  - **Image Sources** (`allowedSourceDomains`) — controls which image origins can be processed
 - Usage analytics and request logs
 
 ### API Keys
@@ -43,7 +45,6 @@ Each API key is a **dual-key pair** used to authenticate image requests:
 
 API keys also carry access rules:
 
-- **Allowed source domains** — which image origins can be processed
 - **Rate limits** — per-minute and per-day request limits
 - **Expiration** — optional automatic invalidation date
 
@@ -74,9 +75,9 @@ OptStuff provides two layers of domain control:
 | Layer | Setting | Question | Scope |
 |-------|---------|----------|-------|
 | **Project** | `allowedRefererDomains` | Who can **use** this API? | HTTP Referer header |
-| **API Key** | `allowedSourceDomains` | Which **image sources** can be processed? | Image URL in request |
+| **Project** | `allowedSourceDomains` | Which **image sources** can be processed? | Image URL in request |
 
-For configuration instructions, see [Domain Whitelisting](/guides/domain-whitelisting).
+Both settings are configured in the project's **Settings → Domain Security** tab. For configuration instructions, see [Domain Whitelisting](/guides/domain-whitelisting).
 
 ## Four-Layer Permission Model
 
@@ -90,10 +91,10 @@ Level 2: Team Ownership
  → Only the team owner can manage resources
 
 Level 3: Project Settings
- → Referer domain restrictions
+ → Referer domain restrictions, source domain restrictions
 
 Level 4: API Key Controls
- → Source domain restrictions, rate limits, expiration
+ → Rate limits, expiration
 ```
 
 ## Next Steps

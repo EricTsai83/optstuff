@@ -1,5 +1,6 @@
 "use client";
 
+import { DOCS_LINKS } from "@/lib/constants";
 import { env } from "@/env";
 import { formatBytes, formatNumber } from "@/lib/format";
 import { api } from "@/trpc/react";
@@ -11,7 +12,18 @@ import {
   CardTitle,
 } from "@workspace/ui/components/card";
 import { CopyButton } from "@workspace/ui/components/copy-button";
-import { Activity, Globe, HardDrive, Key } from "lucide-react";
+import {
+  Activity,
+  CheckCircle2,
+  Circle,
+  Code,
+  Globe,
+  HardDrive,
+  ImageIcon,
+  Key,
+  Settings,
+} from "lucide-react";
+import Link from "next/link";
 import type { Project } from "../../types";
 import { StatCard } from "../components/stat-card";
 
@@ -19,13 +31,97 @@ type OverviewTabProps = {
   readonly project: Project;
 };
 
+function SetupChecklist({
+  hasSourceDomains,
+  hasApiKeys,
+  teamSlug,
+  projectSlug,
+}: {
+  hasSourceDomains: boolean;
+  hasApiKeys: boolean;
+  teamSlug?: string;
+  projectSlug: string;
+}) {
+  const steps = [
+    {
+      done: hasSourceDomains,
+      label: "Configure image sources",
+      icon: ImageIcon,
+      href: teamSlug
+        ? `/${teamSlug}/${projectSlug}?tab=settings`
+        : undefined,
+      hrefLabel: "Go to Settings",
+    },
+    { done: hasApiKeys, label: "API key ready", icon: Key },
+  ];
+
+  const completedCount = steps.filter((s) => s.done).length;
+  if (completedCount === steps.length) return null;
+
+  return (
+    <Card className="border-amber-500/30 bg-amber-500/2">
+      <CardHeader className="pb-3">
+        <CardTitle className="flex items-center gap-2 text-base">
+          <Settings className="h-4 w-4" />
+          Complete Your Project Setup
+        </CardTitle>
+        <CardDescription>
+          {completedCount} of {steps.length} steps completed
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <ul className="space-y-3">
+          {steps.map((step) => (
+            <li key={step.label} className="flex items-center gap-3">
+              {step.done ? (
+                <CheckCircle2 className="h-5 w-5 shrink-0 text-green-500" />
+              ) : (
+                <Circle className="text-muted-foreground h-5 w-5 shrink-0" />
+              )}
+              <span
+                className={
+                  step.done ? "text-muted-foreground line-through" : ""
+                }
+              >
+                {step.label}
+              </span>
+              {!step.done && step.href && (
+                <Link
+                  href={step.href}
+                  className="text-primary ml-auto text-sm hover:underline"
+                >
+                  {step.hrefLabel}
+                </Link>
+              )}
+            </li>
+          ))}
+        </ul>
+        <a
+          href={DOCS_LINKS.integration}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-primary mt-4 inline-flex items-center gap-1 text-sm hover:underline"
+        >
+          <Code className="h-3.5 w-3.5" />
+          Integration Guide →
+        </a>
+      </CardContent>
+    </Card>
+  );
+}
+
 export function OverviewTab({ project }: OverviewTabProps) {
   const { data: apiKeys } = api.apiKey.list.useQuery({ projectId: project.id });
   const { data: usageSummary } = api.usage.getSummary.useQuery({
     projectId: project.id,
   });
+  const { data: settings } = api.project.getSettings.useQuery({
+    projectId: project.id,
+  });
 
   const projectEndpoint = `${env.NEXT_PUBLIC_APP_URL}/api/v1/${project.slug}`;
+  const hasSourceDomains = (settings?.allowedSourceDomains?.length ?? 0) > 0;
+  const hasApiKeys = (apiKeys?.length ?? 0) > 0;
 
   return (
     <div className="space-y-6">
@@ -58,6 +154,15 @@ export function OverviewTab({ project }: OverviewTabProps) {
           </p>
         </CardContent>
       </Card>
+
+      {/* Setup Checklist */}
+      {settings && (
+        <SetupChecklist
+          hasSourceDomains={hasSourceDomains}
+          hasApiKeys={hasApiKeys}
+          projectSlug={project.slug}
+        />
+      )}
 
       {/* Stats */}
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-6">
