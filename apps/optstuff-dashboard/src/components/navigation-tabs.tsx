@@ -1,9 +1,9 @@
 "use client";
 
-import type { LucideIcon } from "lucide-react";
 import { useIsMobile } from "@workspace/hooks/use-mobile";
 import { useScroll } from "@workspace/hooks/use-scroll";
 import { Tabs, TabsList, TabsTrigger } from "@workspace/ui/components/tabs";
+import type { LucideIcon } from "lucide-react";
 
 const MAX_SCROLL = 64;
 const TRANSLATE_X_MULTIPLIER = 0.8;
@@ -36,12 +36,14 @@ export function NavigationTabs({
     <Tabs
       value={activeTab}
       onValueChange={onTabChange}
-      className="border-border bg-background scrollbar-hide sticky top-0 z-50 border-b"
+      className="border-border bg-background scrollbar-hide sticky top-0 z-50 border-b pt-1"
       data-navigation-tabs="true"
     >
       <TabsList
         className="h-[46px] w-full justify-start gap-0 overflow-x-auto rounded-none border-none bg-transparent px-2 *:shrink-0 md:px-4"
-        style={translateX ? { transform: `translateX(${translateX}px)` } : undefined}
+        style={
+          translateX ? { transform: `translateX(${translateX}px)` } : undefined
+        }
       >
         {tabs.map((tab) => (
           <TabsTrigger
