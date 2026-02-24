@@ -1,22 +1,9 @@
 "use client";
 
-import { Badge } from "@workspace/ui/components/badge";
-import { Button } from "@workspace/ui/components/button";
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@workspace/ui/components/tabs";
-import {
-  Activity,
-  ArrowLeft,
-  Code,
-  Key,
-  LayoutDashboard,
-  Settings,
-} from "lucide-react";
-import Link from "next/link";
+import { NavigationTabs } from "@/components/navigation-tabs";
+import { api } from "@/trpc/react";
+import { useState } from "react";
+import { PROJECT_TABS, type ProjectTab } from "../../constants";
 import type { Project, Team } from "../../types";
 import { ApiKeyList } from "../components/api-key-list";
 import { DeveloperTab } from "./developer-tab";
@@ -30,101 +17,56 @@ type ProjectDetailViewProps = {
   readonly defaultTab?: string;
 };
 
-const VALID_TABS = ["overview", "api-keys", "usage", "developer", "settings"];
-
 export function ProjectDetailView({
-  project,
+  project: initialProject,
   team,
   defaultTab,
 }: ProjectDetailViewProps) {
-  const initialTab =
-    defaultTab && VALID_TABS.includes(defaultTab) ? defaultTab : "overview";
+  const initialTab = (
+    defaultTab && PROJECT_TABS.some((t) => t.value === defaultTab)
+      ? defaultTab
+      : "overview"
+  ) as ProjectTab;
+
+  const [activeTab, setActiveTab] = useState<ProjectTab>(initialTab);
+
+  const { data: liveProject } = api.project.getBySlug.useQuery({
+    teamSlug: team.slug,
+    projectSlug: initialProject.slug,
+  });
+
+  const project = liveProject ?? initialProject;
 
   return (
-    <Tabs defaultValue={initialTab} className="flex flex-1 flex-col">
-      {/* Project Header */}
-      <div className="border-border border-b">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center gap-4">
-            <Link href={`/${team.slug}`}>
-              <Button variant="ghost" className="w-12">
-                <ArrowLeft className="size-5" />
-              </Button>
-            </Link>
-            <div className="flex-1">
-              <div className="flex items-center gap-3">
-                <h1 className="text-xl font-semibold">{project.name}</h1>
-                <Badge variant="secondary">{team.name}</Badge>
-              </div>
-              {project.description && (
-                <p className="text-muted-foreground mt-1 text-sm">
-                  {project.description}
-                </p>
-              )}
-            </div>
-          </div>
-        </div>
+    <>
+      <NavigationTabs
+        tabs={PROJECT_TABS}
+        activeTab={activeTab}
+        onTabChange={(tab) => setActiveTab(tab as ProjectTab)}
+      />
 
-        {/* Tabs */}
-        <div className="container mx-auto px-4">
-          <TabsList className="scrollbar-hide h-auto w-full justify-start gap-0 overflow-x-auto rounded-none border-none bg-transparent p-0 *:shrink-0">
-            <TabsTrigger
-              value="overview"
-              className="data-[state=active]:border-foreground text-muted-foreground data-[state=active]:text-foreground whitespace-nowrap rounded-none border-b-2 border-transparent px-3 py-3 text-sm shadow-none data-[state=active]:bg-transparent data-[state=active]:shadow-none sm:px-4"
-            >
-              <LayoutDashboard className="h-4 w-4" />
-              Overview
-            </TabsTrigger>
-            <TabsTrigger
-              value="api-keys"
-              className="data-[state=active]:border-foreground text-muted-foreground data-[state=active]:text-foreground whitespace-nowrap rounded-none border-b-2 border-transparent px-3 py-3 text-sm shadow-none data-[state=active]:bg-transparent data-[state=active]:shadow-none sm:px-4"
-            >
-              <Key className="h-4 w-4" />
-              API Keys
-            </TabsTrigger>
-            <TabsTrigger
-              value="usage"
-              className="data-[state=active]:border-foreground text-muted-foreground data-[state=active]:text-foreground whitespace-nowrap rounded-none border-b-2 border-transparent px-3 py-3 text-sm shadow-none data-[state=active]:bg-transparent data-[state=active]:shadow-none sm:px-4"
-            >
-              <Activity className="h-4 w-4" />
-              Usage
-            </TabsTrigger>
-            <TabsTrigger
-              value="developer"
-              className="data-[state=active]:border-foreground text-muted-foreground data-[state=active]:text-foreground whitespace-nowrap rounded-none border-b-2 border-transparent px-3 py-3 text-sm shadow-none data-[state=active]:bg-transparent data-[state=active]:shadow-none sm:px-4"
-            >
-              <Code className="h-4 w-4" />
-              Developer
-            </TabsTrigger>
-            <TabsTrigger
-              value="settings"
-              className="data-[state=active]:border-foreground text-muted-foreground data-[state=active]:text-foreground whitespace-nowrap rounded-none border-b-2 border-transparent px-3 py-3 text-sm shadow-none data-[state=active]:bg-transparent data-[state=active]:shadow-none sm:px-4"
-            >
-              <Settings className="h-4 w-4" />
-              Settings
-            </TabsTrigger>
-          </TabsList>
-        </div>
-      </div>
-
-      {/* Tab Content */}
       <main className="container mx-auto flex-1 px-4 py-6">
-        <TabsContent value="overview" className="mt-0">
-          <OverviewTab project={project} />
-        </TabsContent>
-        <TabsContent value="api-keys" className="mt-0">
+        <div className="mb-6">
+          <h1 className="text-2xl font-semibold tracking-tight">
+            {project.name}
+          </h1>
+          {project.description && (
+            <p className="text-muted-foreground mt-1.5 max-w-2xl text-sm leading-relaxed">
+              {project.description}
+            </p>
+          )}
+        </div>
+
+        {activeTab === "overview" && <OverviewTab project={project} />}
+        {activeTab === "api-keys" && (
           <ApiKeyList projectId={project.id} projectSlug={project.slug} />
-        </TabsContent>
-        <TabsContent value="usage" className="mt-0">
-          <UsageTab projectId={project.id} />
-        </TabsContent>
-        <TabsContent value="developer" className="mt-0">
-          <DeveloperTab project={project} />
-        </TabsContent>
-        <TabsContent value="settings" className="mt-0">
+        )}
+        {activeTab === "usage" && <UsageTab projectId={project.id} />}
+        {activeTab === "developer" && <DeveloperTab project={project} />}
+        {activeTab === "settings" && (
           <SettingsTab project={project} team={team} />
-        </TabsContent>
+        )}
       </main>
-    </Tabs>
+    </>
   );
 }

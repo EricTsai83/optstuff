@@ -39,7 +39,7 @@ export default async function TeamPage({ params }: PageProps) {
     where: eq(teams.slug, teamSlug),
   });
 
-  if (team && team.ownerId === userId) {
+  if (team && team?.ownerId === userId) {
     return renderTeamPage(team);
   }
 
