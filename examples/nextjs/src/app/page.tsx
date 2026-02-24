@@ -81,7 +81,7 @@ export default async function Home() {
           </nav>
           <div className="flex justify-end">
             <a
-              href="https://github.com/nicepkg/optstuff"
+              href="https://github.com/EricTsai83/optstuff"
               target="_blank"
               rel="noopener noreferrer"
               className="text-muted hover:text-foreground flex items-center gap-1.5 text-sm transition-colors"
