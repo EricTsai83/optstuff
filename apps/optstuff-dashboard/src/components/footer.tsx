@@ -1,5 +1,6 @@
 "use client";
 
+import { env } from "@/env";
 import { DOCS_LINKS } from "@/lib/constants";
 import { Button } from "@workspace/ui/components/button";
 import {
@@ -12,12 +13,14 @@ import { LogoIcon } from "@workspace/ui/components/logo";
 import { cn } from "@workspace/ui/lib/utils";
 import { ChevronDown, Monitor, Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
+import Link from "next/link";
 import { useEffect, useState } from "react";
+
+const appDomain = new URL(env.NEXT_PUBLIC_APP_URL).hostname;
 
 const FOOTER_LINKS = [
   { name: "Home", href: "/" },
   { name: "Docs", href: DOCS_LINKS.home, external: true },
-  { name: "Contact", href: "mailto:support@optstuff.dev" },
   { name: "Legal", href: "#", hasDropdown: true },
 ];
 
@@ -56,7 +59,7 @@ export function Footer() {
           {/* Right: Status and theme */}
           <div className="flex items-center gap-4">
             <a
-              href="https://status.optstuff.dev"
+              href={`https://status.${appDomain}`}
               target="_blank"
               rel="noopener noreferrer"
               className="text-accent flex items-center gap-2 text-sm transition-all duration-200 hover:underline"
@@ -118,10 +121,10 @@ function LegalDropdown() {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start">
         <DropdownMenuItem asChild>
-          <a href="/privacy">Privacy Policy</a>
+          <Link href="/privacy">Privacy Policy</Link>
         </DropdownMenuItem>
         <DropdownMenuItem asChild>
-          <a href="/terms">Terms of Service</a>
+          <Link href="/terms">Terms of Service</Link>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

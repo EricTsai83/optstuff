@@ -38,7 +38,7 @@ flowchart TD
 | Empty (default) | All referers allowed |
 | Non-empty | Only listed domains allowed |
 
-> **Note:** When the list is non-empty but a request arrives without a `Referer` header (e.g., direct browser navigation, server-to-server API calls), the request is **rejected**. If you need to support requests without a `Referer` header, leave the list empty and rely on API key-level source domain restrictions instead.
+> **Note:** When the list is non-empty, only requests with a `Referer` header that matches a listed domain are allowed. Requests **without** a `Referer` header (e.g., server-to-server calls, privacy-stripping browser policies) are always allowed — the signed URL already authenticates the request, and an absent referer does not indicate hotlinking. See [Understanding Referer-Based Protection](/guides/referer-security-model) for why.
 
 ## Configuring Source Domains (API Key Level)
 

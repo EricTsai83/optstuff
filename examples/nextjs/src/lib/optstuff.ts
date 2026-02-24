@@ -77,3 +77,36 @@ export function generateOptStuffUrl(
 
   return `${OPTSTUFF_BASE_URL}${urlPath}?${params.toString()}`;
 }
+
+/**
+ * Return a blur placeholder for use in Server Components.
+ *
+ * Tries to fetch the tiny image from OptStuff and embed it as a base64 data
+ * URL (zero client-side requests). If the fetch fails (e.g. service auth
+ * rejects server-to-server calls), falls back to the direct signed URL which
+ * still skips the `/api/optstuff` redirect hop.
+ */
+export async function getBlurDataUrl(
+  imageUrl: string,
+  {
+    width = 32,
+    quality = 20,
+    format = "webp",
+    fit = "cover",
+  }: Partial<ImageOperation> = {},
+): Promise<string> {
+  const url = generateOptStuffUrl(imageUrl, { width, quality, format, fit }, 3600);
+
+  try {
+    const res = await fetch(url, { cache: "no-store" });
+    if (res.ok) {
+      const buffer = Buffer.from(await res.arrayBuffer());
+      const contentType = res.headers.get("content-type") ?? `image/${format}`;
+      return `data:${contentType};base64,${buffer.toString("base64")}`;
+    }
+  } catch {
+    // fetch failed — fall through to direct URL
+  }
+
+  return url;
+}

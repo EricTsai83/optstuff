@@ -1,5 +1,6 @@
 "use client";
 
+import { env } from "@/env";
 import { DOCS_LINKS } from "@/lib/constants";
 import { CopyButton } from "@workspace/ui/components/copy-button";
 import {
@@ -9,7 +10,7 @@ import {
   TabsTrigger,
 } from "@workspace/ui/components/tabs";
 import { ExternalLink } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 type Tab = "curl" | "node" | "python";
 
@@ -19,6 +20,8 @@ const TABS: { id: Tab; label: string }[] = [
   { id: "python", label: "Python" },
 ];
 
+const baseUrl = env.NEXT_PUBLIC_APP_URL.replace(/\/+$/, "");
+
 type ApiCodeExamplesProps = {
   readonly apiKey: string;
 };
@@ -26,21 +29,24 @@ type ApiCodeExamplesProps = {
 export function ApiCodeExamples({ apiKey }: ApiCodeExamplesProps) {
   const [activeTab, setActiveTab] = useState<Tab>("curl");
 
-  const codeExamples: Record<Tab, string> = {
-    curl: `curl -X GET "https://api.optstuff.dev/v1/optimize?url=https://example.com/image.jpg&width=800&quality=80" \\
+  const codeExamples = useMemo<Record<Tab, string>>(
+    () => ({
+      curl: `curl -X GET "${baseUrl}/api/v1/optimize?url=https://example.com/image.jpg&width=800&quality=80" \\
   -H "Authorization: Bearer ${apiKey}"`,
-    node: `const response = await fetch(
-  "https://api.optstuff.dev/v1/optimize?url=https://example.com/image.jpg&width=800&quality=80",
+      node: `const response = await fetch(
+  "${baseUrl}/api/v1/optimize?url=https://example.com/image.jpg&width=800&quality=80",
   { headers: { Authorization: "Bearer ${apiKey}" } }
 );`,
-    python: `import requests
+      python: `import requests
 
 response = requests.get(
-    "https://api.optstuff.dev/v1/optimize",
+    "${baseUrl}/api/v1/optimize",
     params={"url": "https://example.com/image.jpg", "width": 800, "quality": 80},
     headers={"Authorization": f"Bearer ${apiKey}"}
 )`,
-  };
+    }),
+    [apiKey],
+  );
 
   return (
     <Tabs

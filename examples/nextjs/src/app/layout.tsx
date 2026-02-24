@@ -3,9 +3,9 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "OptStuff - Next.js Example",
+  title: "OptStuff — Secure Image Optimization API",
   description:
-    "Example Next.js application demonstrating OptStuff image optimization API integration",
+    "Transform, resize, and optimise images on-the-fly with signed URLs. See the blur-to-clear loading pattern, format conversion, and CDN-friendly caching in action.",
 };
 
 const geistSans = Geist({
