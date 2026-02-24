@@ -36,11 +36,11 @@ export function NavigationTabs({
     <Tabs
       value={activeTab}
       onValueChange={onTabChange}
-      className="border-border bg-background scrollbar-hide sticky top-0 z-50 border-b pt-1"
+      className="border-border bg-background scrollbar-hide sticky top-0 z-50 max-w-full overflow-hidden border-b pt-1"
       data-navigation-tabs="true"
     >
       <TabsList
-        className="h-[46px] w-full justify-start gap-0 overflow-x-auto rounded-none border-none bg-transparent px-2 *:shrink-0 md:px-4"
+        className="scrollbar-hide h-[46px] w-full justify-start gap-0 overflow-x-auto rounded-none border-none bg-transparent px-2 *:shrink-0 md:px-4"
         style={
           translateX ? { transform: `translateX(${translateX}px)` } : undefined
         }
