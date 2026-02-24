@@ -13,6 +13,7 @@ import { LogoIcon } from "@workspace/ui/components/logo";
 import { cn } from "@workspace/ui/lib/utils";
 import { ChevronDown, Monitor, Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
+import Link from "next/link";
 import { useEffect, useState } from "react";
 
 const appDomain = new URL(env.NEXT_PUBLIC_APP_URL).hostname;
@@ -120,10 +121,10 @@ function LegalDropdown() {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start">
         <DropdownMenuItem asChild>
-          <a href="/privacy">Privacy Policy</a>
+          <Link href="/privacy">Privacy Policy</Link>
         </DropdownMenuItem>
         <DropdownMenuItem asChild>
-          <a href="/terms">Terms of Service</a>
+          <Link href="/terms">Terms of Service</Link>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

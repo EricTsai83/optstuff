@@ -65,7 +65,7 @@ export function BlurImage({
   blurDataUrl,
 }: BlurImageProps) {
   const [phase, setPhase] = useState<"blur" | "loading" | "sharp">(
-    blurDataUrl && loadDelay === 0 ? "loading" : "blur",
+    loadDelay === 0 ? "loading" : "blur",
   );
   const [key, setKey] = useState(0);
   const fullImgRef = useRef<HTMLImageElement>(null);
