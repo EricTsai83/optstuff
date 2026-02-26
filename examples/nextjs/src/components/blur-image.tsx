@@ -40,6 +40,8 @@ type BlurImageProps = {
   loadDelay?: number;
   /** Pre-fetched base64 data URL for the blur placeholder (skips client fetch) */
   blurDataUrl?: string;
+  /** Prioritize above-the-fold image loading (hero image use case) */
+  priority?: boolean;
 };
 
 /**
@@ -63,6 +65,7 @@ export function BlurImage({
   aspectRatio = "4/3",
   loadDelay = 0,
   blurDataUrl,
+  priority = false,
 }: BlurImageProps) {
   const [phase, setPhase] = useState<"blur" | "loading" | "sharp">(
     loadDelay === 0 ? "loading" : "blur",
@@ -83,6 +86,20 @@ export function BlurImage({
     return () => clearTimeout(timer);
   }, [loadDelay, key]);
 
+  // When a priority image loads before hydration finishes, React may miss onLoad.
+  // Detect already-complete images after mount and promote to sharp phase.
+  useEffect(() => {
+    if (phase === "blur") return;
+    const img = fullImgRef.current;
+    if (!img) return;
+    if (!img.complete || img.naturalWidth <= 0) return;
+
+    const raf = requestAnimationFrame(() => {
+      setPhase("sharp");
+    });
+    return () => cancelAnimationFrame(raf);
+  }, [phase, fullSrc, key]);
+
   const replay = useCallback(() => {
     setPhase("blur");
     setKey((k) => k + 1);
@@ -100,6 +117,8 @@ export function BlurImage({
         src={blurSrc}
         alt=""
         aria-hidden
+        loading={priority ? "eager" : "lazy"}
+        fetchPriority={priority ? "low" : "auto"}
         className="absolute inset-0 h-full w-full object-cover"
         style={{
           filter: "blur(20px)",
@@ -115,6 +134,8 @@ export function BlurImage({
           ref={fullImgRef}
           src={fullSrc}
           alt={alt}
+          loading={priority ? "eager" : "lazy"}
+          fetchPriority={priority ? "high" : "auto"}
           onLoad={handleFullLoad}
           className="absolute inset-0 h-full w-full object-cover"
           style={{

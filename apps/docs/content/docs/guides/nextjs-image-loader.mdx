@@ -66,6 +66,7 @@ Key points:
 - The `secretKey` never leaves the server — signing happens in the API Route
 - `next/image` generates the full `srcSet` by calling the loader with each width from `deviceSizes`
 - The browser only fetches **one** entry from the `srcSet` (the best match for the current viewport and DPR), so there is only one redirect per visible image
+- Redirect responses can be cached at the CDN edge (`s-maxage`) so repeated width variants do not re-run signing logic on every request
 - OptStuff returns `Cache-Control: public, immutable` — subsequent loads are served from browser/CDN cache with zero network requests
 
 ## Implementation
@@ -84,6 +85,8 @@ import { type NextRequest, NextResponse } from "next/server";
 import { signImageUrl } from "@/lib/optstuff";
 
 export function GET(request: NextRequest) {
+  const SIGNED_URL_TTL_SECONDS = 3600;
+  const REDIRECT_CACHE_SECONDS = 300;
   const sp = request.nextUrl.searchParams;
   const url = sp.get("url");
 
@@ -108,11 +111,16 @@ export function GET(request: NextRequest) {
     .join(",");
 
   const signedUrl = signImageUrl(url, ops, {
-    ttlSeconds: 3600,
+    ttlSeconds: SIGNED_URL_TTL_SECONDS,
     bucketSeconds: 3600, // keeps URLs stable within the same hour
   });
 
-  return NextResponse.redirect(signedUrl, 302);
+  const response = NextResponse.redirect(signedUrl, 302);
+  response.headers.set(
+    "Cache-Control",
+    `public, s-maxage=${REDIRECT_CACHE_SECONDS}, max-age=0, stale-while-revalidate=86400`
+  );
+  return response;
 }
 ```
 
@@ -263,7 +271,7 @@ Yes. The `loader` function runs in the browser, but it only constructs URLs to `
 
 ### What about the redirect overhead?
 
-Each image request adds one 302 redirect before reaching OptStuff. This redirect is headers-only (no body) and typically completes in under 10ms. After the first load, the browser caches the final image (OptStuff returns `Cache-Control: public, immutable`), so subsequent page views have zero redirect overhead.
+Each image request adds one 302 redirect before reaching OptStuff. This redirect is headers-only (no body) and typically completes in under 10ms. In production, you can edge-cache the redirect route (`s-maxage`) and keep `exp` bucketed so repeated variants reuse the same signed target URL. After the first load, the browser also caches the final image (OptStuff returns `Cache-Control: public, immutable`), so subsequent page views have near-zero redirect overhead.
 
 ### Can I avoid the redirect entirely?
 

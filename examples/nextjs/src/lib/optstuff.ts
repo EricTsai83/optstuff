@@ -5,6 +5,8 @@ const OPTSTUFF_BASE_URL =
 const OPTSTUFF_PROJECT_SLUG = process.env.OPTSTUFF_PROJECT_SLUG ?? "my-project";
 const OPTSTUFF_PUBLIC_KEY = process.env.OPTSTUFF_PUBLIC_KEY ?? "pk_xxx";
 const OPTSTUFF_SECRET_KEY = process.env.OPTSTUFF_SECRET_KEY ?? "sk_xxx";
+const EXPIRY_BUCKET_SECONDS = 3600;
+const BLUR_DATA_REVALIDATE_SECONDS = 3600;
 
 export type ImageOperation = {
   width?: number;
@@ -13,6 +15,18 @@ export type ImageOperation = {
   format?: "webp" | "avif" | "png" | "jpg";
   fit?: "cover" | "contain" | "fill";
 };
+
+/**
+ * Keep `exp` stable within time buckets to improve CDN/browser cache hit rate.
+ * Example: ttl=3600 with bucket=3600 yields one signature per hour window.
+ */
+function computeBucketedExpiration(expiresInSeconds: number): number {
+  const nowSeconds = Math.floor(Date.now() / 1000);
+  const ttlSeconds = Math.max(1, Math.floor(expiresInSeconds));
+  const bucketSeconds = Math.min(EXPIRY_BUCKET_SECONDS, ttlSeconds);
+  const rawExpiration = nowSeconds + ttlSeconds;
+  return Math.ceil(rawExpiration / bucketSeconds) * bucketSeconds;
+}
 
 /**
  * Serialise image operations into a URL path segment.
@@ -62,7 +76,7 @@ export function generateOptStuffUrl(
 
   let exp: number | undefined;
   if (expiresInSeconds !== undefined && expiresInSeconds > 0) {
-    exp = Math.floor(Date.now() / 1000) + expiresInSeconds;
+    exp = computeBucketedExpiration(expiresInSeconds);
     params.set("exp", exp.toString());
   }
 
@@ -98,7 +112,10 @@ export async function getBlurDataUrl(
   const url = generateOptStuffUrl(imageUrl, { width, quality, format, fit }, 3600);
 
   try {
-    const res = await fetch(url, { cache: "no-store" });
+    const res = await fetch(url, {
+      cache: "force-cache",
+      next: { revalidate: BLUR_DATA_REVALIDATE_SECONDS },
+    });
     if (res.ok) {
       const buffer = Buffer.from(await res.arrayBuffer());
       const contentType = res.headers.get("content-type") ?? `image/${format}`;

@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
 
 import {
   ensureProtocol,
@@ -12,10 +12,7 @@ import {
   getApiKeyConfig,
   getProjectConfigById,
 } from "@/server/lib/config-cache";
-import { getProjectIPX } from "@/server/lib/ipx-factory";
 import { checkRateLimit } from "@/server/lib/rate-limiter";
-import { logRequest } from "@/server/lib/request-logger";
-import { updateApiKeyLastUsed } from "@/server/lib/usage-tracker";
 import {
   parseSignatureParams,
   validateReferer,
@@ -56,6 +53,13 @@ function mapUpstreamErrorStatus(error: unknown): number {
 }
 
 type RouteParams = { projectSlug: string; path: string[] };
+type RequestLogPayload = {
+  sourceUrl: string;
+  status: "success" | "error" | "forbidden" | "rate_limited";
+  processingTimeMs?: number;
+  originalSize?: number;
+  optimizedSize?: number;
+};
 type ValidatedRequestContext = {
   readonly apiKey: NonNullable<Awaited<ReturnType<typeof getApiKeyConfig>>>;
   readonly project: NonNullable<Awaited<ReturnType<typeof getProjectConfigById>>>;
@@ -63,6 +67,51 @@ type ValidatedRequestContext = {
   readonly parsed: NonNullable<ReturnType<typeof parseIpxPath>>;
   readonly path: string[];
 };
+
+const importIpxFactory = () => import("@/server/lib/ipx-factory");
+const importRequestLogger = () => import("@/server/lib/request-logger");
+const importUsageTracker = () => import("@/server/lib/usage-tracker");
+
+let ipxFactoryModulePromise: ReturnType<typeof importIpxFactory> | undefined;
+let requestLoggerModulePromise: ReturnType<typeof importRequestLogger> | undefined;
+let usageTrackerModulePromise: ReturnType<typeof importUsageTracker> | undefined;
+
+function getIpxFactoryModule() {
+  ipxFactoryModulePromise ??= importIpxFactory();
+  return ipxFactoryModulePromise;
+}
+
+function getRequestLoggerModule() {
+  requestLoggerModulePromise ??= importRequestLogger();
+  return requestLoggerModulePromise;
+}
+
+function getUsageTrackerModule() {
+  usageTrackerModulePromise ??= importUsageTracker();
+  return usageTrackerModulePromise;
+}
+
+async function getProjectIpxInstance() {
+  const { getProjectIPX } = await getIpxFactoryModule();
+  return getProjectIPX();
+}
+
+function logRequestInBackground(projectId: string, data: RequestLogPayload): void {
+  void getRequestLoggerModule()
+    .then(({ logRequest }) => logRequest(projectId, data))
+    .catch(() => undefined);
+}
+
+async function logRequestAwait(projectId: string, data: RequestLogPayload) {
+  const { logRequest } = await getRequestLoggerModule();
+  await logRequest(projectId, data);
+}
+
+function updateUsageInBackground(apiKeyId: string, projectId: string): void {
+  void getUsageTrackerModule()
+    .then(({ updateApiKeyLastUsed }) => updateApiKeyLastUsed(apiKeyId, projectId))
+    .catch(() => undefined);
+}
 
 function buildVaryHeader(
   allowedRefererDomains: readonly string[] | null | undefined,
@@ -93,6 +142,7 @@ async function validateRequest(
 > {
   const { projectSlug, path } = resolvedParams;
   const url = new URL(request.url);
+  const sourcePath = path.join("/");
 
   // 1. Parse and validate signature parameters
   const sigParams = parseSignatureParams(url.searchParams);
@@ -131,7 +181,7 @@ async function validateRequest(
   }
 
   // Check if API key is expired
-  if (apiKey.expiresAt && new Date() > apiKey.expiresAt) {
+  if (apiKey.expiresAt && Date.now() > apiKey.expiresAt.getTime()) {
     return {
       ok: false,
       response: NextResponse.json(
@@ -141,7 +191,52 @@ async function validateRequest(
     };
   }
 
-  // 3. Get project configuration by the API key's projectId (not by slug)
+  // 3. Parse path to get the signing payload
+  const parsed = parseIpxPath(path);
+  if (!parsed) {
+    return {
+      ok: false,
+      response: NextResponse.json(
+        {
+          error: "Invalid path format",
+          usage:
+            "/api/v1/{projectSlug}/{operations}/{imageUrl}?key={publicKey}&sig={signature}",
+          examples: [
+            "/api/v1/my-blog/w_800,f_webp/images.example.com/photo.jpg?key=pk_abc&sig=xyz",
+          ],
+        },
+        { status: 400 },
+      ),
+    };
+  }
+
+  // 4. Verify signature before project lookup and rate limiting:
+  //    - rejects invalid traffic as early as possible
+  //    - avoids unnecessary cache/DB work for bad signatures
+  //    - prevents quota exhaustion by unauthenticated requests
+  const signaturePath = `${parsed.operations}/${parsed.imagePath}`;
+  if (
+    !verifyUrlSignature(
+      apiKey.secretKey,
+      signaturePath,
+      sigParams.signature,
+      sigParams.expiresAt,
+    )
+  ) {
+    logRequestInBackground(apiKey.projectId, {
+      sourceUrl: sourcePath,
+      status: "forbidden",
+    });
+    return {
+      ok: false,
+      response: NextResponse.json(
+        { error: "Invalid or expired signature" },
+        { status: 403 },
+      ),
+    };
+  }
+
+  // 5. Get project configuration by the API key's projectId (not by slug)
   //    This avoids slug collisions across teams — the project is always
   //    the one the API key was issued for.
   const project = await getProjectConfigById(apiKey.projectId);
@@ -164,49 +259,6 @@ async function validateRequest(
     };
   }
 
-  // 4. Parse path to get the signing payload
-  const parsed = parseIpxPath(path);
-  if (!parsed) {
-    return {
-      ok: false,
-      response: NextResponse.json(
-        {
-          error: "Invalid path format",
-          usage:
-            "/api/v1/{projectSlug}/{operations}/{imageUrl}?key={publicKey}&sig={signature}",
-          examples: [
-            "/api/v1/my-blog/w_800,f_webp/images.example.com/photo.jpg?key=pk_abc&sig=xyz",
-          ],
-        },
-        { status: 400 },
-      ),
-    };
-  }
-
-  // 5. Verify signature (before rate limit to prevent quota exhaustion
-  //    by unauthenticated requests that only know the public key)
-  const signaturePath = `${parsed.operations}/${parsed.imagePath}`;
-  if (
-    !verifyUrlSignature(
-      apiKey.secretKey,
-      signaturePath,
-      sigParams.signature,
-      sigParams.expiresAt,
-    )
-  ) {
-    void logRequest(project.id, {
-      sourceUrl: path.join("/"),
-      status: "forbidden",
-    }).catch(() => undefined);
-    return {
-      ok: false,
-      response: NextResponse.json(
-        { error: "Invalid or expired signature" },
-        { status: 403 },
-      ),
-    };
-  }
-
   // 6. Check rate limit (after signature verification so only
   //    authenticated requests consume quota)
   const rateLimitResult = await checkRateLimit({
@@ -216,10 +268,10 @@ async function validateRequest(
   });
 
   if (!rateLimitResult.allowed) {
-    void logRequest(project.id, {
-      sourceUrl: path.join("/"),
+    logRequestInBackground(project.id, {
+      sourceUrl: sourcePath,
       status: "rate_limited",
-    }).catch(() => undefined);
+    });
     return {
       ok: false,
       response: NextResponse.json(
@@ -247,10 +299,10 @@ async function validateRequest(
   // 7. Validate Referer (project-level)
   const referer = request.headers.get("referer");
   if (!validateReferer(referer, project.allowedRefererDomains)) {
-    void logRequest(project.id, {
-      sourceUrl: path.join("/"),
+    logRequestInBackground(project.id, {
+      sourceUrl: sourcePath,
       status: "forbidden",
-    }).catch(() => undefined);
+    });
     return {
       ok: false,
       response: NextResponse.json(
@@ -294,10 +346,10 @@ async function validateRequest(
   }
 
   if (!validateSourceDomain(sourceHost, project.allowedSourceDomains)) {
-    void logRequest(project.id, {
+    logRequestInBackground(project.id, {
       sourceUrl: imageUrl,
       status: "forbidden",
-    }).catch(() => undefined);
+    });
     return {
       ok: false,
       response: NextResponse.json(
@@ -344,7 +396,7 @@ export async function GET(
   // 9. Process image with IPX
   const transformStartTime = Date.now();
   try {
-    const ipx = getProjectIPX();
+    const ipx = await getProjectIpxInstance();
     const operations = parseOperationsString(parsed.operations);
     const processedImage = await ipx(imageUrl, operations).process();
 
@@ -354,12 +406,11 @@ export async function GET(
     const processingTimeMs = Date.now() - startTime;
     const sampleOriginalSize = shouldSampleOriginalSize();
 
-    // 10. Update API key last used timestamp (fire-and-forget, throttled)
-    updateApiKeyLastUsed(apiKey.id, project.id);
-
-    // 11. Log successful request (fire-and-forget)
+    // 10/11. Schedule usage tracking + logging after response is sent.
     // Sampling avoids sending an upstream HEAD for every successful request.
-    void (async () => {
+    after(async () => {
+      updateUsageInBackground(apiKey.id, project.id);
+
       let originalSize: number | undefined;
       if (sampleOriginalSize) {
         try {
@@ -377,7 +428,7 @@ export async function GET(
         }
       }
 
-      await logRequest(project.id, {
+      await logRequestAwait(project.id, {
         sourceUrl: imageUrl,
         status: "success",
         processingTimeMs,
@@ -386,7 +437,7 @@ export async function GET(
       }).catch(() => {
         // Ignore logging errors
       });
-    })().catch(() => undefined);
+    });
 
     const varyHeader = buildVaryHeader(project.allowedRefererDomains);
 
@@ -410,10 +461,10 @@ export async function GET(
   } catch (error) {
     console.error("Image processing error:", error);
 
-    void logRequest(project.id, {
+    logRequestInBackground(project.id, {
       sourceUrl: imageUrl,
       status: "error",
-    }).catch(() => undefined);
+    });
 
     return NextResponse.json(
       { error: "Image processing failed" },

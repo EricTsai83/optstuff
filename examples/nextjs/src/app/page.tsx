@@ -36,13 +36,13 @@ const SHOWCASE_IMAGES = [
   },
 ];
 
-export default async function Home() {
-  const heroBlurDataUrl = await getBlurDataUrl(HERO_IMAGE, {
-    format: "webp",
-    quality: 20,
-    width: 32,
-  });
+const heroBlurDataUrl = await getBlurDataUrl(HERO_IMAGE, {
+  format: "webp",
+  quality: 20,
+  width: 32,
+});
 
+export default async function Home() {
   return (
     <div className="bg-background text-foreground min-h-screen">
       {/* ─── Header ─── */}
@@ -128,7 +128,8 @@ export default async function Home() {
                 width={1200}
                 quality={85}
                 format="webp"
-                loadDelay={600}
+                loadDelay={235}
+                priority
                 transitionDuration={1200}
                 aspectRatio="21/9"
                 blurDataUrl={heroBlurDataUrl}
@@ -165,7 +166,7 @@ export default async function Home() {
                     width={600}
                     quality={img.quality}
                     format={img.format}
-                    loadDelay={300 + i * 200}
+                    loadDelay={235}
                     transitionDuration={800}
                     replayable
                     aspectRatio="4/3"

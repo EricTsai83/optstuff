@@ -42,6 +42,7 @@ const SECRET_KEY = requireEnv("OPTSTUFF_SECRET_KEY");
 const PUBLIC_KEY = requireEnv("OPTSTUFF_PUBLIC_KEY");
 const ENDPOINT = requireEnv("NEXT_PUBLIC_OPTSTUFF_ENDPOINT");
 const PROJECT_SLUG = requireEnv("NEXT_PUBLIC_OPTSTUFF_PROJECT_SLUG");
+const EXPIRY_BUCKET_SECONDS = 3600;
 
 /**
  * Generates a signed image optimization URL.
@@ -64,7 +65,13 @@ export function signImageUrl(
   const path = `${operations}/${imagePath}`;
 
   const exp = expiresIn
-    ? Math.floor(Date.now() / 1000) + expiresIn
+    ? (() => {
+        const nowSeconds = Math.floor(Date.now() / 1000);
+        const ttlSeconds = Math.max(1, Math.floor(expiresIn));
+        const bucketSeconds = Math.min(EXPIRY_BUCKET_SECONDS, ttlSeconds);
+        const rawExpiration = nowSeconds + ttlSeconds;
+        return Math.ceil(rawExpiration / bucketSeconds) * bucketSeconds;
+      })()
     : undefined;
 
   const payload = exp ? `${path}?exp=${exp}` : path;
@@ -80,6 +87,8 @@ export function signImageUrl(
   return url;
 }
 ```
+
+Using a bucketed expiration keeps signatures stable within each bucket window, which improves CDN cache hit rates on Vercel while preserving URL expiry.
 
 ## Usage in Next.js
 

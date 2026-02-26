@@ -98,12 +98,12 @@ flowchart TD
   A["Parse key, sig, exp"] -->|Invalid| E1["401"]
   A -->|OK| B["Lookup API key\nCheck not revoked/expired"]
   B -->|Invalid| E2["401"]
-  B -->|OK| C["Find project by projectId\nMatch slug"]
-  C -->|"Not found / mismatch"| E3["404 / 401"]
-  C -->|OK| D["Parse operations\nand image URL"]
-  D -->|Invalid| E4["400"]
-  D -->|OK| F["Verify HMAC-SHA256\nsignature"]
-  F -->|Invalid| E5["403"]
+  B -->|OK| C["Parse operations and image path"]
+  C -->|Invalid| E3["400"]
+  C -->|OK| D["Verify HMAC-SHA256\nsignature"]
+  D -->|Invalid| E4["403"]
+  D -->|OK| F["Find project by projectId\nMatch slug"]
+  F -->|"Not found / mismatch"| E5["404 / 401"]
   F -->|OK| G["Check rate limits"]
   G -->|Exceeded| E6["429"]
   G -->|OK| H["Validate Referer\ndomain"]
@@ -119,15 +119,25 @@ flowchart TD
 |------|-------|---------|
 | 1 | Parse `key`, `sig`, `exp` from query string | `401` |
 | 2 | Look up API key; check not revoked/expired | `401` |
-| 3 | Find project by key's `projectId`; match slug | `404` / `401` |
-| 4 | Parse operations and image URL from path | `400` |
-| 5 | Verify HMAC-SHA256 signature (constant-time) | `403` |
+| 3 | Parse operations and image path from URL path | `400` |
+| 4 | Verify HMAC-SHA256 signature (constant-time) | `403` |
+| 5 | Find project by key's `projectId`; match slug | `404` / `401` |
 | 6 | Check rate limits | `429` |
 | 7 | Validate Referer header against project domains | `403` |
 | 8 | Validate image source domain against project's domains | `403` |
 | 9 | Route by method (`GET` transform / `HEAD` fast path) | `500` (GET transform only) |
 
 > Rate limiting is checked **after** signature verification so that invalid requests cannot exhaust quota.
+
+## Serverless Runtime Notes
+
+This endpoint is optimized for serverless environments where cold starts matter:
+
+- Heavy modules (image engine and non-critical telemetry utilities) are **lazy-loaded** only when needed.
+- `HEAD` requests run the full auth/abuse checks but skip image transformation, and avoid loading transform dependencies.
+- Success-path usage tracking and request logging are scheduled with `after()` so the image response is returned first.
+
+These changes reduce initialization overhead for rejected requests and metadata-only probes while preserving the same API behavior.
 
 ## Related Documentation
 

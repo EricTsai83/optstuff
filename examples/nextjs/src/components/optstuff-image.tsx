@@ -70,22 +70,20 @@ export function OptStuffImage({
   onLoad,
   ...rest
 }: OptStuffImageProps) {
-  const [loaded, setLoaded] = useState(!blurPlaceholder);
-  const [prevSrc, setPrevSrc] = useState(src);
-  const [prevBlur, setPrevBlur] = useState(blurPlaceholder);
-  if (src !== prevSrc || blurPlaceholder !== prevBlur) {
-    setPrevSrc(src);
-    setPrevBlur(blurPlaceholder);
-    setLoaded(false);
-  }
+  const currentLoadToken = `${src}|${blurPlaceholder ? "blur" : "plain"}`;
+  const [loadedToken, setLoadedToken] = useState<string>(() =>
+    blurPlaceholder ? "" : currentLoadToken,
+  );
+  const loaded = !blurPlaceholder || loadedToken === currentLoadToken;
+
   const loader = makeLoader(format, fit);
 
   const handleLoad = useCallback<React.ReactEventHandler<HTMLImageElement>>(
     (e) => {
-      setLoaded(true);
+      setLoadedToken(currentLoadToken);
       onLoad?.(e);
     },
-    [onLoad],
+    [currentLoadToken, onLoad],
   );
 
   if (!blurPlaceholder) {

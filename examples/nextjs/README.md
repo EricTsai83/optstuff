@@ -7,7 +7,8 @@ A standalone Next.js application demonstrating how to integrate the [OptStuff](h
 - **Server-side URL signing** — Generate signed URLs with HMAC-SHA256; secret keys are never exposed to the client
 - **Dynamic image operations** — Resize, format conversion (WebP / AVIF / PNG / JPG), quality control, and crop modes
 - **API Route integration** — Provides an `/api/optstuff` endpoint for the frontend to obtain signed URLs
-- **URL expiration** — Set a time-to-live on signed URLs to prevent permanent exposure
+- **Bucketed URL expiration** — Stable signatures inside each time bucket for better CDN/browser cache hit rate
+- **Cacheable signing redirects** — `/api/optstuff` can be cached at the CDN edge (`s-maxage`) to reduce repeated signing work
 - **next/image custom loader** — Example code showing how to use OptStuff with `next/image`
 
 ## Prerequisites
@@ -129,6 +130,8 @@ signature    = HMAC-SHA256(secret_key, sign_content)  # raw digest → base64url
 ```
 
 > **Note:** `sign_content` does **not** include the `/api/v1/{project_slug}/` prefix or the `key` query parameter — only the operations + image path (and, if present, the `exp` value). The signature is the raw HMAC-SHA256 digest encoded as **base64url** and **truncated to 32 characters**.
+>
+> For better cache reuse in production (including Vercel), this example uses **bucketed expiration** (hourly by default). URLs generated within the same bucket share the same `exp`, so CDN keys are more stable.
 
 ## Integration Guide
 
