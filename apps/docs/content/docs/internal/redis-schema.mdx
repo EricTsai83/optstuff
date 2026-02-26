@@ -35,7 +35,7 @@ All Redis keys use a structured prefix convention. Every key has a TTL — no ke
 
 Every image request requires two database lookups before processing:
 
-1. **ProjectConfig** — project ID, slug, team ID, allowed referer domains, allowed source domains
+1. **ProjectConfig** — project ID, slug, team ID, allowed referrer domains (HTTP `Referer` header), allowed source domains
 2. **ApiKeyConfig** — key ID, secret key (stored encrypted in cache, decrypted on read), expiration, revocation status, rate limits
 
 ### Read Flow

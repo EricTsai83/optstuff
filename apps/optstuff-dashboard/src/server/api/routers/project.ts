@@ -45,9 +45,8 @@ const allowedRefererDomainsSchema = z
 
 const sourceDomainEntrySchema = z
   .string()
-  .min(1)
   .transform((s) => s.trim().toLowerCase())
-  .pipe(z.string().min(1, "Domain cannot be empty"));
+  .pipe(z.string().regex(DOMAIN_PATTERN, "Invalid domain"));
 
 const allowedSourceDomainsSchema = z
   .array(sourceDomainEntrySchema)
@@ -319,14 +318,8 @@ export const projectRouter = createTRPCRouter({
       const [updatedProject] = await ctx.db
         .update(projects)
         .set({
-          allowedSourceDomains:
-            input.allowedSourceDomains.length > 0
-              ? input.allowedSourceDomains
-              : [],
-          allowedRefererDomains:
-            input.allowedRefererDomains.length > 0
-              ? input.allowedRefererDomains
-              : [],
+          allowedSourceDomains: input.allowedSourceDomains,
+          allowedRefererDomains: input.allowedRefererDomains,
         })
         .where(eq(projects.id, input.projectId))
         .returning();

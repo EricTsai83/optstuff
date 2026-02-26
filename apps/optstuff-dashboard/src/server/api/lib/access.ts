@@ -22,7 +22,7 @@ export async function verifyTeamAccess(
   }
 
   if (team.ownerId !== userId) {
-    throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
+    throw new TRPCError({ code: "NOT_FOUND", message: "Team not found" });
   }
 
   return team;
@@ -47,7 +47,7 @@ export async function verifyProjectAccess(
   }
 
   if (project.team.ownerId !== userId) {
-    throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
+    throw new TRPCError({ code: "NOT_FOUND", message: "Project not found" });
   }
 
   return project;

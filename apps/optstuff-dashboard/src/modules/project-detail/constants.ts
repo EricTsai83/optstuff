@@ -20,4 +20,4 @@ export const PROJECT_TABS: readonly ProjectTabConfig[] = [
   { value: "usage", label: "Usage", icon: Activity },
   { value: "developer", label: "Developer", icon: Code },
   { value: "settings", label: "Settings", icon: Settings },
-] as const;
+];

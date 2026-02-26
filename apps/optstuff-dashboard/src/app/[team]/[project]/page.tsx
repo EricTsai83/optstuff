@@ -25,7 +25,7 @@ export default async function ProjectPage({ params, searchParams }: PageProps) {
     where: eq(teams.slug, teamSlug),
   });
 
-  if (!team || team?.ownerId !== userId) {
+  if (team?.ownerId !== userId) {
     notFound();
   }
 
