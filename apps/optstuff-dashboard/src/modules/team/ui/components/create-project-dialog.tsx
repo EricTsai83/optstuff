@@ -231,7 +231,7 @@ function CreateProjectFormStep({
           <DomainListInput
             value={form.allowedSourceDomains}
             onChange={form.setAllowedSourceDomains}
-            placeholder="images.example.com"
+            placeholder="https://images.example.com"
             disabled={isPending}
           />
         </div>
