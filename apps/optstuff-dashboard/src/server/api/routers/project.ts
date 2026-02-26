@@ -117,15 +117,14 @@ export const projectRouter = createTRPCRouter({
             slug: slugToUse,
             description: input.description,
             allowedSourceDomains:
-              input.allowedSourceDomains &&
-              input.allowedSourceDomains.length > 0
+              input.allowedSourceDomains && input.allowedSourceDomains.length > 0
                 ? input.allowedSourceDomains
-                : undefined,
+                : null,
             allowedRefererDomains:
               input.allowedRefererDomains &&
               input.allowedRefererDomains.length > 0
                 ? input.allowedRefererDomains
-                : undefined,
+                : null,
             apiKeyCount: 1, // Will have one default key
           })
           .returning();
@@ -311,11 +310,18 @@ export const projectRouter = createTRPCRouter({
     .mutation(async ({ ctx, input }) => {
       await verifyProjectAccess(ctx.db, input.projectId, ctx.userId);
 
+      const allowedSourceDomains = input.allowedSourceDomains.length
+        ? input.allowedSourceDomains
+        : null;
+      const allowedRefererDomains = input.allowedRefererDomains.length
+        ? input.allowedRefererDomains
+        : null;
+
       const [updatedProject] = await ctx.db
         .update(projects)
         .set({
-          allowedSourceDomains: input.allowedSourceDomains,
-          allowedRefererDomains: input.allowedRefererDomains,
+          allowedSourceDomains,
+          allowedRefererDomains,
         })
         .where(eq(projects.id, input.projectId))
         .returning();
