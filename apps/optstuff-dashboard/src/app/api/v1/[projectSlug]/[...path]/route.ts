@@ -29,7 +29,7 @@ import {
  *
  * Security:
  * - All requests require a valid signature created with the API key's secret
- * - Source domains are validated against the API key's allowlist
+ * - Source domains are validated against the project's allowlist
  * - Referer domains are validated against the project's allowlist
  *
  * @example
