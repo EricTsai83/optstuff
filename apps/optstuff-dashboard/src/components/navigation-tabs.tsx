@@ -42,14 +42,19 @@ export function NavigationTabs({
       <TabsList
         className="scrollbar-hide h-[46px] w-full justify-start gap-0 overflow-x-auto rounded-none border-none bg-transparent px-2 *:shrink-0 md:px-4"
         style={
-          translateX ? { transform: `translateX(${translateX}px)` } : undefined
+          translateX
+            ? {
+                transform: `translateX(${translateX}px)`,
+                maxWidth: `calc(100% - ${translateX}px)`,
+              }
+            : undefined
         }
       >
         {tabs.map((tab) => (
           <TabsTrigger
             key={tab.value}
             value={tab.value}
-            className="data-[state=active]:border-foreground text-muted-foreground data-[state=active]:text-foreground cursor-pointer whitespace-nowrap rounded-none border-b-2 border-transparent px-3 py-3 text-sm shadow-none transition-all duration-200 data-[state=active]:bg-transparent data-[state=active]:font-medium data-[state=active]:shadow-none"
+            className="data-[state=active]:border-foreground text-muted-foreground data-[state=active]:text-foreground cursor-pointer whitespace-nowrap rounded-none border-b-2 border-transparent px-4 py-3 text-sm shadow-none transition-all duration-200 data-[state=active]:bg-transparent data-[state=active]:font-medium data-[state=active]:shadow-none"
           >
             {tab.icon && <tab.icon className="h-4 w-4" />}
             {tab.label}
