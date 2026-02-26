@@ -40,8 +40,9 @@ const allowedRefererDomainsSchema = z
 
 const sourceDomainEntrySchema = z
   .string()
-  .transform((s) => s.trim().toLowerCase())
-  .pipe(z.string().regex(DOMAIN_PATTERN, "Invalid domain"));
+  .trim()
+  .regex(DOMAIN_PATTERN, "Invalid domain")
+  .transform((s) => s.toLowerCase());
 
 const allowedSourceDomainsSchema = z
   .array(sourceDomainEntrySchema)
