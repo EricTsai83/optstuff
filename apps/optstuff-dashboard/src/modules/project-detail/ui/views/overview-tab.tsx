@@ -31,6 +31,7 @@ import { StatCard } from "../components/stat-card";
 
 type OverviewTabProps = {
   readonly project: Project;
+  readonly teamSlug: string;
 };
 
 function SetupChecklist({
@@ -118,7 +119,7 @@ const RESOURCE_LINKS = [
   },
 ];
 
-export function OverviewTab({ project }: OverviewTabProps) {
+export function OverviewTab({ project, teamSlug }: OverviewTabProps) {
   const { data: apiKeys } = api.apiKey.list.useQuery({ projectId: project.id });
   const { data: usageSummary } = api.usage.getSummary.useQuery({
     projectId: project.id,
@@ -168,6 +169,7 @@ export function OverviewTab({ project }: OverviewTabProps) {
         <SetupChecklist
           hasSourceDomains={hasSourceDomains}
           hasApiKeys={hasApiKeys}
+          teamSlug={teamSlug}
           projectSlug={project.slug}
         />
       )}

@@ -108,7 +108,7 @@ export function ProjectDetailView({
           )}
         </div>
 
-        {activeTab === "overview" && <OverviewTab project={project} />}
+        {activeTab === "overview" && <OverviewTab project={project} teamSlug={team.slug} />}
         {activeTab === "api-keys" && (
           <ApiKeyList projectId={project.id} projectSlug={project.slug} />
         )}
