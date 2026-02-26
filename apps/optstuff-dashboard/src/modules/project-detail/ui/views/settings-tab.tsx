@@ -90,7 +90,7 @@ export function SettingsTab({ project, team }: SettingsTabProps) {
   const { mutate: updateProject, isPending: isUpdatingProject } =
     api.project.update.useMutation({
       onSuccess: () => {
-        utils.project.getBySlug.invalidate({
+        void utils.project.getBySlug.invalidate({
           teamSlug: team.slug,
           projectSlug: project.slug,
         });
@@ -110,7 +110,7 @@ export function SettingsTab({ project, team }: SettingsTabProps) {
   const { mutate: updateSettings, isPending: isUpdatingSettings } =
     api.project.updateSettings.useMutation({
       onSuccess: () => {
-        utils.project.getSettings.invalidate({ projectId: project.id });
+        void utils.project.getSettings.invalidate({ projectId: project.id });
         setHasSettingsChanges(false);
       },
     });
@@ -126,8 +126,8 @@ export function SettingsTab({ project, team }: SettingsTabProps) {
   const { mutate: deleteProject, isPending: isDeleting } =
     api.project.delete.useMutation({
       onSuccess: () => {
-        utils.project.list.invalidate();
-        utils.project.listPinned.invalidate();
+        void utils.project.list.invalidate();
+        void utils.project.listPinned.invalidate();
         setIsDeleteDialogOpen(false);
         router.push(`/${team.slug}`);
       },
