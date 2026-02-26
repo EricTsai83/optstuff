@@ -107,7 +107,10 @@ export function GET(request: NextRequest) {
     .filter(Boolean)
     .join(",");
 
-  const signedUrl = signImageUrl(url, ops, 3600);
+  const signedUrl = signImageUrl(url, ops, {
+    ttlSeconds: 3600,
+    bucketSeconds: 3600, // keeps URLs stable within the same hour
+  });
 
   return NextResponse.redirect(signedUrl, 302);
 }

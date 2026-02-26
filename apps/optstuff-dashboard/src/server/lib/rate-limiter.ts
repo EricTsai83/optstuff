@@ -12,6 +12,8 @@ import { getRedis } from "@/server/lib/redis";
 
 const MINUTE_PREFIX = "ratelimit:ipx:minute";
 const DAY_PREFIX = "ratelimit:ipx:day";
+const minuteLimiterCache = new Map<number, Ratelimit>();
+const dayLimiterCache = new Map<number, Ratelimit>();
 
 /**
  * Rate limit check result
@@ -36,21 +38,31 @@ export type RateLimitConfig = {
 };
 
 function createMinuteLimiter(limit: number): Ratelimit {
-  return new Ratelimit({
+  const cached = minuteLimiterCache.get(limit);
+  if (cached) return cached;
+
+  const limiter = new Ratelimit({
     redis: getRedis(),
     limiter: Ratelimit.slidingWindow(limit, "1m"),
     analytics: true,
     prefix: MINUTE_PREFIX,
   });
+  minuteLimiterCache.set(limit, limiter);
+  return limiter;
 }
 
 function createDayLimiter(limit: number): Ratelimit {
-  return new Ratelimit({
+  const cached = dayLimiterCache.get(limit);
+  if (cached) return cached;
+
+  const limiter = new Ratelimit({
     redis: getRedis(),
     limiter: Ratelimit.slidingWindow(limit, "1d"),
     analytics: true,
     prefix: DAY_PREFIX,
   });
+  dayLimiterCache.set(limit, limiter);
+  return limiter;
 }
 
 /**

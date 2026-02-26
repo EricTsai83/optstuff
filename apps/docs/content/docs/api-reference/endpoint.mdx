@@ -9,6 +9,7 @@ OptStuff exposes a single REST endpoint for image optimization. All transformati
 
 ```
 GET /api/v1/{projectSlug}/{operations}/{imageUrl}?key={publicKey}&sig={signature}&exp={expiresAt}
+HEAD /api/v1/{projectSlug}/{operations}/{imageUrl}?key={publicKey}&sig={signature}&exp={expiresAt}
 ```
 
 ## Path Parameters
@@ -35,7 +36,7 @@ GET /api/v1/my-blog/w_800,f_webp/images.example.com/photo.jpg?key=pk_abc123&sig=
 
 ## Response
 
-### Success (200)
+### Success (200) — GET
 
 Returns the optimized image binary with long-lived caching headers:
 
@@ -43,14 +44,35 @@ Returns the optimized image binary with long-lived caching headers:
 HTTP/1.1 200 OK
 Content-Type: image/webp
 Cache-Control: public, s-maxage=31536000, max-age=31536000, immutable
+Vary: Accept, Referer
 X-Processing-Time: 42ms
+X-Head-Fast-Path: 0
+X-Original-Size-Sampled: 0
+Server-Timing: auth;dur=7, transform;dur=35, total;dur=42
 ```
 
 | Header | Description |
 |--------|-------------|
 | `Content-Type` | Output format (`image/webp`, `image/avif`, `image/png`, `image/jpeg`) |
 | `Cache-Control` | 1-year cache with `immutable` |
+| `Vary` | `Accept` and (when configured) `Referer` to preserve correct cache behavior |
 | `X-Processing-Time` | Server-side processing time in milliseconds |
+| `X-Head-Fast-Path` | `0` for normal image transform (`GET`), `1` for `HEAD` fast path |
+| `X-Original-Size-Sampled` | `1` when upstream original-size probing is sampled, otherwise `0` |
+| `Server-Timing` | Request stage timing (`auth`, `transform`, `total`) for performance debugging |
+
+### Success (200) — HEAD
+
+`HEAD` runs the same auth / signature / rate-limit checks, then returns headers only (no image body):
+
+```text
+HTTP/1.1 200 OK
+Cache-Control: public, s-maxage=31536000, max-age=31536000, immutable
+Vary: Accept, Referer
+X-Processing-Time: 8ms
+X-Head-Fast-Path: 1
+Server-Timing: auth;dur=8, transform;dur=0, total;dur=8
+```
 
 Image optimization URLs are **content-addressable**: the URL encodes all parameters and a signature, so the same URL always produces the same output. This makes the 1-year cache duration safe — changing any parameter produces a different URL.
 
@@ -88,7 +110,9 @@ flowchart TD
   H -->|Blocked| E7["403"]
   H -->|OK| I["Validate source\ndomain"]
   I -->|Blocked| E8["403"]
-  I -->|OK| J["Process and return\noptimized image"]
+  I -->|OK| J{"HTTP method"}
+  J -->|GET| K["Process and return\noptimized image"]
+  J -->|HEAD| L["Fast path: return headers only"]
 ```
 
 | Step | Check | Failure |
@@ -101,7 +125,7 @@ flowchart TD
 | 6 | Check rate limits | `429` |
 | 7 | Validate Referer header against project domains | `403` |
 | 8 | Validate image source domain against project's domains | `403` |
-| 9 | Process and return optimized image | `500` |
+| 9 | Route by method (`GET` transform / `HEAD` fast path) | `500` (GET transform only) |
 
 > Rate limiting is checked **after** signature verification so that invalid requests cannot exhaust quota.
 

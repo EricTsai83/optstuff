@@ -90,13 +90,19 @@ function createSignedUrl(options: {
 ### Usage
 
 ```typescript
+const now = Math.floor(Date.now() / 1000);
+const ttlSeconds = 3600;
+const bucketSeconds = 3600;
+const rawExp = now + ttlSeconds;
+const expiresAt = Math.ceil(rawExp / bucketSeconds) * bucketSeconds;
+
 const url = createSignedUrl({
   projectSlug: "my-blog",
   publicKey: "pk_abc123",
   secretKey: "sk_your_secret_key",
   operations: "w_800,f_webp",
   imageUrl: "cdn.example.com/photo.jpg",
-  expiresAt: Math.floor(Date.now() / 1000) + 3600, // 1 hour
+  expiresAt, // bucketed expiration for better cache reuse
 });
 ```
 
@@ -112,6 +118,16 @@ The optional `exp` parameter limits how long a signed URL remains valid, prevent
 | Testing | 5 minutes (300 seconds) |
 
 When `exp` is set, it **must** be included in both the signed payload and the URL query string.
+
+### Cache-Friendly Expiration Strategy
+
+If you generate `exp` as `now + ttl` on every render, each request can produce a different URL and reduce CDN/browser cache hit rate. For static or semi-static images, prefer **time-bucketed expiration**:
+
+- Choose a TTL (for example `3600` seconds)
+- Round the expiration to a bucket boundary (for example the next hour)
+- Reuse the same signed URL inside that bucket window
+
+This keeps signatures valid while avoiding unnecessary cache fragmentation.
 
 ## Security Properties
 

@@ -40,6 +40,9 @@ import {
 export const dynamic = "force-dynamic";
 
 const PASSTHROUGH_STATUS_CODES = new Set([404, 410]);
+const CACHE_CONTROL_HEADER =
+  "public, s-maxage=31536000, max-age=31536000, immutable";
+const ORIGINAL_SIZE_SAMPLE_RATE = 0.1;
 
 function mapUpstreamErrorStatus(error: unknown): number {
   const raw =
@@ -52,91 +55,132 @@ function mapUpstreamErrorStatus(error: unknown): number {
   return 502;
 }
 
-/**
- * Handle GET requests to serve IPX-optimized images for a project using signed URLs.
- *
- * Validates the request signature and API key, enforces rate limits and referer/source-domain restrictions, processes the requested image with IPX according to the signed operations, updates usage metadata, and logs the request. On success returns the optimized image bytes with appropriate caching and content-type headers; on failure returns a JSON error response with an appropriate HTTP status.
- *
- * @param request - The incoming Request object for the HTTP GET.
- * @param params - A promise resolving to route parameters: `projectSlug` (the project's URL slug) and `path` (an array representing the operations and image path segments).
- * @returns An HTTP response containing the optimized image on success, or a JSON error object with an appropriate status code on failure.
- */
-export async function GET(
+type RouteParams = { projectSlug: string; path: string[] };
+type ValidatedRequestContext = {
+  readonly apiKey: NonNullable<Awaited<ReturnType<typeof getApiKeyConfig>>>;
+  readonly project: NonNullable<Awaited<ReturnType<typeof getProjectConfigById>>>;
+  readonly imageUrl: string;
+  readonly parsed: NonNullable<ReturnType<typeof parseIpxPath>>;
+  readonly path: string[];
+};
+
+function buildVaryHeader(
+  allowedRefererDomains: readonly string[] | null | undefined,
+): string {
+  return allowedRefererDomains && allowedRefererDomains.length > 0
+    ? "Accept, Referer"
+    : "Accept";
+}
+
+function buildServerTimingHeader(
+  authMs: number,
+  transformMs: number,
+  totalMs: number,
+): string {
+  return `auth;dur=${authMs}, transform;dur=${transformMs}, total;dur=${totalMs}`;
+}
+
+function shouldSampleOriginalSize(): boolean {
+  return Math.random() < ORIGINAL_SIZE_SAMPLE_RATE;
+}
+
+async function validateRequest(
   request: Request,
-  { params }: { params: Promise<{ projectSlug: string; path: string[] }> },
-) {
-  const startTime = Date.now();
-  const resolvedParams = await params;
+  resolvedParams: RouteParams,
+): Promise<
+  | { ok: true; context: ValidatedRequestContext }
+  | { ok: false; response: Response }
+> {
   const { projectSlug, path } = resolvedParams;
   const url = new URL(request.url);
 
   // 1. Parse and validate signature parameters
   const sigParams = parseSignatureParams(url.searchParams);
   if (!sigParams) {
-    return NextResponse.json(
-      {
-        error: "Missing signature parameters",
-        usage:
-          "/api/v1/{projectSlug}/{operations}/{imageUrl}?key={publicKey}&sig={signature}",
-      },
-      { status: 401 },
-    );
+    return {
+      ok: false,
+      response: NextResponse.json(
+        {
+          error: "Missing signature parameters",
+          usage:
+            "/api/v1/{projectSlug}/{operations}/{imageUrl}?key={publicKey}&sig={signature}",
+        },
+        { status: 401 },
+      ),
+    };
   }
 
   // 2. Get API key configuration
   const apiKey = await getApiKeyConfig(sigParams.publicKey);
   if (!apiKey) {
-    return NextResponse.json({ error: "Invalid API key" }, { status: 401 });
+    return {
+      ok: false,
+      response: NextResponse.json({ error: "Invalid API key" }, { status: 401 }),
+    };
   }
 
   // Check if API key is revoked (defense in depth — cache may be stale)
   if (apiKey.revokedAt) {
-    return NextResponse.json(
-      { error: "API key has been revoked" },
-      { status: 401 },
-    );
+    return {
+      ok: false,
+      response: NextResponse.json(
+        { error: "API key has been revoked" },
+        { status: 401 },
+      ),
+    };
   }
 
   // Check if API key is expired
   if (apiKey.expiresAt && new Date() > apiKey.expiresAt) {
-    return NextResponse.json(
-      { error: "API key has expired" },
-      { status: 401 },
-    );
+    return {
+      ok: false,
+      response: NextResponse.json(
+        { error: "API key has expired" },
+        { status: 401 },
+      ),
+    };
   }
 
   // 3. Get project configuration by the API key's projectId (not by slug)
   //    This avoids slug collisions across teams — the project is always
   //    the one the API key was issued for.
   const project = await getProjectConfigById(apiKey.projectId);
-
   if (!project) {
-    return NextResponse.json({ error: "Project not found" }, { status: 404 });
+    return {
+      ok: false,
+      response: NextResponse.json({ error: "Project not found" }, { status: 404 }),
+    };
   }
 
   // Verify the URL slug matches the project's actual slug to prevent
   // URL confusion (e.g. using team-A's slug with team-B's API key).
   if (project.slug !== projectSlug) {
-    return NextResponse.json(
-      { error: "API key does not belong to this project" },
-      { status: 401 },
-    );
+    return {
+      ok: false,
+      response: NextResponse.json(
+        { error: "API key does not belong to this project" },
+        { status: 401 },
+      ),
+    };
   }
 
   // 4. Parse path to get the signing payload
   const parsed = parseIpxPath(path);
   if (!parsed) {
-    return NextResponse.json(
-      {
-        error: "Invalid path format",
-        usage:
-          "/api/v1/{projectSlug}/{operations}/{imageUrl}?key={publicKey}&sig={signature}",
-        examples: [
-          "/api/v1/my-blog/w_800,f_webp/images.example.com/photo.jpg?key=pk_abc&sig=xyz",
-        ],
-      },
-      { status: 400 },
-    );
+    return {
+      ok: false,
+      response: NextResponse.json(
+        {
+          error: "Invalid path format",
+          usage:
+            "/api/v1/{projectSlug}/{operations}/{imageUrl}?key={publicKey}&sig={signature}",
+          examples: [
+            "/api/v1/my-blog/w_800,f_webp/images.example.com/photo.jpg?key=pk_abc&sig=xyz",
+          ],
+        },
+        { status: 400 },
+      ),
+    };
   }
 
   // 5. Verify signature (before rate limit to prevent quota exhaustion
@@ -154,10 +198,13 @@ export async function GET(
       sourceUrl: path.join("/"),
       status: "forbidden",
     }).catch(() => undefined);
-    return NextResponse.json(
-      { error: "Invalid or expired signature" },
-      { status: 403 },
-    );
+    return {
+      ok: false,
+      response: NextResponse.json(
+        { error: "Invalid or expired signature" },
+        { status: 403 },
+      ),
+    };
   }
 
   // 6. Check rate limit (after signature verification so only
@@ -173,25 +220,28 @@ export async function GET(
       sourceUrl: path.join("/"),
       status: "rate_limited",
     }).catch(() => undefined);
-    return NextResponse.json(
-      {
-        error: "Rate limit exceeded",
-        reason:
-          rateLimitResult.reason === "minute"
-            ? "Too many requests per minute"
-            : "Daily limit exceeded",
-        retryAfter: rateLimitResult.retryAfterSeconds,
-        limit: rateLimitResult.limit,
-      },
-      {
-        status: 429,
-        headers: {
-          "Retry-After": String(rateLimitResult.retryAfterSeconds),
-          "X-RateLimit-Limit": String(rateLimitResult.limit),
-          "X-RateLimit-Remaining": String(rateLimitResult.remaining),
+    return {
+      ok: false,
+      response: NextResponse.json(
+        {
+          error: "Rate limit exceeded",
+          reason:
+            rateLimitResult.reason === "minute"
+              ? "Too many requests per minute"
+              : "Daily limit exceeded",
+          retryAfter: rateLimitResult.retryAfterSeconds,
+          limit: rateLimitResult.limit,
         },
-      },
-    );
+        {
+          status: 429,
+          headers: {
+            "Retry-After": String(rateLimitResult.retryAfterSeconds),
+            "X-RateLimit-Limit": String(rateLimitResult.limit),
+            "X-RateLimit-Remaining": String(rateLimitResult.remaining),
+          },
+        },
+      ),
+    };
   }
 
   // 7. Validate Referer (project-level)
@@ -201,10 +251,13 @@ export async function GET(
       sourceUrl: path.join("/"),
       status: "forbidden",
     }).catch(() => undefined);
-    return NextResponse.json(
-      { error: "Forbidden: Invalid referer" },
-      { status: 403 },
-    );
+    return {
+      ok: false,
+      response: NextResponse.json(
+        { error: "Forbidden: Invalid referer" },
+        { status: 403 },
+      ),
+    };
   }
 
   // 8. Build full image URL and validate source domain (project-level)
@@ -212,26 +265,32 @@ export async function GET(
   try {
     imageUrl = ensureProtocol(parsed.imagePath);
   } catch (error) {
-    return NextResponse.json(
-      {
-        error: "Invalid image URL",
-        details: error instanceof Error ? error.message : String(error),
-      },
-      { status: 400 },
-    );
+    return {
+      ok: false,
+      response: NextResponse.json(
+        {
+          error: "Invalid image URL",
+          details: error instanceof Error ? error.message : String(error),
+        },
+        { status: 400 },
+      ),
+    };
   }
 
   let sourceHost: string;
   try {
     sourceHost = new URL(imageUrl).hostname;
   } catch {
-    return NextResponse.json(
-      {
-        error: "Invalid image URL",
-        details: `Unable to parse URL: ${imageUrl}`,
-      },
-      { status: 400 },
-    );
+    return {
+      ok: false,
+      response: NextResponse.json(
+        {
+          error: "Invalid image URL",
+          details: `Unable to parse URL: ${imageUrl}`,
+        },
+        { status: 400 },
+      ),
+    };
   }
 
   if (!validateSourceDomain(sourceHost, project.allowedSourceDomains)) {
@@ -239,13 +298,51 @@ export async function GET(
       sourceUrl: imageUrl,
       status: "forbidden",
     }).catch(() => undefined);
-    return NextResponse.json(
-      { error: "Forbidden: Source domain not allowed" },
-      { status: 403 },
-    );
+    return {
+      ok: false,
+      response: NextResponse.json(
+        { error: "Forbidden: Source domain not allowed" },
+        { status: 403 },
+      ),
+    };
   }
 
+  return {
+    ok: true,
+    context: {
+      apiKey,
+      project,
+      imageUrl,
+      parsed,
+      path,
+    },
+  };
+}
+
+/**
+ * Handle GET requests to serve IPX-optimized images for a project using signed URLs.
+ *
+ * Validates the request signature and API key, enforces rate limits and referer/source-domain restrictions, processes the requested image with IPX according to the signed operations, updates usage metadata, and logs the request. On success returns the optimized image bytes with appropriate caching and content-type headers; on failure returns a JSON error response with an appropriate HTTP status.
+ *
+ * @param request - The incoming Request object for the HTTP GET.
+ * @param params - A promise resolving to route parameters: `projectSlug` (the project's URL slug) and `path` (an array representing the operations and image path segments).
+ * @returns An HTTP response containing the optimized image on success, or a JSON error object with an appropriate status code on failure.
+ */
+export async function GET(
+  request: Request,
+  { params }: { params: Promise<RouteParams> },
+) {
+  const startTime = Date.now();
+  const resolvedParams = await params;
+  const validation = await validateRequest(request, resolvedParams);
+  if (!validation.ok) {
+    return validation.response;
+  }
+  const { project, imageUrl, apiKey, parsed } = validation.context;
+  const authTimeMs = Date.now() - startTime;
+
   // 9. Process image with IPX
+  const transformStartTime = Date.now();
   try {
     const ipx = getProjectIPX();
     const operations = parseOperationsString(parsed.operations);
@@ -253,27 +350,31 @@ export async function GET(
 
     const imageData = ensureUint8Array(processedImage.data);
     const contentType = resolveContentType(processedImage.format ?? "webp");
+    const transformTimeMs = Date.now() - transformStartTime;
     const processingTimeMs = Date.now() - startTime;
+    const sampleOriginalSize = shouldSampleOriginalSize();
 
-    // 10. Update API key last used timestamp (fire-and-forget, batched)
+    // 10. Update API key last used timestamp (fire-and-forget, throttled)
     updateApiKeyLastUsed(apiKey.id, project.id);
 
     // 11. Log successful request (fire-and-forget)
-    // HEAD fetch for originalSize is moved here so it never blocks the response.
+    // Sampling avoids sending an upstream HEAD for every successful request.
     void (async () => {
       let originalSize: number | undefined;
-      try {
-        const headResponse = await fetch(imageUrl, {
-          method: "HEAD",
-          redirect: "error",
-          signal: AbortSignal.timeout(3_000),
-        });
-        const contentLength = headResponse.headers.get("content-length");
-        if (contentLength) {
-          originalSize = parseInt(contentLength, 10);
+      if (sampleOriginalSize) {
+        try {
+          const headResponse = await fetch(imageUrl, {
+            method: "HEAD",
+            redirect: "error",
+            signal: AbortSignal.timeout(3_000),
+          });
+          const contentLength = headResponse.headers.get("content-length");
+          if (contentLength) {
+            originalSize = parseInt(contentLength, 10);
+          }
+        } catch {
+          // Ignore — originalSize is optional for logging
         }
-      } catch {
-        // Ignore — originalSize is optional for logging
       }
 
       await logRequest(project.id, {
@@ -287,14 +388,23 @@ export async function GET(
       });
     })().catch(() => undefined);
 
+    const varyHeader = buildVaryHeader(project.allowedRefererDomains);
+
     // 12. Return optimized image
     return new Response(imageData as Uint8Array<ArrayBuffer>, {
       status: 200,
       headers: {
         "Content-Type": contentType,
-        "Cache-Control":
-          "public, s-maxage=31536000, max-age=31536000, immutable",
+        "Cache-Control": CACHE_CONTROL_HEADER,
+        Vary: varyHeader,
         "X-Processing-Time": `${processingTimeMs}ms`,
+        "X-Original-Size-Sampled": sampleOriginalSize ? "1" : "0",
+        "X-Head-Fast-Path": "0",
+        "Server-Timing": buildServerTimingHeader(
+          authTimeMs,
+          transformTimeMs,
+          processingTimeMs,
+        ),
       },
     });
   } catch (error) {
@@ -310,4 +420,40 @@ export async function GET(
       { status: mapUpstreamErrorStatus(error) },
     );
   }
+}
+
+/**
+ * Handle HEAD requests with a fast path that skips image transformation.
+ *
+ * The same authentication, authorization, and rate-limit checks as GET are
+ * still applied. A successful response only returns headers so clients can
+ * probe availability cheaply without triggering full IPX processing.
+ */
+export async function HEAD(
+  request: Request,
+  { params }: { params: Promise<RouteParams> },
+) {
+  const startTime = Date.now();
+  const resolvedParams = await params;
+  const validation = await validateRequest(request, resolvedParams);
+  if (!validation.ok) {
+    return validation.response;
+  }
+  const { project } = validation.context;
+  const processingTimeMs = Date.now() - startTime;
+
+  return new Response(null, {
+    status: 200,
+    headers: {
+      "Cache-Control": CACHE_CONTROL_HEADER,
+      Vary: buildVaryHeader(project.allowedRefererDomains),
+      "X-Processing-Time": `${processingTimeMs}ms`,
+      "X-Head-Fast-Path": "1",
+      "Server-Timing": buildServerTimingHeader(
+        processingTimeMs,
+        0,
+        processingTimeMs,
+      ),
+    },
+  });
 }

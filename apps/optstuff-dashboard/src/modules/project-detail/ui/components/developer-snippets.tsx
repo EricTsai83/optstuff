@@ -54,10 +54,26 @@ const PROJECT_SLUG = process.env.NEXT_PUBLIC_OPTSTUFF_PROJECT_SLUG || "${project
 export function signImageUrl(
   imagePath: string,
   operations: string = "_",
-  expiresIn?: number // seconds from now
+  options?: {
+    ttlSeconds?: number;
+    /**
+     * Round expiration into fixed buckets so repeated renders generate
+     * identical URLs (better CDN/browser cache hit ratio).
+     */
+    bucketSeconds?: number;
+  }
 ): string {
   const path = \`\${operations}/\${imagePath}\`;
-  const exp = expiresIn ? Math.floor(Date.now() / 1000) + expiresIn : undefined;
+  const now = Math.floor(Date.now() / 1000);
+  const ttlSeconds = options?.ttlSeconds;
+  const bucketSeconds = options?.bucketSeconds;
+  let exp: number | undefined;
+  if (ttlSeconds && ttlSeconds > 0) {
+    const rawExp = now + ttlSeconds;
+    exp = bucketSeconds && bucketSeconds > 0
+      ? Math.ceil(rawExp / bucketSeconds) * bucketSeconds
+      : rawExp;
+  }
   
   const payload = exp ? \`\${path}?exp=\${exp}\` : path;
   const sig = crypto
@@ -80,7 +96,10 @@ export async function GET(request: Request) {
   const width = searchParams.get("w");
   
   const ops = width ? \`w_\${width},f_webp\` : "f_webp";
-  const signedUrl = signImageUrl(src, ops, 3600); // 1 hour expiry
+  const signedUrl = signImageUrl(src, ops, {
+    ttlSeconds: 3600,
+    bucketSeconds: 3600, // same hour => same URL => better cache reuse
+  });
   
   return Response.json({ url: signedUrl });
 }`;
@@ -94,7 +113,10 @@ export default function MyPage() {
   const imageUrl = signImageUrl(
     "images.example.com/photo.jpg",
     "w_800,f_webp",
-    3600 // 1 hour
+    {
+      ttlSeconds: 3600,
+      bucketSeconds: 3600,
+    }
   );
 
   return <img src={imageUrl} alt="Optimized image" />;
