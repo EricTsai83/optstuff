@@ -15,11 +15,6 @@ import {
   invalidateProjectCache,
 } from "@/server/lib/config-cache";
 
-/** Drizzle ORM's `text().array()` has broken type inference via relational queries. */
-function toStringArray(value: unknown): string[] {
-  return Array.isArray(value) ? value.map(String) : [];
-}
-
 /**
  * Matches a valid referer domain entry:
  *   - Optional protocol: http:// or https://
@@ -345,8 +340,8 @@ export const projectRouter = createTRPCRouter({
       );
 
       return {
-        allowedSourceDomains: toStringArray(project.allowedSourceDomains),
-        allowedRefererDomains: toStringArray(project.allowedRefererDomains),
+        allowedSourceDomains: project.allowedSourceDomains ?? [],
+        allowedRefererDomains: project.allowedRefererDomains ?? [],
       };
     }),
 
