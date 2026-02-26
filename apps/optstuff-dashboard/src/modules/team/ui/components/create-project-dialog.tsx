@@ -218,7 +218,7 @@ function CreateProjectFormStep({
           />
         </div>
         <div className="grid gap-2">
-          <Label className="text-[15px]">
+          <Label htmlFor="allowed-source-domains" className="text-[15px]">
             Image Sources{" "}
             <span className="text-muted-foreground font-normal">
               (optional)
@@ -229,6 +229,7 @@ function CreateProjectFormStep({
             in Settings. Subdomains are included automatically.
           </p>
           <DomainListInput
+            id="allowed-source-domains"
             value={form.allowedSourceDomains}
             onChange={form.setAllowedSourceDomains}
             placeholder="https://images.example.com"
@@ -236,7 +237,7 @@ function CreateProjectFormStep({
           />
         </div>
         <div className="grid gap-2">
-          <Label className="text-[15px]">
+          <Label htmlFor="blocked-source-domains" className="text-[15px]">
             Authorized Websites{" "}
             <span className="text-muted-foreground font-normal">
               (optional)
@@ -247,6 +248,7 @@ function CreateProjectFormStep({
             allow all. You can also configure this later in Settings.
           </p>
           <DomainListInput
+            id="blocked-source-domains"
             value={form.allowedRefererDomains}
             onChange={form.setAllowedRefererDomains}
             placeholder="https://example.com"

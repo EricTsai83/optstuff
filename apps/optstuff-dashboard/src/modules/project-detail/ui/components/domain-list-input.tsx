@@ -7,6 +7,7 @@ import { X } from "lucide-react";
 import { useState } from "react";
 
 type DomainListInputProps = {
+  readonly id?: string;
   readonly value: string[];
   readonly onChange: (domains: string[]) => void;
   readonly placeholder?: string;
@@ -26,6 +27,7 @@ const VALID_FORMAT_MSG =
  * Displays entries as removable badges.
  */
 export function DomainListInput({
+  id,
   value,
   onChange,
   placeholder = "https://example.com",
@@ -103,6 +105,7 @@ export function DomainListInput({
       <div className="space-y-1">
         <div className="flex gap-2">
           <Input
+            id={id}
             value={inputValue}
             onChange={handleInputChange}
             onKeyDown={handleKeyDown}
