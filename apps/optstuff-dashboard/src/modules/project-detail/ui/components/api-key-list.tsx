@@ -70,16 +70,14 @@ export function ApiKeyList({ projectId, projectSlug }: ApiKeyListProps) {
     setEditingKey({
       id: key.id,
       name: key.name,
-      allowedSourceDomains: key.allowedSourceDomains,
       expiresAt: key.expiresAt,
     });
   };
 
-  const handleSaveEdit = (domains: string[], expiresAt: Date | null): void => {
+  const handleSaveEdit = (expiresAt: Date | null): void => {
     if (editingKey) {
       updateKey({
         apiKeyId: editingKey.id,
-        allowedSourceDomains: domains,
         expiresAt: expiresAt,
       });
     }

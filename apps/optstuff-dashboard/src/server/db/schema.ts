@@ -58,6 +58,8 @@ export const projects = pgTable(
     name: d.varchar({ length: 255 }).notNull(),
     slug: d.varchar({ length: 255 }).notNull(),
     description: d.text(),
+    // Source domain whitelist - controls which image origins can be processed
+    allowedSourceDomains: d.text().array(),
     // Referer whitelist - controls which websites can use this project's service
     allowedRefererDomains: d.text().array(),
     // Cached statistics (updated on API key/usage changes)

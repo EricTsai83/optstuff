@@ -1,29 +1,9 @@
 import { desc, eq, sql } from "drizzle-orm";
 import { z } from "zod";
 
+import { verifyProjectAccess } from "@/server/api/lib/access";
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
-import type { db as dbType } from "@/server/db";
-import { projects, requestLogs } from "@/server/db/schema";
-
-/**
- * Helper to verify user owns the project's team.
- */
-async function verifyProjectAccess(
-  db: typeof dbType,
-  projectId: string,
-  userId: string,
-) {
-  const project = await db.query.projects.findFirst({
-    where: eq(projects.id, projectId),
-    with: { team: true },
-  });
-
-  if (!project || project.team.ownerId !== userId) {
-    return null;
-  }
-
-  return project;
-}
+import { requestLogs } from "@/server/db/schema";
 
 export const requestLogRouter = createTRPCRouter({
   /**
@@ -38,15 +18,7 @@ export const requestLogRouter = createTRPCRouter({
       }),
     )
     .query(async ({ ctx, input }) => {
-      const project = await verifyProjectAccess(
-        ctx.db,
-        input.projectId,
-        ctx.userId,
-      );
-
-      if (!project) {
-        return [];
-      }
+      await verifyProjectAccess(ctx.db, input.projectId, ctx.userId);
 
       const logs = await ctx.db.query.requestLogs.findMany({
         where: eq(requestLogs.projectId, input.projectId),
@@ -77,15 +49,7 @@ export const requestLogRouter = createTRPCRouter({
       }),
     )
     .query(async ({ ctx, input }) => {
-      const project = await verifyProjectAccess(
-        ctx.db,
-        input.projectId,
-        ctx.userId,
-      );
-
-      if (!project) {
-        return [];
-      }
+      await verifyProjectAccess(ctx.db, input.projectId, ctx.userId);
 
       // Aggregate by sourceUrl to get request counts
       const result = await ctx.db
@@ -113,15 +77,7 @@ export const requestLogRouter = createTRPCRouter({
   getBandwidthSavings: protectedProcedure
     .input(z.object({ projectId: z.string().uuid() }))
     .query(async ({ ctx, input }) => {
-      const project = await verifyProjectAccess(
-        ctx.db,
-        input.projectId,
-        ctx.userId,
-      );
-
-      if (!project) {
-        return null;
-      }
+      await verifyProjectAccess(ctx.db, input.projectId, ctx.userId);
 
       // Get aggregated bandwidth stats
       const result = await ctx.db

@@ -33,7 +33,7 @@ At a high level, the architecture has three layers:
 
 The **API Gateway Layer** verifies the cryptographic signature, checks whether the API key is valid and not revoked, and enforces rate limits.
 
-The **Validation Layer** ensures the requested image URL belongs to a domain on the API key's allowlist (`allowedSourceDomains`). This is the security boundary — it decides which external hosts the server is willing to contact.
+The **Validation Layer** ensures the requested image URL belongs to a domain on the project's allowlist (`allowedSourceDomains`). This is the security boundary — it decides which external hosts the server is willing to contact.
 
 The **Processing Layer** is a third-party library (IPX) that receives a URL and a set of operations, fetches the image over HTTP, runs the transformations, and returns raw bytes.
 
@@ -48,7 +48,7 @@ The Validation Layer inspects the URL as the client submitted it:
 ```typescript
 const sourceHost = new URL(imageUrl).hostname;  // "cdn.example.com"
 
-if (!validateSourceDomain(sourceHost, apiKey.allowedSourceDomains)) {
+if (!validateSourceDomain(sourceHost, project.allowedSourceDomains)) {
   return error(403, "Source domain not allowed");
 }
 ```
@@ -75,7 +75,7 @@ This is a **TOCTOU (Time-of-Check to Time-of-Use)** gap. The security check vali
 
 ## The Attack: Exploiting the Gap
 
-An attacker who holds a valid API key with `cdn.example.com` in their allowlist discovers an open redirect on that domain — say, `https://cdn.example.com/go?url=<target>`. They construct a signed request:
+An attacker who holds a valid API key for a project with `cdn.example.com` in its allowlist discovers an open redirect on that domain — say, `https://cdn.example.com/go?url=<target>`. They construct a signed request:
 
 ```text
 GET /api/v1/my-project/w_800/cdn.example.com/go?url=http://169.254.169.254/latest/meta-data/

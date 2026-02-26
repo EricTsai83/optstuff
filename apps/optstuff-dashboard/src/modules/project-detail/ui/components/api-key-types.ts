@@ -11,7 +11,6 @@ export type ApiKeyData = {
   readonly createdAt: Date;
   readonly lastUsedAt: Date | null;
   readonly expiresAt: Date | null;
-  readonly allowedSourceDomains: string[] | null;
   readonly rateLimitPerMinute: number | null;
   readonly rateLimitPerDay: number | null;
 };
@@ -31,7 +30,6 @@ export type RotatedKeyData = {
 export type EditingKeyData = {
   readonly id: string;
   readonly name: string;
-  readonly allowedSourceDomains: string[] | null;
   readonly expiresAt: Date | null;
 };
 
@@ -58,14 +56,13 @@ export function getExpirationStatus(expiresAt: Date | null) {
 }
 
 /**
- * Get the status color scheme based on expiration and domain configuration
+ * Get the status color scheme based on expiration status
  */
 export function getStatusColorScheme(
   isExpired: boolean,
   isExpiringSoon: boolean,
-  hasDomains: boolean,
 ) {
-  if (isExpired || !hasDomains) {
+  if (isExpired) {
     return "danger";
   }
   if (isExpiringSoon) {

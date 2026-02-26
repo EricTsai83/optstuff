@@ -47,7 +47,8 @@ export function SettingsTab({ project, team }: SettingsTabProps) {
   );
   const [hasProjectInfoChanges, setHasProjectInfoChanges] = useState(false);
 
-  // Authorization settings state (only referer domains at project level)
+  // Domain security settings state
+  const [sourceDomains, setSourceDomains] = useState<string[]>([]);
   const [refererDomains, setRefererDomains] = useState<string[]>([]);
   const [hasSettingsChanges, setHasSettingsChanges] = useState(false);
 
@@ -67,25 +68,29 @@ export function SettingsTab({ project, team }: SettingsTabProps) {
   // Initialize state when settings are loaded
   useEffect(() => {
     if (settings) {
+      setSourceDomains(settings.allowedSourceDomains);
       setRefererDomains(settings.allowedRefererDomains);
       setHasSettingsChanges(false);
     }
   }, [settings]);
 
-  // Track authorization settings changes
+  // Track domain security settings changes
   useEffect(() => {
     if (!settings) return;
+    const sourceChanged =
+      JSON.stringify(sourceDomains) !==
+      JSON.stringify(settings.allowedSourceDomains);
     const refererChanged =
       JSON.stringify(refererDomains) !==
       JSON.stringify(settings.allowedRefererDomains);
-    setHasSettingsChanges(refererChanged);
-  }, [refererDomains, settings]);
+    setHasSettingsChanges(sourceChanged || refererChanged);
+  }, [sourceDomains, refererDomains, settings]);
 
   // Update project info mutation
   const { mutate: updateProject, isPending: isUpdatingProject } =
     api.project.update.useMutation({
       onSuccess: () => {
-        utils.project.getBySlug.invalidate({
+        void utils.project.getBySlug.invalidate({
           teamSlug: team.slug,
           projectSlug: project.slug,
         });
@@ -105,7 +110,7 @@ export function SettingsTab({ project, team }: SettingsTabProps) {
   const { mutate: updateSettings, isPending: isUpdatingSettings } =
     api.project.updateSettings.useMutation({
       onSuccess: () => {
-        utils.project.getSettings.invalidate({ projectId: project.id });
+        void utils.project.getSettings.invalidate({ projectId: project.id });
         setHasSettingsChanges(false);
       },
     });
@@ -113,6 +118,7 @@ export function SettingsTab({ project, team }: SettingsTabProps) {
   const handleSaveSettings = (): void => {
     updateSettings({
       projectId: project.id,
+      allowedSourceDomains: sourceDomains,
       allowedRefererDomains: refererDomains,
     });
   };
@@ -120,8 +126,8 @@ export function SettingsTab({ project, team }: SettingsTabProps) {
   const { mutate: deleteProject, isPending: isDeleting } =
     api.project.delete.useMutation({
       onSuccess: () => {
-        utils.project.list.invalidate();
-        utils.project.listPinned.invalidate();
+        void utils.project.list.invalidate();
+        void utils.project.listPinned.invalidate();
         setIsDeleteDialogOpen(false);
         router.push(`/${team.slug}`);
       },
@@ -182,10 +188,10 @@ export function SettingsTab({ project, team }: SettingsTabProps) {
 
       <Card>
         <CardHeader>
-          <CardTitle>Authorization Settings</CardTitle>
+          <CardTitle>Domain Security</CardTitle>
           <CardDescription>
-            Control which websites can use your image optimization service.
-            Source domain restrictions are configured per API key.
+            Control which image sources can be processed and which websites can
+            display your optimized images.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -196,10 +202,27 @@ export function SettingsTab({ project, team }: SettingsTabProps) {
           ) : (
             <>
               <div className="space-y-2">
-                <Label>Allowed Referer Domains</Label>
+                <Label>Image Sources</Label>
                 <p className="text-muted-foreground text-sm">
-                  Define which websites can display optimized images. Leave
-                  empty to allow all referers.
+                  Which domains host the original images you want to optimize?
+                  In production, only these sources will be processed.
+                  Subdomains are included automatically.
+                </p>
+                <DomainListInput
+                  value={sourceDomains}
+                  onChange={setSourceDomains}
+                  placeholder="https://images.example.com"
+                  disabled={isUpdatingSettings}
+                />
+              </div>
+
+              <div className="border-border border-t pt-6" />
+
+              <div className="space-y-2">
+                <Label>Authorized Websites</Label>
+                <p className="text-muted-foreground text-sm">
+                  Which websites can display your optimized images? Leave empty
+                  to allow all.
                 </p>
                 <DomainListInput
                   value={refererDomains}

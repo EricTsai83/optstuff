@@ -1,22 +1,19 @@
 "use client";
 
-import { Badge } from "@workspace/ui/components/badge";
+import { NavigationTabs } from "@/components/navigation-tabs";
+import { DOCS_LINKS } from "@/lib/constants";
+import { api } from "@/trpc/react";
 import { Button } from "@workspace/ui/components/button";
 import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@workspace/ui/components/tabs";
-import {
-  Activity,
   ArrowLeft,
-  Code,
-  Key,
-  LayoutDashboard,
-  Settings,
+  BarChart3,
+  BookOpen,
+  ExternalLink,
+  KeyRound,
 } from "lucide-react";
 import Link from "next/link";
+import { useState } from "react";
+import { PROJECT_TABS, type ProjectTab } from "../../constants";
 import type { Project, Team } from "../../types";
 import { ApiKeyList } from "../components/api-key-list";
 import { DeveloperTab } from "./developer-tab";
@@ -30,101 +27,97 @@ type ProjectDetailViewProps = {
   readonly defaultTab?: string;
 };
 
-const VALID_TABS = ["overview", "api-keys", "usage", "developer", "settings"];
-
 export function ProjectDetailView({
-  project,
+  project: initialProject,
   team,
   defaultTab,
 }: ProjectDetailViewProps) {
-  const initialTab =
-    defaultTab && VALID_TABS.includes(defaultTab) ? defaultTab : "overview";
+  const initialTab = (
+    defaultTab && PROJECT_TABS.some((t) => t.value === defaultTab)
+      ? defaultTab
+      : "overview"
+  ) as ProjectTab;
+
+  const [activeTab, setActiveTab] = useState<ProjectTab>(initialTab);
+
+  const { data: liveProject } = api.project.getBySlug.useQuery({
+    teamSlug: team.slug,
+    projectSlug: initialProject.slug,
+  });
+
+  const project = liveProject ?? initialProject;
 
   return (
-    <Tabs defaultValue={initialTab} className="flex flex-1 flex-col">
-      {/* Project Header */}
-      <div className="border-border border-b">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center gap-4">
-            <Link href={`/${team.slug}`}>
-              <Button variant="ghost" className="w-12">
-                <ArrowLeft className="size-5" />
+    <>
+      <NavigationTabs
+        tabs={PROJECT_TABS}
+        activeTab={activeTab}
+        onTabChange={(tab) => setActiveTab(tab as ProjectTab)}
+      />
+
+      <main className="container mx-auto flex-1 px-4 py-6">
+        <div className="mb-8">
+          <Link
+            href={`/${team.slug}`}
+            className="text-muted-foreground hover:text-foreground mb-4 inline-flex items-center gap-1.5 text-sm transition-colors"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to home page
+          </Link>
+
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
+              {project.name}
+            </h1>
+
+            <div className="flex flex-wrap gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setActiveTab("api-keys")}
+              >
+                <KeyRound className="h-3.5 w-3.5" />
+                Manage Keys
               </Button>
-            </Link>
-            <div className="flex-1">
-              <div className="flex items-center gap-3">
-                <h1 className="text-xl font-semibold">{project.name}</h1>
-                <Badge variant="secondary">{team.name}</Badge>
-              </div>
-              {project.description && (
-                <p className="text-muted-foreground mt-1 text-sm">
-                  {project.description}
-                </p>
-              )}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setActiveTab("usage")}
+              >
+                <BarChart3 className="h-3.5 w-3.5" />
+                View Stats
+              </Button>
+              <Button variant="outline" size="sm" asChild>
+                <a
+                  href={DOCS_LINKS.integration}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <BookOpen className="h-3.5 w-3.5" />
+                  Docs
+                  <ExternalLink className="h-3 w-3" />
+                </a>
+              </Button>
             </div>
           </div>
+
+          {project.description && (
+            <p className="mt-2 max-w-3xl text-base leading-relaxed sm:text-lg">
+              {project.description}
+            </p>
+          )}
         </div>
 
-        {/* Tabs */}
-        <div className="container mx-auto px-4">
-          <TabsList className="scrollbar-hide h-auto w-full justify-start gap-0 overflow-x-auto rounded-none border-none bg-transparent p-0 *:shrink-0">
-            <TabsTrigger
-              value="overview"
-              className="data-[state=active]:border-foreground text-muted-foreground data-[state=active]:text-foreground whitespace-nowrap rounded-none border-b-2 border-transparent px-3 py-3 text-sm shadow-none data-[state=active]:bg-transparent data-[state=active]:shadow-none sm:px-4"
-            >
-              <LayoutDashboard className="h-4 w-4" />
-              Overview
-            </TabsTrigger>
-            <TabsTrigger
-              value="api-keys"
-              className="data-[state=active]:border-foreground text-muted-foreground data-[state=active]:text-foreground whitespace-nowrap rounded-none border-b-2 border-transparent px-3 py-3 text-sm shadow-none data-[state=active]:bg-transparent data-[state=active]:shadow-none sm:px-4"
-            >
-              <Key className="h-4 w-4" />
-              API Keys
-            </TabsTrigger>
-            <TabsTrigger
-              value="usage"
-              className="data-[state=active]:border-foreground text-muted-foreground data-[state=active]:text-foreground whitespace-nowrap rounded-none border-b-2 border-transparent px-3 py-3 text-sm shadow-none data-[state=active]:bg-transparent data-[state=active]:shadow-none sm:px-4"
-            >
-              <Activity className="h-4 w-4" />
-              Usage
-            </TabsTrigger>
-            <TabsTrigger
-              value="developer"
-              className="data-[state=active]:border-foreground text-muted-foreground data-[state=active]:text-foreground whitespace-nowrap rounded-none border-b-2 border-transparent px-3 py-3 text-sm shadow-none data-[state=active]:bg-transparent data-[state=active]:shadow-none sm:px-4"
-            >
-              <Code className="h-4 w-4" />
-              Developer
-            </TabsTrigger>
-            <TabsTrigger
-              value="settings"
-              className="data-[state=active]:border-foreground text-muted-foreground data-[state=active]:text-foreground whitespace-nowrap rounded-none border-b-2 border-transparent px-3 py-3 text-sm shadow-none data-[state=active]:bg-transparent data-[state=active]:shadow-none sm:px-4"
-            >
-              <Settings className="h-4 w-4" />
-              Settings
-            </TabsTrigger>
-          </TabsList>
-        </div>
-      </div>
-
-      {/* Tab Content */}
-      <main className="container mx-auto flex-1 px-4 py-6">
-        <TabsContent value="overview" className="mt-0">
-          <OverviewTab project={project} />
-        </TabsContent>
-        <TabsContent value="api-keys" className="mt-0">
+        {activeTab === "overview" && <OverviewTab project={project} teamSlug={team.slug} />}
+        {activeTab === "api-keys" && (
           <ApiKeyList projectId={project.id} projectSlug={project.slug} />
-        </TabsContent>
-        <TabsContent value="usage" className="mt-0">
-          <UsageTab projectId={project.id} />
-        </TabsContent>
-        <TabsContent value="developer" className="mt-0">
-          <DeveloperTab project={project} />
-        </TabsContent>
-        <TabsContent value="settings" className="mt-0">
+        )}
+        {activeTab === "usage" && <UsageTab projectId={project.id} />}
+        {activeTab === "developer" && <DeveloperTab project={project} />}
+        {activeTab === "settings" && (
           <SettingsTab project={project} team={team} />
-        </TabsContent>
+        )}
       </main>
-    </Tabs>
+    </>
   );
 }

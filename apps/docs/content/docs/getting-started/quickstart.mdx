@@ -14,7 +14,9 @@ This guide walks you through getting your first optimized image from OptStuff.
 
 After signing in, you'll be guided to create a **personal team**. Then create your first **project** from the dashboard — a default API key is generated automatically.
 
-> See [Dashboard Setup](/getting-started/dashboard-setup) for detailed UI instructions.
+> See [Project Setup](/getting-started/project-setup) for detailed UI instructions.
+
+Before making requests, go to your project's **Settings → Domain Security → Image Sources** and add the domains you want to optimize images from (e.g., `images.unsplash.com`). Without at least one allowed source domain, all image requests will be rejected.
 
 ## 2. Copy Your Keys
 
@@ -63,6 +65,6 @@ Paste the output URL in your browser. You should see the image resized to 400px 
 
 ## Next Steps
 
-- [Dashboard Setup](/getting-started/dashboard-setup) — Learn how to manage teams, projects, and API keys
+- [Project Setup](/getting-started/project-setup) — Learn how to manage teams, projects, and API keys
 - [Integration Guide](/getting-started/integration-guide) — Add OptStuff to your application ([TypeScript](/getting-started/integration-guide/typescript) · [Next.js](/getting-started/integration-guide/nextjs))
 - [Image Operations](/api-reference/image-operations) — Full list of supported transformations

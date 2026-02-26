@@ -100,7 +100,7 @@ flowchart TD
 | 5 | Verify HMAC-SHA256 signature (constant-time) | `403` |
 | 6 | Check rate limits | `429` |
 | 7 | Validate Referer header against project domains | `403` |
-| 8 | Validate image source domain against key's domains | `403` |
+| 8 | Validate image source domain against project's domains | `403` |
 | 9 | Process and return optimized image | `500` |
 
 > Rate limiting is checked **after** signature verification so that invalid requests cannot exhaust quota.

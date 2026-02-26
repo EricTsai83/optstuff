@@ -3,50 +3,12 @@ import { and, desc, eq, gte, inArray, lte, sql } from "drizzle-orm";
 import { z } from "zod";
 
 import { getDateRange, getToday } from "@/lib/format";
+import {
+  verifyProjectAccess,
+  verifyTeamAccess,
+} from "@/server/api/lib/access";
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
-import type { db as dbType } from "@/server/db";
 import { apiKeys, projects, teams, usageRecords } from "@/server/db/schema";
-
-/**
- * Helper to check project access using ownerId.
- * Returns the project with team if access is granted, null otherwise.
- */
-async function verifyProjectAccess(
-  db: typeof dbType,
-  projectId: string,
-  userId: string,
-) {
-  const project = await db.query.projects.findFirst({
-    where: eq(projects.id, projectId),
-    with: { team: true },
-  });
-
-  if (!project || project.team.ownerId !== userId) {
-    return null;
-  }
-
-  return project;
-}
-
-/**
- * Helper to check team access using ownerId.
- * Returns the team if access is granted, null otherwise.
- */
-async function verifyTeamAccess(
-  db: typeof dbType,
-  teamId: string,
-  userId: string,
-) {
-  const team = await db.query.teams.findFirst({
-    where: eq(teams.id, teamId),
-  });
-
-  if (!team || team.ownerId !== userId) {
-    return null;
-  }
-
-  return team;
-}
 
 export const usageRouter = createTRPCRouter({
   /**
@@ -63,19 +25,7 @@ export const usageRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const project = await verifyProjectAccess(
-        ctx.db,
-        input.projectId,
-        ctx.userId,
-      );
-
-      if (!project) {
-        throw new TRPCError({
-          code: "FORBIDDEN",
-          message:
-            "You do not have permission to record usage for this project",
-        });
-      }
+      await verifyProjectAccess(ctx.db, input.projectId, ctx.userId);
 
       // If apiKeyId is provided, verify it belongs to the same project
       if (input.apiKeyId) {
@@ -149,13 +99,7 @@ export const usageRouter = createTRPCRouter({
       }),
     )
     .query(async ({ ctx, input }) => {
-      const project = await verifyProjectAccess(
-        ctx.db,
-        input.projectId,
-        ctx.userId,
-      );
-
-      if (!project) return [];
+      await verifyProjectAccess(ctx.db, input.projectId, ctx.userId);
 
       const records = await ctx.db.query.usageRecords.findMany({
         where: and(
@@ -200,13 +144,7 @@ export const usageRouter = createTRPCRouter({
       }),
     )
     .query(async ({ ctx, input }) => {
-      const project = await verifyProjectAccess(
-        ctx.db,
-        input.projectId,
-        ctx.userId,
-      );
-
-      if (!project) return null;
+      await verifyProjectAccess(ctx.db, input.projectId, ctx.userId);
 
       const startDate = `${input.year}-${String(input.month).padStart(2, "0")}-01`;
       const lastDay = new Date(input.year, input.month, 0).getDate();
@@ -238,13 +176,7 @@ export const usageRouter = createTRPCRouter({
   getSummary: protectedProcedure
     .input(z.object({ projectId: z.string().uuid() }))
     .query(async ({ ctx, input }) => {
-      const project = await verifyProjectAccess(
-        ctx.db,
-        input.projectId,
-        ctx.userId,
-      );
-
-      if (!project) return null;
+      await verifyProjectAccess(ctx.db, input.projectId, ctx.userId);
 
       const { startDate, endDate } = getDateRange(30);
 
@@ -282,13 +214,7 @@ export const usageRouter = createTRPCRouter({
       }),
     )
     .query(async ({ ctx, input }) => {
-      const project = await verifyProjectAccess(
-        ctx.db,
-        input.projectId,
-        ctx.userId,
-      );
-
-      if (!project) return [];
+      await verifyProjectAccess(ctx.db, input.projectId, ctx.userId);
 
       const records = await ctx.db.query.usageRecords.findMany({
         where: and(
@@ -341,9 +267,7 @@ export const usageRouter = createTRPCRouter({
   getTeamSummary: protectedProcedure
     .input(z.object({ teamId: z.string().uuid() }))
     .query(async ({ ctx, input }) => {
-      const team = await verifyTeamAccess(ctx.db, input.teamId, ctx.userId);
-
-      if (!team) return null;
+      await verifyTeamAccess(ctx.db, input.teamId, ctx.userId);
 
       // Get all projects for this team
       const teamProjects = await ctx.db.query.projects.findMany({

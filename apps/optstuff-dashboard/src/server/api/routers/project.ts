@@ -3,8 +3,11 @@ import { and, desc, eq, inArray } from "drizzle-orm";
 import { z } from "zod";
 
 import { generateSlug, generateUniqueSlug } from "@/lib/slug";
+import {
+  verifyProjectAccess,
+  verifyTeamAccess,
+} from "@/server/api/lib/access";
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
-import type { db as dbType } from "@/server/db";
 import { apiKeys, pinnedProjects, projects, teams } from "@/server/db/schema";
 import { encryptApiKey, generateApiKey } from "@/server/lib/api-key";
 import {
@@ -35,6 +38,16 @@ const allowedRefererDomainsSchema = z
   .array(refererDomainEntrySchema)
   .optional();
 
+const sourceDomainEntrySchema = z
+  .string()
+  .trim()
+  .regex(DOMAIN_PATTERN, "Invalid domain")
+  .transform((s) => s.toLowerCase());
+
+const allowedSourceDomainsSchema = z
+  .array(sourceDomainEntrySchema)
+  .optional();
+
 /**
  * Checks if an error is a Postgres unique-constraint violation for the given constraint name.
  * Postgres error code "23505" = unique_violation.
@@ -60,47 +73,6 @@ function isUniqueConstraintError(
   return false;
 }
 
-/**
- * Helper to verify user owns the team.
- * Returns the team if access is granted, null otherwise.
- */
-async function verifyTeamAccess(
-  db: typeof dbType,
-  teamId: string,
-  userId: string,
-) {
-  const team = await db.query.teams.findFirst({
-    where: eq(teams.id, teamId),
-  });
-
-  if (team?.ownerId !== userId) {
-    return null;
-  }
-
-  return team;
-}
-
-/**
- * Helper to verify user owns the project's team.
- * Returns the project with team if access is granted, null otherwise.
- */
-async function verifyProjectAccess(
-  db: typeof dbType,
-  projectId: string,
-  userId: string,
-) {
-  const project = await db.query.projects.findFirst({
-    where: eq(projects.id, projectId),
-    with: { team: true },
-  });
-
-  if (project?.team?.ownerId !== userId) {
-    return null;
-  }
-
-  return project;
-}
-
 export const projectRouter = createTRPCRouter({
   /**
    * Create a new project under a team.
@@ -112,19 +84,12 @@ export const projectRouter = createTRPCRouter({
         teamId: z.string().uuid(),
         name: z.string().min(1).max(255),
         description: z.string().max(1000).optional(),
+        allowedSourceDomains: allowedSourceDomainsSchema,
         allowedRefererDomains: allowedRefererDomainsSchema,
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      // Verify user owns this team
-      const team = await verifyTeamAccess(ctx.db, input.teamId, ctx.userId);
-
-      if (!team) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Team not found or access denied",
-        });
-      }
+      await verifyTeamAccess(ctx.db, input.teamId, ctx.userId);
 
       const slug = generateSlug(input.name);
 
@@ -151,11 +116,15 @@ export const projectRouter = createTRPCRouter({
             name: input.name,
             slug: slugToUse,
             description: input.description,
+            allowedSourceDomains:
+              input.allowedSourceDomains && input.allowedSourceDomains.length > 0
+                ? input.allowedSourceDomains
+                : null,
             allowedRefererDomains:
               input.allowedRefererDomains &&
               input.allowedRefererDomains.length > 0
                 ? input.allowedRefererDomains
-                : undefined,
+                : null,
             apiKeyCount: 1, // Will have one default key
           })
           .returning();
@@ -211,12 +180,7 @@ export const projectRouter = createTRPCRouter({
   list: protectedProcedure
     .input(z.object({ teamId: z.string().uuid() }))
     .query(async ({ ctx, input }) => {
-      // Verify user owns this team
-      const team = await verifyTeamAccess(ctx.db, input.teamId, ctx.userId);
-
-      if (!team) {
-        return [];
-      }
+      await verifyTeamAccess(ctx.db, input.teamId, ctx.userId);
 
       return ctx.db.query.projects.findMany({
         where: eq(projects.teamId, input.teamId),
@@ -269,17 +233,7 @@ export const projectRouter = createTRPCRouter({
   get: protectedProcedure
     .input(z.object({ projectId: z.string().uuid() }))
     .query(async ({ ctx, input }) => {
-      const project = await verifyProjectAccess(
-        ctx.db,
-        input.projectId,
-        ctx.userId,
-      );
-
-      if (!project) {
-        return null;
-      }
-
-      return project;
+      return verifyProjectAccess(ctx.db, input.projectId, ctx.userId);
     }),
 
   /**
@@ -319,18 +273,7 @@ export const projectRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const project = await verifyProjectAccess(
-        ctx.db,
-        input.projectId,
-        ctx.userId,
-      );
-
-      if (!project) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Project not found or access denied",
-        });
-      }
+      await verifyProjectAccess(ctx.db, input.projectId, ctx.userId);
 
       const updateData: { name?: string; description?: string } = {};
       if (input.name !== undefined) updateData.name = input.name;
@@ -354,52 +297,45 @@ export const projectRouter = createTRPCRouter({
     }),
 
   /**
-   * Update project authorization settings (referer domain whitelist).
-   * Note: Source domain restrictions are now configured per API key.
+   * Update project domain security settings (source domains + referer domains).
    */
   updateSettings: protectedProcedure
     .input(
       z.object({
         projectId: z.string().uuid(),
+        allowedSourceDomains: z.array(sourceDomainEntrySchema),
         allowedRefererDomains: z.array(refererDomainEntrySchema),
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const project = await verifyProjectAccess(
-        ctx.db,
-        input.projectId,
-        ctx.userId,
-      );
+      await verifyProjectAccess(ctx.db, input.projectId, ctx.userId);
 
-      if (!project) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Project not found or access denied",
-        });
-      }
-
-      const normalizedDomains =
-        input.allowedRefererDomains.length > 0
-          ? input.allowedRefererDomains
-          : [];
+      const allowedSourceDomains = input.allowedSourceDomains.length
+        ? input.allowedSourceDomains
+        : null;
+      const allowedRefererDomains = input.allowedRefererDomains.length
+        ? input.allowedRefererDomains
+        : null;
 
       const [updatedProject] = await ctx.db
         .update(projects)
-        .set({ allowedRefererDomains: normalizedDomains })
+        .set({
+          allowedSourceDomains,
+          allowedRefererDomains,
+        })
         .where(eq(projects.id, input.projectId))
         .returning();
 
       // Invalidate cache so IPX service picks up new settings
       if (updatedProject) {
-        await invalidateProjectCache(updatedProject.slug);
+        await invalidateProjectCache(updatedProject.slug, updatedProject.id);
       }
 
       return updatedProject;
     }),
 
   /**
-   * Get project settings (referer domain whitelist).
-   * Note: Source domain restrictions are now configured per API key.
+   * Get project domain security settings (source domains + referer domains).
    */
   getSettings: protectedProcedure
     .input(z.object({ projectId: z.string().uuid() }))
@@ -410,11 +346,8 @@ export const projectRouter = createTRPCRouter({
         ctx.userId,
       );
 
-      if (!project) {
-        return null;
-      }
-
       return {
+        allowedSourceDomains: project.allowedSourceDomains ?? [],
         allowedRefererDomains: project.allowedRefererDomains ?? [],
       };
     }),
@@ -431,13 +364,6 @@ export const projectRouter = createTRPCRouter({
         input.projectId,
         ctx.userId,
       );
-
-      if (!project) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Project not found or access denied",
-        });
-      }
 
       // Collect public keys before cascade-deleting them with the project
       const projectApiKeys = await ctx.db.query.apiKeys.findMany({
@@ -462,18 +388,7 @@ export const projectRouter = createTRPCRouter({
   pin: protectedProcedure
     .input(z.object({ projectId: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {
-      const project = await verifyProjectAccess(
-        ctx.db,
-        input.projectId,
-        ctx.userId,
-      );
-
-      if (!project) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Project not found or access denied",
-        });
-      }
+      await verifyProjectAccess(ctx.db, input.projectId, ctx.userId);
 
       const existingPin = await ctx.db.query.pinnedProjects.findFirst({
         where: and(

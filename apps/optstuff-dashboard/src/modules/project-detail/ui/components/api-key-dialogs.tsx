@@ -14,7 +14,6 @@ import { Label } from "@workspace/ui/components/label";
 import { Key, RotateCcw, Shield } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { EditingKeyData, RotatedKeyData } from "./api-key-types";
-import { DomainListInput } from "./domain-list-input";
 import { ExpirationSelect } from "./expiration-select";
 
 // ============================================================================
@@ -29,7 +28,7 @@ type RotatedKeyDialogProps = {
 type EditApiKeyDialogProps = {
   readonly editingKey: EditingKeyData | null;
   readonly onClose: () => void;
-  readonly onSave: (domains: string[], expiresAt: Date | null) => void;
+  readonly onSave: (expiresAt: Date | null) => void;
   readonly isUpdating: boolean;
 };
 
@@ -137,13 +136,10 @@ export function EditApiKeyDialog({
   onSave,
   isUpdating,
 }: EditApiKeyDialogProps) {
-  const [domains, setDomains] = useState<string[]>([]);
   const [expiresAt, setExpiresAt] = useState<Date | null>(null);
 
-  // Initialize domains and expiresAt when editingKey changes
   useEffect(() => {
     if (editingKey) {
-      setDomains(editingKey.allowedSourceDomains ?? []);
       setExpiresAt(editingKey.expiresAt);
     }
   }, [editingKey]);
@@ -155,7 +151,7 @@ export function EditApiKeyDialog({
   };
 
   const handleSave = (): void => {
-    onSave(domains, expiresAt);
+    onSave(expiresAt);
   };
 
   return (
@@ -164,25 +160,12 @@ export function EditApiKeyDialog({
         <DialogHeader>
           <DialogTitle>Edit API Key</DialogTitle>
           <DialogDescription>
-            Update the settings for <strong>{editingKey?.name}</strong>
+            Update the settings for <strong>{editingKey?.name}</strong>.
+            Image source restrictions are managed in project Settings.
           </DialogDescription>
         </DialogHeader>
 
         <div className="grid gap-6 py-4">
-          <div className="grid gap-3">
-            <Label>Allowed Source Domains</Label>
-            <p className="text-muted-foreground text-sm">
-              Which image sources can this key access? Subdomains are
-              automatically included.
-            </p>
-            <DomainListInput
-              value={domains}
-              onChange={setDomains}
-              placeholder="images.example.com"
-              disabled={isUpdating}
-            />
-          </div>
-
           <ExpirationSelect
             value={expiresAt ?? undefined}
             onChange={(date) => setExpiresAt(date ?? null)}

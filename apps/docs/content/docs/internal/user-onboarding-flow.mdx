@@ -10,7 +10,7 @@ This document explains the complete user onboarding and getting-started flow in 
 When a new user signs up for OptStuff, they go through a streamlined journey:
 
 1. **Create a personal team** — Required before accessing the dashboard
-2. **Create a project** — A default API key is generated automatically
+2. **Create a project** — Configure image sources, get a default API key automatically
 3. **Copy their API key** — Shown immediately in the project creation dialog
 4. **Integrate** — Documentation links are provided at every step
 
@@ -103,6 +103,8 @@ The dialog uses a two-step pattern (form → success):
 
 - **Project Name** (required)
 - **Description** (optional)
+- **Image Sources** — where original images are hosted (e.g., `images.unsplash.com`, `cdn.mysite.com`). Subdomains are included automatically.
+- **Authorized Websites** (optional) — which websites can display optimized images. Leave empty to allow all. These can be configured later in Settings.
 - Submit creates the project **and** a default API key automatically
 
 #### Step 2: Success (API Key Display)
@@ -128,11 +130,22 @@ The dialog is **locked** during the success step:
 
 This ensures users see and copy their keys before proceeding.
 
+### Setup Checklist
+
+After project creation, the **Overview** tab shows a setup checklist if configuration is incomplete:
+
+1. Project created (done)
+2. Configure image sources (link to Settings)
+3. API key ready (done)
+4. Integrate into your app (link to docs)
+
+The checklist disappears once all steps are completed.
+
 ### Backend Behavior
 
 The `project.create` tRPC mutation:
 
-1. Creates the project record
+1. Creates the project record (with `allowedSourceDomains` and `allowedRefererDomains` if provided)
 2. Generates a default API key pair (public + secret)
 3. Encrypts the secret key (AES-256-GCM) before storing
 4. Returns the project data along with `defaultApiKey` and `defaultSecretKey`
@@ -186,6 +199,7 @@ To change the docs URL, update `NEXT_PUBLIC_DOCS_URL` in the environment — no 
 | EmptyApiKeyState | API Keys guide | When a project has no API keys |
 | CreateProjectDialog (success) | Integration Guide | After creating a project + default key |
 | CreateApiKeyDialog (success) | Integration Guide | After creating an additional API key |
+| Overview Tab (checklist) | Integration Guide | Setup checklist item |
 
 ### Design Principles
 
@@ -206,7 +220,7 @@ To change the docs URL, update `NEXT_PUBLIC_DOCS_URL` in the environment — no 
 | `src/modules/team/ui/components/project-list.tsx` | Project list with empty state + docs link |
 | `src/modules/project-detail/ui/components/create-api-key-dialog.tsx` | API key creation dialog with docs link |
 | `src/modules/project-detail/ui/components/api-key-skeleton.tsx` | Empty API key state with docs link |
-| `src/modules/project-detail/ui/views/overview-tab.tsx` | Project overview (endpoint info + stats) |
+| `src/modules/project-detail/ui/views/overview-tab.tsx` | Project overview (endpoint info + setup checklist + stats) |
 | `src/server/api/routers/project.ts` | Backend project + default API key creation |
 | `src/server/api/routers/team.ts` | Backend team creation logic |
 | `src/lib/slug.ts` | Slug generation utilities |

@@ -141,8 +141,8 @@ flowchart TD
 flowchart TD
   UserLayer["Level 1: User Layer\nClerk Authentication\nLogin and identity verification"]
   TeamLayer["Level 2: Team Layer\nOwnership: team.ownerId === userId\nCreate/delete projects, manage keys, view stats"]
-  ProjectLayer["Level 3: Project Layer\nallowedRefererDomains: control which websites can use the service\nValidation: HTTP Referer header check"]
-  ApiKeyLayer["Level 4: API Key Layer\nallowedSourceDomains: restrict image sources\nRate limits: rateLimitPerMinute, rateLimitPerDay\nExpiration: expiresAt"]
+  ProjectLayer["Level 3: Project Layer\nallowedRefererDomains: control which websites can use the service\nallowedSourceDomains: restrict image sources\nValidation: HTTP Referer header check, Image URL domain check"]
+  ApiKeyLayer["Level 4: API Key Layer\nRate limits: rateLimitPerMinute, rateLimitPerDay\nExpiration: expiresAt"]
 
   UserLayer --> TeamLayer --> ProjectLayer --> ApiKeyLayer
 ```
@@ -154,7 +154,7 @@ Two layers of domain whitelisting protect the service. For configuration details
 | Layer | Setting | Question Answered | Validation Method |
 |-------|---------|-------------------|-------------------|
 | Project | `allowedRefererDomains` | Who can **use** this service? | HTTP Referer header |
-| API Key | `allowedSourceDomains` | Which **image sources** can be processed? | Image URL in request |
+| Project | `allowedSourceDomains` | Which **image sources** can be processed? | Image URL in request |
 
 ## Request Flow
 

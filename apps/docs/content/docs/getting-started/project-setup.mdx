@@ -1,9 +1,9 @@
 ---
-title: Dashboard Setup
+title: Project Setup
 description: How to create teams, projects, and API keys in the OptStuff dashboard.
 ---
 
-This guide walks you through setting up your OptStuff dashboard — from team creation to managing API keys.
+This guide walks you through setting up your OptStuff project — from team creation to managing API keys.
 
 ## Overview
 
@@ -23,17 +23,6 @@ When you first sign in, you'll be redirected to the onboarding page to create yo
    - Must be globally unique
 3. Click **Create Team**
 
-```text
-┌─────────────────────────────────────────┐
-│           Create Your Team              │
-│                                         │
-│  Team Name:  [Eric's Team         ]     │
-│  Team Slug:  [erics-team          ]     │
-│                                         │
-│              [Create Team]              │
-└─────────────────────────────────────────┘
-```
-
 You'll be redirected to your new team dashboard.
 
 > Your personal team cannot be deleted. You can create additional teams later for different organizations.
@@ -43,7 +32,11 @@ You'll be redirected to your new team dashboard.
 From the team dashboard:
 
 1. Click **Create Project**
-2. Enter a **project name** (required) and optional **description**
+2. Fill in:
+   - **Project Name** (required)
+   - **Description** (optional)
+   - **Image Sources** — which domains host your original images (e.g., `images.unsplash.com`, `cdn.mysite.com`). Subdomains are included automatically.
+   - **Authorized Websites** (optional) — which websites can display optimized images. Leave empty to allow all.
 3. Click **Create**
 
 A **default API key** is generated automatically with your new project.
@@ -79,26 +72,18 @@ The dialog is locked during this step — you cannot close it accidentally.
 
 ## Managing API Keys
 
-Navigate to your project's **Overview** tab to see your API keys listed in a table:
-
-```text
-┌──────────────┬──────────────┬─────────────┬───────────┬─────────┐
-│ Name         │ Public Key   │ Last Used   │ Expires   │ Actions │
-├──────────────┼──────────────┼─────────────┼───────────┼─────────┤
-│ Default      │ pk_abc123... │ 2 hours ago │ Never     │ ••• ▼   │
-│ Production   │ pk_def456... │ 5 mins ago  │ 90 days   │ ••• ▼   │
-└──────────────┴──────────────┴─────────────┴───────────┴─────────┘
-```
+Navigate to your project's **API Keys** tab to see your API keys listed in a table:
 
 ### Create an API Key
 
 1. Click **Create API Key**
 2. Fill in:
    - **Key Name** (required) — e.g., "Production", "Development"
-   - **Allowed Source Domains** (required) — which image origins this key can process
    - **Expiration** (optional) — automatic invalidation date (30 days, 90 days, etc.)
 3. Click **Create Key**
 4. Copy the secret key from the success screen
+
+Image source restrictions are configured at the project level in **Settings → Domain Security**, not per API key.
 
 ### Rotate a Key
 
@@ -117,20 +102,22 @@ Revocation immediately disables a key. All requests using it will be rejected.
 
 ## Project Tabs
 
-Each project has four tabs:
+Each project has five tabs:
 
 | Tab | What You'll Find |
 |-----|-----------------|
-| **Overview** | API endpoint, API key list, usage summary |
+| **Overview** | API endpoint, setup checklist, usage summary |
+| **API Keys** | API key list, create/rotate/revoke keys |
 | **Usage** | Daily charts, bandwidth savings, top images, request logs |
 | **Developer** | Code snippets, URL tester, integration examples |
-| **Settings** | Project name/slug, allowed referer domains, project deletion |
+| **Settings** | Project info, domain security (image sources + authorized websites), project deletion |
 
-## Configuring Project Settings
+## Configuring Domain Security
 
-From your project's **Settings** tab, you can configure:
+From your project's **Settings** tab, the **Domain Security** section lets you configure both:
 
-- **Allowed Referer Domains** — which websites can embed your optimized images
+- **Image Sources** — which domains host the original images you want to optimize
+- **Authorized Websites** — which websites can display your optimized images
 
 See [Domain Whitelisting](/guides/domain-whitelisting) for details.
 

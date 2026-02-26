@@ -7,11 +7,11 @@ export const SCROLL_CONFIG = {
   /** Logo animation configuration */
   LOGO: {
     /** Logo minimum size (px) */
-    MIN_SIZE: 24,
+    MIN_SIZE: 26,
     /** Logo maximum size (px) */
     MAX_SIZE: 28,
     /** Logo minimum top position (px) */
-    MIN_TOP: 23,
+    MIN_TOP: 26,
     /** Logo maximum top position (px) */
     MAX_TOP: 32,
   },
