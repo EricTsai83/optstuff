@@ -211,7 +211,7 @@ export function SettingsTab({ project, team }: SettingsTabProps) {
                 <DomainListInput
                   value={sourceDomains}
                   onChange={setSourceDomains}
-                  placeholder="images.example.com"
+                  placeholder="https://images.example.com"
                   disabled={isUpdatingSettings}
                 />
               </div>
