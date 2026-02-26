@@ -130,6 +130,7 @@ export default async function Home() {
                 format="webp"
                 loadDelay={235}
                 priority
+                fallbackText="Hero image unavailable"
                 transitionDuration={1200}
                 aspectRatio="21/9"
                 blurDataUrl={heroBlurDataUrl}

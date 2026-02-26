@@ -42,6 +42,10 @@ type BlurImageProps = {
   blurDataUrl?: string;
   /** Prioritize above-the-fold image loading (hero image use case) */
   priority?: boolean;
+  /** Text shown when the full image fails to load */
+  fallbackText?: string;
+  /** Show a retry button when the full image fails to load */
+  showRetryOnError?: boolean;
 };
 
 /**
@@ -66,6 +70,8 @@ export function BlurImage({
   loadDelay = 0,
   blurDataUrl,
   priority = false,
+  fallbackText = "Image failed to load",
+  showRetryOnError = true,
 }: BlurImageProps) {
   const [phase, setPhase] = useState<"blur" | "loading" | "sharp">(
     loadDelay === 0 ? "loading" : "blur",
@@ -110,6 +116,7 @@ export function BlurImage({
   }, [phase, fullSrc, key]);
 
   const replay = useCallback(() => {
+    setFailedToken(null);
     setPhase("blur");
     setKey((k) => k + 1);
   }, []);
@@ -156,10 +163,19 @@ export function BlurImage({
       )}
 
       {hasLoadError && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black/45">
+        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 bg-black/45">
           <span className="rounded-md bg-black/55 px-3 py-1.5 text-xs font-medium text-white">
-            Image failed to load
+            {fallbackText}
           </span>
+          {showRetryOnError && (
+            <button
+              type="button"
+              onClick={replay}
+              className="rounded-md bg-white/90 px-3 py-1.5 text-xs font-semibold text-zinc-900 transition-colors hover:bg-white"
+            >
+              Retry
+            </button>
+          )}
         </div>
       )}
 
