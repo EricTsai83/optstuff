@@ -71,15 +71,24 @@ export function BlurImage({
     loadDelay === 0 ? "loading" : "blur",
   );
   const [key, setKey] = useState(0);
+  const [failedToken, setFailedToken] = useState<string | null>(null);
   const fullImgRef = useRef<HTMLImageElement>(null);
 
   const blurSrc =
     blurDataUrl ?? buildOptStuffUrl(src, blurWidth, blurQuality, format, fit);
   const fullSrc = buildOptStuffUrl(src, width, quality, format, fit);
+  const currentToken = `${fullSrc}|${key}`;
+  const hasLoadError = failedToken === currentToken;
 
   const handleFullLoad = useCallback(() => {
+    setFailedToken(null);
     setPhase("sharp");
   }, []);
+
+  const handleFullError = useCallback(() => {
+    setFailedToken(currentToken);
+    setPhase("sharp");
+  }, [currentToken]);
 
   useEffect(() => {
     const timer = setTimeout(() => setPhase("loading"), loadDelay);
@@ -137,12 +146,21 @@ export function BlurImage({
           loading={priority ? "eager" : "lazy"}
           fetchPriority={priority ? "high" : "auto"}
           onLoad={handleFullLoad}
+          onError={handleFullError}
           className="absolute inset-0 h-full w-full object-cover"
           style={{
             opacity: phase === "sharp" ? 1 : 0,
             transition: `opacity ${transitionDuration}ms cubic-bezier(0.4, 0, 0.2, 1)`,
           }}
         />
+      )}
+
+      {hasLoadError && (
+        <div className="absolute inset-0 flex items-center justify-center bg-black/45">
+          <span className="rounded-md bg-black/55 px-3 py-1.5 text-xs font-medium text-white">
+            Image failed to load
+          </span>
+        </div>
       )}
 
       {/* Replay button */}
