@@ -64,7 +64,7 @@ export function signImageUrl(
 ): string {
   const path = `${operations}/${imagePath}`;
 
-  const exp = expiresIn
+  const exp = expiresIn != null
     ? (() => {
         const nowSeconds = Math.floor(Date.now() / 1000);
         const ttlSeconds = Math.max(1, Math.floor(expiresIn));
