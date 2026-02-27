@@ -126,7 +126,9 @@ export function OptStuffImage({
   );
   useEffect(() => {
     setLoadedToken(blurPlaceholder ? "" : currentLoadToken);
-  }, [blurPlaceholder, currentLoadToken]);
+    // Only reset when toggling blur mode to avoid racing onLoad updates.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [blurPlaceholder]);
   const loaded = !blurPlaceholder || loadedToken === currentLoadToken;
 
   const loader = makeLoader(format, fit);
