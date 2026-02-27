@@ -128,7 +128,6 @@ export default async function Home() {
                 width={1200}
                 quality={85}
                 format="webp"
-                loadDelay={235}
                 priority
                 fallbackText="Hero image unavailable"
                 transitionDuration={1200}
