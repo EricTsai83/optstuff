@@ -90,7 +90,7 @@ export function signImageUrl(
 }
 ```
 
-Using a bucketed expiration keeps signatures stable within each bucket window, which improves CDN cache hit rates on Vercel while preserving URL expiry.
+Using a bucketed expiration keeps signatures stable within each bucket window, which improves CDN cache hit rates on Vercel and helps preserve approximate URL expiry, but may extend effective validity by up to one bucket due to rounding.
 
 ## Usage in Next.js
 
