@@ -70,7 +70,9 @@ export function signImageUrl(
         const ttlSeconds = Math.max(1, Math.floor(expiresIn));
         const bucketSeconds = Math.min(EXPIRY_BUCKET_SECONDS, ttlSeconds);
         const rawExpiration = nowSeconds + ttlSeconds;
-        return Math.ceil(rawExpiration / bucketSeconds) * bucketSeconds;
+        return bucketSeconds > 0 && bucketSeconds < ttlSeconds
+          ? Math.ceil(rawExpiration / bucketSeconds) * bucketSeconds
+          : rawExpiration;
       })()
     : undefined;
 

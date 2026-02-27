@@ -70,8 +70,11 @@ export function signImageUrl(
   let exp: number | undefined;
   if (ttlSeconds && ttlSeconds > 0) {
     const rawExp = now + ttlSeconds;
-    exp = bucketSeconds && bucketSeconds > 0
-      ? Math.ceil(rawExp / bucketSeconds) * bucketSeconds
+    const effectiveBucket = bucketSeconds && bucketSeconds > 0
+      ? Math.min(bucketSeconds, ttlSeconds)
+      : 0;
+    exp = effectiveBucket > 0 && effectiveBucket < ttlSeconds
+      ? Math.ceil(rawExp / effectiveBucket) * effectiveBucket
       : rawExp;
   }
   

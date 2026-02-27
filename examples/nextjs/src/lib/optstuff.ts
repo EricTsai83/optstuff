@@ -25,7 +25,9 @@ function computeBucketedExpiration(expiresInSeconds: number): number {
   const ttlSeconds = Math.max(1, Math.floor(expiresInSeconds));
   const bucketSeconds = Math.min(EXPIRY_BUCKET_SECONDS, ttlSeconds);
   const rawExpiration = nowSeconds + ttlSeconds;
-  return Math.ceil(rawExpiration / bucketSeconds) * bucketSeconds;
+  return bucketSeconds > 0 && bucketSeconds < ttlSeconds
+    ? Math.ceil(rawExpiration / bucketSeconds) * bucketSeconds
+    : rawExpiration;
 }
 
 /**

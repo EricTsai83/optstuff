@@ -94,7 +94,12 @@ const now = Math.floor(Date.now() / 1000);
 const ttlSeconds = 3600;
 const bucketSeconds = 3600;
 const rawExp = now + ttlSeconds;
-const expiresAt = Math.ceil(rawExp / bucketSeconds) * bucketSeconds;
+const effectiveBucket = bucketSeconds > 0
+  ? Math.min(bucketSeconds, ttlSeconds)
+  : 0;
+const expiresAt = effectiveBucket > 0 && effectiveBucket < ttlSeconds
+  ? Math.ceil(rawExp / effectiveBucket) * effectiveBucket
+  : rawExp;
 
 const url = createSignedUrl({
   projectSlug: "my-blog",
