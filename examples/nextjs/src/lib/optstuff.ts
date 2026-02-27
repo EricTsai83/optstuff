@@ -1,12 +1,22 @@
 import crypto from "crypto";
 
-const OPTSTUFF_BASE_URL =
-  process.env.OPTSTUFF_BASE_URL ?? "https://your-optstuff-instance.com";
-const OPTSTUFF_PROJECT_SLUG = process.env.OPTSTUFF_PROJECT_SLUG ?? "my-project";
-const OPTSTUFF_PUBLIC_KEY = process.env.OPTSTUFF_PUBLIC_KEY ?? "pk_xxx";
-const OPTSTUFF_SECRET_KEY = process.env.OPTSTUFF_SECRET_KEY ?? "sk_xxx";
+function requireEnv(name: string): string {
+  const value = process.env[name];
+  if (!value || value.includes("xxx") || value.includes("your-")) {
+    throw new Error(
+      `Missing or invalid environment variable: ${name}. Set it in examples/nextjs/.env.local`,
+    );
+  }
+  return value;
+}
+
+const OPTSTUFF_BASE_URL = requireEnv("OPTSTUFF_BASE_URL");
+const OPTSTUFF_PROJECT_SLUG = requireEnv("OPTSTUFF_PROJECT_SLUG");
+const OPTSTUFF_PUBLIC_KEY = requireEnv("OPTSTUFF_PUBLIC_KEY");
+const OPTSTUFF_SECRET_KEY = requireEnv("OPTSTUFF_SECRET_KEY");
 const EXPIRY_BUCKET_SECONDS = 3600;
 const BLUR_DATA_REVALIDATE_SECONDS = 3600;
+const BLUR_DATA_FETCH_TIMEOUT_MS = 1500;
 
 export type ImageOperation = {
   width?: number;
@@ -16,10 +26,6 @@ export type ImageOperation = {
   fit?: "cover" | "contain" | "fill";
 };
 
-/**
- * Keep `exp` stable within time buckets to improve CDN/browser cache hit rate.
- * Example: ttl=3600 with bucket=3600 yields one signature per hour window.
- */
 function computeBucketedExpiration(expiresInSeconds: number): number {
   const nowSeconds = Math.floor(Date.now() / 1000);
   const ttlSeconds = Math.max(1, Math.floor(expiresInSeconds));
@@ -32,10 +38,6 @@ function computeBucketedExpiration(expiresInSeconds: number): number {
   return Math.max(nowSeconds + 1, bucketedExpiration);
 }
 
-/**
- * Serialise image operations into a URL path segment.
- * Returns `"_"` (the server-side no-op marker) when no operations are specified.
- */
 function buildOperationString(ops: ImageOperation): string {
   const parts: string[] = [];
 
@@ -48,19 +50,6 @@ function buildOperationString(ops: ImageOperation): string {
   return parts.length > 0 ? parts.join(",") : "_";
 }
 
-/**
- * Generate a signed OptStuff URL for image optimization.
- *
- * @example
- * ```ts
- * const url = generateOptStuffUrl("https://images.unsplash.com/photo.jpg", {
- *   width: 800,
- *   quality: 80,
- *   format: "webp",
- * });
- * // => https://your-optstuff-instance.com/api/v1/my-project/w_800,q_80,f_webp/images.unsplash.com/photo.jpg?key=pk_xxx&sig=abc123
- * ```
- */
 export function generateOptStuffUrl(
   imageUrl: string,
   operations: ImageOperation,
@@ -96,14 +85,6 @@ export function generateOptStuffUrl(
   return `${OPTSTUFF_BASE_URL}${urlPath}?${params.toString()}`;
 }
 
-/**
- * Return a blur placeholder for use in Server Components.
- *
- * Tries to fetch the tiny image from OptStuff and embed it as a base64 data
- * URL (zero client-side requests). If the fetch fails (e.g. service auth
- * rejects server-to-server calls), falls back to the direct signed URL which
- * still skips the `/api/optstuff` redirect hop.
- */
 export async function getBlurDataUrl(
   imageUrl: string,
   {
@@ -114,11 +95,14 @@ export async function getBlurDataUrl(
   }: Partial<ImageOperation> = {},
 ): Promise<string> {
   const url = generateOptStuffUrl(imageUrl, { width, quality, format, fit }, 3600);
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), BLUR_DATA_FETCH_TIMEOUT_MS);
 
   try {
     const res = await fetch(url, {
       cache: "force-cache",
       next: { revalidate: BLUR_DATA_REVALIDATE_SECONDS },
+      signal: controller.signal,
     });
     if (res.ok) {
       const buffer = Buffer.from(await res.arrayBuffer());
@@ -127,6 +111,8 @@ export async function getBlurDataUrl(
     }
   } catch {
     // fetch failed — fall through to direct URL
+  } finally {
+    clearTimeout(timeoutId);
   }
 
   return url;
