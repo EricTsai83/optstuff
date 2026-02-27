@@ -36,6 +36,8 @@ GET /api/v1/my-blog/w_800,f_webp/images.example.com/photo.jpg?key=pk_abc123&sig=
 
 ## Response
 
+> `Vary` defaults to `Accept`; if referer-domain validation is configured for the project, it becomes `Accept, Referer`.
+
 ### Success (200) — GET
 
 Returns the optimized image binary with long-lived caching headers:
@@ -44,7 +46,7 @@ Returns the optimized image binary with long-lived caching headers:
 HTTP/1.1 200 OK
 Content-Type: image/webp
 Cache-Control: public, s-maxage=31536000, max-age=31536000, immutable
-Vary: Accept, Referer
+Vary: Accept
 X-Processing-Time: 42ms
 X-Head-Fast-Path: 0
 X-Original-Size-Sampled: 0
@@ -68,7 +70,7 @@ Server-Timing: auth;dur=7, transform;dur=35, total;dur=42
 ```text
 HTTP/1.1 200 OK
 Cache-Control: public, s-maxage=31536000, max-age=31536000, immutable
-Vary: Accept, Referer
+Vary: Accept
 X-Processing-Time: 8ms
 X-Head-Fast-Path: 1
 Server-Timing: auth;dur=5, probe;dur=3, transform;dur=0, total;dur=8
@@ -87,8 +89,9 @@ Image optimization URLs are **content-addressable**: the URL encodes all paramet
 | 410 | Upstream source returned `410` (passthrough) |
 | 429 | Rate limit exceeded |
 | 502 | Upstream fetch/transform failed (default for non-passthrough upstream errors) |
+| 500 | Internal processing failure, or upstream fetch/probe failure without a mappable status code (rare) |
 
-For upstream fetch/probe failures, the endpoint uses `502` as the primary failure status. Upstream `404` and `410` are passed through unchanged.
+For upstream fetch/probe failures, the endpoint uses `502` as the primary failure status. Upstream `404` and `410` are passed through unchanged, and rare unmappable upstream/runtime failures return `500`.
 
 For the full error reference, see [Error Codes](/api-reference/error-codes).
 
@@ -128,7 +131,7 @@ flowchart TD
 | 6 | Check rate limits | `429` |
 | 7 | Validate Referer header against project domains | `403` |
 | 8 | Validate image source domain against project's domains | `403` |
-| 9 | Route by method (`GET` transform / `HEAD` fast path probe) | `502` (upstream fetch/probe failures; upstream `404`/`410` passthrough) |
+| 9 | Route by method (`GET` transform / `HEAD` fast path probe) | `502` (primary upstream fetch/probe/transform failure), `404`/`410` passthrough, rare `500` fallback |
 
 > Rate limiting is checked **after** signature verification so that invalid requests cannot exhaust quota.
 
