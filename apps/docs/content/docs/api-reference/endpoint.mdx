@@ -9,6 +9,7 @@ OptStuff exposes a single REST endpoint for image optimization. All transformati
 
 ```
 GET /api/v1/{projectSlug}/{operations}/{imageUrl}?key={publicKey}&sig={signature}&exp={expiresAt}
+HEAD /api/v1/{projectSlug}/{operations}/{imageUrl}?key={publicKey}&sig={signature}&exp={expiresAt}
 ```
 
 ## Path Parameters
@@ -35,7 +36,9 @@ GET /api/v1/my-blog/w_800,f_webp/images.example.com/photo.jpg?key=pk_abc123&sig=
 
 ## Response
 
-### Success (200)
+> `Vary` defaults to `Accept`; if referer-domain validation is configured for the project, it becomes `Accept, Referer`.
+
+### Success (200) — GET
 
 Returns the optimized image binary with long-lived caching headers:
 
@@ -43,14 +46,35 @@ Returns the optimized image binary with long-lived caching headers:
 HTTP/1.1 200 OK
 Content-Type: image/webp
 Cache-Control: public, s-maxage=31536000, max-age=31536000, immutable
+Vary: Accept
 X-Processing-Time: 42ms
+X-Head-Fast-Path: 0
+X-Original-Size-Sampled: 0
+Server-Timing: auth;dur=7, transform;dur=35, total;dur=42
 ```
 
 | Header | Description |
 |--------|-------------|
 | `Content-Type` | Output format (`image/webp`, `image/avif`, `image/png`, `image/jpeg`) |
 | `Cache-Control` | 1-year cache with `immutable` |
+| `Vary` | `Accept` and (when configured) `Referer` to preserve correct cache behavior |
 | `X-Processing-Time` | Server-side processing time in milliseconds |
+| `X-Head-Fast-Path` | `0` for normal image transform (`GET`), `1` for `HEAD` fast path |
+| `X-Original-Size-Sampled` | `1` when upstream original-size probing is sampled, otherwise `0` |
+| `Server-Timing` | Request stage timing (`auth`, `probe` when applicable, `transform`, `total`) for performance debugging |
+
+### Success (200) — HEAD
+
+`HEAD` runs the same auth / signature / rate-limit checks, then performs a lightweight upstream availability probe before returning headers only (no image body):
+
+```text
+HTTP/1.1 200 OK
+Cache-Control: public, s-maxage=31536000, max-age=31536000, immutable
+Vary: Accept
+X-Processing-Time: 8ms
+X-Head-Fast-Path: 1
+Server-Timing: auth;dur=5, probe;dur=3, transform;dur=0, total;dur=8
+```
 
 Image optimization URLs are **content-addressable**: the URL encodes all parameters and a signature, so the same URL always produces the same output. This makes the 1-year cache duration safe — changing any parameter produces a different URL.
 
@@ -61,9 +85,15 @@ Image optimization URLs are **content-addressable**: the URL encodes all paramet
 | 400 | Invalid URL format or image URL |
 | 401 | Missing/invalid/revoked/expired API key |
 | 403 | Invalid signature, forbidden referer, or blocked source domain |
-| 404 | Project not found |
+| 404 | Project not found, or upstream source returned `404` (passthrough) |
+| 410 | Upstream source returned `410` (passthrough) |
 | 429 | Rate limit exceeded |
-| 500 | Image processing failed |
+| 502 | Upstream fetch/transform failed (default for non-passthrough upstream errors) |
+| 500 | Internal processing failure, or upstream fetch/probe failure without a mappable status code (rare) |
+
+For upstream fetch/probe failures, the endpoint uses `502` as the primary failure status. Upstream `404` and `410` are passed through unchanged, and rare unmappable upstream/runtime failures return `500`.
+
+For `HEAD`, these error statuses are the same, but responses remain headers-only (no JSON body).
 
 For the full error reference, see [Error Codes](/api-reference/error-codes).
 
@@ -76,34 +106,46 @@ flowchart TD
   A["Parse key, sig, exp"] -->|Invalid| E1["401"]
   A -->|OK| B["Lookup API key\nCheck not revoked/expired"]
   B -->|Invalid| E2["401"]
-  B -->|OK| C["Find project by projectId\nMatch slug"]
-  C -->|"Not found / mismatch"| E3["404 / 401"]
-  C -->|OK| D["Parse operations\nand image URL"]
-  D -->|Invalid| E4["400"]
-  D -->|OK| F["Verify HMAC-SHA256\nsignature"]
-  F -->|Invalid| E5["403"]
+  B -->|OK| C["Parse operations and image path"]
+  C -->|Invalid| E3["400"]
+  C -->|OK| D["Verify HMAC-SHA256\nsignature"]
+  D -->|Invalid| E4["403"]
+  D -->|OK| F["Find project by projectId\nMatch slug"]
+  F -->|"Not found / mismatch"| E5["404 / 401"]
   F -->|OK| G["Check rate limits"]
   G -->|Exceeded| E6["429"]
   G -->|OK| H["Validate Referer\ndomain"]
   H -->|Blocked| E7["403"]
   H -->|OK| I["Validate source\ndomain"]
   I -->|Blocked| E8["403"]
-  I -->|OK| J["Process and return\noptimized image"]
+  I -->|OK| J{"HTTP method"}
+  J -->|GET| K["Process and return\noptimized image"]
+  J -->|HEAD| L["Fast path: probe upstream\nthen return headers only"]
 ```
 
 | Step | Check | Failure |
 |------|-------|---------|
 | 1 | Parse `key`, `sig`, `exp` from query string | `401` |
 | 2 | Look up API key; check not revoked/expired | `401` |
-| 3 | Find project by key's `projectId`; match slug | `404` / `401` |
-| 4 | Parse operations and image URL from path | `400` |
-| 5 | Verify HMAC-SHA256 signature (constant-time) | `403` |
+| 3 | Parse operations and image path from URL path | `400` |
+| 4 | Verify HMAC-SHA256 signature (constant-time) | `403` |
+| 5 | Find project by key's `projectId`; match slug | `404` / `401` |
 | 6 | Check rate limits | `429` |
 | 7 | Validate Referer header against project domains | `403` |
 | 8 | Validate image source domain against project's domains | `403` |
-| 9 | Process and return optimized image | `500` |
+| 9 | Route by method (`GET` transform / `HEAD` fast path probe) | `502` (primary upstream fetch/probe/transform failure), `404`/`410` passthrough, rare `500` fallback |
 
 > Rate limiting is checked **after** signature verification so that invalid requests cannot exhaust quota.
+
+## Serverless Runtime Notes
+
+This endpoint is optimized for serverless environments where cold starts matter:
+
+- Heavy modules (image engine and non-critical telemetry utilities) are **lazy-loaded** only when needed.
+- `HEAD` requests run the full auth/abuse checks, run a lightweight upstream probe, skip image transformation, and avoid loading transform dependencies.
+- Success-path usage tracking and request logging are scheduled with `after()` so the image response is returned first.
+
+These changes reduce initialization overhead for rejected requests and metadata-only probes while preserving the same API behavior.
 
 ## Related Documentation
 

@@ -3,6 +3,8 @@ import { generateOptStuffUrl, type ImageOperation } from "@/lib/optstuff";
 
 const VALID_FORMATS = new Set(["webp", "avif", "png", "jpg"] as const);
 const VALID_FITS = new Set(["cover", "contain", "fill"] as const);
+const SIGNED_URL_TTL_SECONDS = 3600;
+const REDIRECT_CACHE_SECONDS = 300;
 
 /**
  * GET — Signing endpoint for the `next/image` custom loader.
@@ -29,10 +31,14 @@ export function GET(request: NextRequest) {
         (sp.get("f") as "webp" | "avif" | "png" | "jpg" | null) ?? "webp",
       fit: (sp.get("fit") as "cover" | "contain" | "fill" | null) ?? "cover",
     },
-    3600,
+    SIGNED_URL_TTL_SECONDS,
   );
-
-  return NextResponse.redirect(signedUrl, 302);
+  const response = NextResponse.redirect(signedUrl, 302);
+  response.headers.set(
+    "Cache-Control",
+    `public, s-maxage=${REDIRECT_CACHE_SECONDS}, max-age=${REDIRECT_CACHE_SECONDS}, stale-while-revalidate=86400`,
+  );
+  return response;
 }
 
 function parseOptionalNumber(
@@ -104,7 +110,7 @@ export async function POST(request: NextRequest) {
       format: format as ImageOperation["format"],
       fit: fit as ImageOperation["fit"],
     },
-    3600,
+    SIGNED_URL_TTL_SECONDS,
   );
 
   return NextResponse.json({ url: optimizedUrl });

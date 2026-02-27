@@ -24,6 +24,12 @@ const RETENTION_DAYS = 30;
  * This distributes cleanup work across requests instead of needing a cron job
  */
 const CLEANUP_PROBABILITY = 0.01;
+/**
+ * Minimum interval between cleanup attempts in this process.
+ * Prevents burst traffic from repeatedly running heavy delete queries.
+ */
+const CLEANUP_MIN_INTERVAL_MS = 5 * 60 * 1000;
+let lastCleanupAttemptAt = 0;
 
 /**
  * Sanitize URL by removing query string and hash.
@@ -53,25 +59,23 @@ export function sanitizeUrl(url: string) {
  * This distributes the cleanup work across requests.
  */
 async function maybeCleanupOldLogs() {
+  const now = Date.now();
+  if (now - lastCleanupAttemptAt < CLEANUP_MIN_INTERVAL_MS) {
+    return;
+  }
+
   // Only run cleanup ~1% of the time
   if (Math.random() > CLEANUP_PROBABILITY) {
     return;
   }
 
+  lastCleanupAttemptAt = now;
+
   try {
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - RETENTION_DAYS);
 
-    const deleted = await db
-      .delete(requestLogs)
-      .where(lt(requestLogs.createdAt, cutoffDate))
-      .returning({ id: requestLogs.id });
-
-    if (deleted.length > 0) {
-      console.log(
-        `[RequestLog Cleanup] Deleted ${deleted.length} logs older than ${RETENTION_DAYS} days`,
-      );
-    }
+    await db.delete(requestLogs).where(lt(requestLogs.createdAt, cutoffDate));
   } catch (error) {
     // Silently ignore cleanup errors - don't affect the main request
     console.error("[RequestLog Cleanup] Failed:", error);

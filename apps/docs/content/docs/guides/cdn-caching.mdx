@@ -31,6 +31,8 @@ OptStuff URLs are **content-addressable**: the URL encodes all transformation pa
 
 Since URLs are content-addressable, traditional cache invalidation is unnecessary. To serve a different version of an image, generate a new URL with different parameters or a different `exp` timestamp — the new URL is a different cache entry.
 
+For better cache hit rates, avoid generating a brand-new `exp` every render (`now + ttl` per request). Use time buckets (for example, hourly) so repeated requests within the same window reuse the same URL.
+
 ## CDN Architecture
 
 ```mermaid
@@ -167,6 +169,7 @@ aws cloudfront create-invalidation \
 | Tip | Benefit |
 |-----|---------|
 | **Use a consistent URL format** | Maximizes cache hit ratio — avoid generating different URLs for the same image |
+| **Bucket `exp` timestamps** | Reuse the same signed URL within fixed windows (hour/day) to improve CDN/browser hit ratio |
 | **Set `exp` to long durations for static content** | 24 hours or more for images that don't change frequently |
 | **Pre-warm popular images** | Request commonly used images ahead of time to populate the CDN cache |
 | **Use `f_webp` or `f_avif`** | Modern formats are smaller, reducing bandwidth and improving cache efficiency |

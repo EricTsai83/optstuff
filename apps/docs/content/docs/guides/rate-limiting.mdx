@@ -86,6 +86,7 @@ Clients should respect the `Retry-After` header to avoid further 429 responses.
 
 - Rate limits are checked **after** signature verification so that unauthenticated requests cannot exhaust quota.
 - The per-day limit is checked **before** the per-minute limit to minimize token waste (see [Redis Schema](/internal/redis-schema) for details).
+- Both `GET` and `HEAD` requests consume quota because both run through the same authentication and abuse-protection pipeline.
 
 ## Related Documentation
 

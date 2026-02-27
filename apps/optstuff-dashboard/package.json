@@ -13,8 +13,8 @@
     "dev": "next dev --port $(turbo get-mfe-port)",
     "format:check": "prettier --check .",
     "format:write": "prettier --write .",
-    "lint": "next lint",
-    "lint:fix": "next lint --fix",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
     "preview": "next build && next start",
     "start": "next start",
     "typecheck": "tsc --noEmit"

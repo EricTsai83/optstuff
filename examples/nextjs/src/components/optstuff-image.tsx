@@ -1,15 +1,19 @@
 "use client";
 
 import Image, { type ImageProps, type ImageLoaderProps } from "next/image";
-import { useState, useCallback } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
-type OptStuffImageProps = Omit<ImageProps, "src" | "loader"> & {
+type ImageFormat = "webp" | "avif" | "png" | "jpg";
+type ImageFit = "cover" | "contain" | "fill";
+type LoadPhase = "blur" | "loading" | "sharp";
+
+type OptStuffImageProps = Omit<ImageProps, "src" | "loader" | "priority"> & {
   /** Full URL of the original image (e.g. "https://images.unsplash.com/photo-xxx") */
   src: string;
   /** Output format (default: "webp") */
-  format?: "webp" | "avif" | "png" | "jpg";
+  format?: ImageFormat;
   /** Crop / fit mode (default: "cover") */
-  fit?: "cover" | "contain" | "fill";
+  fit?: ImageFit;
   /**
    * Enable blur-to-clear placeholder via OptStuff.
    * When true, a tiny low-quality variant is loaded first and displayed
@@ -18,6 +22,22 @@ type OptStuffImageProps = Omit<ImageProps, "src" | "loader"> & {
   blurPlaceholder?: boolean;
   /** Transition duration for blur-to-clear in ms (default: 600) */
   blurTransitionDuration?: number;
+  /** Width of the tiny blur placeholder (default: 32) */
+  blurWidth?: number;
+  /** Quality of the blur placeholder (default: 20) */
+  blurQuality?: number;
+  /** Delay before loading the full image in ms (default: 0) */
+  loadDelay?: number;
+  /** Minimum time to keep blur placeholder visible in ms (default: 0) */
+  minBlurVisibleMs?: number;
+  /** Allow replaying the blur-to-clear transition */
+  replayable?: boolean;
+  /** Pre-fetched base64 data URL for the blur placeholder */
+  blurDataUrl?: string;
+  /** Text shown when the full image fails to load */
+  fallbackText?: string;
+  /** Show retry button when full image fails to load */
+  showRetryOnError?: boolean;
 };
 
 function makeLoader(format: string, fit: string) {
@@ -33,15 +53,57 @@ function makeLoader(format: string, fit: string) {
   };
 }
 
-function buildPlaceholderUrl(src: string, format: string, fit: string) {
+function buildPlaceholderUrl(
+  src: string,
+  format: ImageFormat,
+  fit: ImageFit,
+  blurWidth: number,
+  blurQuality: number,
+) {
   const params = new URLSearchParams({
     url: src,
-    w: "32",
-    q: "20",
+    w: String(blurWidth),
+    q: String(blurQuality),
     f: format,
     fit,
   });
   return `/api/optstuff?${params}`;
+}
+
+type LoadTokenOptions = {
+  src: string;
+  blurPlaceholder: boolean;
+  format: ImageFormat;
+  fit: ImageFit;
+  quality: NonNullable<ImageProps["quality"]>;
+  width?: ImageProps["width"];
+  height?: ImageProps["height"];
+  sizes?: ImageProps["sizes"];
+  fill?: ImageProps["fill"];
+};
+
+function buildLoadToken({
+  src,
+  blurPlaceholder,
+  format,
+  fit,
+  quality,
+  width,
+  height,
+  sizes,
+  fill,
+}: LoadTokenOptions) {
+  return [
+    src,
+    blurPlaceholder ? "blur" : "plain",
+    format,
+    fit,
+    String(quality),
+    `w:${String(width ?? "")}`,
+    `h:${String(height ?? "")}`,
+    `sizes:${sizes ?? ""}`,
+    `fill:${fill ? "1" : "0"}`,
+  ].join("|");
 }
 
 /**
@@ -50,7 +112,7 @@ function buildPlaceholderUrl(src: string, format: string, fit: string) {
  * Uses a custom `loader` backed by `/api/optstuff` — an API route that
  * signs the URL server-side, then 302-redirects to the optimised image.
  *
- * This preserves **all** `next/image` benefits (responsive `srcSet`, priority
+ * This preserves **all** `next/image` benefits (responsive `srcSet`, preload
  * preloading, lazy loading, `sizes`, placeholder support, etc.) while keeping
  * the signing secret on the server.
  *
@@ -65,28 +127,181 @@ export function OptStuffImage({
   quality = 80,
   blurPlaceholder = false,
   blurTransitionDuration = 600,
+  blurWidth = 32,
+  blurQuality = 20,
+  loadDelay = 0,
+  minBlurVisibleMs = 0,
+  replayable = false,
+  blurDataUrl,
+  fallbackText = "Image failed to load",
+  showRetryOnError = true,
   className = "",
   style,
+  preload = false,
   onLoad,
+  onError,
+  width,
+  height,
+  sizes,
+  fill,
   ...rest
 }: OptStuffImageProps) {
-  const [loaded, setLoaded] = useState(!blurPlaceholder);
-  const [prevSrc, setPrevSrc] = useState(src);
-  const [prevBlur, setPrevBlur] = useState(blurPlaceholder);
-  if (src !== prevSrc || blurPlaceholder !== prevBlur) {
-    setPrevSrc(src);
-    setPrevBlur(blurPlaceholder);
-    setLoaded(false);
-  }
+  const effectiveLoadDelay = preload ? 0 : loadDelay;
+  const baseLoadToken = buildLoadToken({
+    src,
+    blurPlaceholder,
+    format,
+    fit,
+    quality,
+    width,
+    height,
+    sizes,
+    fill,
+  });
+  const [replayKey, setReplayKey] = useState(0);
+  const currentLoadToken = `${baseLoadToken}|${replayKey}`;
+  const [phase, setPhase] = useState<LoadPhase>(() => {
+    if (!blurPlaceholder) return "sharp";
+    return effectiveLoadDelay === 0 ? "loading" : "blur";
+  });
+  const [loadedToken, setLoadedToken] = useState<string>(() => {
+    return blurPlaceholder ? "" : currentLoadToken;
+  });
+  const [failedToken, setFailedToken] = useState<string | null>(null);
+  const fullImgRef = useRef<HTMLImageElement>(null);
+  const activeLoadTokenRef = useRef(currentLoadToken);
+  const blurVisibleSinceRef = useRef<number>(0);
+  const revealTimerRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    activeLoadTokenRef.current = currentLoadToken;
+  }, [currentLoadToken]);
+
+  const clearRevealTimer = useCallback(() => {
+    if (revealTimerRef.current === null) return;
+    window.clearTimeout(revealTimerRef.current);
+    revealTimerRef.current = null;
+  }, []);
+
+  const revealSharp = useCallback((token: string) => {
+    if (activeLoadTokenRef.current !== token) return;
+    setLoadedToken(token);
+    setFailedToken(null);
+    setPhase("sharp");
+  }, []);
+
+  const revealWithMinimumDelay = useCallback(
+    (token: string) => {
+      if (!blurPlaceholder) {
+        revealSharp(token);
+        return;
+      }
+
+      const minimum = Math.max(0, minBlurVisibleMs);
+      if (minimum === 0) {
+        revealSharp(token);
+        return;
+      }
+
+      const elapsed = Date.now() - blurVisibleSinceRef.current;
+      const remaining = minimum - elapsed;
+      if (remaining <= 0) {
+        revealSharp(token);
+        return;
+      }
+
+      clearRevealTimer();
+      revealTimerRef.current = window.setTimeout(() => {
+        revealTimerRef.current = null;
+        revealSharp(token);
+      }, remaining);
+    },
+    [blurPlaceholder, clearRevealTimer, minBlurVisibleMs, revealSharp],
+  );
+
+  useEffect(() => {
+    return () => {
+      clearRevealTimer();
+    };
+  }, [clearRevealTimer]);
+
+  useEffect(() => {
+    if (!blurPlaceholder) {
+      clearRevealTimer();
+      const raf = requestAnimationFrame(() => {
+        blurVisibleSinceRef.current = Date.now();
+        setPhase("sharp");
+        setLoadedToken(currentLoadToken);
+        setFailedToken(null);
+      });
+      return () => cancelAnimationFrame(raf);
+    }
+
+    clearRevealTimer();
+    const resetRaf = requestAnimationFrame(() => {
+      blurVisibleSinceRef.current = Date.now();
+      setLoadedToken("");
+      setFailedToken(null);
+      setPhase(effectiveLoadDelay === 0 ? "loading" : "blur");
+    });
+    if (effectiveLoadDelay === 0) {
+      return () => {
+        clearRevealTimer();
+        cancelAnimationFrame(resetRaf);
+      };
+    }
+
+    const timer = window.setTimeout(() => {
+      setPhase("loading");
+    }, effectiveLoadDelay);
+    return () => {
+      clearRevealTimer();
+      cancelAnimationFrame(resetRaf);
+      window.clearTimeout(timer);
+    };
+  }, [blurPlaceholder, clearRevealTimer, currentLoadToken, effectiveLoadDelay]);
+
+  useEffect(() => {
+    if (!blurPlaceholder || phase === "blur") return;
+    const img = fullImgRef.current;
+    if (!img || !img.complete || img.naturalWidth <= 0) return;
+
+    const raf = requestAnimationFrame(() => {
+      revealWithMinimumDelay(currentLoadToken);
+    });
+
+    return () => cancelAnimationFrame(raf);
+  }, [blurPlaceholder, currentLoadToken, phase, revealWithMinimumDelay]);
+
+  const hasLoadError = failedToken === currentLoadToken;
+  const loaded =
+    !blurPlaceholder || (loadedToken === currentLoadToken && !hasLoadError);
+
   const loader = makeLoader(format, fit);
 
   const handleLoad = useCallback<React.ReactEventHandler<HTMLImageElement>>(
     (e) => {
-      setLoaded(true);
+      setFailedToken(null);
+      revealWithMinimumDelay(currentLoadToken);
       onLoad?.(e);
     },
-    [onLoad],
+    [currentLoadToken, onLoad, revealWithMinimumDelay],
   );
+
+  const handleError = useCallback<React.ReactEventHandler<HTMLImageElement>>(
+    (e) => {
+      clearRevealTimer();
+      setFailedToken(currentLoadToken);
+      setPhase("sharp");
+      onError?.(e);
+    },
+    [clearRevealTimer, currentLoadToken, onError],
+  );
+
+  const replay = useCallback(() => {
+    if (!blurPlaceholder) return;
+    setReplayKey((k) => k + 1);
+  }, [blurPlaceholder]);
 
   if (!blurPlaceholder) {
     return (
@@ -95,47 +310,109 @@ export function OptStuffImage({
         src={src}
         alt={alt}
         quality={quality}
+        width={width}
+        height={height}
+        sizes={sizes}
+        fill={fill}
         loader={loader}
         className={className}
         style={style}
+        preload={preload}
         onLoad={onLoad}
+        onError={onError}
       />
     );
   }
 
-  const placeholderUrl = buildPlaceholderUrl(src, format, fit);
+  const placeholderUrl =
+    blurDataUrl ??
+    buildPlaceholderUrl(src, format, fit, blurWidth, blurQuality);
+  const objectFit = (style as React.CSSProperties | undefined)?.objectFit ?? fit;
 
   return (
-    <div className="relative overflow-hidden" style={{ width: "100%", height: "100%" }}>
+    <div
+      className={`relative overflow-hidden ${replayable ? "group" : ""}`}
+      style={{ width: "100%", height: "100%" }}
+    >
       {/* Tiny blur placeholder */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={placeholderUrl}
         alt=""
         aria-hidden
+        loading={preload ? "eager" : "lazy"}
+        fetchPriority={preload ? "high" : "low"}
+        decoding="async"
         className="absolute inset-0 h-full w-full"
         style={{
-          objectFit: (style as React.CSSProperties)?.objectFit ?? "cover",
+          objectFit,
           filter: "blur(20px)",
           transform: "scale(1.1)",
           opacity: loaded ? 0 : 1,
           transition: `opacity ${blurTransitionDuration}ms ease-out`,
         }}
       />
-      <Image
-        {...rest}
-        src={src}
-        alt={alt}
-        quality={quality}
-        loader={loader}
-        onLoad={handleLoad}
-        className={className}
-        style={{
-          ...style,
-          opacity: loaded ? 1 : 0,
-          transition: `opacity ${blurTransitionDuration}ms ease-out`,
-        }}
-      />
+
+      {phase !== "blur" && (
+        <Image
+          {...rest}
+          key={`full-${currentLoadToken}`}
+          ref={fullImgRef}
+          src={src}
+          alt={alt}
+          quality={quality}
+          width={width}
+          height={height}
+          sizes={sizes}
+          fill={fill}
+          loader={loader}
+          preload={preload}
+          onLoad={handleLoad}
+          onError={handleError}
+          className={className}
+          style={{
+            ...style,
+            objectFit,
+            opacity: loaded ? 1 : 0,
+            transition: `opacity ${blurTransitionDuration}ms ease-out`,
+          }}
+        />
+      )}
+
+      {hasLoadError && (
+        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 bg-black/45">
+          <span
+            role="alert"
+            aria-live="assertive"
+            aria-atomic="true"
+            className="rounded-md bg-black/55 px-3 py-1.5 text-xs font-medium text-white"
+          >
+            {fallbackText}
+          </span>
+          {showRetryOnError && (
+            <button
+              type="button"
+              onClick={replay}
+              className="rounded-md bg-white/90 px-3 py-1.5 text-xs font-semibold text-zinc-900 transition-colors hover:bg-white"
+            >
+              Retry
+            </button>
+          )}
+        </div>
+      )}
+
+      {replayable && phase === "sharp" && !hasLoadError && (
+        <button
+          type="button"
+          onClick={replay}
+          className="absolute bottom-3 right-3 z-10 flex items-center gap-1.5 rounded-full bg-black/60 px-3 py-1.5 text-xs font-medium text-white/90 opacity-0 backdrop-blur-sm transition-opacity duration-200 group-hover:opacity-100"
+        >
+          <svg viewBox="0 0 16 16" fill="currentColor" className="size-3.5">
+            <path d="M5.23 1.644A8.004 8.004 0 0 1 14 8c0 4.418-3.582 8-8 8s-8-3.582-8-8 3.582-8 8-8V0L9 3 6 6V3.5a4.5 4.5 0 1 0 4.798 2.15l1.376-.826A6 6 0 1 1 5.23 1.644z" />
+          </svg>
+          Replay
+        </button>
+      )}
     </div>
   );
 }

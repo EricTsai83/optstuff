@@ -42,6 +42,7 @@ const SECRET_KEY = requireEnv("OPTSTUFF_SECRET_KEY");
 const PUBLIC_KEY = requireEnv("OPTSTUFF_PUBLIC_KEY");
 const ENDPOINT = requireEnv("NEXT_PUBLIC_OPTSTUFF_ENDPOINT");
 const PROJECT_SLUG = requireEnv("NEXT_PUBLIC_OPTSTUFF_PROJECT_SLUG");
+const EXPIRY_BUCKET_SECONDS = 3600;
 
 /**
  * Generates a signed image optimization URL.
@@ -63,11 +64,19 @@ export function signImageUrl(
 ): string {
   const path = `${operations}/${imagePath}`;
 
-  const exp = expiresIn
-    ? Math.floor(Date.now() / 1000) + expiresIn
+  const exp = expiresIn != null
+    ? (() => {
+        const nowSeconds = Math.floor(Date.now() / 1000);
+        const ttlSeconds = Math.max(1, Math.floor(expiresIn));
+        const bucketSeconds = Math.min(EXPIRY_BUCKET_SECONDS, ttlSeconds);
+        const rawExpiration = nowSeconds + ttlSeconds;
+        return bucketSeconds > 0 && bucketSeconds < ttlSeconds
+          ? Math.ceil(rawExpiration / bucketSeconds) * bucketSeconds
+          : rawExpiration;
+      })()
     : undefined;
 
-  const payload = exp ? `${path}?exp=${exp}` : path;
+  const payload = exp != null ? `${path}?exp=${exp}` : path;
   const sig = crypto
     .createHmac("sha256", SECRET_KEY)
     .update(payload)
@@ -75,11 +84,13 @@ export function signImageUrl(
     .substring(0, 32);
 
   let url = `${ENDPOINT}/${PROJECT_SLUG}/${path}?key=${PUBLIC_KEY}&sig=${sig}`;
-  if (exp) url += `&exp=${exp}`;
+  if (exp != null) url += `&exp=${exp}`;
 
   return url;
 }
 ```
+
+Using a bucketed expiration keeps signatures stable within each bucket window, which improves CDN cache hit rates on Vercel and helps preserve approximate URL expiry, but may extend effective validity by up to one bucket due to rounding.
 
 ## Usage in Next.js
 
