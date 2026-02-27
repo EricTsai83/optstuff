@@ -1,3 +1,4 @@
+import { DeferredMount } from "@/components/deferred-mount";
 import { OptStuffImage } from "@/components/optstuff-image";
 import { ScrollHeader } from "@/components/scroll-header";
 import dynamic from "next/dynamic";
@@ -534,7 +535,16 @@ export function HomePageContent({ heroBlurDataUrl }: HomePageContentProps) {
                 in real-time.
               </p>
             </div>
-            <OptimizerPlayground />
+            <DeferredMount
+              rootMargin="400px 0px"
+              placeholder={
+                <div className="border-border bg-card text-muted flex min-h-64 items-center justify-center rounded-2xl border px-6 text-sm">
+                  Scroll to load playground...
+                </div>
+              }
+            >
+              <OptimizerPlayground />
+            </DeferredMount>
           </div>
         </section>
       </main>

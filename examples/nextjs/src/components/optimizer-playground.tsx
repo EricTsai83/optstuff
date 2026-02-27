@@ -231,6 +231,9 @@ export function OptimizerPlayground() {
                   key={previewUrl}
                   src={previewUrl}
                   alt="Preview"
+                  loading="lazy"
+                  decoding="async"
+                  fetchPriority="low"
                   className="h-full w-full object-contain"
                 />
               ) : (

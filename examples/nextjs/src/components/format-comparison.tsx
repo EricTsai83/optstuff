@@ -1,5 +1,3 @@
-"use client";
-
 import { buildOptStuffProxyPath } from "@/lib/next-image-optstuff-loader";
 
 const DEMO_SRC =
@@ -70,6 +68,11 @@ export function FormatComparison() {
               <img
                 src={previewUrl}
                 alt={`${fmt.label} format preview`}
+                width={600}
+                height={450}
+                loading="lazy"
+                decoding="async"
+                fetchPriority="low"
                 className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
               />
               <div className="absolute left-3 top-3">

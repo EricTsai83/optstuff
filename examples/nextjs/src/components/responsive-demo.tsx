@@ -153,6 +153,9 @@ export function ResponsiveDemo() {
               key={VARIANTS[selected]!.width}
               src={buildUrl(DEMO_SRC, VARIANTS[selected]!.width)}
               alt={`${VARIANTS[selected]!.device} variant`}
+              loading="lazy"
+              decoding="async"
+              fetchPriority="low"
               className="aspect-4/3 w-full object-cover"
             />
           </div>
