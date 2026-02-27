@@ -164,7 +164,12 @@ export function BlurImage({
 
       {hasLoadError && (
         <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 bg-black/45">
-          <span className="rounded-md bg-black/55 px-3 py-1.5 text-xs font-medium text-white">
+          <span
+            role="alert"
+            aria-live="assertive"
+            aria-atomic="true"
+            className="rounded-md bg-black/55 px-3 py-1.5 text-xs font-medium text-white"
+          >
             {fallbackText}
           </span>
           {showRetryOnError && (
