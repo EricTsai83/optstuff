@@ -83,9 +83,12 @@ Image optimization URLs are **content-addressable**: the URL encodes all paramet
 | 400 | Invalid URL format or image URL |
 | 401 | Missing/invalid/revoked/expired API key |
 | 403 | Invalid signature, forbidden referer, or blocked source domain |
-| 404 | Project not found |
+| 404 | Project not found, or upstream source returned `404` (passthrough) |
+| 410 | Upstream source returned `410` (passthrough) |
 | 429 | Rate limit exceeded |
-| 500 | Image processing failed |
+| 502 | Upstream fetch/transform failed (default for non-passthrough upstream errors) |
+
+For `GET` transform/fetch failures, the endpoint uses `502` as the primary failure status. Upstream `404` and `410` are passed through unchanged.
 
 For the full error reference, see [Error Codes](/api-reference/error-codes).
 
@@ -125,7 +128,7 @@ flowchart TD
 | 6 | Check rate limits | `429` |
 | 7 | Validate Referer header against project domains | `403` |
 | 8 | Validate image source domain against project's domains | `403` |
-| 9 | Route by method (`GET` transform / `HEAD` fast path) | `500` (GET transform only) |
+| 9 | Route by method (`GET` transform / `HEAD` fast path) | `502` (GET transform/fetch failures; upstream `404`/`410` passthrough) |
 
 > Rate limiting is checked **after** signature verification so that invalid requests cannot exhaust quota.
 
