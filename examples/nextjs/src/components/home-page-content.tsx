@@ -56,12 +56,6 @@ const SHOWCASE_IMAGES = [
     format: "webp" as const,
     quality: 90,
   },
-  {
-    label: "Architecture",
-    src: "https://images.unsplash.com/photo-1486325212027-8081e485255e",
-    format: "avif" as const,
-    quality: 80,
-  },
 ];
 
 type HomePageContentProps = {
@@ -281,7 +275,7 @@ export function HomePageContent({ heroBlurDataUrl }: HomePageContentProps) {
             </div>
 
             <div className="grid gap-6 sm:grid-cols-3">
-              {SHOWCASE_IMAGES.slice(0, 3).map((img) => (
+              {SHOWCASE_IMAGES.map((img) => (
                 <div
                   key={img.label}
                   className="border-border bg-card overflow-hidden rounded-xl border shadow-sm"
