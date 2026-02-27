@@ -94,23 +94,22 @@ export function OptimizerPlayground() {
     }
   }
 
-  const chipActive =
-    "bg-emerald-500 text-white shadow-sm";
-  const chipInactive =
-    "text-muted hover:text-foreground";
+  const chipActive = "bg-emerald-500 text-white shadow-sm";
+  const chipInactive = "text-muted hover:text-foreground";
 
   return (
     <div className="space-y-6">
-      {/* ─── Top: Controls + Preview side by side ─── */}
       <div className="grid gap-6 lg:grid-cols-2">
-        {/* Controls */}
-        <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
-          <h3 className="mb-5 text-base font-semibold text-foreground">Configuration</h3>
+        <div className="rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-6">
+          <h3 className="mb-5 text-base font-semibold text-foreground">
+            Configuration
+          </h3>
 
-          {/* Image source */}
           <div className="mb-5">
-            <label className="mb-1.5 block text-sm font-medium text-muted">Image Source</label>
-            <div className="mb-2 flex gap-2">
+            <label className="mb-1.5 block text-sm font-medium text-muted">
+              Image Source
+            </label>
+            <div className="mb-2 flex flex-wrap gap-2">
               {DEMO_IMAGES.map((img) => (
                 <button
                   key={img.label}
@@ -134,10 +133,11 @@ export function OptimizerPlayground() {
             />
           </div>
 
-          {/* Width + Quality */}
-          <div className="mb-5 grid grid-cols-2 gap-3">
+          <div className="mb-5 grid gap-3 sm:grid-cols-2">
             <div>
-              <label className="mb-1.5 block text-sm font-medium text-muted">Width (px)</label>
+              <label className="mb-1.5 block text-sm font-medium text-muted">
+                Width (px)
+              </label>
               <input
                 type="number"
                 value={width}
@@ -148,7 +148,9 @@ export function OptimizerPlayground() {
               />
             </div>
             <div>
-              <label className="mb-1.5 block text-sm font-medium text-muted">Quality</label>
+              <label className="mb-1.5 block text-sm font-medium text-muted">
+                Quality
+              </label>
               <input
                 type="number"
                 value={quality}
@@ -160,10 +162,11 @@ export function OptimizerPlayground() {
             </div>
           </div>
 
-          {/* Format + Fit inline */}
-          <div className="mb-5 grid grid-cols-2 gap-3">
+          <div className="mb-5 grid gap-3 sm:grid-cols-2">
             <div>
-              <label className="mb-1.5 block text-sm font-medium text-muted">Format</label>
+              <label className="mb-1.5 block text-sm font-medium text-muted">
+                Format
+              </label>
               <div className="grid grid-cols-4 gap-1 rounded-lg bg-card-hover p-1">
                 {FORMATS.map((f) => (
                   <button
@@ -179,7 +182,9 @@ export function OptimizerPlayground() {
               </div>
             </div>
             <div>
-              <label className="mb-1.5 block text-sm font-medium text-muted">Fit</label>
+              <label className="mb-1.5 block text-sm font-medium text-muted">
+                Fit
+              </label>
               <div className="grid grid-cols-3 gap-1 rounded-lg bg-card-hover p-1">
                 {FIT_MODES.map((m) => (
                   <button
@@ -196,7 +201,6 @@ export function OptimizerPlayground() {
             </div>
           </div>
 
-          {/* Generate */}
           <button
             onClick={handleGenerate}
             disabled={loading || !hasInput}
@@ -206,11 +210,10 @@ export function OptimizerPlayground() {
           </button>
         </div>
 
-        {/* Image Preview */}
         <div className="rounded-2xl border border-border bg-card shadow-sm">
-          <div className="flex items-center justify-between border-b border-border px-5 py-3">
+          <div className="flex flex-col items-start justify-between gap-2 border-b border-border px-4 py-3 sm:flex-row sm:items-center sm:px-5">
             <h3 className="text-sm font-semibold text-foreground">Preview</h3>
-            <div className="flex items-center gap-3 text-xs text-muted">
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted">
               <span>{width}px</span>
               <span className="text-border">|</span>
               <span>q{quality}</span>
@@ -220,7 +223,7 @@ export function OptimizerPlayground() {
               <span>{fit}</span>
             </div>
           </div>
-          <div className="p-4">
+          <div className="p-3 sm:p-4">
             <div className="relative aspect-4/3 overflow-hidden rounded-lg bg-card-hover">
               {previewUrl ? (
                 /* eslint-disable-next-line @next/next/no-img-element */
@@ -240,8 +243,7 @@ export function OptimizerPlayground() {
         </div>
       </div>
 
-      {/* ─── Bottom: Signed URL output ─── */}
-      <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+      <div className="rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-6">
         <h3 className="mb-3 text-sm font-semibold text-foreground">Signed URL</h3>
         {error ? (
           <div className="rounded-lg border border-red-200 bg-red-50 p-3 dark:border-red-900/50 dark:bg-red-950/30">
@@ -249,7 +251,7 @@ export function OptimizerPlayground() {
           </div>
         ) : generatedUrl ? (
           <div>
-            <div className="code-block relative overflow-x-auto rounded-lg p-4">
+            <div className="code-block relative overflow-x-auto rounded-lg p-3 sm:p-4">
               <code className="block break-all font-mono text-xs leading-relaxed text-emerald-400">
                 {generatedUrl}
               </code>
@@ -273,12 +275,11 @@ export function OptimizerPlayground() {
         )}
       </div>
 
-      {/* ─── Code Example ─── */}
       <div className="rounded-2xl border border-border bg-card shadow-sm">
-        <div className="border-b border-border px-6 py-3">
+        <div className="border-b border-border px-4 py-3 sm:px-6">
           <h3 className="text-sm font-semibold text-foreground">Code Example</h3>
         </div>
-        <div className="code-block rounded-none border-0 p-5">
+        <div className="code-block rounded-none border-0 p-4 sm:p-5">
           <pre className="overflow-x-auto font-mono text-xs leading-relaxed text-code-text">
             <code>{`import { OptStuffImage } from "@/components/optstuff-image";
 

@@ -10,29 +10,37 @@ const FORMATS = [
     id: "webp" as const,
     label: "WebP",
     badge: "Best balance",
-    badgeColor: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300",
-    description: "Excellent compression with broad browser support. Ideal for most web use cases.",
+    badgeColor:
+      "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300",
+    description:
+      "Excellent compression with broad browser support. Ideal for most web use cases.",
   },
   {
     id: "avif" as const,
     label: "AVIF",
     badge: "Smallest size",
-    badgeColor: "bg-cyan-100 text-cyan-700 dark:bg-cyan-900/40 dark:text-cyan-300",
-    description: "Next-gen codec with best-in-class compression. Great for bandwidth-constrained users.",
+    badgeColor:
+      "bg-cyan-100 text-cyan-700 dark:bg-cyan-900/40 dark:text-cyan-300",
+    description:
+      "Next-gen codec with best-in-class compression. Great for bandwidth-constrained users.",
   },
   {
     id: "jpg" as const,
     label: "JPEG",
     badge: "Universal",
-    badgeColor: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300",
-    description: "Maximum compatibility across all browsers and devices. The safe default.",
+    badgeColor:
+      "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300",
+    description:
+      "Maximum compatibility across all browsers and devices. The safe default.",
   },
   {
     id: "png" as const,
     label: "PNG",
     badge: "Lossless",
-    badgeColor: "bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300",
-    description: "Lossless compression preserving every pixel. Best for graphics and transparency.",
+    badgeColor:
+      "bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300",
+    description:
+      "Lossless compression preserving every pixel. Best for graphics and transparency.",
   },
 ];
 
@@ -60,7 +68,9 @@ export function FormatComparison() {
           <div
             key={fmt.id}
             className={`feature-card cursor-pointer overflow-hidden rounded-xl border bg-card shadow-sm transition-all ${
-              isActive ? "border-emerald-500/50 ring-2 ring-emerald-500/20" : "border-border"
+              isActive
+                ? "border-emerald-500/50 ring-2 ring-emerald-500/20"
+                : "border-border"
             }`}
             onMouseEnter={() => setActiveFormat(fmt.id)}
             onMouseLeave={() => setActiveFormat(null)}
@@ -84,7 +94,9 @@ export function FormatComparison() {
                 <span className="text-foreground text-sm font-semibold">
                   {fmt.label}
                 </span>
-                <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${fmt.badgeColor}`}>
+                <span
+                  className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${fmt.badgeColor}`}
+                >
                   {fmt.badge}
                 </span>
               </div>

@@ -1,42 +1,69 @@
 "use client";
 
-import Image, { type ImageProps, type ImageLoaderProps } from "next/image";
+import Image, { type ImageLoaderProps, type ImageProps } from "next/image";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 type ImageFormat = "webp" | "avif" | "png" | "jpg";
 type ImageFit = "cover" | "contain" | "fill";
 type LoadPhase = "blur" | "loading" | "sharp";
+type TransitionPreset = "instant" | "smooth" | "cinematic";
+
+type TransitionConfig = {
+  blurFadeDurationMs?: number;
+  sharpFadeDurationMs?: number;
+  minBlurVisibleMs?: number;
+  sharpStartOpacity?: number;
+  easing?: string;
+};
+
+const TRANSITION_PRESETS: Record<
+  TransitionPreset,
+  {
+    blurFadeDurationMs: number;
+    sharpFadeDurationMs: number;
+    minBlurVisibleMs: number;
+    sharpStartOpacity: number;
+    easing: string;
+  }
+> = {
+  instant: {
+    blurFadeDurationMs: 0,
+    sharpFadeDurationMs: 0,
+    minBlurVisibleMs: 0,
+    sharpStartOpacity: 1,
+    easing: "linear",
+  },
+  smooth: {
+    blurFadeDurationMs: 280,
+    sharpFadeDurationMs: 220,
+    minBlurVisibleMs: 100,
+    sharpStartOpacity: 0.18,
+    easing: "cubic-bezier(0.22, 1, 0.36, 1)",
+  },
+  cinematic: {
+    blurFadeDurationMs: 420,
+    sharpFadeDurationMs: 340,
+    minBlurVisibleMs: 140,
+    sharpStartOpacity: 0.12,
+    easing: "cubic-bezier(0.22, 1, 0.36, 1)",
+  },
+};
 
 type OptStuffImageProps = Omit<ImageProps, "src" | "loader" | "priority"> & {
-  /** Full URL of the original image (e.g. "https://images.unsplash.com/photo-xxx") */
   src: string;
-  /** Output format (default: "webp") */
   format?: ImageFormat;
-  /** Crop / fit mode (default: "cover") */
   fit?: ImageFit;
-  /**
-   * Enable blur-to-clear placeholder via OptStuff.
-   * When true, a tiny low-quality variant is loaded first and displayed
-   * with CSS blur, then crossfades to the full image on load.
-   */
   blurPlaceholder?: boolean;
-  /** Transition duration for blur-to-clear in ms (default: 600) */
+  transitionPreset?: TransitionPreset;
+  transitionConfig?: TransitionConfig;
   blurTransitionDuration?: number;
-  /** Width of the tiny blur placeholder (default: 32) */
+  sharpFadeDuration?: number;
   blurWidth?: number;
-  /** Quality of the blur placeholder (default: 20) */
   blurQuality?: number;
-  /** Delay before loading the full image in ms (default: 0) */
   loadDelay?: number;
-  /** Minimum time to keep blur placeholder visible in ms (default: 0) */
   minBlurVisibleMs?: number;
-  /** Allow replaying the blur-to-clear transition */
-  replayable?: boolean;
-  /** Pre-fetched base64 data URL for the blur placeholder */
   blurDataUrl?: string;
-  /** Text shown when the full image fails to load */
   fallbackText?: string;
-  /** Show retry button when full image fails to load */
   showRetryOnError?: boolean;
 };
 
@@ -106,19 +133,6 @@ function buildLoadToken({
   ].join("|");
 }
 
-/**
- * Drop-in `next/image` wrapper that serves images through OptStuff.
- *
- * Uses a custom `loader` backed by `/api/optstuff` — an API route that
- * signs the URL server-side, then 302-redirects to the optimised image.
- *
- * This preserves **all** `next/image` benefits (responsive `srcSet`, preload
- * preloading, lazy loading, `sizes`, placeholder support, etc.) while keeping
- * the signing secret on the server.
- *
- * When `blurPlaceholder` is enabled, a tiny version of the image is loaded via
- * OptStuff and displayed with CSS blur while the full image loads.
- */
 export function OptStuffImage({
   src,
   alt,
@@ -126,12 +140,14 @@ export function OptStuffImage({
   fit = "cover",
   quality = 80,
   blurPlaceholder = false,
-  blurTransitionDuration = 600,
+  transitionPreset = "smooth",
+  transitionConfig,
+  blurTransitionDuration,
+  sharpFadeDuration,
   blurWidth = 32,
   blurQuality = 20,
   loadDelay = 0,
-  minBlurVisibleMs = 0,
-  replayable = false,
+  minBlurVisibleMs,
   blurDataUrl,
   fallbackText = "Image failed to load",
   showRetryOnError = true,
@@ -147,6 +163,33 @@ export function OptStuffImage({
   ...rest
 }: OptStuffImageProps) {
   const effectiveLoadDelay = preload ? 0 : loadDelay;
+  const presetTransition = TRANSITION_PRESETS[transitionPreset];
+  const effectiveBlurTransitionDuration = Math.max(
+    0,
+    transitionConfig?.blurFadeDurationMs ??
+      blurTransitionDuration ??
+      presetTransition.blurFadeDurationMs,
+  );
+  const effectiveSharpFadeDuration = Math.max(
+    0,
+    transitionConfig?.sharpFadeDurationMs ??
+      sharpFadeDuration ??
+      presetTransition.sharpFadeDurationMs,
+  );
+  const effectiveMinBlurVisibleMs = Math.max(
+    0,
+    transitionConfig?.minBlurVisibleMs ??
+      minBlurVisibleMs ??
+      presetTransition.minBlurVisibleMs,
+  );
+  const effectiveSharpStartOpacity = Math.min(
+    1,
+    Math.max(
+      0,
+      transitionConfig?.sharpStartOpacity ?? presetTransition.sharpStartOpacity,
+    ),
+  );
+  const effectiveEasing = transitionConfig?.easing ?? presetTransition.easing;
   const baseLoadToken = buildLoadToken({
     src,
     blurPlaceholder,
@@ -158,8 +201,8 @@ export function OptStuffImage({
     sizes,
     fill,
   });
-  const [replayKey, setReplayKey] = useState(0);
-  const currentLoadToken = `${baseLoadToken}|${replayKey}`;
+  const [retryKey, setRetryKey] = useState(0);
+  const currentLoadToken = `${baseLoadToken}|retry:${retryKey}`;
   const [phase, setPhase] = useState<LoadPhase>(() => {
     if (!blurPlaceholder) return "sharp";
     return effectiveLoadDelay === 0 ? "loading" : "blur";
@@ -197,7 +240,7 @@ export function OptStuffImage({
         return;
       }
 
-      const minimum = Math.max(0, minBlurVisibleMs);
+      const minimum = effectiveMinBlurVisibleMs;
       if (minimum === 0) {
         revealSharp(token);
         return;
@@ -216,7 +259,7 @@ export function OptStuffImage({
         revealSharp(token);
       }, remaining);
     },
-    [blurPlaceholder, clearRevealTimer, minBlurVisibleMs, revealSharp],
+    [blurPlaceholder, clearRevealTimer, effectiveMinBlurVisibleMs, revealSharp],
   );
 
   useEffect(() => {
@@ -298,9 +341,9 @@ export function OptStuffImage({
     [clearRevealTimer, currentLoadToken, onError],
   );
 
-  const replay = useCallback(() => {
+  const retryLoad = useCallback(() => {
     if (!blurPlaceholder) return;
-    setReplayKey((k) => k + 1);
+    setRetryKey((k) => k + 1);
   }, [blurPlaceholder]);
 
   if (!blurPlaceholder) {
@@ -331,32 +374,34 @@ export function OptStuffImage({
 
   return (
     <div
-      className={`relative overflow-hidden ${replayable ? "group" : ""}`}
+      className="relative overflow-hidden"
       style={{ width: "100%", height: "100%" }}
     >
-      {/* Tiny blur placeholder */}
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
+      <Image
         src={placeholderUrl}
         alt=""
         aria-hidden
+        width={width}
+        height={height}
+        sizes={sizes}
+        fill={fill}
+        unoptimized
         loading={preload ? "eager" : "lazy"}
-        fetchPriority={preload ? "high" : "low"}
-        decoding="async"
+        preload={preload}
         className="absolute inset-0 h-full w-full"
         style={{
           objectFit,
-          filter: "blur(20px)",
-          transform: "scale(1.1)",
+          filter: "blur(18px)",
+          transform: "scale(1.06)",
           opacity: loaded ? 0 : 1,
-          transition: `opacity ${blurTransitionDuration}ms ease-out`,
+          transition: `opacity ${effectiveBlurTransitionDuration}ms ${effectiveEasing}`,
+          willChange: "opacity",
         }}
       />
 
       {phase !== "blur" && (
         <Image
           {...rest}
-          key={`full-${currentLoadToken}`}
           ref={fullImgRef}
           src={src}
           alt={alt}
@@ -373,8 +418,9 @@ export function OptStuffImage({
           style={{
             ...style,
             objectFit,
-            opacity: loaded ? 1 : 0,
-            transition: `opacity ${blurTransitionDuration}ms ease-out`,
+            opacity: loaded ? 1 : effectiveSharpStartOpacity,
+            transition: `opacity ${effectiveSharpFadeDuration}ms ${effectiveEasing}`,
+            willChange: "opacity",
           }}
         />
       )}
@@ -392,26 +438,13 @@ export function OptStuffImage({
           {showRetryOnError && (
             <button
               type="button"
-              onClick={replay}
+              onClick={retryLoad}
               className="rounded-md bg-white/90 px-3 py-1.5 text-xs font-semibold text-zinc-900 transition-colors hover:bg-white"
             >
               Retry
             </button>
           )}
         </div>
-      )}
-
-      {replayable && phase === "sharp" && !hasLoadError && (
-        <button
-          type="button"
-          onClick={replay}
-          className="absolute bottom-3 right-3 z-10 flex items-center gap-1.5 rounded-full bg-black/60 px-3 py-1.5 text-xs font-medium text-white/90 opacity-0 backdrop-blur-sm transition-opacity duration-200 group-hover:opacity-100"
-        >
-          <svg viewBox="0 0 16 16" fill="currentColor" className="size-3.5">
-            <path d="M5.23 1.644A8.004 8.004 0 0 1 14 8c0 4.418-3.582 8-8 8s-8-3.582-8-8 3.582-8 8-8V0L9 3 6 6V3.5a4.5 4.5 0 1 0 4.798 2.15l1.376-.826A6 6 0 1 1 5.23 1.644z" />
-          </svg>
-          Replay
-        </button>
       )}
     </div>
   );
