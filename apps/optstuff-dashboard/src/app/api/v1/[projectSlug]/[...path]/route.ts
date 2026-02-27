@@ -565,20 +565,10 @@ export async function HEAD(
       "Server-Timing": serverTiming,
     };
 
-    if (request.method === "HEAD") {
-      return new NextResponse(null, {
-        status: probeResult.status,
-        headers: errorHeaders,
-      });
-    }
-
-    return NextResponse.json(
-      { error: "Image processing failed" },
-      {
-        status: probeResult.status,
-        headers: errorHeaders,
-      },
-    );
+    return new NextResponse(null, {
+      status: probeResult.status,
+      headers: errorHeaders,
+    });
   }
 
   return new Response(null, {
