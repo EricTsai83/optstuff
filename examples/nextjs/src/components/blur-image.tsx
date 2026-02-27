@@ -133,8 +133,8 @@ export function BlurImage({
         src={blurSrc}
         alt=""
         aria-hidden
-        loading={priority ? "eager" : "lazy"}
-        fetchPriority={priority ? "low" : "auto"}
+        loading="lazy"
+        fetchPriority="auto"
         className="absolute inset-0 h-full w-full object-cover"
         style={{
           filter: "blur(20px)",
