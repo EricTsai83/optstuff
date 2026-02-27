@@ -7,7 +7,7 @@ type ImageFormat = "webp" | "avif" | "png" | "jpg";
 type ImageFit = "cover" | "contain" | "fill";
 type LoadPhase = "blur" | "loading" | "sharp";
 
-type OptStuffImageProps = Omit<ImageProps, "src" | "loader"> & {
+type OptStuffImageProps = Omit<ImageProps, "src" | "loader" | "priority"> & {
   /** Full URL of the original image (e.g. "https://images.unsplash.com/photo-xxx") */
   src: string;
   /** Output format (default: "webp") */
@@ -110,7 +110,7 @@ function buildLoadToken({
  * Uses a custom `loader` backed by `/api/optstuff` — an API route that
  * signs the URL server-side, then 302-redirects to the optimised image.
  *
- * This preserves **all** `next/image` benefits (responsive `srcSet`, priority
+ * This preserves **all** `next/image` benefits (responsive `srcSet`, preload
  * preloading, lazy loading, `sizes`, placeholder support, etc.) while keeping
  * the signing secret on the server.
  *
@@ -134,6 +134,7 @@ export function OptStuffImage({
   showRetryOnError = true,
   className = "",
   style,
+  preload = false,
   onLoad,
   onError,
   width,
@@ -142,6 +143,7 @@ export function OptStuffImage({
   fill,
   ...rest
 }: OptStuffImageProps) {
+  const effectiveLoadDelay = preload ? 0 : loadDelay;
   const baseLoadToken = buildLoadToken({
     src,
     blurPlaceholder,
@@ -157,7 +159,7 @@ export function OptStuffImage({
   const currentLoadToken = `${baseLoadToken}|${replayKey}`;
   const [phase, setPhase] = useState<LoadPhase>(() => {
     if (!blurPlaceholder) return "sharp";
-    return loadDelay === 0 ? "loading" : "blur";
+    return effectiveLoadDelay === 0 ? "loading" : "blur";
   });
   const [loadedToken, setLoadedToken] = useState<string>(() => {
     return blurPlaceholder ? "" : currentLoadToken;
@@ -178,18 +180,18 @@ export function OptStuffImage({
     const resetRaf = requestAnimationFrame(() => {
       setLoadedToken("");
       setFailedToken(null);
-      setPhase(loadDelay === 0 ? "loading" : "blur");
+      setPhase(effectiveLoadDelay === 0 ? "loading" : "blur");
     });
-    if (loadDelay === 0) return () => cancelAnimationFrame(resetRaf);
+    if (effectiveLoadDelay === 0) return () => cancelAnimationFrame(resetRaf);
 
     const timer = window.setTimeout(() => {
       setPhase("loading");
-    }, loadDelay);
+    }, effectiveLoadDelay);
     return () => {
       cancelAnimationFrame(resetRaf);
       window.clearTimeout(timer);
     };
-  }, [blurPlaceholder, currentLoadToken, loadDelay]);
+  }, [blurPlaceholder, currentLoadToken, effectiveLoadDelay]);
 
   useEffect(() => {
     if (!blurPlaceholder || phase === "blur") return;
@@ -249,6 +251,7 @@ export function OptStuffImage({
         loader={loader}
         className={className}
         style={style}
+        preload={preload}
         onLoad={onLoad}
         onError={onError}
       />
@@ -271,6 +274,9 @@ export function OptStuffImage({
         src={placeholderUrl}
         alt=""
         aria-hidden
+        loading={preload ? "eager" : "lazy"}
+        fetchPriority={preload ? "high" : "low"}
+        decoding="async"
         className="absolute inset-0 h-full w-full"
         style={{
           objectFit,
@@ -294,11 +300,13 @@ export function OptStuffImage({
           sizes={sizes}
           fill={fill}
           loader={loader}
+          preload={preload}
           onLoad={handleLoad}
           onError={handleError}
           className={className}
           style={{
             ...style,
+            objectFit,
             opacity: loaded ? 1 : 0,
             transition: `opacity ${blurTransitionDuration}ms ease-out`,
           }}

@@ -36,7 +36,7 @@ export function GET(request: NextRequest) {
   const response = NextResponse.redirect(signedUrl, 302);
   response.headers.set(
     "Cache-Control",
-    `public, s-maxage=${REDIRECT_CACHE_SECONDS}, max-age=0, stale-while-revalidate=86400`,
+    `public, s-maxage=${REDIRECT_CACHE_SECONDS}, max-age=${REDIRECT_CACHE_SECONDS}, stale-while-revalidate=86400`,
   );
   return response;
 }

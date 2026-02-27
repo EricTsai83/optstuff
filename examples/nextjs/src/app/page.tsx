@@ -1,10 +1,29 @@
-import { BlurImage } from "@/components/blur-image";
-import { FormatComparison } from "@/components/format-comparison";
-import { OptimizerPlayground } from "@/components/optimizer-playground";
+import dynamic from "next/dynamic";
+import { BlurShowcase } from "@/components/blur-showcase";
 import { OptStuffImage } from "@/components/optstuff-image";
-import { ResponsiveDemo } from "@/components/responsive-demo";
 import { ScrollHeader } from "@/components/scroll-header";
 import { getBlurDataUrl } from "@/lib/optstuff";
+
+const FormatComparison = dynamic(
+  () => import("@/components/format-comparison").then((m) => m.FormatComparison),
+  {
+    loading: () => <div className="text-muted text-sm">Loading comparison...</div>,
+  },
+);
+
+const ResponsiveDemo = dynamic(
+  () => import("@/components/responsive-demo").then((m) => m.ResponsiveDemo),
+  {
+    loading: () => <div className="text-muted text-sm">Loading responsive demo...</div>,
+  },
+);
+
+const OptimizerPlayground = dynamic(
+  () => import("@/components/optimizer-playground").then((m) => m.OptimizerPlayground),
+  {
+    loading: () => <div className="text-muted text-sm">Loading playground...</div>,
+  },
+);
 
 const HERO_IMAGE =
   "https://images.unsplash.com/photo-1506744038136-46273834b3fb";
@@ -122,70 +141,28 @@ export default async function Home() {
           {/* Hero blur-to-clear image */}
           <div className="animate-fade-in-up stagger-4 mx-auto w-full max-w-4xl">
             <div className="border-border overflow-hidden rounded-2xl border shadow-xl shadow-black/5">
-              <BlurImage
-                src={HERO_IMAGE}
-                alt="Mountain landscape with lake — blur-to-clear demo"
-                width={1200}
-                quality={85}
-                format="webp"
-                priority
-                fallbackText="Hero image unavailable"
-                transitionDuration={1200}
-                aspectRatio="21/9"
-                blurDataUrl={heroBlurDataUrl}
-              />
+              <div className="aspect-21/9 relative">
+                <OptStuffImage
+                  src={HERO_IMAGE}
+                  fill
+                  sizes="(min-width: 1280px) 1152px, (min-width: 768px) 90vw, 100vw"
+                  alt="Mountain landscape with lake — blur-to-clear demo"
+                  quality={85}
+                  format="webp"
+                  fit="cover"
+                  preload
+                  fallbackText="Hero image unavailable"
+                  blurTransitionDuration={800}
+                  blurPlaceholder
+                  blurDataUrl={heroBlurDataUrl}
+                />
+              </div>
             </div>
           </div>
         </section>
 
         {/* ─── Blur-to-Clear Showcase ─── */}
-        <section id="demo" className="py-24">
-          <div className="mx-auto max-w-6xl px-6">
-            <div className="mb-4 text-center">
-              <span className="mb-3 inline-block rounded-full bg-emerald-100 px-3 py-1 text-xs font-medium text-emerald-700">
-                Core Pattern
-              </span>
-              <h2 className="text-foreground mb-3 text-3xl font-bold tracking-tight sm:text-4xl">
-                Blur-to-Clear Loading
-              </h2>
-              <p className="text-muted mx-auto max-w-lg">
-                Serve a ~1 KB blurred placeholder, then crossfade to the full
-                image — one API, both variants.
-              </p>
-            </div>
-
-            <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-              {SHOWCASE_IMAGES.map((img) => (
-                <div
-                  key={img.label}
-                  className="border-border bg-card overflow-hidden rounded-xl border shadow-sm"
-                >
-                  <BlurImage
-                    src={img.src}
-                    alt={img.label}
-                    width={600}
-                    quality={img.quality}
-                    format={img.format}
-                    loadDelay={235}
-                    transitionDuration={800}
-                    replayable
-                    aspectRatio="4/3"
-                  />
-                  <div className="px-4 py-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-foreground text-sm font-medium">
-                        {img.label}
-                      </span>
-                      <span className="rounded bg-zinc-100 px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wider text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400">
-                        {img.format}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
+        <BlurShowcase images={SHOWCASE_IMAGES} />
 
         {/* ─── Format Comparison ─── */}
         <section
