@@ -55,13 +55,13 @@ const SHOWCASE_IMAGES = [
   },
 ];
 
-const heroBlurDataUrl = await getBlurDataUrl(HERO_IMAGE, {
-  format: "webp",
-  quality: 20,
-  width: 32,
-});
-
 export default async function Home() {
+  const heroBlurDataUrl = await getBlurDataUrl(HERO_IMAGE, {
+    format: "webp",
+    quality: 20,
+    width: 32,
+  });
+
   return (
     <div className="bg-background text-foreground min-h-screen">
       {/* ─── Header ─── */}
