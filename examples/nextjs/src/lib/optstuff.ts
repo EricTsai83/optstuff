@@ -1,10 +1,19 @@
 import crypto from "crypto";
 
-const OPTSTUFF_BASE_URL =
-  process.env.OPTSTUFF_BASE_URL ?? "https://your-optstuff-instance.com";
-const OPTSTUFF_PROJECT_SLUG = process.env.OPTSTUFF_PROJECT_SLUG ?? "my-project";
-const OPTSTUFF_PUBLIC_KEY = process.env.OPTSTUFF_PUBLIC_KEY ?? "pk_xxx";
-const OPTSTUFF_SECRET_KEY = process.env.OPTSTUFF_SECRET_KEY ?? "sk_xxx";
+function requireEnv(name: string): string {
+  const value = process.env[name];
+  if (!value || value.includes("xxx") || value.includes("your-")) {
+    throw new Error(
+      `Missing or invalid environment variable: ${name}. Set it in examples/nextjs/.env.local`,
+    );
+  }
+  return value;
+}
+
+const OPTSTUFF_BASE_URL = requireEnv("OPTSTUFF_BASE_URL");
+const OPTSTUFF_PROJECT_SLUG = requireEnv("OPTSTUFF_PROJECT_SLUG");
+const OPTSTUFF_PUBLIC_KEY = requireEnv("OPTSTUFF_PUBLIC_KEY");
+const OPTSTUFF_SECRET_KEY = requireEnv("OPTSTUFF_SECRET_KEY");
 const EXPIRY_BUCKET_SECONDS = 3600;
 const BLUR_DATA_REVALIDATE_SECONDS = 3600;
 const BLUR_DATA_FETCH_TIMEOUT_MS = 1500;

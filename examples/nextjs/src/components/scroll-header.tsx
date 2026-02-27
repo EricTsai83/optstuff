@@ -6,10 +6,30 @@ export function ScrollHeader({ children }: { children: React.ReactNode }) {
   const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
-    const handleScroll = () => setScrolled(window.scrollY > 20);
-    handleScroll();
+    let rafId = 0;
+    const threshold = 20;
+
+    const updateScrolled = () => {
+      const next = window.scrollY > threshold;
+      setScrolled((prev) => (prev === next ? prev : next));
+    };
+
+    const handleScroll = () => {
+      if (rafId) return;
+      rafId = window.requestAnimationFrame(() => {
+        rafId = 0;
+        updateScrolled();
+      });
+    };
+
+    updateScrolled();
     window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      if (rafId) {
+        window.cancelAnimationFrame(rafId);
+      }
+    };
   }, []);
 
   return (

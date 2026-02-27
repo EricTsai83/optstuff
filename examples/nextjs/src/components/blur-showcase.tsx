@@ -61,7 +61,6 @@ export function BlurShowcase({ images }: BlurShowcaseProps) {
                   transitionConfig={{
                     blurFadeDurationMs: 320,
                     sharpFadeDurationMs: 220,
-                    minBlurVisibleMs: 100,
                     sharpStartOpacity: 0.18,
                   }}
                 />

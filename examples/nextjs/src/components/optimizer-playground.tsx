@@ -1,5 +1,6 @@
 "use client";
 
+import { buildOptStuffProxyPath } from "@/lib/next-image-optstuff-loader";
 import { useState } from "react";
 
 const DEMO_IMAGES = [
@@ -27,14 +28,13 @@ function buildPreviewUrl(
   format: string,
   fit: string,
 ) {
-  const params = new URLSearchParams({
-    url,
-    w: String(width),
-    q: String(quality),
-    f: format,
-    fit,
+  return buildOptStuffProxyPath({
+    src: url,
+    width,
+    quality,
+    format: format as "webp" | "avif" | "png" | "jpg",
+    fit: fit as "cover" | "contain" | "fill",
   });
-  return `/api/optstuff?${params}`;
 }
 
 export function OptimizerPlayground() {

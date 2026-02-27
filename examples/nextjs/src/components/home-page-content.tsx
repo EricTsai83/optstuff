@@ -1,19 +1,23 @@
-import dynamic from "next/dynamic";
-import { BlurShowcase } from "@/components/blur-showcase";
 import { OptStuffImage } from "@/components/optstuff-image";
 import { ScrollHeader } from "@/components/scroll-header";
+import dynamic from "next/dynamic";
 
 const FormatComparison = dynamic(
-  () => import("@/components/format-comparison").then((m) => m.FormatComparison),
+  () =>
+    import("@/components/format-comparison").then((m) => m.FormatComparison),
   {
-    loading: () => <div className="text-muted text-sm">Loading comparison...</div>,
+    loading: () => (
+      <div className="text-muted text-sm">Loading comparison...</div>
+    ),
   },
 );
 
 const ResponsiveDemo = dynamic(
   () => import("@/components/responsive-demo").then((m) => m.ResponsiveDemo),
   {
-    loading: () => <div className="text-muted text-sm">Loading responsive demo...</div>,
+    loading: () => (
+      <div className="text-muted text-sm">Loading responsive demo...</div>
+    ),
   },
 );
 
@@ -23,7 +27,9 @@ const OptimizerPlayground = dynamic(
       (m) => m.OptimizerPlayground,
     ),
   {
-    loading: () => <div className="text-muted text-sm">Loading playground...</div>,
+    loading: () => (
+      <div className="text-muted text-sm">Loading playground...</div>
+    ),
   },
 );
 
@@ -113,7 +119,7 @@ export function HomePageContent({ heroBlurDataUrl }: HomePageContentProps) {
           </div>
 
           <details className="group relative md:hidden">
-            <summary className="text-muted hover:text-foreground flex cursor-pointer list-none items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-sm font-medium transition-colors [&::-webkit-details-marker]:hidden">
+            <summary className="text-muted hover:text-foreground border-border bg-card flex cursor-pointer list-none items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition-colors [&::-webkit-details-marker]:hidden">
               <svg
                 viewBox="0 0 24 24"
                 fill="none"
@@ -121,10 +127,7 @@ export function HomePageContent({ heroBlurDataUrl }: HomePageContentProps) {
                 strokeWidth="1.8"
                 className="size-4"
               >
-                <path
-                  strokeLinecap="round"
-                  d="M4 7h16M4 12h16M4 17h16"
-                />
+                <path strokeLinecap="round" d="M4 7h16M4 12h16M4 17h16" />
               </svg>
               Menu
             </summary>
@@ -163,16 +166,15 @@ export function HomePageContent({ heroBlurDataUrl }: HomePageContentProps) {
       <main>
         {/* ─── Hero ─── */}
         <section className="hero-gradient relative flex min-h-[78vh] flex-col items-center justify-center overflow-hidden px-4 pt-28 sm:min-h-[85vh] sm:px-6 sm:pt-36">
-          {/* Decorative floating orbs */}
-          <div className="animate-float-slow pointer-events-none absolute -top-20 left-[10%] size-72 rounded-full bg-emerald-400/10 blur-3xl" />
-          <div className="animate-float bg-teal-400/8 pointer-events-none absolute right-[20%] top-[15%] size-40 rounded-full blur-2xl" />
-
-          {/* Decorative geometric shapes */}
-          <div className="animate-float-slow pointer-events-none absolute left-[5%] top-[25%] size-16 rotate-45 rounded-lg border border-emerald-500/15 opacity-60" />
-          <div className="animate-float-reverse pointer-events-none absolute bottom-[20%] right-[6%] size-12 rounded-full border border-cyan-500/15 opacity-60" />
-          <div className="animate-float pointer-events-none absolute bottom-[35%] left-[8%] size-8 rounded-full border border-teal-500/20 opacity-50" />
+          <div className="pointer-events-none absolute -top-20 left-[10%] size-72 rounded-full bg-emerald-400/10 blur-3xl" />
 
           <div className="relative mx-auto max-w-3xl text-center">
+            <span className="mb-4 inline-flex items-center gap-2 rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">
+              Hero Walkthrough
+              <span className="font-mono text-[10px] tracking-wide">
+                blur -&gt; sharp
+              </span>
+            </span>
             <h1 className="animate-fade-in-up stagger-1 text-foreground mb-5 text-3xl font-bold leading-tight tracking-tight sm:text-5xl lg:text-6xl">
               Instant Image Optimization
               <br />
@@ -180,7 +182,8 @@ export function HomePageContent({ heroBlurDataUrl }: HomePageContentProps) {
             </h1>
             <p className="animate-fade-in-up stagger-2 text-muted mx-auto mb-8 max-w-xl text-base leading-relaxed sm:text-lg">
               One secure API to resize, convert, and serve optimised images
-              on-the-fly — with blur placeholders built in.
+              on-the-fly. This hero intentionally demonstrates optional
+              blur-to-clear loading.
             </p>
           </div>
 
@@ -197,62 +200,54 @@ export function HomePageContent({ heroBlurDataUrl }: HomePageContentProps) {
                   format="webp"
                   fit="cover"
                   preload
-                  fallbackText="Hero image unavailable"
-                  blurTransitionDuration={800}
                   blurPlaceholder
                   blurDataUrl={heroBlurDataUrl}
                 />
               </div>
             </div>
+            <div className="bg-card/80 border-border mt-3 rounded-xl border px-4 py-3 text-left">
+              <p className="text-foreground text-sm font-medium">
+                This demo block uses:
+              </p>
+              <p className="text-muted mt-1 font-mono text-xs">
+                blurPlaceholder + blurDataUrl (precomputed tiny preview)
+              </p>
+            </div>
           </div>
         </section>
 
-        {/* ─── Blur-to-Clear Showcase ─── */}
-        <BlurShowcase images={SHOWCASE_IMAGES} />
-
-        {/* ─── Format Comparison ─── */}
+        {/* ─── Delivery Patterns ─── */}
         <section
-          id="formats"
-          className="border-border bg-card-hover/30 border-y py-16 sm:py-24"
+          id="demo"
+          className="border-border bg-card-hover/30 py-16 sm:py-24"
         >
           <div className="mx-auto max-w-6xl px-4 sm:px-6">
             <div className="mb-4 text-center">
               <span className="mb-3 inline-block rounded-full bg-cyan-100 px-3 py-1 text-xs font-medium text-cyan-700 dark:bg-cyan-900/40 dark:text-cyan-300">
-                Format Options
+                Core Delivery Patterns
               </span>
               <h2 className="text-foreground mb-3 text-3xl font-bold tracking-tight sm:text-4xl">
-                Pick the Right Format
+                Format + Responsive, in One Flow
               </h2>
               <p className="text-muted mx-auto max-w-lg">
-                OptStuff converts to any format on-the-fly. Choose the best
-                trade-off between quality, file size, and browser support — per
-                image, per request.
+                Start by selecting the right output format, then request the
+                exact width for each device. Same source image, different
+                optimized variants on demand.
               </p>
             </div>
-            <div className="mt-8 sm:mt-12">
-              <FormatComparison />
-            </div>
-          </div>
-        </section>
-
-        {/* ─── Responsive Images ─── */}
-        <section id="responsive" className="py-16 sm:py-24">
-          <div className="mx-auto max-w-6xl px-4 sm:px-6">
-            <div className="mb-4 text-center">
-              <span className="mb-3 inline-block rounded-full bg-teal-100 px-3 py-1 text-xs font-medium text-teal-700 dark:bg-teal-900/40 dark:text-teal-300">
-                Any Size, Instantly
-              </span>
-              <h2 className="text-foreground mb-3 text-3xl font-bold tracking-tight sm:text-4xl">
-                Responsive on Demand
-              </h2>
-              <p className="text-muted mx-auto max-w-lg">
-                No need to pre-generate thumbnails. Request any width and
-                OptStuff delivers the exact size needed — from mobile to retina
-                displays.
-              </p>
-            </div>
-            <div className="mt-8 sm:mt-12">
-              <ResponsiveDemo />
+            <div className="mt-8 grid gap-8 sm:mt-12 lg:gap-10">
+              <div>
+                <h3 className="text-foreground mb-3 text-center text-lg font-semibold sm:text-left">
+                  1) Choose an output format
+                </h3>
+                <FormatComparison />
+              </div>
+              <div>
+                <h3 className="text-foreground mb-3 text-center text-lg font-semibold sm:text-left">
+                  2) Deliver the right width
+                </h3>
+                <ResponsiveDemo />
+              </div>
             </div>
           </div>
         </section>
@@ -279,8 +274,8 @@ export function HomePageContent({ heroBlurDataUrl }: HomePageContentProps) {
                 <code className="rounded bg-zinc-100 px-1.5 py-0.5 font-mono text-xs text-emerald-700 dark:bg-zinc-800 dark:text-emerald-400">
                   srcSet
                 </code>
-                , lazy loading, and blur placeholders — all optimised through
-                OptStuff.
+                and lazy loading through OptStuff. Blur placeholders are
+                optional and demonstrated in the hero only.
               </p>
             </div>
 
@@ -298,7 +293,6 @@ export function HomePageContent({ heroBlurDataUrl }: HomePageContentProps) {
                       alt={img.label}
                       format={img.format}
                       quality={img.quality}
-                      blurPlaceholder
                       style={{ objectFit: "cover" }}
                     />
                   </div>
@@ -318,7 +312,6 @@ export function HomePageContent({ heroBlurDataUrl }: HomePageContentProps) {
   fill
   format="${img.format}"
   quality={${img.quality}}
-  blurPlaceholder
 />`}</code>
                       </pre>
                     </div>

@@ -1,5 +1,52 @@
 import type { ImageLoaderProps } from "next/image";
 
+type ImageFormat = "webp" | "avif" | "png" | "jpg";
+type ImageFit = "cover" | "contain" | "fill";
+
+type OptStuffProxyParams = {
+  src: string;
+  width: number;
+  quality?: number;
+  format?: ImageFormat;
+  fit?: ImageFit;
+};
+
+const DEFAULT_QUALITY = 80;
+const DEFAULT_FORMAT: ImageFormat = "webp";
+const DEFAULT_FIT: ImageFit = "cover";
+
+function shouldBypassProxy(src: string) {
+  return (
+    src.startsWith("/") ||
+    src.startsWith("data:") ||
+    src.startsWith("blob:") ||
+    src.startsWith("/api/optstuff?") ||
+    !/^https?:\/\//i.test(src)
+  );
+}
+
+export function buildOptStuffProxyPath({
+  src,
+  width,
+  quality = DEFAULT_QUALITY,
+  format = DEFAULT_FORMAT,
+  fit = DEFAULT_FIT,
+}: OptStuffProxyParams) {
+  if (shouldBypassProxy(src)) {
+    return src;
+  }
+
+  const params = new URLSearchParams({
+    url: src,
+    w: String(width),
+    q: String(quality),
+    f: format,
+    fit,
+  });
+
+  return `/api/optstuff?${params}`;
+}
+
 /**
  * Global OptStuff loader for next/image.
  *
@@ -16,26 +63,5 @@ export default function nextImageOptStuffLoader({
   width,
   quality,
 }: ImageLoaderProps) {
-  if (
-    src.startsWith("/") ||
-    src.startsWith("data:") ||
-    src.startsWith("blob:") ||
-    src.startsWith("/api/optstuff?")
-  ) {
-    return src;
-  }
-
-  if (!/^https?:\/\//i.test(src)) {
-    return src;
-  }
-
-  const params = new URLSearchParams({
-    url: src,
-    w: String(width),
-    q: String(quality ?? 80),
-    f: "webp",
-    fit: "cover",
-  });
-
-  return `/api/optstuff?${params}`;
+  return buildOptStuffProxyPath({ src, width, quality });
 }

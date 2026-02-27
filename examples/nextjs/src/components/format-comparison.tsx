@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { buildOptStuffProxyPath } from "@/lib/next-image-optstuff-loader";
 
 const DEMO_SRC =
   "https://images.unsplash.com/photo-1506744038136-46273834b3fb";
@@ -45,43 +45,32 @@ const FORMATS = [
 ];
 
 function buildUrl(src: string, format: string, width: number, quality: number) {
-  const params = new URLSearchParams({
-    url: src,
-    w: String(width),
-    q: String(quality),
-    f: format,
+  return buildOptStuffProxyPath({
+    src,
+    width,
+    quality,
+    format: format as "webp" | "avif" | "png" | "jpg",
     fit: "cover",
   });
-  return `/api/optstuff?${params}`;
 }
 
 export function FormatComparison() {
-  const [activeFormat, setActiveFormat] = useState<string | null>(null);
-
   return (
     <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
       {FORMATS.map((fmt) => {
         const previewUrl = buildUrl(DEMO_SRC, fmt.id, 600, 80);
-        const isActive = activeFormat === fmt.id;
 
         return (
           <div
             key={fmt.id}
-            className={`feature-card cursor-pointer overflow-hidden rounded-xl border bg-card shadow-sm transition-all ${
-              isActive
-                ? "border-emerald-500/50 ring-2 ring-emerald-500/20"
-                : "border-border"
-            }`}
-            onMouseEnter={() => setActiveFormat(fmt.id)}
-            onMouseLeave={() => setActiveFormat(null)}
+            className="feature-card group cursor-pointer overflow-hidden rounded-xl border border-border bg-card shadow-sm transition-all hover:border-emerald-500/50 hover:ring-2 hover:ring-emerald-500/20"
           >
             <div className="relative aspect-4/3 overflow-hidden">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={previewUrl}
                 alt={`${fmt.label} format preview`}
-                className="h-full w-full object-cover transition-transform duration-500"
-                style={{ transform: isActive ? "scale(1.05)" : "scale(1)" }}
+                className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
               />
               <div className="absolute left-3 top-3">
                 <span className="rounded-md bg-black/60 px-2 py-1 font-mono text-[11px] font-semibold uppercase tracking-wider text-white backdrop-blur-sm">

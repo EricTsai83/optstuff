@@ -1,63 +1,156 @@
-import { type NextRequest, NextResponse } from "next/server";
 import { generateOptStuffUrl, type ImageOperation } from "@/lib/optstuff";
+import { type NextRequest, NextResponse } from "next/server";
 
 const VALID_FORMATS = new Set(["webp", "avif", "png", "jpg"] as const);
 const VALID_FITS = new Set(["cover", "contain", "fill"] as const);
+
 const SIGNED_URL_TTL_SECONDS = 3600;
 const REDIRECT_CACHE_SECONDS = 300;
+const REDIRECT_SWR_SECONDS = 3600;
+const JSON_CACHE_SECONDS = 300;
+const JSON_SWR_SECONDS = 3600;
 
-/**
- * GET — Signing endpoint for the `next/image` custom loader.
- *
- * Accepts image parameters as query strings, generates a signed OptStuff URL,
- * and returns a 302 redirect. This lets `next/image` build a full responsive
- * `srcSet` while keeping signing on the server.
- */
-export function GET(request: NextRequest) {
-  const sp = request.nextUrl.searchParams;
-  const url = sp.get("url");
+const DEFAULT_ALLOWED_HOSTS = ["images.unsplash.com"];
+const ALLOWED_HOSTS = new Set(
+  (process.env.OPTSTUFF_ALLOWED_IMAGE_HOSTS ?? DEFAULT_ALLOWED_HOSTS.join(","))
+    .split(",")
+    .map((host) => host.trim().toLowerCase())
+    .filter(Boolean),
+);
 
-  if (!url) {
-    return NextResponse.json({ error: "url is required" }, { status: 400 });
+type NumberParseOptions = {
+  min?: number;
+  max?: number;
+};
+
+type ValidatedPayload = {
+  imageUrl: string;
+  operations: ImageOperation;
+};
+
+function isAllowedHostname(hostname: string) {
+  const normalized = hostname.toLowerCase();
+  for (const allowedHost of ALLOWED_HOSTS) {
+    if (normalized === allowedHost || normalized.endsWith(`.${allowedHost}`)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function parseImageUrl(value: unknown): { value: string } | { error: string } {
+  if (typeof value !== "string" || value.trim() === "") {
+    return { error: "imageUrl/url is required and must be a non-empty string" };
   }
 
-  const signedUrl = generateOptStuffUrl(
-    url,
-    {
-      width: sp.has("w") ? Number(sp.get("w")) : undefined,
-      height: sp.has("h") ? Number(sp.get("h")) : undefined,
-      quality: sp.has("q") ? Number(sp.get("q")) : 80,
-      format:
-        (sp.get("f") as "webp" | "avif" | "png" | "jpg" | null) ?? "webp",
-      fit: (sp.get("fit") as "cover" | "contain" | "fill" | null) ?? "cover",
-    },
-    SIGNED_URL_TTL_SECONDS,
-  );
-  const response = NextResponse.redirect(signedUrl, 302);
-  response.headers.set(
-    "Cache-Control",
-    `public, s-maxage=${REDIRECT_CACHE_SECONDS}, max-age=${REDIRECT_CACHE_SECONDS}, stale-while-revalidate=86400`,
-  );
-  return response;
+  let parsedUrl: URL;
+  try {
+    parsedUrl = new URL(value);
+  } catch {
+    return { error: "imageUrl/url must be a valid URL" };
+  }
+
+  if (parsedUrl.protocol !== "https:" && parsedUrl.protocol !== "http:") {
+    return { error: "imageUrl/url must use http or https" };
+  }
+
+  if (!isAllowedHostname(parsedUrl.hostname)) {
+    return {
+      error: `imageUrl/url hostname is not allowed. Configure OPTSTUFF_ALLOWED_IMAGE_HOSTS.`,
+    };
+  }
+
+  return { value: parsedUrl.toString() };
 }
 
 function parseOptionalNumber(
   value: unknown,
   name: string,
+  { min, max }: NumberParseOptions = {},
 ): { value: number | undefined } | { error: string } {
-  if (value === undefined || value === null) return { value: undefined };
+  if (value === undefined || value === null || value === "") return { value: undefined };
   const n = Number(value);
-  if (Number.isNaN(n) || !Number.isFinite(n))
+  if (Number.isNaN(n) || !Number.isFinite(n)) {
     return { error: `${name} must be a valid number` };
-  return { value: Math.round(n) };
+  }
+
+  const rounded = Math.round(n);
+  if (min !== undefined && rounded < min) {
+    return { error: `${name} must be >= ${min}` };
+  }
+  if (max !== undefined && rounded > max) {
+    return { error: `${name} must be <= ${max}` };
+  }
+  return { value: rounded };
 }
 
-/**
- * POST — Returns a signed URL as JSON for the optimizer playground.
- *
- * Accepts a JSON body with `imageUrl`, `width`, `height`, `quality`,
- * `format`, and `fit`, then returns `{ url: "<signed-url>" }`.
- */
+function validatePayload(payload: Record<string, unknown>): ValidatedPayload | { error: string } {
+  const parsedUrl = parseImageUrl(payload.imageUrl);
+  if ("error" in parsedUrl) return parsedUrl;
+
+  const parsedWidth = parseOptionalNumber(payload.width, "width", { min: 1, max: 8192 });
+  if ("error" in parsedWidth) return parsedWidth;
+
+  const parsedHeight = parseOptionalNumber(payload.height, "height", { min: 1, max: 8192 });
+  if ("error" in parsedHeight) return parsedHeight;
+
+  const parsedQuality = parseOptionalNumber(payload.quality, "quality", { min: 1, max: 100 });
+  if ("error" in parsedQuality) return parsedQuality;
+
+  const format = payload.format ?? "webp";
+  if (!VALID_FORMATS.has(format as never)) {
+    return { error: `format must be one of: ${[...VALID_FORMATS].join(", ")}` };
+  }
+
+  const fit = payload.fit ?? "cover";
+  if (!VALID_FITS.has(fit as never)) {
+    return { error: `fit must be one of: ${[...VALID_FITS].join(", ")}` };
+  }
+
+  return {
+    imageUrl: parsedUrl.value,
+    operations: {
+      width: parsedWidth.value,
+      height: parsedHeight.value,
+      quality: parsedQuality.value ?? 80,
+      format: format as ImageOperation["format"],
+      fit: fit as ImageOperation["fit"],
+    },
+  };
+}
+
+function applyCacheHeaders(response: NextResponse, maxAgeSeconds: number, swrSeconds: number) {
+  response.headers.set(
+    "Cache-Control",
+    `public, s-maxage=${maxAgeSeconds}, max-age=${maxAgeSeconds}, stale-while-revalidate=${swrSeconds}`,
+  );
+  return response;
+}
+
+export function GET(request: NextRequest) {
+  const sp = request.nextUrl.searchParams;
+  const validation = validatePayload({
+    imageUrl: sp.get("url"),
+    width: sp.get("w"),
+    height: sp.get("h"),
+    quality: sp.get("q"),
+    format: sp.get("f") ?? undefined,
+    fit: sp.get("fit") ?? undefined,
+  });
+
+  if ("error" in validation) {
+    return NextResponse.json({ error: validation.error }, { status: 400 });
+  }
+
+  const signedUrl = generateOptStuffUrl(
+    validation.imageUrl,
+    validation.operations,
+    SIGNED_URL_TTL_SECONDS,
+  );
+  const response = NextResponse.redirect(signedUrl, 302);
+  return applyCacheHeaders(response, REDIRECT_CACHE_SECONDS, REDIRECT_SWR_SECONDS);
+}
+
 export async function POST(request: NextRequest) {
   let body: Record<string, unknown>;
   try {
@@ -66,52 +159,17 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
-  const { imageUrl, width, height, quality, format, fit } = body;
-
-  if (typeof imageUrl !== "string" || imageUrl.trim() === "") {
-    return NextResponse.json(
-      { error: "imageUrl is required and must be a non-empty string" },
-      { status: 400 },
-    );
-  }
-
-  const parsedWidth = parseOptionalNumber(width, "width");
-  if ("error" in parsedWidth)
-    return NextResponse.json({ error: parsedWidth.error }, { status: 400 });
-
-  const parsedHeight = parseOptionalNumber(height, "height");
-  if ("error" in parsedHeight)
-    return NextResponse.json({ error: parsedHeight.error }, { status: 400 });
-
-  const parsedQuality = parseOptionalNumber(quality, "quality");
-  if ("error" in parsedQuality)
-    return NextResponse.json({ error: parsedQuality.error }, { status: 400 });
-
-  if (format !== undefined && !VALID_FORMATS.has(format as never)) {
-    return NextResponse.json(
-      { error: `format must be one of: ${[...VALID_FORMATS].join(", ")}` },
-      { status: 400 },
-    );
-  }
-
-  if (fit !== undefined && !VALID_FITS.has(fit as never)) {
-    return NextResponse.json(
-      { error: `fit must be one of: ${[...VALID_FITS].join(", ")}` },
-      { status: 400 },
-    );
+  const validation = validatePayload(body);
+  if ("error" in validation) {
+    return NextResponse.json({ error: validation.error }, { status: 400 });
   }
 
   const optimizedUrl = generateOptStuffUrl(
-    imageUrl,
-    {
-      width: parsedWidth.value,
-      height: parsedHeight.value,
-      quality: parsedQuality.value,
-      format: format as ImageOperation["format"],
-      fit: fit as ImageOperation["fit"],
-    },
+    validation.imageUrl,
+    validation.operations,
     SIGNED_URL_TTL_SECONDS,
   );
 
-  return NextResponse.json({ url: optimizedUrl });
+  const response = NextResponse.json({ url: optimizedUrl });
+  return applyCacheHeaders(response, JSON_CACHE_SECONDS, JSON_SWR_SECONDS);
 }

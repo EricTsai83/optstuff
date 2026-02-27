@@ -1,5 +1,6 @@
 "use client";
 
+import { buildOptStuffProxyPath } from "@/lib/next-image-optstuff-loader";
 import { useState } from "react";
 
 const DEMO_SRC =
@@ -89,14 +90,13 @@ const VARIANTS = [
 ];
 
 function buildUrl(src: string, width: number) {
-  const params = new URLSearchParams({
-    url: src,
-    w: String(width),
-    q: "80",
-    f: "webp",
+  return buildOptStuffProxyPath({
+    src,
+    width,
+    quality: 80,
+    format: "webp",
     fit: "cover",
   });
-  return `/api/optstuff?${params}`;
 }
 
 export function ResponsiveDemo() {
@@ -142,7 +142,7 @@ export function ResponsiveDemo() {
         </div>
         <div className="flex items-center justify-center bg-card-hover/50 p-4 sm:p-8">
           <div
-            className="overflow-hidden rounded-lg border border-border shadow-lg transition-all duration-500"
+            className="overflow-hidden rounded-lg border border-border shadow-lg transition-[width] duration-500"
             style={{
               width: `min(${VARIANTS[selected]!.width}px, 100%)`,
               maxWidth: "100%",
