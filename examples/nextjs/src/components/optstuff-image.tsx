@@ -1,7 +1,7 @@
 "use client";
 
 import Image, { type ImageProps, type ImageLoaderProps } from "next/image";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 
 type OptStuffImageProps = Omit<ImageProps, "src" | "loader"> & {
   /** Full URL of the original image (e.g. "https://images.unsplash.com/photo-xxx") */
@@ -44,6 +44,42 @@ function buildPlaceholderUrl(src: string, format: string, fit: string) {
   return `/api/optstuff?${params}`;
 }
 
+type LoadTokenOptions = {
+  src: string;
+  blurPlaceholder: boolean;
+  format: "webp" | "avif" | "png" | "jpg";
+  fit: "cover" | "contain" | "fill";
+  quality: NonNullable<ImageProps["quality"]>;
+  width?: ImageProps["width"];
+  height?: ImageProps["height"];
+  sizes?: ImageProps["sizes"];
+  fill?: ImageProps["fill"];
+};
+
+function buildLoadToken({
+  src,
+  blurPlaceholder,
+  format,
+  fit,
+  quality,
+  width,
+  height,
+  sizes,
+  fill,
+}: LoadTokenOptions) {
+  return [
+    src,
+    blurPlaceholder ? "blur" : "plain",
+    format,
+    fit,
+    String(quality),
+    `w:${String(width ?? "")}`,
+    `h:${String(height ?? "")}`,
+    `sizes:${sizes ?? ""}`,
+    `fill:${fill ? "1" : "0"}`,
+  ].join("|");
+}
+
 /**
  * Drop-in `next/image` wrapper that serves images through OptStuff.
  *
@@ -68,12 +104,29 @@ export function OptStuffImage({
   className = "",
   style,
   onLoad,
+  width,
+  height,
+  sizes,
+  fill,
   ...rest
 }: OptStuffImageProps) {
-  const currentLoadToken = `${src}|${blurPlaceholder ? "blur" : "plain"}`;
+  const currentLoadToken = buildLoadToken({
+    src,
+    blurPlaceholder,
+    format,
+    fit,
+    quality,
+    width,
+    height,
+    sizes,
+    fill,
+  });
   const [loadedToken, setLoadedToken] = useState<string>(() =>
     blurPlaceholder ? "" : currentLoadToken,
   );
+  useEffect(() => {
+    setLoadedToken(blurPlaceholder ? "" : currentLoadToken);
+  }, [blurPlaceholder, currentLoadToken]);
   const loaded = !blurPlaceholder || loadedToken === currentLoadToken;
 
   const loader = makeLoader(format, fit);
@@ -93,6 +146,10 @@ export function OptStuffImage({
         src={src}
         alt={alt}
         quality={quality}
+        width={width}
+        height={height}
+        sizes={sizes}
+        fill={fill}
         loader={loader}
         className={className}
         style={style}
@@ -125,6 +182,10 @@ export function OptStuffImage({
         src={src}
         alt={alt}
         quality={quality}
+        width={width}
+        height={height}
+        sizes={sizes}
+        fill={fill}
         loader={loader}
         onLoad={handleLoad}
         className={className}
