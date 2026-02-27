@@ -89,7 +89,9 @@ The secret key is only shown once at creation or rotation. If you've lost it:
 
 ## Error Response Format
 
-All error responses include an `error` field. Depending on the error, additional fields may be present:
+`GET` error responses include an `error` field in a JSON body. `HEAD` error responses return status and headers only (no response body), while using the same status code mapping.
+
+For `GET`, additional fields may be present depending on the error:
 
 | Field | When Included | Description |
 |-------|---------------|-------------|

@@ -93,6 +93,8 @@ Image optimization URLs are **content-addressable**: the URL encodes all paramet
 
 For upstream fetch/probe failures, the endpoint uses `502` as the primary failure status. Upstream `404` and `410` are passed through unchanged, and rare unmappable upstream/runtime failures return `500`.
 
+For `HEAD`, these error statuses are the same, but responses remain headers-only (no JSON body).
+
 For the full error reference, see [Error Codes](/api-reference/error-codes).
 
 ## Authentication Flow

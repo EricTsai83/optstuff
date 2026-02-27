@@ -558,16 +558,25 @@ export async function HEAD(
   );
 
   if (!probeResult.ok) {
+    const errorHeaders = {
+      Vary: buildVaryHeader(project.allowedRefererDomains),
+      "X-Processing-Time": `${processingTimeMs}ms`,
+      "X-Head-Fast-Path": "1",
+      "Server-Timing": serverTiming,
+    };
+
+    if (request.method === "HEAD") {
+      return new NextResponse(null, {
+        status: probeResult.status,
+        headers: errorHeaders,
+      });
+    }
+
     return NextResponse.json(
       { error: "Image processing failed" },
       {
         status: probeResult.status,
-        headers: {
-          Vary: buildVaryHeader(project.allowedRefererDomains),
-          "X-Processing-Time": `${processingTimeMs}ms`,
-          "X-Head-Fast-Path": "1",
-          "Server-Timing": serverTiming,
-        },
+        headers: errorHeaders,
       },
     );
   }

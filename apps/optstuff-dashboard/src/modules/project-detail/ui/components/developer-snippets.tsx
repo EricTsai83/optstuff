@@ -73,7 +73,7 @@ export function signImageUrl(
     const effectiveBucket = bucketSeconds && bucketSeconds > 0
       ? Math.min(bucketSeconds, ttlSeconds)
       : 0;
-    exp = effectiveBucket > 0 && effectiveBucket < ttlSeconds
+    exp = effectiveBucket > 0 && effectiveBucket <= ttlSeconds
       ? Math.ceil(rawExp / effectiveBucket) * effectiveBucket
       : rawExp;
   }
