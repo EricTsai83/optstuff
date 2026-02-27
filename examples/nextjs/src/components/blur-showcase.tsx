@@ -56,6 +56,7 @@ export function BlurShowcase({ images }: BlurShowcaseProps) {
                   quality={img.quality}
                   fit="cover"
                   blurPlaceholder
+                  minBlurVisibleMs={180}
                   blurTransitionDuration={500}
                 />
               </div>

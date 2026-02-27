@@ -28,6 +28,8 @@ type OptStuffImageProps = Omit<ImageProps, "src" | "loader" | "priority"> & {
   blurQuality?: number;
   /** Delay before loading the full image in ms (default: 0) */
   loadDelay?: number;
+  /** Minimum time to keep blur placeholder visible in ms (default: 0) */
+  minBlurVisibleMs?: number;
   /** Allow replaying the blur-to-clear transition */
   replayable?: boolean;
   /** Pre-fetched base64 data URL for the blur placeholder */
@@ -128,6 +130,7 @@ export function OptStuffImage({
   blurWidth = 32,
   blurQuality = 20,
   loadDelay = 0,
+  minBlurVisibleMs = 0,
   replayable = false,
   blurDataUrl,
   fallbackText = "Image failed to load",
@@ -166,10 +169,67 @@ export function OptStuffImage({
   });
   const [failedToken, setFailedToken] = useState<string | null>(null);
   const fullImgRef = useRef<HTMLImageElement>(null);
+  const activeLoadTokenRef = useRef(currentLoadToken);
+  const blurVisibleSinceRef = useRef<number>(0);
+  const revealTimerRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    activeLoadTokenRef.current = currentLoadToken;
+  }, [currentLoadToken]);
+
+  const clearRevealTimer = useCallback(() => {
+    if (revealTimerRef.current === null) return;
+    window.clearTimeout(revealTimerRef.current);
+    revealTimerRef.current = null;
+  }, []);
+
+  const revealSharp = useCallback((token: string) => {
+    if (activeLoadTokenRef.current !== token) return;
+    setLoadedToken(token);
+    setFailedToken(null);
+    setPhase("sharp");
+  }, []);
+
+  const revealWithMinimumDelay = useCallback(
+    (token: string) => {
+      if (!blurPlaceholder) {
+        revealSharp(token);
+        return;
+      }
+
+      const minimum = Math.max(0, minBlurVisibleMs);
+      if (minimum === 0) {
+        revealSharp(token);
+        return;
+      }
+
+      const elapsed = Date.now() - blurVisibleSinceRef.current;
+      const remaining = minimum - elapsed;
+      if (remaining <= 0) {
+        revealSharp(token);
+        return;
+      }
+
+      clearRevealTimer();
+      revealTimerRef.current = window.setTimeout(() => {
+        revealTimerRef.current = null;
+        revealSharp(token);
+      }, remaining);
+    },
+    [blurPlaceholder, clearRevealTimer, minBlurVisibleMs, revealSharp],
+  );
+
+  useEffect(() => {
+    return () => {
+      clearRevealTimer();
+    };
+  }, [clearRevealTimer]);
 
   useEffect(() => {
     if (!blurPlaceholder) {
+      clearRevealTimer();
       const raf = requestAnimationFrame(() => {
+        blurVisibleSinceRef.current = Date.now();
         setPhase("sharp");
         setLoadedToken(currentLoadToken);
         setFailedToken(null);
@@ -177,21 +237,29 @@ export function OptStuffImage({
       return () => cancelAnimationFrame(raf);
     }
 
+    clearRevealTimer();
     const resetRaf = requestAnimationFrame(() => {
+      blurVisibleSinceRef.current = Date.now();
       setLoadedToken("");
       setFailedToken(null);
       setPhase(effectiveLoadDelay === 0 ? "loading" : "blur");
     });
-    if (effectiveLoadDelay === 0) return () => cancelAnimationFrame(resetRaf);
+    if (effectiveLoadDelay === 0) {
+      return () => {
+        clearRevealTimer();
+        cancelAnimationFrame(resetRaf);
+      };
+    }
 
     const timer = window.setTimeout(() => {
       setPhase("loading");
     }, effectiveLoadDelay);
     return () => {
+      clearRevealTimer();
       cancelAnimationFrame(resetRaf);
       window.clearTimeout(timer);
     };
-  }, [blurPlaceholder, currentLoadToken, effectiveLoadDelay]);
+  }, [blurPlaceholder, clearRevealTimer, currentLoadToken, effectiveLoadDelay]);
 
   useEffect(() => {
     if (!blurPlaceholder || phase === "blur") return;
@@ -199,13 +267,11 @@ export function OptStuffImage({
     if (!img || !img.complete || img.naturalWidth <= 0) return;
 
     const raf = requestAnimationFrame(() => {
-      setLoadedToken(currentLoadToken);
-      setFailedToken(null);
-      setPhase("sharp");
+      revealWithMinimumDelay(currentLoadToken);
     });
 
     return () => cancelAnimationFrame(raf);
-  }, [blurPlaceholder, currentLoadToken, phase]);
+  }, [blurPlaceholder, currentLoadToken, phase, revealWithMinimumDelay]);
 
   const hasLoadError = failedToken === currentLoadToken;
   const loaded =
@@ -216,20 +282,20 @@ export function OptStuffImage({
   const handleLoad = useCallback<React.ReactEventHandler<HTMLImageElement>>(
     (e) => {
       setFailedToken(null);
-      setLoadedToken(currentLoadToken);
-      setPhase("sharp");
+      revealWithMinimumDelay(currentLoadToken);
       onLoad?.(e);
     },
-    [currentLoadToken, onLoad],
+    [currentLoadToken, onLoad, revealWithMinimumDelay],
   );
 
   const handleError = useCallback<React.ReactEventHandler<HTMLImageElement>>(
     (e) => {
+      clearRevealTimer();
       setFailedToken(currentLoadToken);
       setPhase("sharp");
       onError?.(e);
     },
-    [currentLoadToken, onError],
+    [clearRevealTimer, currentLoadToken, onError],
   );
 
   const replay = useCallback(() => {
