@@ -76,7 +76,7 @@ export function signImageUrl(
       })()
     : undefined;
 
-  const payload = exp ? `${path}?exp=${exp}` : path;
+  const payload = exp != null ? `${path}?exp=${exp}` : path;
   const sig = crypto
     .createHmac("sha256", SECRET_KEY)
     .update(payload)
@@ -84,7 +84,7 @@ export function signImageUrl(
     .substring(0, 32);
 
   let url = `${ENDPOINT}/${PROJECT_SLUG}/${path}?key=${PUBLIC_KEY}&sig=${sig}`;
-  if (exp) url += `&exp=${exp}`;
+  if (exp != null) url += `&exp=${exp}`;
 
   return url;
 }
