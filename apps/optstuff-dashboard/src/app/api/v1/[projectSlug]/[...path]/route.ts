@@ -125,12 +125,68 @@ function buildServerTimingHeader(
   authMs: number,
   transformMs: number,
   totalMs: number,
+  probeMs?: number,
 ): string {
-  return `auth;dur=${authMs}, transform;dur=${transformMs}, total;dur=${totalMs}`;
+  const parts = [`auth;dur=${authMs}`];
+  if (typeof probeMs === "number") {
+    parts.push(`probe;dur=${probeMs}`);
+  }
+  parts.push(`transform;dur=${transformMs}`, `total;dur=${totalMs}`);
+  return parts.join(", ");
 }
 
 function shouldSampleOriginalSize(): boolean {
   return Math.random() < ORIGINAL_SIZE_SAMPLE_RATE;
+}
+
+type UpstreamProbeResult =
+  | { ok: true; probeTimeMs: number }
+  | { ok: false; probeTimeMs: number; status: number };
+
+function isNonTransformableContentType(contentType: string): boolean {
+  const mimeType = contentType.split(";")[0]?.trim().toLowerCase();
+  if (!mimeType) return false;
+  if (mimeType.startsWith("image/")) return false;
+  if (mimeType.startsWith("text/")) return true;
+
+  return (
+    mimeType === "application/json" ||
+    mimeType === "application/xml" ||
+    mimeType === "application/javascript"
+  );
+}
+
+async function probeUpstreamSource(imageUrl: string): Promise<UpstreamProbeResult> {
+  const probeStart = Date.now();
+  try {
+    const response = await fetch(imageUrl, {
+      method: "HEAD",
+      redirect: "error",
+      signal: AbortSignal.timeout(3_000),
+    });
+    const probeTimeMs = Date.now() - probeStart;
+
+    if (response.status >= 400) {
+      return {
+        ok: false,
+        probeTimeMs,
+        status: mapUpstreamErrorStatus({ statusCode: response.status }),
+      };
+    }
+
+    const contentType = response.headers.get("content-type");
+    if (contentType && isNonTransformableContentType(contentType)) {
+      return { ok: false, probeTimeMs, status: 502 };
+    }
+
+    return { ok: true, probeTimeMs };
+  } catch (error) {
+    return {
+      ok: false,
+      probeTimeMs: Date.now() - probeStart,
+      status: mapUpstreamErrorStatus(error),
+    };
+  }
 }
 
 async function validateRequest(
@@ -490,8 +546,31 @@ export async function HEAD(
   if (!validation.ok) {
     return validation.response;
   }
-  const { project } = validation.context;
+  const { project, imageUrl } = validation.context;
+  const authTimeMs = Date.now() - startTime;
+  const probeResult = await probeUpstreamSource(imageUrl);
   const processingTimeMs = Date.now() - startTime;
+  const serverTiming = buildServerTimingHeader(
+    authTimeMs,
+    0,
+    processingTimeMs,
+    probeResult.probeTimeMs,
+  );
+
+  if (!probeResult.ok) {
+    return NextResponse.json(
+      { error: "Image processing failed" },
+      {
+        status: probeResult.status,
+        headers: {
+          Vary: buildVaryHeader(project.allowedRefererDomains),
+          "X-Processing-Time": `${processingTimeMs}ms`,
+          "X-Head-Fast-Path": "1",
+          "Server-Timing": serverTiming,
+        },
+      },
+    );
+  }
 
   return new Response(null, {
     status: 200,
@@ -500,11 +579,7 @@ export async function HEAD(
       Vary: buildVaryHeader(project.allowedRefererDomains),
       "X-Processing-Time": `${processingTimeMs}ms`,
       "X-Head-Fast-Path": "1",
-      "Server-Timing": buildServerTimingHeader(
-        processingTimeMs,
-        0,
-        processingTimeMs,
-      ),
+      "Server-Timing": serverTiming,
     },
   });
 }

@@ -5,7 +5,7 @@ description: Complete reference of all HTTP error codes returned by the OptStuff
 
 This page lists all error codes returned by the OptStuff API and provides troubleshooting guidance for common issues.
 
-`HEAD` requests use a fast path (no image transformation), so transformation-related failures (`500` / `502`) apply to `GET` requests.
+`HEAD` requests use a fast path (no image transformation) but still perform a lightweight upstream probe, so upstream-related failures (`404` / `410` / `502`, and rare `500` fetch failures) can apply to both `GET` and `HEAD`.
 
 ## Error Code Reference
 
@@ -23,8 +23,8 @@ This page lists all error codes returned by the OptStuff API and provides troubl
 | 403 | Forbidden: Source domain not allowed | Image source domain not in project's allowed list | Add the domain in project Settings → Domain Security → Image Sources (see [Domain Whitelisting](/guides/domain-whitelisting)) |
 | 404 | Project not found | `projectSlug` doesn't match any project | Check the project slug is correct |
 | 429 | Rate limit exceeded | Per-minute or per-day limit reached | Wait for `Retry-After` seconds, or [increase limits](/guides/rate-limiting) |
-| 502 | Image processing failed | Upstream fetch/transform failure while processing a `GET` request | Verify source image availability and retry; check upstream origin stability |
-| 500 | Image processing failed | Internal error during optimization | Check that the source image is accessible and in a [supported format](/api-reference/image-operations#supported-formats) |
+| 502 | Image processing failed | Upstream fetch/transform/probe failure | Verify source image availability and retry; check upstream origin stability |
+| 500 | Image processing failed | Internal error during optimization or upstream fetch error without a mappable status code | Check that the source image is accessible and in a [supported format](/api-reference/image-operations#supported-formats) |
 
 ## Troubleshooting Signature Errors
 
