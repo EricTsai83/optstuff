@@ -1,7 +1,7 @@
 import { DeferredMount } from "@/components/deferred-mount";
+import { HomeHeader } from "@/components/home-header";
 import { HeroRefreshToggle } from "@/components/hero-refresh-toggle";
 import { OptStuffImage } from "@/components/optstuff-image";
-import { ScrollHeader } from "@/components/scroll-header";
 import dynamic from "next/dynamic";
 import { Fragment } from "react";
 
@@ -155,97 +155,7 @@ export function HomePageContent({
   return (
     <div className="bg-background text-foreground min-h-screen">
       {/* ─── Header ─── */}
-      <ScrollHeader>
-        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
-          <div className="flex items-center gap-2.5">
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              className="size-5 text-emerald-600"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z" />
-            </svg>
-            <span className="text-foreground text-sm font-semibold tracking-tight">
-              OptStuff
-            </span>
-          </div>
-          <nav className="text-muted hidden items-center justify-center gap-6 text-sm md:flex">
-            <a href="#demo" className="hover:text-foreground transition-colors">
-              Demo
-            </a>
-            <a
-              href="#how-it-works"
-              className="hover:text-foreground transition-colors"
-            >
-              How it works
-            </a>
-            <a
-              href="#playground"
-              className="hover:text-foreground transition-colors"
-            >
-              Playground
-            </a>
-          </nav>
-          <div className="hidden justify-end md:flex">
-            <a
-              href="https://github.com/EricTsai83/optstuff"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-muted hover:text-foreground flex items-center gap-1.5 text-sm transition-colors"
-            >
-              <svg viewBox="0 0 16 16" fill="currentColor" className="size-4">
-                <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8Z" />
-              </svg>
-              GitHub
-            </a>
-          </div>
-
-          <details className="group relative md:hidden">
-            <summary className="text-muted hover:text-foreground border-border bg-card flex cursor-pointer list-none items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition-colors [&::-webkit-details-marker]:hidden">
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.8"
-                className="size-4"
-              >
-                <path strokeLinecap="round" d="M4 7h16M4 12h16M4 17h16" />
-              </svg>
-              Menu
-            </summary>
-            <div className="border-border bg-card absolute right-0 top-[calc(100%+0.5rem)] z-50 min-w-[220px] rounded-xl border p-2 shadow-xl">
-              <a
-                href="#demo"
-                className="hover:bg-card-hover block rounded-lg px-3 py-2 text-sm"
-              >
-                Demo
-              </a>
-              <a
-                href="#how-it-works"
-                className="hover:bg-card-hover block rounded-lg px-3 py-2 text-sm"
-              >
-                How it works
-              </a>
-              <a
-                href="#playground"
-                className="hover:bg-card-hover block rounded-lg px-3 py-2 text-sm"
-              >
-                Playground
-              </a>
-              <a
-                href="https://github.com/EricTsai83/optstuff"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="hover:bg-card-hover mt-1 block rounded-lg px-3 py-2 text-sm"
-              >
-                GitHub
-              </a>
-            </div>
-          </details>
-        </div>
-      </ScrollHeader>
+      <HomeHeader />
 
       <main>
         {/* ─── Hero ─── */}
@@ -312,7 +222,9 @@ export function HomePageContent({
                     <div className="text-muted grid grid-cols-[auto_1fr] gap-x-2 gap-y-1 font-mono text-xs">
                       {heroBlurDebugRows.map((row) => (
                         <Fragment key={row.label}>
-                          <span className="text-foreground/85">{row.label}:</span>
+                          <span className="text-foreground/85">
+                            {row.label}:
+                          </span>
                           <span className="text-foreground/85 break-all">
                             {row.value}
                           </span>
@@ -326,7 +238,9 @@ export function HomePageContent({
                       <div className="text-muted mt-2 grid gap-1 text-[11px] leading-relaxed">
                         {heroBlurDebugRows.map((row) => (
                           <p key={`${row.label}-guide`}>
-                            <span className="text-foreground/85">{row.label}:</span>{" "}
+                            <span className="text-foreground/85">
+                              {row.label}:
+                            </span>{" "}
                             {row.description}
                           </p>
                         ))}

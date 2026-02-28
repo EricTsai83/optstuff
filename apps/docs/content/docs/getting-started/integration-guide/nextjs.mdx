@@ -26,7 +26,7 @@ NEXT_PUBLIC_OPTSTUFF_ENDPOINT="https://your-optstuff-deployment.com/api/v1"
 
 ## Create a Signing Utility
 
-Create `lib/optstuff.ts` (server-side only):
+Create `lib/optstuff-core.ts` (server-side only):
 
 ```typescript
 import "server-only";
@@ -44,25 +44,45 @@ const ENDPOINT = requireEnv("NEXT_PUBLIC_OPTSTUFF_ENDPOINT");
 const PROJECT_SLUG = requireEnv("NEXT_PUBLIC_OPTSTUFF_PROJECT_SLUG");
 const EXPIRY_BUCKET_SECONDS = 3600;
 
+type ImageOperation = {
+  width?: number;
+  height?: number;
+  quality?: number;
+  format?: "webp" | "avif" | "png" | "jpg";
+  fit?: "cover" | "contain" | "fill";
+};
+
+function buildOperationString(operations: ImageOperation): string {
+  const parts: string[] = [];
+  if (operations.width) parts.push(`w_${operations.width}`);
+  if (operations.height) parts.push(`h_${operations.height}`);
+  if (operations.quality) parts.push(`q_${operations.quality}`);
+  if (operations.format) parts.push(`f_${operations.format}`);
+  if (operations.fit) parts.push(`fit_${operations.fit}`);
+  return parts.length > 0 ? parts.join(",") : "_";
+}
+
 /**
  * Generates a signed image optimization URL.
  *
- * @param imagePath - Source image path (e.g., "images.example.com/photo.jpg")
- * @param operations - Image operations (e.g., "w_800,f_webp")
+ * @param imageUrl - Source image URL (e.g., "https://images.example.com/photo.jpg")
+ * @param operations - Image operations object
  * @param expiresIn - Signature validity in seconds (optional)
  *
  * @example
- * signImageUrl("cdn.example.com/photo.jpg", "w_800,f_webp")
+ * generateOptStuffUrl("https://cdn.example.com/photo.jpg", { width: 800, format: "webp" })
  *
  * @example
- * signImageUrl("cdn.example.com/photo.jpg", "w_800", 3600) // expires in 1 hour
+ * generateOptStuffUrl("https://cdn.example.com/photo.jpg", { width: 800 }, 3600) // expires in 1 hour
  */
-export function signImageUrl(
-  imagePath: string,
-  operations: string = "_",
+export function generateOptStuffUrl(
+  imageUrl: string,
+  operations: ImageOperation = {},
   expiresIn?: number
 ): string {
-  const path = `${operations}/${imagePath}`;
+  const operationString = buildOperationString(operations);
+  const normalizedImageUrl = imageUrl.replace(/^https?:\/\//, "").replace(/\/$/, "");
+  const path = `${operationString}/${normalizedImageUrl}`;
 
   const exp = expiresIn != null
     ? (() => {
@@ -99,12 +119,12 @@ Using a bucketed expiration keeps signatures stable within each bucket window, w
 The simplest approach — signing happens during server-side rendering:
 
 ```tsx
-import { signImageUrl } from "@/lib/optstuff";
+import { generateOptStuffUrl } from "@/lib/optstuff-core";
 
 export default function HomePage() {
-  const heroImage = signImageUrl(
-    "cdn.example.com/hero.jpg",
-    "w_1200,f_webp",
+  const heroImage = generateOptStuffUrl(
+    "https://cdn.example.com/hero.jpg",
+    { width: 1200, format: "webp" },
     86400 // 24 hours
   );
 
@@ -122,7 +142,7 @@ For client components that need to load images dynamically, create an API route 
 
 ```typescript
 // app/api/image-url/route.ts
-import { signImageUrl } from "@/lib/optstuff";
+import { generateOptStuffUrl } from "@/lib/optstuff-core";
 import { NextRequest, NextResponse } from "next/server";
 
 const ALLOWED_SOURCE_HOSTS = ["cdn.example.com", "images.example.com"];
@@ -152,7 +172,7 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const ALLOWED_FORMATS = ["webp", "png", "jpeg", "jpg", "avif"];
+  const ALLOWED_FORMATS = ["webp", "png", "jpg", "avif"];
   const NUMERIC = /^\d+$/;
 
   if (width && (!NUMERIC.test(width) || +width > 8192)) {
@@ -165,13 +185,15 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Invalid format" }, { status: 400 });
   }
 
-  const ops = [
-    width && `w_${width}`,
-    height && `h_${height}`,
-    `f_${format}`,
-  ].filter(Boolean).join(",");
-
-  const signedUrl = signImageUrl(cleanSrc, ops, 3600);
+  const signedUrl = generateOptStuffUrl(
+    cleanSrc,
+    {
+      width: width ? Number(width) : undefined,
+      height: height ? Number(height) : undefined,
+      format: format as "webp" | "avif" | "png" | "jpg",
+    },
+    3600,
+  );
 
   return NextResponse.json({ url: signedUrl });
 }
@@ -298,7 +320,7 @@ export function OptStuffImage({
 ```
 
 <Callout type="warn">
-Do **not** pass `signImageUrl` (or any function that uses your secret key) directly as
+Do **not** pass `generateOptStuffUrl` (or any function that uses your secret key) directly as
 a `loader` prop. The `loader` function runs client-side, which would expose
 `OPTSTUFF_SECRET_KEY`. Instead, have the loader point to an API Route that handles
 signing server-side.
@@ -310,12 +332,23 @@ For the full implementation (API Route, architecture diagram, `srcSet` tuning, a
 
 If you only need the core integration and not the demo UI, copy these files:
 
-1. `examples/nextjs/src/lib/optstuff.ts`
+1. `examples/nextjs/src/lib/optstuff-core.ts`
 2. `examples/nextjs/src/lib/next-image-optstuff-loader.ts`
 3. `examples/nextjs/src/app/api/optstuff/route.ts`
 4. `examples/nextjs/src/components/optstuff-image.tsx` (or your own thin wrapper)
 
 Everything else in the demo app (hero, playground, comparison cards, debug UI) is optional teaching UI and can be skipped.
+
+If you also want server-generated blur placeholders from the demo, additionally copy:
+
+- `examples/nextjs/src/lib/optstuff-blur.ts`
+- `examples/nextjs/src/lib/hero-blur-config.ts`
+
+This keeps the boundary clear:
+
+- **Core runtime integration**: signing + loader + API route + image wrapper
+- **Optional enhancement**: server blur generation
+- **Demo-only UI**: hero/playground/comparison/debug components
 
 ## Client-Side Performance Hardening
 

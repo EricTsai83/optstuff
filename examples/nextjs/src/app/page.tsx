@@ -3,8 +3,9 @@ import {
   HomePageContent,
 } from "@/components/home-page-content";
 import { HERO_BLUR_CONFIG, HERO_BLUR_MODE } from "@/lib/hero-blur-config";
-import type { BlurDataResult } from "@/lib/optstuff";
-import { generateOptStuffUrl, getBlurDataResult } from "@/lib/optstuff";
+import type { BlurDataResult } from "@/lib/optstuff-blur";
+import { getBlurDataResult } from "@/lib/optstuff-blur";
+import { generateOptStuffUrl } from "@/lib/optstuff-core";
 import { cacheLife, unstable_noStore as noStore } from "next/cache";
 import { Suspense } from "react";
 
