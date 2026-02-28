@@ -95,24 +95,28 @@ export function OptimizerPlayground() {
   }
 
   const chipActive = "bg-emerald-500 text-white shadow-sm";
-  const chipInactive = "text-muted hover:text-foreground";
+  const chipInactive =
+    "text-muted hover:text-foreground hover:bg-card-hover/60";
 
   return (
     <div className="space-y-6">
       <div className="grid gap-6 lg:grid-cols-2">
-        <div className="rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-6">
-          <h3 className="mb-5 text-base font-semibold text-foreground">
+        {/* Configuration panel */}
+        <div className="border-border bg-card rounded-2xl border p-5 shadow-sm sm:p-6">
+          <h3 className="text-foreground mb-5 text-base font-semibold">
             Configuration
           </h3>
 
+          {/* Image source */}
           <div className="mb-5">
-            <label className="mb-1.5 block text-sm font-medium text-muted">
+            <label className="text-muted mb-2 block text-sm font-medium">
               Image Source
             </label>
-            <div className="mb-2 flex flex-wrap gap-2">
+            <div className="mb-2.5 flex flex-wrap gap-2">
               {DEMO_IMAGES.map((img) => (
                 <button
                   key={img.label}
+                  type="button"
                   onClick={() => setImageUrl(img.url)}
                   className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-all ${
                     imageUrl === img.url
@@ -129,13 +133,15 @@ export function OptimizerPlayground() {
               value={imageUrl}
               onChange={(e) => setImageUrl(e.target.value)}
               placeholder="https://example.com/image.jpg"
-              className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground outline-none transition-colors focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
+              aria-label="Image URL"
+              className="border-border bg-background text-foreground w-full rounded-lg border px-3 py-2.5 text-sm outline-none transition-all focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
             />
           </div>
 
-          <div className="mb-5 grid gap-3 sm:grid-cols-2">
+          {/* Width & Quality */}
+          <div className="mb-5 grid gap-4 sm:grid-cols-2">
             <div>
-              <label className="mb-1.5 block text-sm font-medium text-muted">
+              <label className="text-muted mb-2 block text-sm font-medium">
                 Width (px)
               </label>
               <input
@@ -144,11 +150,12 @@ export function OptimizerPlayground() {
                 onChange={(e) => setWidth(Number(e.target.value))}
                 min={1}
                 max={4096}
-                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground outline-none transition-colors focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
+                aria-label="Image width"
+                className="border-border bg-background text-foreground w-full rounded-lg border px-3 py-2.5 text-sm outline-none transition-all focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
               />
             </div>
             <div>
-              <label className="mb-1.5 block text-sm font-medium text-muted">
+              <label className="text-muted mb-2 block text-sm font-medium">
                 Quality
               </label>
               <input
@@ -157,22 +164,26 @@ export function OptimizerPlayground() {
                 onChange={(e) => setQuality(Number(e.target.value))}
                 min={1}
                 max={100}
-                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground outline-none transition-colors focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
+                aria-label="Image quality"
+                className="border-border bg-background text-foreground w-full rounded-lg border px-3 py-2.5 text-sm outline-none transition-all focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
               />
             </div>
           </div>
 
-          <div className="mb-5 grid gap-3 sm:grid-cols-2">
+          {/* Format & Fit */}
+          <div className="mb-6 grid gap-4 sm:grid-cols-2">
             <div>
-              <label className="mb-1.5 block text-sm font-medium text-muted">
+              <label className="text-muted mb-2 block text-sm font-medium">
                 Format
               </label>
-              <div className="grid grid-cols-4 gap-1 rounded-lg bg-card-hover p-1">
+              <div className="bg-card-hover grid grid-cols-4 gap-1 rounded-lg p-1">
                 {FORMATS.map((f) => (
                   <button
                     key={f}
+                    type="button"
                     onClick={() => setFormat(f)}
-                    className={`rounded-md py-1.5 text-[11px] font-semibold uppercase tracking-wider transition-all ${
+                    aria-label={`Format: ${f}`}
+                    className={`rounded-md py-2 text-[11px] font-semibold uppercase tracking-wider transition-all ${
                       format === f ? chipActive : chipInactive
                     }`}
                   >
@@ -182,15 +193,17 @@ export function OptimizerPlayground() {
               </div>
             </div>
             <div>
-              <label className="mb-1.5 block text-sm font-medium text-muted">
+              <label className="text-muted mb-2 block text-sm font-medium">
                 Fit
               </label>
-              <div className="grid grid-cols-3 gap-1 rounded-lg bg-card-hover p-1">
+              <div className="bg-card-hover grid grid-cols-3 gap-1 rounded-lg p-1">
                 {FIT_MODES.map((m) => (
                   <button
                     key={m}
+                    type="button"
                     onClick={() => setFit(m)}
-                    className={`rounded-md py-1.5 text-[11px] font-semibold capitalize transition-all ${
+                    aria-label={`Fit: ${m}`}
+                    className={`rounded-md py-2 text-[11px] font-semibold capitalize transition-all ${
                       fit === m ? chipActive : chipInactive
                     }`}
                   >
@@ -202,18 +215,20 @@ export function OptimizerPlayground() {
           </div>
 
           <button
+            type="button"
             onClick={handleGenerate}
             disabled={loading || !hasInput}
-            className="w-full rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
+            className="w-full rounded-lg bg-emerald-600 px-4 py-3 text-sm font-medium text-white shadow-lg shadow-emerald-600/20 transition-all hover:bg-emerald-700 hover:shadow-emerald-600/30 disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none"
           >
             {loading ? "Generating..." : "Generate Signed URL"}
           </button>
         </div>
 
-        <div className="rounded-2xl border border-border bg-card shadow-sm">
-          <div className="flex flex-col items-start justify-between gap-2 border-b border-border px-4 py-3 sm:flex-row sm:items-center sm:px-5">
-            <h3 className="text-sm font-semibold text-foreground">Preview</h3>
-            <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted">
+        {/* Preview panel */}
+        <div className="border-border bg-card rounded-2xl border shadow-sm">
+          <div className="border-border flex flex-col items-start justify-between gap-2 border-b px-5 py-3.5 sm:flex-row sm:items-center">
+            <h3 className="text-foreground text-sm font-semibold">Preview</h3>
+            <div className="text-muted flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
               <span>{width}px</span>
               <span className="text-border">|</span>
               <span>q{quality}</span>
@@ -224,7 +239,7 @@ export function OptimizerPlayground() {
             </div>
           </div>
           <div className="p-3 sm:p-4">
-            <div className="relative aspect-4/3 overflow-hidden rounded-lg bg-card-hover">
+            <div className="bg-card-hover relative aspect-4/3 overflow-hidden rounded-lg">
               {previewUrl ? (
                 /* eslint-disable-next-line @next/next/no-img-element */
                 <img
@@ -234,10 +249,10 @@ export function OptimizerPlayground() {
                   loading="lazy"
                   decoding="async"
                   fetchPriority="low"
-                  className="h-full w-full object-contain"
+                  className="h-full w-full object-contain transition-opacity duration-300"
                 />
               ) : (
-                <div className="flex h-full items-center justify-center text-sm text-muted">
+                <div className="text-muted flex h-full items-center justify-center text-sm">
                   Enter an image URL to preview
                 </div>
               )}
@@ -246,44 +261,51 @@ export function OptimizerPlayground() {
         </div>
       </div>
 
-      <div className="rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-6">
-        <h3 className="mb-3 text-sm font-semibold text-foreground">Signed URL</h3>
+      {/* Signed URL output */}
+      <div className="border-border bg-card rounded-2xl border p-5 shadow-sm sm:p-6">
+        <h3 className="text-foreground mb-3 text-sm font-semibold">
+          Signed URL
+        </h3>
         {error ? (
-          <div className="rounded-lg border border-red-200 bg-red-50 p-3 dark:border-red-900/50 dark:bg-red-950/30">
+          <div className="rounded-lg border border-red-200 bg-red-50 p-4 dark:border-red-900/50 dark:bg-red-950/30">
             <p className="text-sm text-red-700 dark:text-red-400">{error}</p>
           </div>
         ) : generatedUrl ? (
           <div>
-            <div className="code-block relative overflow-x-auto rounded-lg p-3 sm:p-4">
+            <div className="code-block relative overflow-x-auto rounded-lg p-4">
               <code className="block break-all font-mono text-xs leading-relaxed text-emerald-400">
                 {generatedUrl}
               </code>
               <button
+                type="button"
                 onClick={handleCopy}
-                className="absolute right-3 top-3 rounded-md bg-zinc-700 px-2.5 py-1 text-xs font-medium text-zinc-200 transition-colors hover:bg-zinc-600"
+                className="absolute right-3 top-3 rounded-md bg-zinc-700 px-2.5 py-1.5 text-xs font-medium text-zinc-200 transition-colors hover:bg-zinc-600"
               >
                 {copied ? "Copied!" : "Copy"}
               </button>
             </div>
-            <p className="mt-2 text-xs text-muted">
+            <p className="text-muted mt-2 text-xs">
               Signed with HMAC-SHA256 — expires in 1 hour.
             </p>
           </div>
         ) : (
-          <div className="flex items-center justify-center rounded-lg border-2 border-dashed border-border py-6">
-            <p className="text-sm text-muted">
+          <div className="border-border flex items-center justify-center rounded-lg border-2 border-dashed py-8">
+            <p className="text-muted text-sm">
               Click &quot;Generate Signed URL&quot; to create a signed URL
             </p>
           </div>
         )}
       </div>
 
-      <div className="rounded-2xl border border-border bg-card shadow-sm">
-        <div className="border-b border-border px-4 py-3 sm:px-6">
-          <h3 className="text-sm font-semibold text-foreground">Code Example</h3>
+      {/* Code example */}
+      <div className="border-border bg-card overflow-hidden rounded-2xl border shadow-sm">
+        <div className="border-border border-b px-5 py-3.5 sm:px-6">
+          <h3 className="text-foreground text-sm font-semibold">
+            Code Example
+          </h3>
         </div>
         <div className="code-block rounded-none border-0 p-4 sm:p-5">
-          <pre className="overflow-x-auto font-mono text-xs leading-relaxed text-code-text">
+          <pre className="text-code-text overflow-x-auto font-mono text-xs leading-relaxed">
             <code>{`import { OptStuffImage } from "@/components/optstuff-image";
 
 <OptStuffImage
