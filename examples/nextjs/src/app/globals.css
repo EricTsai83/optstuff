@@ -12,6 +12,9 @@
   --accent-light: #d1fae5;
   --code-bg: #18181b;
   --code-text: #d4d4d8;
+  --section-alt: #f8fafb;
+  --glow-emerald: rgba(16, 185, 129, 0.12);
+  --glow-cyan: rgba(6, 182, 212, 0.10);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -27,6 +30,9 @@
     --accent-light: #064e3b;
     --code-bg: #0c0c0e;
     --code-text: #d4d4d8;
+    --section-alt: #0f0f11;
+    --glow-emerald: rgba(52, 211, 153, 0.08);
+    --glow-cyan: rgba(6, 182, 212, 0.06);
   }
 }
 
@@ -42,6 +48,7 @@
   --color-accent-light: var(--accent-light);
   --color-code-bg: var(--code-bg);
   --color-code-text: var(--code-text);
+  --color-section-alt: var(--section-alt);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
@@ -56,7 +63,10 @@ body {
   font-family: var(--font-geist-sans), system-ui, sans-serif;
 }
 
-/* Fade-in-up animation for scroll reveals */
+/* ──────────────────────────────────────
+   Keyframes
+   ────────────────────────────────────── */
+
 @keyframes fade-in-up {
   from {
     opacity: 0;
@@ -88,8 +98,62 @@ body {
   to { stroke-dashoffset: 0; }
 }
 
+@keyframes float-slow {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(10px, -15px) scale(1.05); }
+  66% { transform: translate(-8px, 8px) scale(0.95); }
+}
+
+@keyframes float-reverse {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); }
+  33% { transform: translate(-12px, 10px) rotate(60deg); }
+  66% { transform: translate(8px, -12px) rotate(120deg); }
+}
+
+@keyframes gradient-shift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes pulse-subtle {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+@keyframes slide-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(1.5); }
+}
+
+/* ──────────────────────────────────────
+   Animation utilities
+   ────────────────────────────────────── */
+
 .animate-fade-in-up {
-  animation: fade-in-up 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: fade-in-up 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .animate-fade-in {
@@ -100,6 +164,26 @@ body {
   animation: float 3s ease-in-out infinite;
 }
 
+.animate-float-slow {
+  animation: float-slow 8s ease-in-out infinite;
+}
+
+.animate-float-reverse {
+  animation: float-reverse 10s ease-in-out infinite;
+}
+
+.animate-scale-in {
+  animation: scale-in 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.animate-pulse-dot {
+  animation: pulse-dot 2s ease-in-out infinite;
+}
+
+.animate-pulse-subtle {
+  animation: pulse-subtle 3s ease-in-out infinite;
+}
+
 /* Stagger delays for children */
 .stagger-1 { animation-delay: 0.1s; }
 .stagger-2 { animation-delay: 0.2s; }
@@ -108,18 +192,20 @@ body {
 .stagger-5 { animation-delay: 0.5s; }
 .stagger-6 { animation-delay: 0.6s; }
 
-/* Hero gradient — richer emerald wash with dot pattern */
+/* ──────────────────────────────────────
+   Hero section
+   ────────────────────────────────────── */
+
 .hero-gradient {
   background:
-    radial-gradient(circle 1px at center, rgba(16, 185, 129, 0.08) 0%, transparent 1px),
-    radial-gradient(ellipse 80% 50% at 50% -10%, rgba(16, 185, 129, 0.15) 0%, transparent 70%),
-    radial-gradient(ellipse 50% 40% at 80% 10%, rgba(52, 211, 153, 0.08) 0%, transparent 60%),
-    radial-gradient(ellipse 40% 30% at 20% 60%, rgba(6, 182, 212, 0.06) 0%, transparent 50%),
+    radial-gradient(circle 1px at center, var(--glow-emerald) 0%, transparent 1px),
+    radial-gradient(ellipse 80% 60% at 50% -20%, rgba(16, 185, 129, 0.18) 0%, transparent 70%),
+    radial-gradient(ellipse 60% 40% at 80% 10%, rgba(52, 211, 153, 0.10) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 35% at 15% 65%, rgba(6, 182, 212, 0.08) 0%, transparent 50%),
     var(--background);
-  background-size: 24px 24px, 100% 100%, 100% 100%, 100% 100%, 100% 100%;
+  background-size: 20px 20px, 100% 100%, 100% 100%, 100% 100%, 100% 100%;
 }
 
-/* Hero stat chips */
 .hero-stat-chip {
   display: flex;
   align-items: center;
@@ -132,11 +218,12 @@ body {
   background: rgba(255, 255, 255, 0.7);
   backdrop-filter: blur(12px);
   border: 1px solid var(--border);
-  transition: all 0.2s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .hero-stat-chip:hover {
   border-color: rgba(16, 185, 129, 0.4);
   box-shadow: 0 0 0 1px rgba(16, 185, 129, 0.08);
+  transform: translateY(-1px);
 }
 @media (prefers-color-scheme: dark) {
   .hero-stat-chip {
@@ -144,44 +231,51 @@ body {
   }
 }
 
-/* Floating decorative orbs */
-@keyframes float-slow {
-  0%, 100% { transform: translate(0, 0) scale(1); }
-  33% { transform: translate(10px, -15px) scale(1.05); }
-  66% { transform: translate(-8px, 8px) scale(0.95); }
-}
-@keyframes float-reverse {
-  0%, 100% { transform: translate(0, 0) rotate(0deg); }
-  33% { transform: translate(-12px, 10px) rotate(60deg); }
-  66% { transform: translate(8px, -12px) rotate(120deg); }
-}
-.animate-float-slow {
-  animation: float-slow 8s ease-in-out infinite;
-}
-.animate-float-reverse {
-  animation: float-reverse 10s ease-in-out infinite;
+/* ──────────────────────────────────────
+   Gradient text
+   ────────────────────────────────────── */
+
+.text-gradient {
+  background: linear-gradient(135deg, #10b981 0%, #06b6d4 50%, #10b981 100%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  color: transparent;
+  animation: gradient-shift 6s ease-in-out infinite;
 }
 
-/* Code block styling — always dark */
+/* ──────────────────────────────────────
+   Code blocks — always dark
+   ────────────────────────────────────── */
+
 .code-block {
   background: var(--code-bg);
   border: 1px solid #27272a;
   color: var(--code-text);
 }
 
-/* Feature card hover glow */
+/* ──────────────────────────────────────
+   Feature card hover glow
+   ────────────────────────────────────── */
+
 .feature-card {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .feature-card:hover {
   border-color: rgba(16, 185, 129, 0.4);
-  box-shadow: 0 0 0 1px rgba(16, 185, 129, 0.1), 0 8px 32px -8px rgba(16, 185, 129, 0.08);
-  transform: translateY(-2px);
+  box-shadow:
+    0 0 0 1px rgba(16, 185, 129, 0.1),
+    0 8px 32px -8px rgba(16, 185, 129, 0.12);
+  transform: translateY(-4px);
 }
 
-/* How-it-works step card */
+/* ──────────────────────────────────────
+   How-it-works step card
+   ────────────────────────────────────── */
+
 .step-card {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .step-card:hover {
   transform: translateY(-4px);
@@ -193,16 +287,10 @@ body {
   }
 }
 
-/* Gradient text utility */
-.text-gradient {
-  background: linear-gradient(135deg, #10b981 0%, #06b6d4 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  color: transparent;
-}
+/* ──────────────────────────────────────
+   Glass card for playground
+   ────────────────────────────────────── */
 
-/* Glass card for playground */
 .glass-card {
   background: rgba(255, 255, 255, 0.7);
   backdrop-filter: blur(20px);
@@ -214,7 +302,10 @@ body {
   }
 }
 
-/* Playground gradient background */
+/* ──────────────────────────────────────
+   Playground gradient background
+   ────────────────────────────────────── */
+
 .playground-bg {
   background:
     radial-gradient(ellipse 60% 50% at 20% 80%, rgba(16, 185, 129, 0.06) 0%, transparent 60%),
@@ -222,11 +313,65 @@ body {
     var(--background);
 }
 
-/* Pulse dot */
-@keyframes pulse-dot {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.5; transform: scale(1.5); }
+
+/* ──────────────────────────────────────
+   Pipeline connector animation
+   ────────────────────────────────────── */
+
+.pipeline-connector {
+  position: relative;
+  overflow: hidden;
 }
-.animate-pulse-dot {
-  animation: pulse-dot 2s ease-in-out infinite;
+.pipeline-connector::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  animation: shimmer 3s ease-in-out infinite;
+}
+
+/* ──────────────────────────────────────
+   Badge pill — consistent style
+   ────────────────────────────────────── */
+
+.badge-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 9999px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.025em;
+  transition: all 0.2s ease;
+}
+
+/* ──────────────────────────────────────
+   Interactive step icon
+   ────────────────────────────────────── */
+
+.step-icon {
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.step-icon:hover {
+  transform: scale(1.1) rotate(-3deg);
+  box-shadow: 0 8px 24px -4px currentColor;
+}
+
+/* ──────────────────────────────────────
+   Subtle noise grain overlay (hero only)
+   ────────────────────────────────────── */
+
+.grain-overlay::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  opacity: 0.03;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n' x='0' y='0'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 128px 128px;
 }

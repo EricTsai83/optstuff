@@ -73,7 +73,13 @@ Key points:
 
 ### Step 1: Signing Utility
 
-If you don't have one yet, create `lib/optstuff.ts`. See the [Next.js Integration Guide](/getting-started/integration-guide/nextjs#create-a-signing-utility) for details.
+If you don't have one yet, create `lib/optstuff-core.ts`. See the [Next.js Integration Guide](/getting-started/integration-guide/nextjs#create-a-signing-utility) for details.
+
+For clarity:
+
+- `optstuff-core.ts` = core runtime signing logic (recommended to copy first)
+- `optstuff-blur.ts` = optional server blur helper for hero/demo UX
+- Hero/playground/comparison components = demo-only UI, not required for integration
 
 ### Step 2: API Route for Signing
 
@@ -81,8 +87,8 @@ Create an API route that accepts image parameters, signs the URL server-side, an
 
 ```typescript
 // app/api/optstuff/route.ts
+import { generateOptStuffUrl } from "@/lib/optstuff-core";
 import { type NextRequest, NextResponse } from "next/server";
-import { signImageUrl } from "@/lib/optstuff";
 
 export function GET(request: NextRequest) {
   const SIGNED_URL_TTL_SECONDS = 3600;
@@ -100,20 +106,15 @@ export function GET(request: NextRequest) {
   const format = sp.get("f") ?? "webp";
   const fit = sp.get("fit") ?? "cover";
 
-  const ops = [
-    width && `w_${width}`,
-    height && `h_${height}`,
-    `q_${quality}`,
-    `f_${format}`,
-    `fit_${fit}`,
-  ]
-    .filter(Boolean)
-    .join(",");
+  const operations = {
+    width: width ? Number(width) : undefined,
+    height: height ? Number(height) : undefined,
+    quality: Number(quality),
+    format: format as "webp" | "avif" | "png" | "jpg",
+    fit: fit as "cover" | "contain" | "fill",
+  };
 
-  const signedUrl = signImageUrl(url, ops, {
-    ttlSeconds: SIGNED_URL_TTL_SECONDS,
-    bucketSeconds: 3600, // keeps URLs stable within the same hour
-  });
+  const signedUrl = generateOptStuffUrl(url, operations, SIGNED_URL_TTL_SECONDS);
 
   const response = NextResponse.redirect(signedUrl, 302);
   response.headers.set(
@@ -277,7 +278,8 @@ For above-the-fold hero images, keep the image path short and predictable.
 
 ```tsx
 // app/page.tsx (Server Component)
-import { generateOptStuffUrl, getBlurDataUrl } from "@/lib/optstuff";
+import { getBlurDataUrl } from "@/lib/optstuff-blur";
+import { generateOptStuffUrl } from "@/lib/optstuff-core";
 
 const heroImageUrl = generateOptStuffUrl(
   "https://images.unsplash.com/photo-1506744038136-46273834b3fb",
@@ -338,7 +340,7 @@ export const HERO_BLUR_CONFIG = {
 // app/page.tsx
 import { HERO_BLUR_CONFIG, HERO_BLUR_MODE } from "@/lib/hero-blur-config";
 import { cacheLife, unstable_noStore as noStore } from "next/cache";
-import { getBlurDataUrl } from "@/lib/optstuff";
+import { getBlurDataUrl } from "@/lib/optstuff-blur";
 
 const heroBlurMode = HERO_BLUR_CONFIG.mode;
 if (heroBlurMode === HERO_BLUR_MODE.REALTIME) {

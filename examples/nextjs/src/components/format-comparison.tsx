@@ -54,14 +54,14 @@ function buildUrl(src: string, format: string, width: number, quality: number) {
 
 export function FormatComparison() {
   return (
-    <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 lg:gap-5">
       {FORMATS.map((fmt) => {
         const previewUrl = buildUrl(DEMO_SRC, fmt.id, 600, 80);
 
         return (
           <div
             key={fmt.id}
-            className="feature-card group cursor-pointer overflow-hidden rounded-xl border border-border bg-card shadow-sm transition-all hover:border-emerald-500/50 hover:ring-2 hover:ring-emerald-500/20"
+            className="feature-card border-border bg-card group cursor-default overflow-hidden rounded-2xl border shadow-sm"
           >
             <div className="relative aspect-4/3 overflow-hidden">
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -73,16 +73,17 @@ export function FormatComparison() {
                 loading="lazy"
                 decoding="async"
                 fetchPriority="low"
-                className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                className="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
               />
               <div className="absolute left-3 top-3">
-                <span className="rounded-md bg-black/60 px-2 py-1 font-mono text-[11px] font-semibold uppercase tracking-wider text-white backdrop-blur-sm">
+                <span className="rounded-lg bg-black/50 px-2.5 py-1 font-mono text-[11px] font-semibold uppercase tracking-wider text-white backdrop-blur-md">
                   .{fmt.id}
                 </span>
               </div>
+              <div className="pointer-events-none absolute inset-0 bg-linear-to-t from-black/15 via-transparent to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
             </div>
-            <div className="p-4">
-              <div className="mb-2 flex items-center justify-between">
+            <div className="p-4 sm:p-5">
+              <div className="mb-2.5 flex items-center justify-between">
                 <span className="text-foreground text-sm font-semibold">
                   {fmt.label}
                 </span>

@@ -16,9 +16,13 @@ GET /api/v1/my-blog/w_800,q_80,f_webp/cdn.example.com/photo.jpg?key=pk_...&sig=.
 Generate it server-side in a few lines:
 
 ```typescript
-import { signImageUrl } from "@/lib/optstuff";
+import { generateOptStuffUrl } from "@/lib/optstuff-core";
 
-const url = signImageUrl("cdn.example.com/photo.jpg", "w_800,q_80,f_webp", 86400);
+const url = generateOptStuffUrl(
+  "https://cdn.example.com/photo.jpg",
+  { width: 800, quality: 80, format: "webp" },
+  86400,
+);
 ```
 
 ## Explore the Docs

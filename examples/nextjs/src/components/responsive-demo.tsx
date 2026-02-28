@@ -104,16 +104,19 @@ export function ResponsiveDemo() {
 
   return (
     <div className="space-y-8">
+      {/* Device selector */}
       <div className="-mx-1 overflow-x-auto px-1 pb-1">
-        <div className="flex min-w-max items-center justify-center gap-2">
+        <div className="flex min-w-max items-center justify-center gap-1.5 sm:gap-2">
           {VARIANTS.map((v, i) => (
             <button
               key={v.width}
+              type="button"
               onClick={() => setSelected(i)}
-              className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium whitespace-nowrap transition-all sm:px-4 ${
+              aria-label={`${v.device} preview at ${v.label}`}
+              className={`flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium whitespace-nowrap transition-all sm:px-4 ${
                 selected === i
-                  ? "bg-emerald-500 text-white shadow-lg shadow-emerald-500/20"
-                  : "bg-card-hover text-muted hover:text-foreground"
+                  ? "bg-emerald-500 text-white shadow-lg shadow-emerald-500/25"
+                  : "bg-card-hover text-muted hover:text-foreground hover:bg-card-hover/80"
               }`}
             >
               {v.icon}
@@ -124,15 +127,16 @@ export function ResponsiveDemo() {
         </div>
       </div>
 
+      {/* Browser frame */}
       <div className="border-border bg-card overflow-hidden rounded-2xl border shadow-sm">
         <div className="border-border flex flex-wrap items-center justify-between gap-2 border-b px-4 py-3 sm:px-5">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2.5">
             <div className="flex gap-1.5">
-              <div className="size-2.5 rounded-full bg-red-400/60" />
-              <div className="size-2.5 rounded-full bg-amber-400/60" />
-              <div className="size-2.5 rounded-full bg-emerald-400/60" />
+              <div className="size-2.5 rounded-full bg-red-400/70 transition-colors hover:bg-red-400" />
+              <div className="size-2.5 rounded-full bg-amber-400/70 transition-colors hover:bg-amber-400" />
+              <div className="size-2.5 rounded-full bg-emerald-400/70 transition-colors hover:bg-emerald-400" />
             </div>
-            <span className="text-muted ml-2 text-xs">
+            <span className="text-muted ml-1 text-xs">
               {VARIANTS[selected]!.device} Preview
             </span>
           </div>
@@ -140,9 +144,9 @@ export function ResponsiveDemo() {
             w_{VARIANTS[selected]!.width},q_80,f_webp
           </span>
         </div>
-        <div className="flex items-center justify-center bg-card-hover/50 p-4 sm:p-8">
+        <div className="bg-card-hover/50 flex items-center justify-center p-4 sm:p-8 md:p-12">
           <div
-            className="overflow-hidden rounded-lg border border-border shadow-lg transition-[width] duration-500"
+            className="border-border overflow-hidden rounded-lg border shadow-lg transition-[width] duration-500 ease-out"
             style={{
               width: `min(${VARIANTS[selected]!.width}px, 100%)`,
               maxWidth: "100%",
@@ -162,7 +166,8 @@ export function ResponsiveDemo() {
         </div>
       </div>
 
-      <div className="code-block mx-auto max-w-2xl overflow-x-auto rounded-xl p-4">
+      {/* Code snippet */}
+      <div className="code-block mx-auto max-w-2xl overflow-x-auto rounded-xl p-4 sm:p-5">
         <pre className="text-code-text font-mono text-xs leading-relaxed">
           <code>{`<OptStuffImage
   src="photo.jpg"
