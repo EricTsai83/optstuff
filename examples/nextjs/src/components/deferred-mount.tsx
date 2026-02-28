@@ -26,8 +26,10 @@ export function DeferredMount({
     if (!node) return;
 
     if (!("IntersectionObserver" in window)) {
-      setIsVisible(true);
-      return;
+      const timeoutId = globalThis.setTimeout(() => {
+        setIsVisible(true);
+      }, 0);
+      return () => globalThis.clearTimeout(timeoutId);
     }
 
     const observer = new IntersectionObserver(

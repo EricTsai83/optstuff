@@ -71,7 +71,7 @@ export function signImageUrl(
         const bucketSeconds = Math.min(EXPIRY_BUCKET_SECONDS, ttlSeconds);
         const rawExpiration = nowSeconds + ttlSeconds;
         return bucketSeconds > 0 && bucketSeconds < ttlSeconds
-          ? Math.ceil(rawExpiration / bucketSeconds) * bucketSeconds
+          ? Math.floor(rawExpiration / bucketSeconds) * bucketSeconds
           : rawExpiration;
       })()
     : undefined;
@@ -90,7 +90,7 @@ export function signImageUrl(
 }
 ```
 
-Using a bucketed expiration keeps signatures stable within each bucket window, which improves CDN cache hit rates on Vercel and helps preserve approximate URL expiry, but may extend effective validity by up to one bucket due to rounding.
+Using a bucketed expiration keeps signatures stable within each bucket window, which improves CDN cache hit rates on Vercel while still keeping the expiration bounded by the requested TTL window.
 
 ## Usage in Next.js
 
@@ -305,6 +305,17 @@ signing server-side.
 </Callout>
 
 For the full implementation (API Route, architecture diagram, `srcSet` tuning, and FAQ), see the dedicated [Custom next/image Loader guide](/guides/nextjs-image-loader).
+
+## Minimal Copy Set (Recommended)
+
+If you only need the core integration and not the demo UI, copy these files:
+
+1. `examples/nextjs/src/lib/optstuff.ts`
+2. `examples/nextjs/src/lib/next-image-optstuff-loader.ts`
+3. `examples/nextjs/src/app/api/optstuff/route.ts`
+4. `examples/nextjs/src/components/optstuff-image.tsx` (or your own thin wrapper)
+
+Everything else in the demo app (hero, playground, comparison cards, debug UI) is optional teaching UI and can be skipped.
 
 ## Client-Side Performance Hardening
 

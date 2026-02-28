@@ -78,6 +78,36 @@ Client UI
 - `src/components/optstuff-image.tsx`
   - simplified blur-to-clear wrapper around `next/image`
 
+## Copy only the core integration
+
+If you only want the production integration pattern, copy these files first:
+
+1. `src/lib/optstuff.ts`
+2. `src/lib/next-image-optstuff-loader.ts`
+3. `src/app/api/optstuff/route.ts`
+4. `src/components/optstuff-image.tsx` (or your own thin wrapper)
+
+These four files are enough to get:
+
+- server-side URL signing
+- custom `next/image` loader routing through `/api/optstuff`
+- source-host validation on the signing endpoint
+- responsive `srcSet` support without exposing `OPTSTUFF_SECRET_KEY`
+
+## Demo-only files (optional)
+
+You do **not** need to copy the showcase UI to integrate OptStuff:
+
+- `src/components/home-page-content.tsx`
+- `src/components/format-comparison.tsx`
+- `src/components/responsive-demo.tsx`
+- `src/components/optimizer-playground.tsx`
+- `src/components/hero-refresh-toggle.tsx`
+- `src/components/scroll-header.tsx`
+- `src/components/deferred-mount.tsx`
+
+They are teaching/demo UI only and can be omitted in real projects.
+
 ## API endpoints
 
 ### `GET /api/optstuff`
