@@ -1,7 +1,9 @@
 import { DeferredMount } from "@/components/deferred-mount";
+import { HeroRefreshToggle } from "@/components/hero-refresh-toggle";
 import { OptStuffImage } from "@/components/optstuff-image";
 import { ScrollHeader } from "@/components/scroll-header";
 import dynamic from "next/dynamic";
+import { Fragment } from "react";
 
 const FormatComparison = dynamic(
   () =>
@@ -59,10 +61,97 @@ const SHOWCASE_IMAGES = [
 ];
 
 type HomePageContentProps = {
-  heroBlurDataUrl: string;
+  heroImageUrl: string;
+  heroBlurDataUrl: string | undefined;
+  heroBlurMode: "build-cache" | "realtime";
+  heroBlurStatus: "available" | "missing";
+  heroBlurSource: "network" | "success-cache" | "miss-cache";
+  heroBlurNetworkRequested: "yes" | "no";
+  heroForceRefresh: "yes" | "no";
+  heroBlurReason: string | undefined;
+  heroBlurStatusCode: string | undefined;
+  heroBlurContentType: string | undefined;
+  heroBlurDuration: string | undefined;
+  showHeroDebugInfo: boolean;
 };
 
-export function HomePageContent({ heroBlurDataUrl }: HomePageContentProps) {
+export function HomePageContent({
+  heroImageUrl,
+  heroBlurDataUrl,
+  heroBlurMode,
+  heroBlurStatus,
+  heroBlurSource,
+  heroBlurNetworkRequested,
+  heroForceRefresh,
+  heroBlurReason,
+  heroBlurStatusCode,
+  heroBlurContentType,
+  heroBlurDuration,
+  showHeroDebugInfo,
+}: HomePageContentProps) {
+  const hasHeroBlurPlaceholder = heroBlurDataUrl !== undefined;
+  const heroBlurModeLabel =
+    heroBlurMode === "build-cache" ? "build-cache" : "realtime";
+  const heroBlurStatusLabel =
+    heroBlurStatus === "available" ? "available" : "missing";
+  const heroBlurSourceLabel =
+    heroBlurSource === "network"
+      ? "network"
+      : heroBlurSource === "success-cache"
+        ? "success cache"
+        : "miss cache";
+  const heroBlurNetworkRequestedLabel =
+    heroBlurNetworkRequested === "yes" ? "yes" : "no";
+  const heroBlurForceRefreshLabel = heroForceRefresh === "yes" ? "on" : "off";
+  const heroBlurDebugRows = [
+    {
+      label: "Mode",
+      value: heroBlurModeLabel,
+      description: "How blur is fetched: cache-first or realtime.",
+    },
+    {
+      label: "Blur Result",
+      value: heroBlurStatusLabel,
+      description: "Whether a blur placeholder was available.",
+    },
+    {
+      label: "Source",
+      value: heroBlurSourceLabel,
+      description: "Where this result came from.",
+    },
+    {
+      label: "Network Request",
+      value: heroBlurNetworkRequestedLabel,
+      description: "Whether this render made a network fetch for blur.",
+    },
+    {
+      label: "Force Refresh",
+      value: heroBlurForceRefreshLabel,
+      description:
+        "Dev toggle that refreshes Hero blur and sharp image URL together.",
+    },
+    {
+      label: "Failure Reason",
+      value: heroBlurReason,
+      description: "Why blur is missing (if missing).",
+    },
+    {
+      label: "HTTP Status",
+      value: heroBlurStatusCode,
+      description: "Response status code from blur request.",
+    },
+    {
+      label: "Content Type",
+      value: heroBlurContentType,
+      description: "Returned content-type for blur request.",
+    },
+    {
+      label: "Duration",
+      value: heroBlurDuration,
+      description: "Blur fetch duration in milliseconds.",
+    },
+  ].filter((row) => row.value !== undefined);
+
   return (
     <div className="bg-background text-foreground min-h-screen">
       {/* ─── Header ─── */}
@@ -182,20 +271,27 @@ export function HomePageContent({ heroBlurDataUrl }: HomePageContentProps) {
             </p>
           </div>
 
+          {showHeroDebugInfo ? (
+            <div className="mx-auto mb-3 w-full max-w-4xl">
+              <HeroRefreshToggle enabled={heroForceRefresh === "yes"} />
+            </div>
+          ) : null}
+
           {/* Hero blur-to-clear image */}
-          <div className="animate-fade-in-up stagger-4 mx-auto w-full max-w-4xl">
+          <div className="mx-auto w-full max-w-4xl">
             <div className="border-border overflow-hidden rounded-2xl border shadow-xl shadow-black/5">
               <div className="aspect-21/9 relative">
                 <OptStuffImage
-                  src={HOME_HERO_IMAGE}
+                  src={heroImageUrl}
                   fill
                   sizes="(min-width: 1280px) 1152px, (min-width: 768px) 90vw, 100vw"
                   alt="Mountain landscape with lake — blur-to-clear demo"
                   quality={85}
                   format="webp"
                   fit="cover"
+                  bypassProxy
                   preload
-                  blurPlaceholder
+                  blurPlaceholder={hasHeroBlurPlaceholder}
                   blurDataUrl={heroBlurDataUrl}
                 />
               </div>
@@ -205,8 +301,40 @@ export function HomePageContent({ heroBlurDataUrl }: HomePageContentProps) {
                 This demo block uses:
               </p>
               <p className="text-muted mt-1 font-mono text-xs">
-                blurPlaceholder + blurDataUrl (precomputed tiny preview)
+                blurPlaceholder + blurDataUrl
               </p>
+              {showHeroDebugInfo ? (
+                <>
+                  <div className="bg-card-hover/60 border-border mt-2 rounded-lg border p-2">
+                    <p className="text-foreground/80 mb-1 font-mono text-[11px] font-semibold uppercase tracking-wide">
+                      Hero Blur Debug Panel
+                    </p>
+                    <div className="text-muted grid grid-cols-[auto_1fr] gap-x-2 gap-y-1 font-mono text-xs">
+                      {heroBlurDebugRows.map((row) => (
+                        <Fragment key={row.label}>
+                          <span className="text-foreground/85">{row.label}:</span>
+                          <span className="text-foreground/85 break-all">
+                            {row.value}
+                          </span>
+                        </Fragment>
+                      ))}
+                    </div>
+                    <details className="border-border mt-3 border-t pt-2">
+                      <summary className="text-foreground/70 hover:text-foreground/90 cursor-pointer font-mono text-[11px] font-semibold uppercase tracking-wide">
+                        Field Guide
+                      </summary>
+                      <div className="text-muted mt-2 grid gap-1 text-[11px] leading-relaxed">
+                        {heroBlurDebugRows.map((row) => (
+                          <p key={`${row.label}-guide`}>
+                            <span className="text-foreground/85">{row.label}:</span>{" "}
+                            {row.description}
+                          </p>
+                        ))}
+                      </div>
+                    </details>
+                  </div>
+                </>
+              ) : null}
             </div>
           </div>
         </section>

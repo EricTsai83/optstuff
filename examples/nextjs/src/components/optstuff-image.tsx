@@ -48,6 +48,7 @@ type OptStuffImageProps = Omit<ImageProps, "src" | "loader" | "priority"> & {
   src: string;
   format?: ImageFormat;
   fit?: ImageFit;
+  bypassProxy?: boolean;
   blurPlaceholder?: boolean;
   transitionPreset?: TransitionPreset;
   transitionConfig?: TransitionConfig;
@@ -88,6 +89,7 @@ export function OptStuffImage({
   alt,
   format = "webp",
   fit = "cover",
+  bypassProxy = false,
   quality = 80,
   blurPlaceholder = false,
   transitionPreset = "smooth",
@@ -112,14 +114,16 @@ export function OptStuffImage({
 
   const loader = useCallback(
     ({ src: loaderSrc, width: loaderWidth, quality: loaderQuality }: ImageLoaderProps) =>
-      buildOptStuffProxyPath({
-        src: loaderSrc,
-        width: loaderWidth,
-        quality: loaderQuality,
-        format,
-        fit,
-      }),
-    [fit, format],
+      bypassProxy
+        ? loaderSrc
+        : buildOptStuffProxyPath({
+            src: loaderSrc,
+            width: loaderWidth,
+            quality: loaderQuality,
+            format,
+            fit,
+          }),
+    [bypassProxy, fit, format],
   );
 
   const loadToken = useMemo(

@@ -264,6 +264,7 @@ type OptStuffImageProps = Omit<ImageProps, "src" | "loader"> & {
   src: string;
   format?: "webp" | "avif" | "png" | "jpg";
   fit?: "cover" | "contain" | "fill";
+  bypassProxy?: boolean;
 };
 
 export function OptStuffImage({
@@ -271,10 +272,15 @@ export function OptStuffImage({
   alt,
   format = "webp",
   fit = "cover",
+  bypassProxy = false,
   quality = 80,
   ...rest
 }: OptStuffImageProps) {
   const loader = ({ src: loaderSrc, width, quality: q }: ImageLoaderProps) => {
+    if (bypassProxy) {
+      return loaderSrc;
+    }
+
     const params = new URLSearchParams({
       url: loaderSrc,
       w: String(width),
@@ -299,6 +305,45 @@ signing server-side.
 </Callout>
 
 For the full implementation (API Route, architecture diagram, `srcSet` tuning, and FAQ), see the dedicated [Custom next/image Loader guide](/guides/nextjs-image-loader).
+
+## Client-Side Performance Hardening
+
+When your hero area appears blank while the rest of the page is already visible, usually the issue is in image delivery and animation timing, not full-page SSR.
+
+Use this pattern for above-the-fold images:
+
+- Avoid long `animation-delay` on the hero image wrapper.
+- Pre-sign the hero URL in a Server Component and pass `bypassProxy` so the request skips `/api/optstuff` redirect.
+- Use real blur data (`getBlurDataUrl`) and disable placeholder when blur fetch fails.
+
+This keeps the hero visually present even when serverless cold starts, redirect cache misses, or image origin latency happen.
+
+For real blur generation, support two server modes:
+
+- `build-cache` (default): cached blur mode for stable production behavior.
+- `realtime`: fetch/recompute blur for every request.
+
+When `realtime` is enabled, call `unstable_noStore` in `page.tsx`, and use `getBlurDataUrl(..., { mode: "realtime" })`.
+
+In `build-cache`, separate success and miss cache TTLs (for example 1h vs 30s) so transient failures do not become long-lived `blur missing` states.
+
+Configure blur behavior in `examples/nextjs/src/lib/hero-blur-config.ts`:
+
+- `mode` (`build-cache` or `realtime`)
+- `fetchTimeoutMs` (default `6000`)
+- `successCacheMs` (default `3600000`)
+- `missCacheMs` (default `10000`)
+
+For local debugging, use the **Dev Tool: Force Hero Image Refresh** card above the Hero image.
+
+Quick test flow:
+
+1. Ensure `mode` is `build-cache` in `examples/nextjs/src/lib/hero-blur-config.ts`.
+2. Enable the button (`force refresh: on`) and verify the URL includes `?hero-refresh=1`.
+3. Check the blur debug panel for `Force Refresh: on` and `Network Request: yes`.
+4. Disable it again (or remove `?hero-refresh=1`) to return to normal cache behavior.
+
+In `realtime` mode, blur already uses `no-store`; this button still helps refresh the sharp hero image URL.
 
 ## Pre-Launch Checklist
 

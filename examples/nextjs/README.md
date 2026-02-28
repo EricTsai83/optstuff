@@ -44,6 +44,10 @@ OPTSTUFF_SECRET_KEY=sk_xxx
 OPTSTUFF_ALLOWED_IMAGE_HOSTS=images.unsplash.com
 ```
 
+Hero blur mode and timeout/cache tuning are configured in code:
+
+- `src/lib/hero-blur-config.ts`
+
 ### 3) Run
 
 ```bash
@@ -157,6 +161,42 @@ Optional blur-to-clear (used in the Hero demo):
   blurDataUrl={heroBlurDataUrl}
 />;
 ```
+
+Hero blur supports two modes:
+
+- `build-cache`: server-side cache mode with split TTL strategy (success cache is long, miss cache is short)
+- `realtime`: request blur on every page request (`no-store`)
+
+Switch mode (and cache/timeout settings) in:
+
+- `src/lib/hero-blur-config.ts`
+
+When blur generation fails, the demo now skips blur placeholder instead of injecting a fallback image.
+
+Dev mode also includes a blur debug panel showing `mode`, `source`, whether a network request happened, and miss diagnostics (reason/status/content-type/duration).
+
+In development, you can use the **Dev Tool: Force Hero Image Refresh** card above the Hero image.
+
+How to test the button:
+
+1. Set `mode: HERO_BLUR_MODE.BUILD_CACHE` in `src/lib/hero-blur-config.ts`.
+2. Open the home page in dev mode, then click the button to `force refresh: on`.
+3. Confirm URL contains `?hero-refresh=1`.
+4. In the blur debug panel, verify:
+   - `Force Refresh: on`
+   - `Network Request: yes`
+   - `source` is typically `network` for that request
+5. Click again to disable (or remove `?hero-refresh=1`) and return to normal cache behavior.
+
+In `realtime` mode, blur already requests from network on every load. The button is still useful for forcing a fresh sharp hero image URL.
+
+If needed, you can still force it manually with:
+
+```text
+/?hero-refresh=1
+```
+
+This forces Hero refresh behavior manually. For backward compatibility, `?blur-bust=1` is also supported.
 
 Supported OptStuff-specific props:
 

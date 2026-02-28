@@ -145,6 +145,7 @@ type OptStuffImageProps = Omit<ImageProps, "src" | "loader"> & {
   src: string;
   format?: "webp" | "avif" | "png" | "jpg";
   fit?: "cover" | "contain" | "fill";
+  bypassProxy?: boolean;
 };
 
 export function OptStuffImage({
@@ -152,10 +153,15 @@ export function OptStuffImage({
   alt,
   format = "webp",
   fit = "cover",
+  bypassProxy = false,
   quality = 80,
   ...rest
 }: OptStuffImageProps) {
   const loader = ({ src: loaderSrc, width, quality: q }: ImageLoaderProps) => {
+    if (bypassProxy) {
+      return loaderSrc;
+    }
+
     const params = new URLSearchParams({
       url: loaderSrc,
       w: String(width),
@@ -258,6 +264,106 @@ With the custom loader approach:
 - **Vercel image optimization cost: $0** — `/_next/image` is never called
 - **OptStuff cost**: your own infrastructure (self-hosted) or usage-based pricing
 - **Redirect overhead**: one extra 302 hop per unique image per browser session — typically < 10ms
+
+## LCP / Hero Strategy
+
+For above-the-fold hero images, keep the image path short and predictable.
+
+### Recommended Pattern
+
+1. Do not apply delayed reveal animation (`animation-delay`) to the hero image container.
+2. Pre-sign the hero URL in a Server Component and pass `bypassProxy` so the hero request skips `/api/optstuff` redirect.
+3. Load real blur data from the server; if blur fetch fails, render without placeholder.
+
+```tsx
+// app/page.tsx (Server Component)
+import { generateOptStuffUrl, getBlurDataUrl } from "@/lib/optstuff";
+
+const heroImageUrl = generateOptStuffUrl(
+  "https://images.unsplash.com/photo-1506744038136-46273834b3fb",
+  { width: 1600, quality: 85, format: "webp", fit: "cover" },
+  7200
+);
+const heroBlurDataUrl = await getBlurDataUrl(
+  "https://images.unsplash.com/photo-1506744038136-46273834b3fb"
+);
+const hasHeroBlur = heroBlurDataUrl !== undefined;
+
+<OptStuffImage
+  src={heroImageUrl}
+  fill
+  alt="Hero image"
+  preload
+  blurPlaceholder={hasHeroBlur}
+  blurDataUrl={heroBlurDataUrl}
+  bypassProxy
+/>
+```
+
+### Why This Improves UX
+
+- Removing delayed animation prevents intentional blank time in the hero slot.
+- Direct signed URL avoids an extra client-visible redirect round trip for your LCP image.
+
+### Real Blur Modes (`build-cache` vs `realtime`)
+
+If you want the hero to wait for a real blur image instead of a fixed fallback, expose a mode switch in your app config:
+
+- `build-cache` (default): blur generation uses cached fetch behavior and works well with build/static caching.
+- `realtime`: blur generation uses `no-store`, so every request recomputes/fetches blur.
+
+In `build-cache` mode, use separate TTLs for positive and negative cache entries:
+
+- Success (`blur available`): long TTL (for example, 1 hour)
+- Miss (`blur missing`): short TTL (for example, 30-60 seconds)
+
+This prevents a single transient failure from being cached as a long-lived miss.
+
+```ts
+// src/lib/hero-blur-config.ts
+export const HERO_BLUR_MODE = {
+  BUILD_CACHE: "build-cache",
+  REALTIME: "realtime",
+} as const;
+
+export const HERO_BLUR_CONFIG = {
+  mode: HERO_BLUR_MODE.BUILD_CACHE,
+  fetchTimeoutMs: 6000,
+  successCacheMs: 3600000,
+  missCacheMs: 10000,
+} as const;
+```
+
+```tsx
+// app/page.tsx
+import { HERO_BLUR_CONFIG, HERO_BLUR_MODE } from "@/lib/hero-blur-config";
+import { cacheLife, unstable_noStore as noStore } from "next/cache";
+import { getBlurDataUrl } from "@/lib/optstuff";
+
+const heroBlurMode = HERO_BLUR_CONFIG.mode;
+if (heroBlurMode === HERO_BLUR_MODE.REALTIME) {
+  noStore();
+}
+
+const heroBlurDataUrl = await getBlurDataUrl(
+  HERO_IMAGE_URL,
+  { width: 32, quality: 20, format: "webp", fit: "cover" },
+  { mode: heroBlurMode }
+);
+```
+
+In development, add a small debug panel for `mode`, `source`, `network-request`, `reason`, `status`, `content-type`, and `duration` so timeout/routing issues are visible immediately.
+
+For local debugging, use the **Dev Tool: Force Hero Image Refresh** card above the Hero image.
+
+Quick test flow:
+
+1. Ensure `mode` is `build-cache` in `src/lib/hero-blur-config.ts`.
+2. Enable the button (`force refresh: on`) and verify URL contains `?hero-refresh=1`.
+3. In the blur debug panel, confirm `Force Refresh: on` and `Network Request: yes`.
+4. Disable the button (or remove `?hero-refresh=1`) to restore normal cache behavior.
+
+In `realtime` mode, blur already requests from network; this button still helps force a fresh sharp hero image URL.
 
 ## FAQ
 
