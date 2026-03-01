@@ -1,9 +1,9 @@
 ---
 title: Custom next/image Loader
-description: Replace Vercel's paid image optimization with OptStuff while keeping all next/image benefits — responsive srcSet, priority preloading, lazy loading, and layout shift prevention.
+description: Replace Vercel's paid image optimization with OptStuff while keeping all next/image benefits — responsive srcSet, hero preloading (`preload` / `priority`), lazy loading, and layout shift prevention.
 ---
 
-`next/image` provides responsive `srcSet` generation, priority preloading, lazy loading, and automatic layout shift prevention. However, its **default loader** routes images through Vercel's `/_next/image` endpoint, which [bills per optimization](https://vercel.com/docs/image-optimization/limits-and-pricing).
+`next/image` gives you responsive `srcSet`, hero preloading, lazy loading, and automatic layout shift prevention. However, its **default loader** routes requests through Vercel's `/_next/image` endpoint, which [bills per optimization](https://vercel.com/docs/image-optimization/limits-and-pricing).
 
 This guide shows how to use OptStuff as a **custom loader** — keeping every `next/image` benefit while avoiding Vercel's image optimization costs entirely.
 
@@ -31,7 +31,7 @@ You're left with a glorified `<img>` tag that happens to prevent layout shift.
 | Vercel optimization cost | **Yes** | No | **No** |
 | Responsive `srcSet` | Yes | **No** | **Yes** |
 | `sizes` + viewport selection | Yes | **No** | **Yes** |
-| Priority preloading | Yes | Yes | **Yes** |
+| Hero preloading (`preload` / `priority`) | Yes | Yes | **Yes** |
 | Lazy loading | Yes | Yes | **Yes** |
 | Layout shift prevention | Yes | Yes | **Yes** |
 | Placeholder / blur support | Yes | Partial | **Yes** |
@@ -93,14 +93,38 @@ import { type NextRequest, NextResponse } from "next/server";
 export function GET(request: NextRequest) {
   const SIGNED_URL_TTL_SECONDS = 3600;
   const REDIRECT_CACHE_SECONDS = 300;
+  const REDIRECT_SWR_SECONDS = 3600;
   const MAX_DIMENSION = 8192;
   const allowedFormats = new Set(["webp", "avif", "png", "jpg"]);
   const allowedFits = new Set(["cover", "contain", "fill"]);
+  const allowedHosts = new Set(
+    (process.env.OPTSTUFF_ALLOWED_IMAGE_HOSTS ?? "images.unsplash.com")
+      .split(",")
+      .map((host) => host.trim().toLowerCase())
+      .filter(Boolean)
+  );
   const sp = request.nextUrl.searchParams;
   const url = sp.get("url");
 
   if (!url) {
     return NextResponse.json({ error: "url is required" }, { status: 400 });
+  }
+
+  let parsedUrl: URL;
+  try {
+    parsedUrl = new URL(url);
+  } catch {
+    return NextResponse.json({ error: "url must be a valid URL" }, { status: 400 });
+  }
+  const hostname = parsedUrl.hostname.toLowerCase();
+  const hostAllowed = [...allowedHosts].some(
+    (allowedHost) => hostname === allowedHost || hostname.endsWith(`.${allowedHost}`)
+  );
+  if (!hostAllowed) {
+    return NextResponse.json(
+      { error: "url hostname is not allowed. Configure OPTSTUFF_ALLOWED_IMAGE_HOSTS." },
+      { status: 400 }
+    );
   }
 
   const width = sp.get("w");
@@ -155,12 +179,12 @@ export function GET(request: NextRequest) {
     fit: fit as "cover" | "contain" | "fill",
   };
 
-  const signedUrl = generateOptStuffUrl(url, operations, SIGNED_URL_TTL_SECONDS);
+  const signedUrl = generateOptStuffUrl(parsedUrl.toString(), operations, SIGNED_URL_TTL_SECONDS);
 
   const response = NextResponse.redirect(signedUrl, 302);
   response.headers.set(
     "Cache-Control",
-    `public, s-maxage=${REDIRECT_CACHE_SECONDS}, max-age=0, stale-while-revalidate=86400`
+    `public, s-maxage=${REDIRECT_CACHE_SECONDS}, max-age=${REDIRECT_CACHE_SECONDS}, stale-while-revalidate=${REDIRECT_SWR_SECONDS}`
   );
   return response;
 }
@@ -180,6 +204,12 @@ Use both layers of validation in production:
 - Keep OptStuff server-side operation validation enabled as defense-in-depth.
 
 Even if a client bypasses your app route and calls the endpoint directly, invalid operation values are still rejected server-side with `400`.
+</Callout>
+
+<Callout type="info">
+The example above also validates source hostnames through
+`OPTSTUFF_ALLOWED_IMAGE_HOSTS` (comma-separated). This prevents your signing
+endpoint from being used as an open proxy.
 </Callout>
 
 ### Step 3: Image Component
@@ -238,7 +268,7 @@ client-only — it still server-side renders and hydrates normally.
 
 ### Step 4: Usage
 
-Use `<OptStuffImage>` exactly like `next/image`. All standard props (`fill`, `sizes`, `priority`, `placeholder`, etc.) work as expected:
+Use `<OptStuffImage>` exactly like `next/image`. All standard props (`fill`, `sizes`, `preload`, `placeholder`, etc.) work as expected:
 
 ```tsx
 // Fixed dimensions
@@ -257,7 +287,7 @@ Use `<OptStuffImage>` exactly like `next/image`. All standard props (`fill`, `si
     src="https://images.unsplash.com/photo-xxx"
     fill
     sizes="(min-width: 1024px) 50vw, 100vw"
-    priority
+    preload
     alt="Hero image"
     style={{ objectFit: "cover" }}
   />
@@ -271,13 +301,17 @@ Use `<OptStuffImage>` exactly like `next/image`. All standard props (`fill`, `si
         src={img.url}
         fill
         sizes="(min-width: 640px) 33vw, 100vw"
-        priority
         alt={img.alt}
       />
     </div>
   ))}
 </div>
 ```
+
+<Callout type="info">
+On newer Next.js versions, prefer `preload` for above-the-fold images.
+If your app is on an older version, use `priority` instead.
+</Callout>
 
 ## How `srcSet` Generation Works
 
@@ -291,11 +325,16 @@ For each width, the loader returns a URL like `/api/optstuff?url=...&w=1080&q=80
 
 The browser then picks **exactly one** URL from the `srcSet` based on the `sizes` attribute and the device's pixel ratio. A phone on a 3-column grid at 1x DPR might request `w=640`; a retina laptop showing the same grid might request `w=1080`. No wasted bandwidth.
 
-You can customise these widths in `next.config.ts`:
+You can customise these widths in `next.config.ts`.
+
+In this demo, `next.config.ts` currently sets `images.qualities`, and leaves
+`deviceSizes` / `imageSizes` at defaults. If needed, you can tune both:
 
 ```typescript
 const nextConfig: NextConfig = {
   images: {
+    qualities: [20, 75, 80, 85, 90],
+    // Optional tuning:
     deviceSizes: [640, 828, 1080, 1280, 1920],
     imageSizes: [16, 32, 64, 128, 256],
   },
@@ -348,7 +387,7 @@ const hasHeroBlur = heroBlurDataUrl !== undefined;
   src={heroImageUrl}
   fill
   alt="Hero image"
-  priority
+  preload
   blurPlaceholder={hasHeroBlur}
   blurDataUrl={heroBlurDataUrl}
   preSigned
@@ -437,6 +476,18 @@ Yes. Vercel bills for requests to `/_next/image`. When you provide a custom `loa
 ### Is the secret key safe?
 
 Yes. The `loader` function runs in the browser, but it only constructs URLs to `/api/optstuff` — a Next.js API Route that runs server-side. The actual signing (using `OPTSTUFF_SECRET_KEY`) happens entirely within that API Route.
+
+### Why do I get `url hostname is not allowed`?
+
+Your API Route is rejecting image origins not in your allowlist.
+Set `OPTSTUFF_ALLOWED_IMAGE_HOSTS` as a comma-separated list, for example:
+
+```bash
+OPTSTUFF_ALLOWED_IMAGE_HOSTS=images.unsplash.com,cdn.example.com
+```
+
+This is expected and recommended in production. It prevents your signing route
+from becoming an unrestricted image proxy.
 
 ### What about the redirect overhead?
 
