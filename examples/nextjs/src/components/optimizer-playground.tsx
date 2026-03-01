@@ -97,6 +97,7 @@ export function OptimizerPlayground() {
   const chipActive = "bg-emerald-500 text-white shadow-sm";
   const chipInactive =
     "text-muted hover:text-foreground hover:bg-card-hover/60";
+  const minNumericInput = 1;
 
   return (
     <div className="space-y-6">
@@ -147,7 +148,21 @@ export function OptimizerPlayground() {
               <input
                 type="number"
                 value={width}
-                onChange={(e) => setWidth(Number(e.target.value))}
+                onChange={(e) => {
+                  const nextWidth = Number.parseInt(e.target.value, 10);
+                  if (Number.isFinite(nextWidth) && nextWidth >= minNumericInput) {
+                    setWidth(nextWidth);
+                  }
+                }}
+                onBlur={(e) => {
+                  const nextWidth = Number.parseInt(e.currentTarget.value, 10);
+                  if (
+                    !Number.isFinite(nextWidth) ||
+                    nextWidth < minNumericInput
+                  ) {
+                    setWidth(minNumericInput);
+                  }
+                }}
                 min={1}
                 max={4096}
                 aria-label="Image width"
@@ -161,7 +176,24 @@ export function OptimizerPlayground() {
               <input
                 type="number"
                 value={quality}
-                onChange={(e) => setQuality(Number(e.target.value))}
+                onChange={(e) => {
+                  const nextQuality = Number.parseInt(e.target.value, 10);
+                  if (
+                    Number.isFinite(nextQuality) &&
+                    nextQuality >= minNumericInput
+                  ) {
+                    setQuality(nextQuality);
+                  }
+                }}
+                onBlur={(e) => {
+                  const nextQuality = Number.parseInt(e.currentTarget.value, 10);
+                  if (
+                    !Number.isFinite(nextQuality) ||
+                    nextQuality < minNumericInput
+                  ) {
+                    setQuality(minNumericInput);
+                  }
+                }}
                 min={1}
                 max={100}
                 aria-label="Image quality"
