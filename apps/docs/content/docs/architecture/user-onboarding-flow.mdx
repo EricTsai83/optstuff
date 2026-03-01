@@ -1,6 +1,6 @@
 ---
 title: User Onboarding Flow
-description: Internal documentation — complete user onboarding journey from sign-up to first API key, including team creation, project setup, and documentation links strategy.
+description: Architecture documentation — complete user onboarding journey from sign-up to first API key, including team creation, project setup, and documentation links strategy.
 ---
 
 This document explains the complete user onboarding and getting-started flow in OptStuff Dashboard — from sign-up to having a working API key.
@@ -88,7 +88,7 @@ When the user submits the form:
 |----------|----------|
 | Slug already taken | Show error, user must choose different slug |
 | Invalid slug format | Show validation error with format requirements |
-| User already has personal team | Redirect to existing team (shouldn't happen normally) |
+| User already has personal team | In normal navigation they are redirected before onboarding; race-condition submit returns an explicit error |
 | Network error | Show generic error, allow retry |
 
 ## Phase 2: Project Creation (with Default API Key)
@@ -175,6 +175,7 @@ export const DOCS_LINKS = {
   home: env.NEXT_PUBLIC_DOCS_URL,
   quickstart: `${env.NEXT_PUBLIC_DOCS_URL}/getting-started/quickstart`,
   integration: `${env.NEXT_PUBLIC_DOCS_URL}/getting-started/integration-guide`,
+  projectSetup: `${env.NEXT_PUBLIC_DOCS_URL}/getting-started/project-setup`,
   keyManagement: `${env.NEXT_PUBLIC_DOCS_URL}/guides/key-management`,
   security: `${env.NEXT_PUBLIC_DOCS_URL}/guides/security-best-practices`,
   urlSigning: `${env.NEXT_PUBLIC_DOCS_URL}/guides/url-signing`,
@@ -197,7 +198,8 @@ To change the docs URL, update `NEXT_PUBLIC_DOCS_URL` in the environment — no 
 | EmptyApiKeyState | API Keys guide | When a project has no API keys |
 | CreateProjectDialog (success) | Integration Guide | After creating a project + default key |
 | CreateApiKeyDialog (success) | Integration Guide | After creating an additional API key |
-| Overview Tab (checklist) | Integration Guide | Setup checklist item |
+| Overview Tab (setup checklist) | Settings tab | Incomplete setup step links to domain/security settings |
+| Overview Tab (resource cards) | Project Setup + Integration guides | Persistent quick links in project overview |
 
 ### Design Principles
 
@@ -235,7 +237,8 @@ The `teams` table enforces:
 
 ## Related Documentation
 
-- [Create API Key Flow](/internal/create-api-key-flow) — Detailed API key creation and encryption flow
+- [Create API Key Flow](/architecture/create-api-key-flow) — Detailed API key creation and encryption flow
+- [Control Plane and Multi-Tenancy](/architecture/control-plane-and-tenancy) — Team/project ownership and access model
 - [URL Signing](/guides/url-signing) — Request signing and authentication
 - [Domain Whitelisting](/guides/domain-whitelisting) — Domain whitelist configuration
 - [Integration Guide](/getting-started/integration-guide) — How to integrate OptStuff

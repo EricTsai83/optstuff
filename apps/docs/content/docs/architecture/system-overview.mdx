@@ -1,9 +1,11 @@
 ---
 title: System Overview
-description: Internal architecture reference for OptStuff — components, request pipelines, data stores, and operational behavior.
+description: Architecture reference for OptStuff — components, request pipelines, data stores, and operational behavior.
 ---
 
 OptStuff is a multi-tenant image optimization service composed of a public image API, dashboard control plane, and shared storage/caching layers. This page is the implementation-level reference for how those pieces work together.
+
+For the full Architecture reading path, start with [How OptStuff Is Built](/architecture/how-optstuff-is-built).
 
 ## Component Map
 
@@ -137,8 +139,11 @@ team
 
 ## Related Docs
 
+- [How OptStuff Is Built](/architecture/how-optstuff-is-built)
 - [API Endpoint](/api-reference/endpoint)
-- [Redis Schema](/internal/redis-schema)
-- [Create API Key Flow](/internal/create-api-key-flow)
-- [User Onboarding Flow](/internal/user-onboarding-flow)
-- [SSRF Prevention](/internal/ssrf-prevention)
+- [Request Lifecycle](/architecture/request-lifecycle)
+- [Control Plane and Multi-Tenancy](/architecture/control-plane-and-tenancy)
+- [Redis Schema](/architecture/redis-schema)
+- [Create API Key Flow](/architecture/create-api-key-flow)
+- [User Onboarding Flow](/architecture/user-onboarding-flow)
+- [SSRF Prevention](/architecture/ssrf-prevention)

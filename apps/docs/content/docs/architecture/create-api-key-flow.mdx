@@ -1,6 +1,6 @@
 ---
 title: Create API Key Flow
-description: Internal documentation — API key creation flow, dual-key system, AES-256-GCM encryption, form validation, and database schema.
+description: Architecture documentation — API key creation flow, dual-key system, AES-256-GCM encryption, form validation, and database schema.
 ---
 
 When a user creates an API key, the system generates a dual-key pair, encrypts the secret key with AES-256-GCM, and presents both keys in a one-time success screen. This document covers the full flow: UI interaction, backend processing, encryption, and database storage.
@@ -120,8 +120,7 @@ Rotation uses a single DB transaction to revoke the old key and insert the repla
 | Scenario | Behavior |
 |----------|----------|
 | Empty key name | Submit button disabled |
-| Network error | Mutation fails; user remains on form step and can retry |
-| Server error | Error state shown in form context (no success-step transition) |
+| Network / server error | Dialog remains on form step; user can retry (no dedicated inline error banner yet) |
 
 ## Form Validation Rules
 
@@ -170,4 +169,5 @@ The `api_key` table stores:
 - [URL Signing](/guides/url-signing) — Request signing and authentication
 - [Domain Whitelisting](/guides/domain-whitelisting) — Settings → Domain Security
 - [Security Best Practices](/guides/security-best-practices) — Key management recommendations
+- [Control Plane and Multi-Tenancy](/architecture/control-plane-and-tenancy) — How key lifecycle fits tenancy and access control
 - [What is OptStuff?](/introduction/what-is-optstuff) — Service overview

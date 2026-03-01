@@ -1,7 +1,10 @@
 {
-  "title": "Internal",
+  "title": "Architecture",
   "pages": [
+    "how-optstuff-is-built",
     "system-overview",
+    "request-lifecycle",
+    "control-plane-and-tenancy",
     "redis-schema",
     "user-onboarding-flow",
     "create-api-key-flow",

@@ -1,6 +1,6 @@
 ---
 title: Redis Schema
-description: Internal documentation — Redis key schema, cache-aside pattern, sliding window rate limiting, write throttling, and data durability.
+description: Architecture documentation — Redis key schema, cache-aside pattern, sliding window rate limiting, write throttling, and data durability.
 ---
 
 The caching layer uses Redis for three purposes: configuration caching, rate limiting, and write throttling. All keys have a TTL — nothing persists indefinitely.
@@ -28,7 +28,7 @@ All Redis keys use a structured prefix convention. Every key has a TTL — no ke
 
 ## Configuration Cache (Cache-Aside)
 
-**File:** `src/server/lib/config-cache.ts`
+**File:** `src/server/lib/config-cache.ts`  
 **Pattern:** Cache-Aside (Lazy Population)
 
 ### Cached Data
@@ -110,7 +110,7 @@ Active invalidation via `invalidateApiKeyCache` remains the primary revocation m
 
 ## Rate Limiting (Sliding Window)
 
-**File:** `src/server/lib/rate-limiter.ts`
+**File:** `src/server/lib/rate-limiter.ts`  
 **Pattern:** Sliding Window Counter (via `@upstash/ratelimit`)
 
 ### Implementation Flow
@@ -177,7 +177,7 @@ Rate limit instances are created with `analytics: true`, which sends usage metri
 
 ## Write Throttling (SET NX)
 
-**File:** `src/server/lib/usage-tracker.ts`
+**File:** `src/server/lib/usage-tracker.ts`  
 **Pattern:** Distributed Lock via SET NX (Set-If-Not-Exists)
 
 ### Implementation Flow
@@ -241,7 +241,9 @@ When Redis is unavailable, rate limiting is designed to fail open (`allowed: tru
 
 | Document | Description |
 |----------|-------------|
+| [How OptStuff Is Built](/architecture/how-optstuff-is-built) | Recommended architecture reading path |
+| [Request Lifecycle](/architecture/request-lifecycle) | Runtime request path that consumes these Redis keys |
 | [Rate Limiting](/guides/rate-limiting) | User-facing rate limiting guide |
-| [System Overview](/internal/system-overview) | Full system architecture |
+| [System Overview](/architecture/system-overview) | Full system architecture |
 | [Domain Whitelisting](/guides/domain-whitelisting) | Domain whitelist configuration |
 | [Security Best Practices](/guides/security-best-practices) | Security recommendations |
