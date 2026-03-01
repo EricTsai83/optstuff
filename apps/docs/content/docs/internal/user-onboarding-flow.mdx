@@ -103,7 +103,7 @@ The dialog uses a two-step pattern (form → success):
 
 - **Project Name** (required)
 - **Description** (optional)
-- **Image Sources** — where original images are hosted (e.g., `images.unsplash.com`, `cdn.mysite.com`). Subdomains are included automatically.
+- **Image Sources** — where original images are hosted (e.g., `https://images.unsplash.com`, `https://cdn.mysite.com`). Subdomains are included automatically.
 - **Authorized Websites** (optional) — which websites can display optimized images. Leave empty to allow all. These can be configured later in Settings.
 - Submit creates the project **and** a default API key automatically
 
@@ -113,7 +113,7 @@ After project creation, the dialog transitions to a success screen showing:
 
 1. **Success header** — "Project Created" with project name
 2. **Warning banner** — "Copy and add these to your `.env` file before closing. The secret key is only shown once."
-3. **Combined key display** — Both keys shown in `.env` format (`OPTSTUFF_SECRET_KEY` and `OPTSTUFF_PUBLIC_KEY`) with a single copy button. The secret key is masked by default with a show/hide toggle.
+3. **Combined env block** — Variables shown in `.env` format (`OPTSTUFF_BASE_URL`, `OPTSTUFF_PROJECT_SLUG`, `OPTSTUFF_SECRET_KEY`, `OPTSTUFF_PUBLIC_KEY`) with one copy button. The preview masks the secret, but copy payload includes plaintext.
 4. **Next Steps** — Link to Integration Guide on the docs site
 5. **Done button** — Navigates to the new project's overview page
 
@@ -134,10 +134,8 @@ This ensures users see and copy their keys before proceeding.
 
 After project creation, the **Overview** tab shows a setup checklist if configuration is incomplete:
 
-1. Project created (done)
-2. Configure image sources (link to Settings)
-3. API key ready (done)
-4. Integrate into your app (link to docs)
+1. Configure image sources (link to Settings)
+2. API key ready
 
 The checklist disappears once all steps are completed.
 

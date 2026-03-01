@@ -12,16 +12,16 @@ For the security principles that apply to all integrations, see the [Integration
 Add to your `.env.local`:
 
 ```bash
-# Server-side only — secret! Never use the NEXT_PUBLIC_ prefix
-OPTSTUFF_SECRET_KEY="sk_your_secret_key_here"
+# Server-side only
+OPTSTUFF_BASE_URL="https://your-optstuff-deployment.com"
+OPTSTUFF_PROJECT_SLUG="your-project-slug"
 
-# Server-side only — not secret, but no need for NEXT_PUBLIC_ prefix
-# The publicKey appears in generated URLs (?key=pk_...) and is not a secret
+# Public identifier used in ?key=pk_... (safe to expose in URLs).
+# Still recommended to keep in server env for centralized config management.
 OPTSTUFF_PUBLIC_KEY="pk_abc123..."
 
-# Public configuration
-NEXT_PUBLIC_OPTSTUFF_PROJECT_SLUG="your-project-slug"
-NEXT_PUBLIC_OPTSTUFF_ENDPOINT="https://your-optstuff-deployment.com/api/v1"
+# Server-side only — secret! Never expose in browser bundles
+OPTSTUFF_SECRET_KEY="sk_your_secret_key_here"
 ```
 
 ## Create a Signing Utility
@@ -38,10 +38,10 @@ function requireEnv(name: string): string {
   return value;
 }
 
-const SECRET_KEY = requireEnv("OPTSTUFF_SECRET_KEY");
-const PUBLIC_KEY = requireEnv("OPTSTUFF_PUBLIC_KEY");
-const ENDPOINT = requireEnv("NEXT_PUBLIC_OPTSTUFF_ENDPOINT");
-const PROJECT_SLUG = requireEnv("NEXT_PUBLIC_OPTSTUFF_PROJECT_SLUG");
+const OPTSTUFF_BASE_URL = requireEnv("OPTSTUFF_BASE_URL").replace(/\/+$/, "");
+const OPTSTUFF_PROJECT_SLUG = requireEnv("OPTSTUFF_PROJECT_SLUG");
+const OPTSTUFF_PUBLIC_KEY = requireEnv("OPTSTUFF_PUBLIC_KEY");
+const OPTSTUFF_SECRET_KEY = requireEnv("OPTSTUFF_SECRET_KEY");
 const EXPIRY_BUCKET_SECONDS = 3600;
 
 type ImageOperation = {
@@ -98,12 +98,12 @@ export function generateOptStuffUrl(
 
   const payload = exp != null ? `${path}?exp=${exp}` : path;
   const sig = crypto
-    .createHmac("sha256", SECRET_KEY)
+    .createHmac("sha256", OPTSTUFF_SECRET_KEY)
     .update(payload)
     .digest("base64url")
     .substring(0, 32);
 
-  let url = `${ENDPOINT}/${PROJECT_SLUG}/${path}?key=${PUBLIC_KEY}&sig=${sig}`;
+  let url = `${OPTSTUFF_BASE_URL}/api/v1/${OPTSTUFF_PROJECT_SLUG}/${path}?key=${OPTSTUFF_PUBLIC_KEY}&sig=${sig}`;
   if (exp != null) url += `&exp=${exp}`;
 
   return url;
@@ -413,8 +413,8 @@ Before going to production, verify:
 | Error | Likely Cause | Solution |
 |-------|-------------|----------|
 | `403` Invalid signature | Wrong key, wrong path order, or wrong encoding | See [Troubleshooting Signature Errors](/api-reference/error-codes#troubleshooting-signature-errors) |
-| `403` Source domain not allowed | Image origin not in key's allowed domains | Add the domain in Dashboard → API Key settings |
-| `403` Invalid referer | Your website not in project's allowed domains | Add the domain in Dashboard → Project settings |
+| `403` Source domain not allowed | Image origin not in project's allowed source domains | Add the domain in Dashboard → Project → Settings → Domain Security → Image Sources |
+| `403` Invalid referer | Your website not in project's allowed referer domains | Add the domain in Dashboard → Project → Settings → Domain Security → Authorized Websites |
 
 For the complete error reference, see [Error Codes](/api-reference/error-codes).
 

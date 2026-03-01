@@ -1,246 +1,144 @@
 ---
 title: System Overview
-description: Comprehensive technical overview of the OptStuff image optimization service — architecture, security model, core components, and request lifecycle.
+description: Internal architecture reference for OptStuff — components, request pipelines, data stores, and operational behavior.
 ---
 
-OptStuff is a multi-tenant image optimization API with on-the-fly transformation, cryptographic URL signing, and fine-grained access control. This overview covers the system architecture, security model, and core components — each section links to the relevant detailed documentation.
+OptStuff is a multi-tenant image optimization service composed of a public image API, dashboard control plane, and shared storage/caching layers. This page is the implementation-level reference for how those pieces work together.
 
-## Key Capabilities
+## Component Map
 
-- **On-Demand Optimization**: Transform images dynamically via URL parameters
-- **Multi-Layer Security**: HMAC-SHA256 URL signing, AES-256-GCM encryption, domain whitelisting
-- **Multi-Tenant Architecture**: Teams, projects, and API keys hierarchy
-- **Usage Analytics**: Real-time monitoring and bandwidth tracking
-- **CDN-Friendly**: Long-lived caching headers for edge deployment
+| Component | Responsibility | Main files |
+|-----------|----------------|------------|
+| **Image API Gateway** | Handles `GET`/`HEAD` image requests and enforces all request checks | `src/app/api/v1/[projectSlug]/[...path]/route.ts` |
+| **Validation utilities** | Parses signature params, validates operations and domain rules | `src/server/lib/validators.ts`, `src/lib/ipx-utils.ts` |
+| **Crypto & key handling** | API key generation, encryption/decryption, signature verification | `src/server/lib/api-key.ts` |
+| **Config cache** | Caches project/API-key configs (positive + negative cache) | `src/server/lib/config-cache.ts` |
+| **Rate limiter** | Per-day and per-minute sliding-window checks | `src/server/lib/rate-limiter.ts` |
+| **Image engine** | Fetch + transform using IPX/Sharp | `src/server/lib/ipx-factory.ts` |
+| **Observability** | Request logging and activity/usage updates | `src/server/lib/request-logger.ts`, `src/server/lib/usage-tracker.ts` |
+| **Control plane (tRPC)** | Team/project/API-key management | `src/server/api/routers/*.ts` |
+| **Auth & route guard** | Clerk auth + service-route bypass for `/api/v1` | `src/server/api/trpc.ts`, `src/proxy.ts` |
 
-## System Architecture
-
-```mermaid
-flowchart TD
-  subgraph clientLayer ["Client Layer"]
-    TeamA["Team A\n(Owner)"] --> ProjectA1["Project 1"]
-    TeamA --> ProjectA2["Project 2"]
-    TeamB["Team B\n(Owner)"] --> ProjectB1["Project 3"]
-    TeamB --> ProjectB2["Project 4"]
-    TeamC["Team C\n(Owner)"] --> ProjectC1["Project 5"]
-    ProjectA1 --> ApiKeys["API Keys"]
-    ProjectA2 --> ApiKeys
-  end
-
-  subgraph gateway ["API Gateway"]
-    Endpoint["Endpoint: /api/v1/{projectSlug}/{operations}/{imageUrl}\nQuery: ?key={publicKey}&sig={signature}&exp={expiresAt}\nValidation Pipeline (see flowchart below)"]
-  end
-
-  subgraph engine ["Image Processing Engine"]
-    IPX["IPX (Sharp)\nResize, Crop, Quality"]
-    FormatConv["Format Conversion\nWebP, AVIF, PNG, JPEG"]
-    CacheLayer["Cache Layer\nCDN Headers, Cache-Control"]
-  end
-
-  clientLayer --> gateway --> engine
-```
-
-### Validation Pipeline
-
-Each request passes through six validation steps before processing. For the full step-by-step breakdown, see [API Endpoint — Authentication Flow](/api-reference/endpoint#authentication-flow).
+## End-to-End Architecture
 
 ```mermaid
 flowchart LR
-  A["API Key\nValid?"] -->|Pass| B["Project\nExists?"]
-  B -->|Pass| C["Signature\nVerify"]
-  C -->|Pass| D["Rate\nLimit"]
-  D -->|Pass| E["Referer\nDomain"]
-  E -->|Pass| F["Source\nDomain"]
-  F -->|Pass| G["Process\nImage"]
-
-  A -->|Fail| X1["401"]
-  B -->|Fail| X2["404"]
-  C -->|Fail| X3["403"]
-  D -->|Fail| X4["429"]
-  E -->|Fail| X5["403"]
-  F -->|Fail| X6["403"]
+  Client["Browser / App / CDN"] --> Api["/api/v1/{projectSlug}/{operations}/{imageUrl}"]
+  Api --> Redis["Redis\n- config cache\n- rate-limit counters\n- usage throttles"]
+  Api --> Pg["PostgreSQL\nteam/project/api_key/request_log/usage_record"]
+  Api --> Origin["Image origin (HTTP)"]
+  Api --> Client
 ```
 
-## Core Components
-
-### 1. Multi-Tenant Resource Hierarchy
-
-The system implements a three-level hierarchy for resource organization:
-
-| Level | Entity | Description |
-|-------|--------|-------------|
-| 1 | **Team** | Top-level organization unit (personal or shared workspace) |
-| 2 | **Project** | Isolated environment within a team for different applications |
-| 3 | **API Key** | Granular access credential bound to a specific project |
-
-### 2. Authentication System
-
-User authentication is handled by **Clerk**, providing:
-
-- Social login (Google, GitHub, etc.)
-- Email/password authentication
-- Session management
-- User identity verification
-
-### 3. API Key Management
-
-Each API key consists of a dual-key pair: a public key (`pk_...`) for identification and a secret key (`sk_...`) for URL signing. For the full key lifecycle (creation, rotation, revocation, expiration), see [Key Management](/guides/key-management). For the internal creation flow, see [Create API Key Flow](/internal/create-api-key-flow).
-
-### 4. Image Processing Engine
-
-Built on **IPX** (powered by **Sharp**), the engine supports:
-
-| Operation | Parameter | Example |
-|-----------|-----------|---------|
-| Width | `w_` | `w_800` |
-| Height | `h_` | `h_600` |
-| Quality | `q_` | `q_80` |
-| Format | `f_` | `f_webp`, `f_avif` |
-| Fit | `fit_` | `fit_cover`, `fit_contain` |
-| Scale | `s_` | `s_0.5` |
-
-### 5. Usage Analytics
-
-Real-time tracking and monitoring includes:
-
-- Request counts (per minute, daily, monthly)
-- Bandwidth consumption
-- Per-API-key usage breakdown
-- Recent request logs
-- Top requested images
-- Bandwidth savings metrics
-
-## Security Architecture
-
-### Three-Tier Key Hierarchy
+## Validation Pipeline (actual order)
 
 ```mermaid
 flowchart TD
-  L0["Level 0: System Key\nAPI_KEY_ENCRYPTION_SECRET\nEncrypt/decrypt all sensitive data\nSystem-wide singleton"]
-  L1pk["Level 1: publicKey (pk_xxx)\nIdentify API Key\nCan be known"]
-  L1sk["Level 1: secretKey (sk_xxx)\nGenerate/verify URL signatures\nMust remain confidential"]
-  L2["Level 2: Request Signature (sig)\nProve possession of secretKey\nOne-way hash, cannot reverse"]
-
-  L0 -->|Protects| L1pk
-  L0 -->|Protects| L1sk
-  L1sk -->|"Used for"| L2
+  A["Parse key/sig/exp"] -->|Invalid| E1["401"]
+  A -->|OK| B["Load API key config"]
+  B -->|Invalid/revoked/expired| E2["401"]
+  B -->|OK| C["Parse path + operations"]
+  C -->|Invalid| E3["400"]
+  C -->|OK| D["Verify HMAC-SHA256 signature"]
+  D -->|Invalid| E4["403"]
+  D -->|OK| F["Load project by apiKey.projectId\nand check slug match"]
+  F -->|Not found/mismatch| E5["404/401"]
+  F -->|OK| G["Rate limit check\n(day -> minute)"]
+  G -->|Exceeded| E6["429"]
+  G -->|OK| H["Validate Referer domain"]
+  H -->|Blocked| E7["403"]
+  H -->|OK| I["Validate source domain"]
+  I -->|Blocked| E8["403"]
+  I -->|OK| J{"Method"}
+  J -->|GET| K["Transform image and return bytes"]
+  J -->|HEAD| L["Probe upstream and return headers only"]
 ```
 
-### Encryption Mechanisms
+### Why this order
 
-| Mechanism | Algorithm | Purpose |
-|-----------|-----------|---------|
-| Key Derivation | HKDF (RFC 5869) with SHA-256 | Derive encryption key from master secret |
-| Data Encryption | AES-256-GCM | Encrypt secret keys at rest |
-| URL Signing | HMAC-SHA256 | Sign image request URLs |
-| Signature Comparison | `timingSafeEqual` | Prevent timing attacks |
+- Signature verification happens before expensive project/rate-limit work on invalid traffic.
+- Project is loaded by `apiKey.projectId` first, then slug is matched to prevent cross-project confusion.
+- Rate limiting runs after signature verification so invalid requests cannot consume quota.
 
-### Four-Layer Permission Model
+## Request Flows
 
-```mermaid
-flowchart TD
-  UserLayer["Level 1: User Layer\nClerk Authentication\nLogin and identity verification"]
-  TeamLayer["Level 2: Team Layer\nOwnership: team.ownerId === userId\nCreate/delete projects, manage keys, view stats"]
-  ProjectLayer["Level 3: Project Layer\nallowedRefererDomains: control which websites can use the service\nallowedSourceDomains: restrict image sources\nValidation: HTTP Referer header check, Image URL domain check"]
-  ApiKeyLayer["Level 4: API Key Layer\nRate limits: rateLimitPerMinute, rateLimitPerDay\nExpiration: expiresAt"]
-
-  UserLayer --> TeamLayer --> ProjectLayer --> ApiKeyLayer
-```
-
-### Domain Whitelist Architecture
-
-Two layers of domain whitelisting protect the service. For configuration details, see [Domain Whitelisting](/guides/domain-whitelisting).
-
-| Layer | Setting | Question Answered | Validation Method |
-|-------|---------|-------------------|-------------------|
-| Project | `allowedRefererDomains` | Who can **use** this service? | HTTP Referer header |
-| Project | `allowedSourceDomains` | Which **image sources** can be processed? | Image URL in request |
-
-## Request Flow
-
-### Image Request Lifecycle
+### 1) Signed `GET` flow
 
 ```mermaid
 sequenceDiagram
-  participant Client
-  participant OptStuff as OptStuff Server
-  participant Origin as Source Image Server
+  participant C as Client
+  participant A as API Route
+  participant O as Origin
+  participant R as Redis
+  participant P as Postgres
 
-  Note over Client: 1. Client Preparation
-  Client->>Client: Build path = "w_800,f_webp/images.example.com/photo.jpg"
-  Client->>Client: sig = HMAC-SHA256(secretKey, path)
-  Client->>Client: url = /api/v1/{slug}/{path}?key={pk}&sig={sig}
-
-  Client->>OptStuff: GET /api/v1/{slug}/{path}?key=...&sig=...
-
-  Note over OptStuff: 2. Server Validation
-  OptStuff->>OptStuff: Parse URL parameters
-  OptStuff->>OptStuff: Lookup API Key by publicKey
-  OptStuff->>OptStuff: Validate project exists & slug matches
-  OptStuff->>OptStuff: Verify HMAC-SHA256 signature
-  OptStuff->>OptStuff: Check rate limits
-  OptStuff->>OptStuff: Validate referer & source domains
-
-  Note over OptStuff,Origin: 3. Image Processing
-  OptStuff->>Origin: Fetch source image
-  Origin-->>OptStuff: Original image
-  OptStuff->>OptStuff: Apply transformations (resize, format, quality)
-  OptStuff->>OptStuff: Set cache headers
-
-  OptStuff-->>Client: Optimized image + Cache-Control headers
+  C->>A: GET /api/v1/{slug}/{ops}/{imageUrl}?key&sig&exp
+  A->>R: Read api-key/project cache
+  A->>P: Fallback lookup (cache miss)
+  A->>A: Validate ops + signature + domains + limits
+  A->>O: Fetch source + transform (IPX/Sharp)
+  A-->>C: 200 image bytes + cache headers
+  A->>A: after() schedule usage/log updates
+  A->>R: usage throttle keys (NX/EX)
+  A->>P: request_log + lastUsed updates
 ```
 
-### API Key Lifecycle
+### 2) `HEAD` fast-path flow
 
-| Phase | Actions |
-|-------|---------|
-| **Creation** | Generate key pair → Encrypt → Store in DB → Return to user (once) |
-| **Usage** | Sign URLs with secretKey → Server validates signature |
-| **Rotation** | Revoke old key + Create new key atomically (DB transaction, inherits settings) → Clear cache → Update application |
-| **Revocation** | Mark as revoked → Clear cache → Reject future requests |
+- Reuses the same auth/abuse validation pipeline as `GET`.
+- Performs a lightweight upstream `HEAD` probe (no image transform).
+- Returns header-only responses with `X-Head-Fast-Path: 1`.
 
-## Rate Limiting
+## Data Model & Tenancy
 
-| Limit Type | Range | Default | Description |
-|------------|-------|---------|-------------|
-| Per-minute | 1–10,000 | 60 | Rolling window rate limit |
-| Per-day | 1–1,000,000 | 10,000 | Calendar day limit |
+```text
+team
+ └── project
+      └── api_key
+```
 
-## Technical Specifications
+| Entity | Notes |
+|--------|------|
+| `team` | Ownership boundary (one personal team per user via onboarding) |
+| `project` | Holds domain security settings and aggregate usage metadata |
+| `api_key` | Public/secret pair, expiry, revocation, per-key rate-limit values |
+| `usage_record` | Aggregated usage rows |
+| `request_log` | Per-request operational telemetry (sanitized URL) |
 
-| Specification | Details |
-|---------------|---------|
-| Encryption | AES-256-GCM with HKDF key derivation |
-| Signing | HMAC-SHA256 (32-character output) |
-| Image Engine | IPX (powered by Sharp) |
-| Supported Input Formats | JPEG, PNG, WebP, AVIF, GIF |
-| Supported Output Formats | JPEG, PNG, WebP, AVIF |
-| Authentication Provider | Clerk |
-| Database | PostgreSQL (via Drizzle ORM) |
-| Framework | Next.js (App Router) |
+## Security Model
 
-## Attack Protections
+| Layer | Mechanism | Notes |
+|-------|-----------|------|
+| URL auth | HMAC-SHA256 signature | Constant-time compare, optional `exp` |
+| Key storage | AES-256-GCM + HKDF | Secret keys encrypted at rest |
+| Source control | `allowedSourceDomains` | Production empty-list is fail-closed |
+| Hotlinking control | `allowedRefererDomains` | Missing `Referer` is allowed by design |
+| Abuse control | Per-key rate limiting | Day window then minute window |
 
-| Attack Type | Protection Mechanism |
-|-------------|---------------------|
-| Brute force | HMAC-SHA256 + 32-char output makes collision computationally infeasible |
-| Replay attacks | `exp` expiration parameter limits signature validity |
-| Timing attacks | `timingSafeEqual` constant-time comparison |
-| Data theft | AES-256-GCM encrypted storage protects database leaks |
-| Man-in-the-middle | HTTPS + signature validation provides dual protection |
-| Hotlinking | Referer domain whitelist prevents unauthorized embedding |
-| Unauthorized sources | Source domain whitelist restricts image origins |
+## Operational Notes
 
-## Error Handling
+- **Cache propagation:** config cache TTL is 60s; negative cache TTL is 10s.
+- **Rate-limiter availability:** Redis failures fail open (request allowed).
+- **Request logging:** source URL is sanitized (query/hash removed); retention target is 30 days.
+- **Original-size metric:** sampled (10%) to avoid extra upstream `HEAD` on every success.
+- **HEAD upstream behavior:** non-image content-type probes are treated as transform-ineligible (`502`).
 
-For the complete error code list with causes and solutions, see [Error Codes](/api-reference/error-codes).
+## Operations Reference (server validation)
 
-## Related Documentation
+| Operation | Example | Validation rule |
+|-----------|---------|-----------------|
+| `w` | `w_800` | Integer `1..8192` |
+| `h` | `h_600` | Integer `1..8192` |
+| `q` | `q_80` | Integer `1..100` |
+| `f` | `f_webp` | `webp|avif|png|jpg` |
+| `fit` | `fit_cover` | `cover|contain|fill` |
+| `s` | `s_1200x630` | `{w}x{h}` with each `1..8192` |
+| `embed` | `embed` | Flag only (no value) |
 
-| Document | Description |
-|----------|-------------|
-| [What is OptStuff?](/introduction/what-is-optstuff) | Product-focused service description |
-| [Domain Whitelisting](/guides/domain-whitelisting) | Domain whitelist configuration |
-| [Integration Guide](/getting-started/integration-guide) | Step-by-step integration tutorial |
-| [URL Signing](/guides/url-signing) | Request signing and validation |
-| [Security Best Practices](/guides/security-best-practices) | Security recommendations |
+## Related Docs
+
+- [API Endpoint](/api-reference/endpoint)
+- [Redis Schema](/internal/redis-schema)
+- [Create API Key Flow](/internal/create-api-key-flow)
+- [User Onboarding Flow](/internal/user-onboarding-flow)
+- [SSRF Prevention](/internal/ssrf-prevention)

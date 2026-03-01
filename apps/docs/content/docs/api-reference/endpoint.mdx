@@ -144,6 +144,8 @@ This endpoint is optimized for serverless environments where cold starts matter:
 - Heavy modules (image engine and non-critical telemetry utilities) are **lazy-loaded** only when needed.
 - `HEAD` requests run the full auth/abuse checks, run a lightweight upstream probe, skip image transformation, and avoid loading transform dependencies.
 - Success-path usage tracking and request logging are scheduled with `after()` so the image response is returned first.
+- Project/API-key config changes normally propagate within cache TTL (~60s) unless explicit cache invalidation applies immediately.
+- If Redis for rate limiting is temporarily unavailable, requests are allowed (fail-open) so image delivery remains available.
 
 These changes reduce initialization overhead for rejected requests and metadata-only probes while preserving the same API behavior.
 

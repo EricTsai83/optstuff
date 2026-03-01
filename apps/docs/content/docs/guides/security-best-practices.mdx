@@ -36,7 +36,7 @@ Two-layer domain control restricts both who can use the service (referer domains
 
 ### Rate Limiting
 
-Per-key rate limits prevent abuse and contain the impact of compromised keys. See [Rate Limiting](/guides/rate-limiting) for configuration.
+Per-key rate limits prevent abuse and contain the impact of compromised keys. In the current implementation, Redis outages cause rate limiting to fail open to preserve availability; monitor Redis health and alerting accordingly. See [Rate Limiting](/guides/rate-limiting) for details.
 
 ### Dual-Key System
 

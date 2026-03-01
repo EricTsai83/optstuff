@@ -20,7 +20,7 @@ flowchart TD
   C --> D["Validate form inputs"]
   D --> E["Submit to Backend API"]
 
-  E -->|Error| ERR["Show error toast\nUser can retry"]
+  E -->|Error| ERR["Stay on form step\nShow inline error state"]
   E -->|Success| F["generateApiKey()\npk_... + sk_..."]
 
   F --> G["encryptApiKey()\nAES-256-GCM on secretKey"]
@@ -87,6 +87,8 @@ The backend:
 3. Stores values in database
 4. Returns publicKey and plaintext secretKey to client
 
+Every mutation runs through protected tRPC procedures and project-level access verification before key operations are allowed.
+
 ### 5. Success Screen
 
 Dialog transitions to success view showing:
@@ -103,13 +105,23 @@ Dialog transitions to success view showing:
 
 User clicks "Done" to close the dialog. The API key list automatically refreshes to show the new key.
 
+## Rotation Flow (Related)
+
+Rotation uses a single DB transaction to revoke the old key and insert the replacement key atomically:
+
+1. Verify project access
+2. Revoke old key (`revokedAt = now`)
+3. Insert new key (inherits name, expiration, and per-key limit values)
+4. Invalidate old public-key cache (best effort)
+5. Return new plaintext secret once via UI dialog
+
 ## Error Scenarios
 
 | Scenario | Behavior |
 |----------|----------|
 | Empty key name | Submit button disabled |
-| Network error | Show error toast, user can retry |
-| Server error | Show error toast with message |
+| Network error | Mutation fails; user remains on form step and can retry |
+| Server error | Error state shown in form context (no success-step transition) |
 
 ## Form Validation Rules
 
@@ -125,12 +137,12 @@ User clicks "Done" to close the dialog. The API key list automatically refreshes
 | `src/modules/project-detail/ui/components/create-api-key-dialog.tsx` | Dialog component with form and success states |
 | `src/modules/project-detail/ui/components/expiration-select.tsx` | Expiration dropdown component |
 | `src/server/lib/api-key.ts` | Key generation and encryption functions |
-| `src/server/api/routers/api-key.ts` | Backend tRPC router for API key operations |
+| `src/server/api/routers/apiKey.ts` | Backend tRPC router for API key operations |
 | `src/modules/project-detail/ui/components/api-key-types.ts` | TypeScript types for API key data |
 
 ## Database Schema
 
-The `api_keys` table stores:
+The `api_key` table stores:
 
 | Column | Type | Description |
 |--------|------|-------------|
