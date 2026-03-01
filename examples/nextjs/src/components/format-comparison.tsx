@@ -42,12 +42,17 @@ const FORMATS = [
   },
 ];
 
-function buildUrl(src: string, format: string, width: number, quality: number) {
+function buildUrl(
+  src: string,
+  format: "webp" | "avif" | "png" | "jpg",
+  width: number,
+  quality: number,
+) {
   return buildOptStuffProxyPath({
     src,
     width,
     quality,
-    format: format as "webp" | "avif" | "png" | "jpg",
+    format,
     fit: "cover",
   });
 }
