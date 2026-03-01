@@ -131,3 +131,110 @@ export function parseSignatureParams(searchParams: URLSearchParams) {
     expiresAt: safeParseTimestamp(searchParams.get("exp")),
   };
 }
+
+const MAX_DIMENSION = 8192;
+const VALID_FORMATS = ["webp", "avif", "png", "jpg"] as const;
+const VALID_FITS = ["cover", "contain", "fill"] as const;
+const VALID_OPERATION_KEYS = [
+  "w",
+  "h",
+  "q",
+  "f",
+  "fit",
+  "s",
+  "embed",
+] as const;
+const VALID_FORMATS_SET = new Set<string>(VALID_FORMATS);
+const VALID_FITS_SET = new Set<string>(VALID_FITS);
+const VALID_OPERATION_KEYS_SET = new Set<string>(VALID_OPERATION_KEYS);
+
+type ParsedOperations = Record<string, string | boolean>;
+type OperationValidationResult = { ok: true } | { ok: false; error: string };
+
+function parseBoundedInt(
+  value: string | boolean,
+  name: string,
+  min: number,
+  max: number,
+): OperationValidationResult {
+  if (typeof value !== "string" || !/^\d+$/.test(value)) {
+    return { ok: false, error: `${name} must be an integer between ${min} and ${max}` };
+  }
+
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || !Number.isInteger(parsed) || parsed < min || parsed > max) {
+    return { ok: false, error: `${name} must be an integer between ${min} and ${max}` };
+  }
+
+  return { ok: true };
+}
+
+/**
+ * Validate signed IPX operations with strict bounds for potentially expensive transforms.
+ *
+ * This is defense-in-depth: clients should validate before signing, and the server validates
+ * again before processing.
+ */
+export function validateSignedOperations(
+  operations: ParsedOperations,
+): OperationValidationResult {
+  for (const key of Object.keys(operations)) {
+    if (!VALID_OPERATION_KEYS_SET.has(key)) {
+      return { ok: false, error: `Unsupported operation: ${key}` };
+    }
+  }
+
+  if ("w" in operations) {
+    const result = parseBoundedInt(operations.w, "w", 1, MAX_DIMENSION);
+    if (!result.ok) return result;
+  }
+
+  if ("h" in operations) {
+    const result = parseBoundedInt(operations.h, "h", 1, MAX_DIMENSION);
+    if (!result.ok) return result;
+  }
+
+  if ("q" in operations) {
+    const result = parseBoundedInt(operations.q, "q", 1, 100);
+    if (!result.ok) return result;
+  }
+
+  if ("f" in operations) {
+    const format = operations.f;
+    if (typeof format !== "string" || !VALID_FORMATS_SET.has(format)) {
+      return { ok: false, error: `f must be one of: ${VALID_FORMATS.join(",")}` };
+    }
+  }
+
+  if ("fit" in operations) {
+    const fit = operations.fit;
+    if (typeof fit !== "string" || !VALID_FITS_SET.has(fit)) {
+      return { ok: false, error: `fit must be one of: ${VALID_FITS.join(",")}` };
+    }
+  }
+
+  if ("s" in operations) {
+    const size = operations.s;
+    if (typeof size !== "string") {
+      return { ok: false, error: `s must be in format {w}x{h}` };
+    }
+
+    const match = /^(\d+)x(\d+)$/.exec(size);
+    const width = match?.[1];
+    const height = match?.[2];
+    if (!width || !height) {
+      return { ok: false, error: `s must be in format {w}x{h}` };
+    }
+
+    const widthValidation = parseBoundedInt(width, "s width", 1, MAX_DIMENSION);
+    if (!widthValidation.ok) return widthValidation;
+    const heightValidation = parseBoundedInt(height, "s height", 1, MAX_DIMENSION);
+    if (!heightValidation.ok) return heightValidation;
+  }
+
+  if ("embed" in operations && operations.embed !== true) {
+    return { ok: false, error: "embed must be a flag without value" };
+  }
+
+  return { ok: true };
+}

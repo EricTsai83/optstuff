@@ -82,7 +82,7 @@ Image optimization URLs are **content-addressable**: the URL encodes all paramet
 
 | Status | Cause |
 |--------|-------|
-| 400 | Invalid URL format or image URL |
+| 400 | Invalid path format, unsupported operation, or invalid operation value |
 | 401 | Missing/invalid/revoked/expired API key |
 | 403 | Invalid signature, forbidden referer, or blocked source domain |
 | 404 | Project not found, or upstream source returned `404` (passthrough) |
@@ -106,7 +106,7 @@ flowchart TD
   A["Parse key, sig, exp"] -->|Invalid| E1["401"]
   A -->|OK| B["Lookup API key\nCheck not revoked/expired"]
   B -->|Invalid| E2["401"]
-  B -->|OK| C["Parse operations and image path"]
+  B -->|OK| C["Parse operations and image path\nValidate operation constraints"]
   C -->|Invalid| E3["400"]
   C -->|OK| D["Verify HMAC-SHA256\nsignature"]
   D -->|Invalid| E4["403"]
@@ -127,7 +127,7 @@ flowchart TD
 |------|-------|---------|
 | 1 | Parse `key`, `sig`, `exp` from query string | `401` |
 | 2 | Look up API key; check not revoked/expired | `401` |
-| 3 | Parse operations and image path from URL path | `400` |
+| 3 | Parse operations/image path and validate operation constraints | `400` |
 | 4 | Verify HMAC-SHA256 signature (constant-time) | `403` |
 | 5 | Find project by key's `projectId`; match slug | `404` / `401` |
 | 6 | Check rate limits | `429` |

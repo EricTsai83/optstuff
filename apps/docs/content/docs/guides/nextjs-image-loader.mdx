@@ -173,6 +173,15 @@ The signing secret stays in the API Route. The client-side loader only construct
 `/api/optstuff` — it never sees `OPTSTUFF_SECRET_KEY`.
 </Callout>
 
+<Callout type="info">
+Use both layers of validation in production:
+
+- Validate request params in your app's signing API route (`/api/optstuff`) to fail fast.
+- Keep OptStuff server-side operation validation enabled as defense-in-depth.
+
+Even if a client bypasses your app route and calls the endpoint directly, invalid operation values are still rejected server-side with `400`.
+</Callout>
+
 ### Step 3: Image Component
 
 Create a Client Component that wraps `next/image` with a custom loader pointing to the API route:
