@@ -21,9 +21,12 @@ export type TransitionPreset = "instant" | "smooth" | "cinematic";
 export type TransitionConfig = {
   /** Duration (ms) for the sharp image to fade in. */
   sharpFadeInMs?: number;
-  /** Duration (ms) for the blur placeholder to fade out. */
+  /**
+   * Duration (ms) for the blur placeholder to fade out.
+   * Set to `0` to keep blur static and only fade the sharp image in.
+   */
   blurFadeOutMs?: number;
-  /** Delay (ms) before the blur starts fading (after the sharp begins). */
+  /** Delay (ms) before blur fade-out starts (only when `blurFadeOutMs > 0`). */
   blurFadeOutDelayMs?: number;
   /**
    * Grace period (ms) before blur is shown. If the sharp image loads within
@@ -55,16 +58,16 @@ const TRANSITION_PRESETS: Record<TransitionPreset, ResolvedTransition> = {
   },
   smooth: {
     sharpFadeInMs: 380,
-    blurFadeOutMs: 300,
-    blurFadeOutDelayMs: 100,
+    blurFadeOutMs: 0,
+    blurFadeOutDelayMs: 0,
     blurShowDelayMs: 70,
     easing: "cubic-bezier(0.25, 1, 0.5, 1)",
     fastLoadTransition: true,
   },
   cinematic: {
     sharpFadeInMs: 600,
-    blurFadeOutMs: 450,
-    blurFadeOutDelayMs: 160,
+    blurFadeOutMs: 0,
+    blurFadeOutDelayMs: 0,
     blurShowDelayMs: 100,
     easing: "cubic-bezier(0.22, 1, 0.36, 1)",
     fastLoadTransition: true,
@@ -165,9 +168,7 @@ export function OptStuffImage({
 }: OptStuffImageProps) {
   const loader = useOptStuffLoader({ format, fit });
 
-  const imageProps = preSigned
-    ? { unoptimized: true as const }
-    : { loader };
+  const imageProps = preSigned ? { unoptimized: true as const } : { loader };
 
   if (!blurPlaceholder) {
     return (
@@ -246,7 +247,7 @@ type TransitionPhase =
  *      - `false`: jump straight to **done** (no blur rendered).
  *      - `true`: run a short reveal pass with a transient blur layer.
  *   2. **loading** — grace period expired; blur fades in, sharp still loading.
- *   3. **revealing** — sharp loaded; sharp fades in, blur fades out (staggered).
+ *   3. **revealing** — sharp loaded; sharp fades in, blur optionally fades out.
  *   4. **done** — blur removed from DOM, `will-change` cleared.
  */
 function BlurToSharpImage({
@@ -305,10 +306,12 @@ function BlurToSharpImage({
   useEffect(() => {
     if (phase !== "revealing") return;
 
+    const blurFadeTailMs =
+      transition.blurFadeOutMs > 0
+        ? transition.blurFadeOutDelayMs + transition.blurFadeOutMs
+        : 0;
     const totalMs =
-      transition.sharpFadeInMs +
-      transition.blurFadeOutDelayMs +
-      transition.blurFadeOutMs;
+      transition.sharpFadeInMs + blurFadeTailMs;
     cleanupTimer.current = setTimeout(() => setPhase("done"), totalMs + 60);
 
     return () => clearTimeout(cleanupTimer.current);
@@ -355,8 +358,11 @@ function BlurToSharpImage({
 
   const objectFit = (style as CSSProperties | undefined)?.objectFit ?? fit;
   const showBlur =
-    phase === "loading" || phase === "fast-reveal-prep" || phase === "revealing";
+    phase === "loading" ||
+    phase === "fast-reveal-prep" ||
+    phase === "revealing";
   const revealed = phase === "revealing" || phase === "done";
+  const blurFadesOut = transition.blurFadeOutMs > 0;
 
   return (
     <div
@@ -378,9 +384,9 @@ function BlurToSharpImage({
             objectFit,
             filter: "blur(20px)",
             transform: "scale(1.1)",
-            opacity: phase === "revealing" ? 0 : 1,
+            opacity: blurFadesOut && phase === "revealing" ? 0 : 1,
             transition:
-              phase === "revealing"
+              blurFadesOut && phase === "revealing"
                 ? `opacity ${transition.blurFadeOutMs}ms ${transition.easing} ${transition.blurFadeOutDelayMs}ms`
                 : undefined,
             willChange:
