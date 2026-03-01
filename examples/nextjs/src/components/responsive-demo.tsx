@@ -167,7 +167,7 @@ export function ResponsiveDemo() {
       </div>
 
       {/* Code snippet */}
-      <div className="code-block mx-auto max-w-2xl overflow-x-auto rounded-xl p-4 sm:p-5">
+      <div className="mx-auto max-w-2xl overflow-x-auto rounded-xl border border-zinc-800 bg-code-bg p-4 text-code-text sm:p-5">
         <pre className="text-code-text font-mono text-xs leading-relaxed">
           <code>{`<OptStuffImage
   src="photo.jpg"

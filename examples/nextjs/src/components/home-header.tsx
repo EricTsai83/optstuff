@@ -97,7 +97,7 @@ export function HomeHeader() {
             </svg>
             Menu
           </summary>
-          <div className="border-border bg-card animate-scale-in absolute right-0 top-[calc(100%+0.5rem)] z-50 min-w-[260px] origin-top-right rounded-xl border p-2 shadow-2xl">
+          <div className="border-border bg-card absolute right-0 top-[calc(100%+0.5rem)] z-50 min-w-[260px] origin-top-right rounded-xl border p-2 shadow-2xl">
             <p className="text-muted mb-1 px-3 pt-2 text-[11px] font-semibold uppercase tracking-wider">
               Navigate
             </p>

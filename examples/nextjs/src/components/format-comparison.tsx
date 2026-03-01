@@ -61,7 +61,7 @@ export function FormatComparison() {
         return (
           <div
             key={fmt.id}
-            className="feature-card border-border bg-card group cursor-default overflow-hidden rounded-2xl border shadow-sm"
+            className="border-border bg-card group cursor-default overflow-hidden rounded-2xl border shadow-sm"
           >
             <div className="relative aspect-4/3 overflow-hidden">
               {/* eslint-disable-next-line @next/next/no-img-element */}

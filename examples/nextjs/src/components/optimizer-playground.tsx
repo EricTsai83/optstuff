@@ -272,7 +272,7 @@ export function OptimizerPlayground() {
           </div>
         ) : generatedUrl ? (
           <div>
-            <div className="code-block relative overflow-x-auto rounded-lg p-4">
+            <div className="relative overflow-x-auto rounded-lg border border-zinc-800 bg-code-bg p-4 text-code-text">
               <code className="block break-all font-mono text-xs leading-relaxed text-emerald-400">
                 {generatedUrl}
               </code>
@@ -304,7 +304,7 @@ export function OptimizerPlayground() {
             Code Example
           </h3>
         </div>
-        <div className="code-block rounded-none border-0 p-4 sm:p-5">
+        <div className="rounded-none border-x-0 border-y border-zinc-800 bg-code-bg p-4 text-code-text sm:p-5">
           <pre className="text-code-text overflow-x-auto font-mono text-xs leading-relaxed">
             <code>{`import { OptStuffImage } from "@/components/optstuff-image";
 

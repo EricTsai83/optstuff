@@ -165,29 +165,23 @@ export function HomePageContent({
 
       <main>
         {/* ─── Hero ─── */}
-        <section className="hero-gradient grain-overlay relative flex min-h-[80vh] flex-col items-center justify-center overflow-hidden px-4 pt-28 pb-16 sm:min-h-[88vh] sm:px-6 sm:pt-36 sm:pb-20">
+        <section className="relative flex min-h-[80vh] flex-col items-center justify-center overflow-hidden px-4 pt-28 pb-16 sm:min-h-[88vh] sm:px-6 sm:pt-36 sm:pb-20">
           {/* Decorative orbs */}
-          <div className="animate-float-slow pointer-events-none absolute -top-24 left-[8%] size-80 rounded-full bg-emerald-400/8 blur-3xl" />
-          <div className="animate-float-reverse pointer-events-none absolute -right-16 bottom-1/4 size-64 rounded-full bg-cyan-400/6 blur-3xl" />
+          <div className="pointer-events-none absolute -top-24 left-[8%] size-80 rounded-full bg-emerald-400/8 blur-3xl" />
+          <div className="pointer-events-none absolute -right-16 bottom-1/4 size-64 rounded-full bg-cyan-400/6 blur-3xl" />
 
           <div className="relative mx-auto max-w-3xl text-center">
-            <span className="animate-fade-in-up stagger-1 badge-pill mb-6 inline-flex bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">
-              <span className="animate-pulse-dot inline-block size-1.5 rounded-full bg-emerald-500" />
-              Hero Walkthrough
-              <span className="font-mono text-[10px] tracking-wide opacity-70">
-                blur → sharp
-              </span>
-            </span>
-
-            <h1 className="animate-fade-in-up stagger-2 text-foreground mb-6 text-4xl leading-[1.1] font-bold tracking-tight sm:text-5xl md:text-6xl lg:text-7xl">
+            <h1 className="text-foreground mb-6 text-4xl leading-[1.1] font-bold tracking-tight sm:text-5xl md:text-6xl lg:text-7xl">
               Instant Image
               <br />
               Optimization
               <br />
-              <span className="text-gradient">with Signed URLs</span>
+              <span className="bg-linear-to-r from-emerald-500 via-cyan-500 to-emerald-500 bg-clip-text text-transparent">
+                with Signed URLs
+              </span>
             </h1>
 
-            <p className="animate-fade-in-up stagger-3 text-muted mx-auto mb-10 max-w-xl text-base leading-relaxed sm:text-lg sm:leading-relaxed">
+            <p className="text-muted mx-auto mb-10 max-w-xl text-base leading-relaxed sm:text-lg sm:leading-relaxed">
               One secure API to resize, convert, and serve optimised images
               on-the-fly. This hero intentionally demonstrates optional
               blur-to-clear loading.
@@ -195,13 +189,13 @@ export function HomePageContent({
           </div>
 
           {showHeroDebugInfo ? (
-            <div className="animate-fade-in-up stagger-4 mx-auto mb-4 w-full max-w-4xl">
+            <div className="mx-auto mb-4 w-full max-w-4xl">
               <HeroRefreshToggle enabled={heroForceRefresh === "yes"} />
             </div>
           ) : null}
 
           {/* Hero blur-to-clear image */}
-          <div className="animate-fade-in-up stagger-5 mx-auto w-full max-w-4xl">
+          <div className="mx-auto w-full max-w-4xl">
             <div className="border-border group overflow-hidden rounded-2xl border shadow-2xl shadow-black/8 transition-shadow duration-500 hover:shadow-emerald-500/5">
               <div className="aspect-21/9 relative">
                 <OptStuffImage
@@ -272,9 +266,6 @@ export function HomePageContent({
         >
           <div className="mx-auto max-w-6xl px-4 sm:px-6">
             <ScrollReveal className="mb-6 text-center">
-              <span className="badge-pill mb-4 inline-flex bg-cyan-100 text-cyan-700 dark:bg-cyan-900/40 dark:text-cyan-300">
-                Core Delivery Patterns
-              </span>
               <h2 className="text-foreground mb-4 text-3xl font-bold tracking-tight sm:text-4xl lg:text-5xl">
                 Format + Responsive, in One Flow
               </h2>
@@ -307,9 +298,6 @@ export function HomePageContent({
         <section className="py-20 sm:py-28">
           <div className="mx-auto max-w-6xl px-4 sm:px-6">
             <ScrollReveal className="mb-12 text-center sm:mb-16">
-              <span className="badge-pill mb-4 inline-flex bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">
-                next/image Integration
-              </span>
               <h2 className="text-foreground mb-4 text-3xl font-bold tracking-tight sm:text-4xl lg:text-5xl">
                 Drop-in Replacement
               </h2>
@@ -332,7 +320,7 @@ export function HomePageContent({
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
               {SHOWCASE_IMAGES.map((img, idx) => (
                 <ScrollReveal key={img.label} delay={idx * 120}>
-                  <div className="feature-card border-border bg-card group cursor-default overflow-hidden rounded-2xl border shadow-sm">
+                  <div className="border-border bg-card group cursor-default overflow-hidden rounded-2xl border shadow-sm">
                     <div className="aspect-4/3 relative overflow-hidden">
                       <OptStuffImage
                         src={img.src}
@@ -354,7 +342,7 @@ export function HomePageContent({
                           {img.format}
                         </span>
                       </div>
-                      <div className="code-block overflow-x-auto rounded-lg p-3">
+                      <div className="border border-zinc-800 bg-code-bg text-code-text overflow-x-auto rounded-lg p-3">
                         <pre className="text-code-text font-mono text-[11px] leading-relaxed">
                           <code>{`<OptStuffImage
   src=".../${img.src.split("/").pop()}"
@@ -379,9 +367,6 @@ export function HomePageContent({
         >
           <div className="mx-auto max-w-6xl px-4 sm:px-6">
             <ScrollReveal className="mb-12 text-center sm:mb-16">
-              <span className="badge-pill mb-4 inline-flex bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">
-                Simple &amp; Secure
-              </span>
               <h2 className="text-foreground mb-4 text-3xl font-bold tracking-tight sm:text-4xl lg:text-5xl">
                 How It Works
               </h2>
@@ -396,7 +381,7 @@ export function HomePageContent({
                 <div className="mb-10 flex flex-col items-center gap-4 sm:mb-12 sm:flex-row sm:justify-between sm:gap-0">
                   {/* Step 1 */}
                   <div className="flex flex-col items-center gap-3">
-                    <div className="step-icon flex size-14 items-center justify-center rounded-2xl bg-emerald-500 text-white shadow-lg shadow-emerald-500/25 sm:size-16">
+                    <div className="flex size-14 items-center justify-center rounded-2xl bg-emerald-500 text-white shadow-lg shadow-emerald-500/25 sm:size-16">
                       <svg
                         viewBox="0 0 24 24"
                         fill="none"
@@ -417,7 +402,7 @@ export function HomePageContent({
                   </div>
 
                   {/* Connector */}
-                  <div className="pipeline-connector bg-linear-to-r mx-2 hidden h-0.5 flex-1 from-emerald-400 to-emerald-300 sm:block" />
+                  <div className="bg-linear-to-r mx-2 hidden h-0.5 flex-1 from-emerald-400 to-emerald-300 sm:block" />
                   <svg
                     viewBox="0 0 24 24"
                     fill="none"
@@ -434,7 +419,7 @@ export function HomePageContent({
 
                   {/* Step 2 */}
                   <div className="flex flex-col items-center gap-3">
-                    <div className="step-icon flex size-14 items-center justify-center rounded-2xl bg-teal-500 text-white shadow-lg shadow-teal-500/25 sm:size-16">
+                    <div className="flex size-14 items-center justify-center rounded-2xl bg-teal-500 text-white shadow-lg shadow-teal-500/25 sm:size-16">
                       <svg
                         viewBox="0 0 24 24"
                         fill="none"
@@ -455,7 +440,7 @@ export function HomePageContent({
                   </div>
 
                   {/* Connector */}
-                  <div className="pipeline-connector bg-linear-to-r mx-2 hidden h-0.5 flex-1 from-teal-300 to-cyan-300 sm:block" />
+                  <div className="bg-linear-to-r mx-2 hidden h-0.5 flex-1 from-teal-300 to-cyan-300 sm:block" />
                   <svg
                     viewBox="0 0 24 24"
                     fill="none"
@@ -472,7 +457,7 @@ export function HomePageContent({
 
                   {/* Step 3 */}
                   <div className="flex flex-col items-center gap-3">
-                    <div className="step-icon flex size-14 items-center justify-center rounded-2xl bg-cyan-500 text-white shadow-lg shadow-cyan-500/25 sm:size-16">
+                    <div className="flex size-14 items-center justify-center rounded-2xl bg-cyan-500 text-white shadow-lg shadow-cyan-500/25 sm:size-16">
                       <svg
                         viewBox="0 0 24 24"
                         fill="none"
@@ -508,7 +493,7 @@ export function HomePageContent({
                       Generate an HMAC-SHA256 signature in your API route. The
                       secret key never leaves the server.
                     </p>
-                    <div className="code-block overflow-x-auto rounded-lg p-3.5">
+                    <div className="border border-zinc-800 bg-code-bg text-code-text overflow-x-auto rounded-lg p-3.5">
                       <pre className="text-code-text font-mono text-[11px] leading-relaxed">
                         <code>{`const sig = crypto
   .createHmac("sha256", SECRET)
@@ -532,7 +517,7 @@ export function HomePageContent({
                       Width, quality, format, fit — everything is in the URL.
                       OptStuff processes on-the-fly.
                     </p>
-                    <div className="code-block overflow-x-auto rounded-lg p-3.5">
+                    <div className="border border-zinc-800 bg-code-bg text-code-text overflow-x-auto rounded-lg p-3.5">
                       <pre className="text-code-text font-mono text-[11px] leading-relaxed">
                         <code>{`/api/v1/{slug}/
   w_800,q_80,f_webp,
@@ -555,7 +540,7 @@ export function HomePageContent({
                       Immutable cache headers. CDNs cache at the edge — same
                       URL, same bytes, always.
                     </p>
-                    <div className="code-block overflow-x-auto rounded-lg p-3.5">
+                    <div className="border border-zinc-800 bg-code-bg text-code-text overflow-x-auto rounded-lg p-3.5">
                       <pre className="text-code-text font-mono text-[11px] leading-relaxed">
                         <code>{`Cache-Control: public,
   s-maxage=31536000,
@@ -574,9 +559,6 @@ export function HomePageContent({
         <section id="playground" className="py-20 sm:py-28">
           <div className="mx-auto max-w-6xl px-4 sm:px-6">
             <ScrollReveal className="mb-12 text-center sm:mb-16">
-              <span className="badge-pill mb-4 inline-flex bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">
-                Try It Live
-              </span>
               <h2 className="text-foreground mb-4 text-3xl font-bold tracking-tight sm:text-4xl lg:text-5xl">
                 URL Playground
               </h2>
