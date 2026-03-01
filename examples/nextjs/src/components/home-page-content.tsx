@@ -1,6 +1,6 @@
 import { DeferredMount } from "@/components/deferred-mount";
-import { HomeHeader } from "@/components/home-header";
 import { HeroRefreshToggle } from "@/components/hero-refresh-toggle";
+import { HomeHeader } from "@/components/home-header";
 import { OptStuffImage } from "@/components/optstuff-image";
 import { ScrollReveal } from "@/components/scroll-reveal";
 import dynamic from "next/dynamic";
@@ -27,9 +27,7 @@ const FormatComparison = dynamic(
 const ResponsiveDemo = dynamic(
   () => import("@/components/responsive-demo").then((m) => m.ResponsiveDemo),
   {
-    loading: () => (
-      <LoadingPlaceholder message="Loading responsive demo..." />
-    ),
+    loading: () => <LoadingPlaceholder message="Loading responsive demo..." />,
   },
 );
 
@@ -79,7 +77,6 @@ type HomePageContentProps = {
   readonly heroBlurStatusCode: string | undefined;
   readonly heroBlurContentType: string | undefined;
   readonly heroBlurDuration: string | undefined;
-  readonly showHeroDebugInfo: boolean;
 };
 
 export function HomePageContent({
@@ -94,7 +91,6 @@ export function HomePageContent({
   heroBlurStatusCode,
   heroBlurContentType,
   heroBlurDuration,
-  showHeroDebugInfo,
 }: HomePageContentProps) {
   const hasHeroBlurPlaceholder = heroBlurDataUrl !== undefined;
   const heroBlurModeLabel =
@@ -175,13 +171,13 @@ export function HomePageContent({
 
       <main>
         {/* ─── Hero ─── */}
-        <section className="relative flex min-h-[80vh] flex-col items-center justify-center overflow-hidden px-4 pt-28 pb-16 sm:min-h-[88vh] sm:px-6 sm:pt-36 sm:pb-20">
+        <section className="relative flex min-h-[80vh] flex-col items-center justify-center overflow-hidden px-4 pb-16 pt-28 sm:min-h-[88vh] sm:px-6 sm:pb-20 sm:pt-36">
           {/* Decorative orbs */}
-          <div className="pointer-events-none absolute -top-24 left-[8%] size-80 rounded-full bg-emerald-400/8 blur-3xl" />
-          <div className="pointer-events-none absolute -right-16 bottom-1/4 size-64 rounded-full bg-cyan-400/6 blur-3xl" />
+          <div className="bg-emerald-400/8 pointer-events-none absolute -top-24 left-[8%] size-80 rounded-full blur-3xl" />
+          <div className="bg-cyan-400/6 pointer-events-none absolute -right-16 bottom-1/4 size-64 rounded-full blur-3xl" />
 
           <div className="relative mx-auto max-w-3xl text-center">
-            <h1 className="text-foreground mb-6 text-4xl leading-[1.1] font-bold tracking-tight sm:text-5xl md:text-6xl lg:text-7xl">
+            <h1 className="text-foreground mb-6 text-4xl font-bold leading-[1.1] tracking-tight sm:text-5xl md:text-6xl lg:text-7xl">
               Instant Image
               <br />
               Optimization
@@ -198,15 +194,13 @@ export function HomePageContent({
             </p>
           </div>
 
-          {showHeroDebugInfo ? (
-            <div className="mx-auto mb-4 w-full max-w-4xl">
-              <HeroRefreshToggle enabled={heroForceRefresh === "yes"} />
-            </div>
-          ) : null}
+          <div className="mx-auto mb-4 w-full max-w-4xl">
+            <HeroRefreshToggle enabled={heroForceRefresh === "yes"} />
+          </div>
 
           {/* Hero blur-to-clear image */}
           <div className="mx-auto w-full max-w-4xl">
-            <div className="border-border group overflow-hidden rounded-2xl border shadow-2xl shadow-black/8 transition-shadow duration-500 hover:shadow-emerald-500/5">
+            <div className="border-border shadow-black/8 group overflow-hidden rounded-2xl border shadow-2xl transition-shadow duration-500 hover:shadow-emerald-500/5">
               <div className="aspect-21/9 relative">
                 <OptStuffImage
                   src={heroImageUrl}
@@ -231,49 +225,41 @@ export function HomePageContent({
               <p className="text-muted mt-1 font-mono text-xs">
                 blurPlaceholder + blurDataUrl
               </p>
-              {showHeroDebugInfo ? (
-                <div className="bg-card-hover/60 border-border mt-3 rounded-lg border p-3">
-                  <p className="text-foreground/80 mb-1.5 font-mono text-[11px] font-semibold uppercase tracking-wide">
-                    Hero Blur Debug Panel
-                  </p>
-                  <div className="text-muted grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5 font-mono text-xs">
+
+              <div className="bg-card-hover/60 border-border mt-3 rounded-lg border p-3">
+                <p className="text-foreground/80 mb-1.5 font-mono text-[11px] font-semibold uppercase tracking-wide">
+                  Hero Blur Debug Panel
+                </p>
+                <div className="text-muted grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5 font-mono text-xs">
+                  {heroBlurDebugRows.map((row) => (
+                    <Fragment key={row.label}>
+                      <span className="text-foreground/85">{row.label}:</span>
+                      <span className="text-foreground/85 break-all">
+                        {row.value}
+                      </span>
+                    </Fragment>
+                  ))}
+                </div>
+                <details className="border-border mt-3 border-t pt-2">
+                  <summary className="text-foreground/70 hover:text-foreground/90 cursor-pointer font-mono text-[11px] font-semibold uppercase tracking-wide transition-colors">
+                    Field Guide
+                  </summary>
+                  <div className="text-muted mt-2 grid gap-1.5 text-[11px] leading-relaxed">
                     {heroBlurDebugRows.map((row) => (
-                      <Fragment key={row.label}>
-                        <span className="text-foreground/85">
-                          {row.label}:
-                        </span>
-                        <span className="text-foreground/85 break-all">
-                          {row.value}
-                        </span>
-                      </Fragment>
+                      <p key={`${row.label}-guide`}>
+                        <span className="text-foreground/85">{row.label}:</span>{" "}
+                        {row.description}
+                      </p>
                     ))}
                   </div>
-                  <details className="border-border mt-3 border-t pt-2">
-                    <summary className="text-foreground/70 hover:text-foreground/90 cursor-pointer font-mono text-[11px] font-semibold uppercase tracking-wide transition-colors">
-                      Field Guide
-                    </summary>
-                    <div className="text-muted mt-2 grid gap-1.5 text-[11px] leading-relaxed">
-                      {heroBlurDebugRows.map((row) => (
-                        <p key={`${row.label}-guide`}>
-                          <span className="text-foreground/85">
-                            {row.label}:
-                          </span>{" "}
-                          {row.description}
-                        </p>
-                      ))}
-                    </div>
-                  </details>
-                </div>
-              ) : null}
+                </details>
+              </div>
             </div>
           </div>
         </section>
 
         {/* ─── Delivery Patterns ─── */}
-        <section
-          id="demo"
-          className="bg-section-alt py-20 sm:py-28"
-        >
+        <section id="demo" className="bg-section-alt py-20 sm:py-28">
           <div className="mx-auto max-w-6xl px-4 sm:px-6">
             <ScrollReveal as="header" className="mb-6 text-center">
               <h2 className="text-foreground mb-4 text-3xl font-bold tracking-tight sm:text-4xl lg:text-5xl">
@@ -341,7 +327,7 @@ export function HomePageContent({
                         quality={img.quality}
                         style={{ objectFit: "cover" }}
                       />
-                      <div className="pointer-events-none absolute inset-0 bg-linear-to-t from-black/20 via-transparent to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
+                      <div className="bg-linear-to-t pointer-events-none absolute inset-0 from-black/20 via-transparent to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
                     </div>
                     <div className="p-5">
                       <div className="mb-3 flex items-center justify-between">
@@ -352,7 +338,7 @@ export function HomePageContent({
                           {img.format}
                         </span>
                       </div>
-                      <div className="border border-zinc-800 bg-code-bg text-code-text overflow-x-auto rounded-lg p-3">
+                      <div className="bg-code-bg text-code-text overflow-x-auto rounded-lg border border-zinc-800 p-3">
                         <pre className="text-code-text font-mono text-[11px] leading-relaxed">
                           <code>{`<OptStuffImage
   src=".../${img.src.split("/").pop()}"
@@ -371,10 +357,7 @@ export function HomePageContent({
         </section>
 
         {/* ─── How It Works ─── */}
-        <section
-          id="how-it-works"
-          className="bg-section-alt py-20 sm:py-28"
-        >
+        <section id="how-it-works" className="bg-section-alt py-20 sm:py-28">
           <div className="mx-auto max-w-6xl px-4 sm:px-6">
             <ScrollReveal as="header" className="mb-12 text-center sm:mb-16">
               <h2 className="text-foreground mb-4 text-3xl font-bold tracking-tight sm:text-4xl lg:text-5xl">
@@ -503,7 +486,7 @@ export function HomePageContent({
                       Generate an HMAC-SHA256 signature in your API route. The
                       secret key never leaves the server.
                     </p>
-                    <div className="border border-zinc-800 bg-code-bg text-code-text overflow-x-auto rounded-lg p-3.5">
+                    <div className="bg-code-bg text-code-text overflow-x-auto rounded-lg border border-zinc-800 p-3.5">
                       <pre className="text-code-text font-mono text-[11px] leading-relaxed">
                         <code>{`const sig = crypto
   .createHmac("sha256", SECRET)
@@ -527,7 +510,7 @@ export function HomePageContent({
                       Width, quality, format, fit — everything is in the URL.
                       OptStuff processes on-the-fly.
                     </p>
-                    <div className="border border-zinc-800 bg-code-bg text-code-text overflow-x-auto rounded-lg p-3.5">
+                    <div className="bg-code-bg text-code-text overflow-x-auto rounded-lg border border-zinc-800 p-3.5">
                       <pre className="text-code-text font-mono text-[11px] leading-relaxed">
                         <code>{`/api/v1/{slug}/
   w_800,q_80,f_webp,
@@ -550,7 +533,7 @@ export function HomePageContent({
                       Immutable cache headers. CDNs cache at the edge — same
                       URL, same bytes, always.
                     </p>
-                    <div className="border border-zinc-800 bg-code-bg text-code-text overflow-x-auto rounded-lg p-3.5">
+                    <div className="bg-code-bg text-code-text overflow-x-auto rounded-lg border border-zinc-800 p-3.5">
                       <pre className="text-code-text font-mono text-[11px] leading-relaxed">
                         <code>{`Cache-Control: public,
   s-maxage=31536000,

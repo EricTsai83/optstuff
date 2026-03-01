@@ -2,6 +2,7 @@
   "$schema": "https://turbo.build/schema.json",
   "ui": "tui",
   "globalEnv": ["NODE_ENV"],
+  "globalPassThroughEnv": ["PORT"],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
@@ -12,6 +13,7 @@
         "SKIP_ENV_VALIDATION",
         "MFE_DEBUG",
         "PROJECT_URL",
+        "VERCEL_URL",
         "ALLOWED_DOMAINS",
         "CLERK_SECRET_KEY",
         "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY",
@@ -44,6 +46,7 @@
         "SKIP_ENV_VALIDATION",
         "MFE_DEBUG",
         "PROJECT_URL",
+        "VERCEL_URL",
         "CLERK_SECRET_KEY",
         "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY",
         "NEXT_PUBLIC_CLERK_SIGN_IN_FORCE_REDIRECT_URL",

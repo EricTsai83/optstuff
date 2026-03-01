@@ -152,9 +152,8 @@ async function HomeResolved({ searchParams }: HomePageProps) {
   const resolvedSearchParams = await searchParams;
   const heroBlurMode = HERO_BLUR_CONFIG.mode;
   const heroForceRefresh =
-    process.env.NODE_ENV !== "production" &&
-    (resolveBooleanSearchParam(resolvedSearchParams["hero-refresh"]) ||
-      resolveBooleanSearchParam(resolvedSearchParams["blur-bust"]));
+    resolveBooleanSearchParam(resolvedSearchParams["hero-refresh"]) ||
+    resolveBooleanSearchParam(resolvedSearchParams["blur-bust"]);
 
   if (heroBlurMode === HERO_BLUR_MODE.REALTIME) {
     noStore();
@@ -196,7 +195,6 @@ async function HomeResolved({ searchParams }: HomePageProps) {
       heroBlurStatusCode={heroBlurDebugStatusCode}
       heroBlurContentType={heroBlurDebugContentType}
       heroBlurDuration={heroBlurDebugDuration}
-      showHeroDebugInfo={process.env.NODE_ENV !== "production"}
     />
   );
 }
