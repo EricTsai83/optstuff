@@ -156,6 +156,119 @@ Response body:
 { "url": "https://<optstuff>/api/v1/..." }
 ```
 
+## URL signing strategies
+
+OptStuff requires every image request to carry an HMAC-SHA256 signature. The secret key must never be exposed to the browser. This demo ships two strategies for generating that signature — **client-side proxy signing** and **server-side pre-signing** — each suited to different use cases.
+
+### Strategy 1: Client-side proxy signing (default)
+
+The browser never touches the secret key. Instead, `next/image` routes every request through a local API endpoint that signs URLs on the server and returns a redirect.
+
+```text
+Browser (next/image srcset)
+  → loader builds /api/optstuff?url=...&w=800&q=80&f=webp
+  → API route signs the URL with HMAC-SHA256
+  → 302 redirect to signed OptStuff URL
+  → Browser follows redirect, gets optimized image
+```
+
+**How to use:**
+
+```tsx
+<OptStuffImage
+  src="https://images.unsplash.com/photo-xxx"
+  width={800}
+  height={500}
+  alt="A photo"
+  format="webp"
+/>
+```
+
+No special props needed — this is the default behavior.
+
+**Pros:**
+
+- Responsive `srcSet` — `next/image` generates multiple widths, each independently signed
+- Simple DX — just pass the original image URL
+- Secret key stays on the server
+- Redirect responses can be cached by CDN/edge (`Cache-Control: s-maxage`)
+
+**Cons:**
+
+- Extra network hop — each width in the `srcSet` hits `/api/optstuff` first (mitigated by CDN cache)
+- Signing happens per-request (though cached redirects avoid repeated signing)
+- Cannot leverage `"use cache"` / `cacheLife` for the signed URL itself
+
+**Best for:** general images, product catalogs, user-uploaded content — any case where you want responsive `srcSet` across multiple widths.
+
+### Strategy 2: Server-side pre-signing (`preSigned`)
+
+The Server Component generates the signed URL at render time using `generateOptStuffUrl()`, then passes the complete URL as a prop. The client uses it as-is, no loader, no proxy.
+
+```text
+Server Component (page.tsx / RSC)
+  → calls generateOptStuffUrl(src, { width: 1600, ... })
+  → returns fully signed URL with ?key=...&exp=...&sig=...
+  → passes URL as prop to <OptStuffImage preSigned />
+  → Browser requests the signed URL directly
+```
+
+**How to use:**
+
+```tsx
+// Server Component
+const heroUrl = generateOptStuffUrl(imageUrl, { width: 1600, quality: 85 }, ttl);
+
+// Client Component
+<OptStuffImage
+  src={heroUrl}
+  fill
+  alt="Hero"
+  preSigned            // ← tells the component: URL is already signed
+  blurPlaceholder
+  blurDataUrl={blurData}
+/>
+```
+
+**Pros:**
+
+- Zero extra hops — browser requests the signed URL directly
+- Works with `"use cache"` + `cacheLife()` — signed URL can be cached across requests
+- Full control over expiration (`exp` parameter baked into the signature)
+- Great for critical images (hero, OG image) where latency matters
+
+**Cons:**
+
+- Single width — the URL is signed for one specific set of parameters (width, quality, format)
+- No responsive `srcSet` — cannot generate multiple widths without multiple signed URLs
+- Rendered with `unoptimized` — Next.js skips its image optimization pipeline entirely
+- Must manage TTL carefully — expired signatures return 403
+
+**Best for:** hero images, above-the-fold critical images, OG/social images — cases where you want maximum cache control and minimal latency for a single known variant.
+
+### Quick comparison
+
+| | Proxy signing (default) | Pre-signing (`preSigned`) |
+|---|---|---|
+| Signing location | `/api/optstuff` route handler | Server Component / RSC |
+| Secret key exposure | Never (server-only) | Never (server-only) |
+| Responsive `srcSet` | Yes (multiple widths) | No (single width) |
+| Network hops | 2 (redirect + image) | 1 (image only) |
+| Cache strategy | CDN caches redirect | `"use cache"` / `cacheLife` |
+| Next.js optimization | Custom loader | `unoptimized` |
+| Best for | General images | Critical / hero images |
+
+### Choosing a strategy
+
+Use the **default proxy signing** unless you have a specific reason not to. Switch to **pre-signing** when:
+
+1. The image is above-the-fold and latency is critical
+2. You want to leverage React Server Component caching (`"use cache"`)
+3. You only need one specific width/quality variant
+4. You want explicit control over URL expiration
+
+Both strategies can coexist in the same page — this demo uses proxy signing for showcase cards and pre-signing for the hero image.
+
 ## `OptStuffImage` usage
 
 Basic:
@@ -239,9 +352,10 @@ Supported OptStuff-specific props:
 
 - `format?: "webp" | "avif" | "png" | "jpg"`
 - `fit?: "cover" | "contain" | "fill"`
+- `preSigned?: boolean` — treat `src` as an already-signed URL (see [URL signing strategies](#url-signing-strategies))
 - `blurPlaceholder?: boolean`
 - `transitionPreset?: "instant" | "smooth" | "cinematic"`
-- `transitionConfig?: { blurFadeDurationMs?, sharpFadeDurationMs?, sharpStartOpacity?, easing? }`
+- `transitionConfig?: { sharpFadeInMs?, blurFadeOutMs?, blurFadeOutDelayMs?, blurShowDelayMs?, easing? }`
 - `blurWidth?: number` (default `32`)
 - `blurQuality?: number` (default `20`)
 - `blurDataUrl?: string`

@@ -210,7 +210,7 @@ export function HomePageContent({
                   quality={85}
                   format="webp"
                   fit="cover"
-                  bypassProxy
+                  preSigned
                   preload
                   blurPlaceholder={hasHeroBlurPlaceholder}
                   blurDataUrl={heroBlurDataUrl}

@@ -25,6 +25,12 @@ export type TransitionConfig = {
   blurFadeOutMs?: number;
   /** Delay (ms) before the blur starts fading (after the sharp begins). */
   blurFadeOutDelayMs?: number;
+  /**
+   * Grace period (ms) before blur is shown. If the sharp image loads within
+   * this window (e.g. from browser cache), blur is never rendered and no
+   * transition occurs. Set to 0 to always show blur immediately.
+   */
+  blurShowDelayMs?: number;
   /** CSS easing function for both layers. */
   easing?: string;
 };
@@ -38,18 +44,21 @@ const TRANSITION_PRESETS: Record<TransitionPreset, ResolvedTransition> = {
     sharpFadeInMs: 0,
     blurFadeOutMs: 0,
     blurFadeOutDelayMs: 0,
+    blurShowDelayMs: 0,
     easing: "linear",
   },
   smooth: {
     sharpFadeInMs: 380,
     blurFadeOutMs: 300,
     blurFadeOutDelayMs: 100,
+    blurShowDelayMs: 70,
     easing: "cubic-bezier(0.25, 1, 0.5, 1)",
   },
   cinematic: {
     sharpFadeInMs: 600,
     blurFadeOutMs: 450,
     blurFadeOutDelayMs: 160,
+    blurShowDelayMs: 100,
     easing: "cubic-bezier(0.22, 1, 0.36, 1)",
   },
 };
@@ -65,6 +74,10 @@ function resolveTransition(
     blurFadeOutDelayMs: Math.max(
       0,
       overrides?.blurFadeOutDelayMs ?? base.blurFadeOutDelayMs,
+    ),
+    blurShowDelayMs: Math.max(
+      0,
+      overrides?.blurShowDelayMs ?? base.blurShowDelayMs,
     ),
     easing: overrides?.easing ?? base.easing,
   };
@@ -82,15 +95,12 @@ function resolveTransition(
 export function useOptStuffLoader(options?: {
   format?: ImageFormat;
   fit?: ImageFit;
-  bypassProxy?: boolean;
 }) {
-  const { format, fit, bypassProxy } = options ?? {};
+  const { format, fit } = options ?? {};
   return useCallback(
     ({ src, width, quality }: ImageLoaderProps) =>
-      bypassProxy
-        ? src
-        : buildOptStuffProxyPath({ src, width, quality, format, fit }),
-    [bypassProxy, format, fit],
+      buildOptStuffProxyPath({ src, width, quality, format, fit }),
+    [format, fit],
   );
 }
 
@@ -100,7 +110,12 @@ export type OptStuffImageProps = Omit<ImageProps, "src" | "loader"> & {
   src: string;
   format?: ImageFormat;
   fit?: ImageFit;
-  bypassProxy?: boolean;
+  /**
+   * When `true`, the `src` is treated as an already-signed OptStuff URL
+   * (generated server-side via `generateOptStuffUrl`). The component renders
+   * it with `unoptimized` and skips the client-side proxy loader entirely.
+   */
+  preSigned?: boolean;
   /** Enable blur-to-sharp placeholder crossfade. */
   blurPlaceholder?: boolean;
   /** Pre-generated blur data URL (e.g. from the server). */
@@ -120,7 +135,7 @@ export function OptStuffImage({
   alt,
   format = "webp",
   fit = "cover",
-  bypassProxy = false,
+  preSigned = false,
   quality = 80,
   blurPlaceholder = false,
   blurDataUrl,
@@ -138,12 +153,17 @@ export function OptStuffImage({
   fill,
   ...rest
 }: OptStuffImageProps) {
-  const loader = useOptStuffLoader({ format, fit, bypassProxy });
+  const loader = useOptStuffLoader({ format, fit });
+
+  const imageProps = preSigned
+    ? { unoptimized: true as const }
+    : { loader };
 
   if (!blurPlaceholder) {
     return (
       <Image
         {...rest}
+        {...imageProps}
         src={src}
         alt={alt}
         quality={quality}
@@ -151,7 +171,6 @@ export function OptStuffImage({
         height={height}
         sizes={sizes}
         fill={fill}
-        loader={loader}
         className={className}
         style={style}
         onLoad={onLoad}
@@ -164,12 +183,12 @@ export function OptStuffImage({
     <BlurToSharpImage
       key={src}
       {...rest}
+      {...imageProps}
       src={src}
       alt={alt}
       format={format}
       fit={fit}
       quality={quality}
-      loader={loader}
       blurDataUrl={blurDataUrl}
       blurWidth={blurWidth}
       blurQuality={blurQuality}
@@ -189,11 +208,10 @@ export function OptStuffImage({
 
 // ─── Internal: Blur-to-Sharp Crossfade ───────────────────────────────────────
 
-type BlurToSharpImageProps = Omit<ImageProps, "src" | "loader"> & {
+type BlurToSharpImageProps = Omit<ImageProps, "src"> & {
   src: string;
   format: ImageFormat;
   fit: ImageFit;
-  loader: (props: ImageLoaderProps) => string;
   blurDataUrl?: string;
   blurWidth: number;
   blurQuality: number;
@@ -201,22 +219,24 @@ type BlurToSharpImageProps = Omit<ImageProps, "src" | "loader"> & {
   transitionConfig?: TransitionConfig;
 };
 
-type TransitionPhase = "loading" | "revealing" | "done";
+type TransitionPhase = "pending" | "loading" | "revealing" | "done";
 
 /**
- * Renders two stacked `<Image>` layers and orchestrates a staggered crossfade:
+ * Renders two stacked `<Image>` layers and orchestrates a staggered crossfade
+ * with a grace period that avoids unnecessary blur flashes on cached images.
  *
- *   1. **loading** — blur visible at full opacity, sharp at opacity 0.
- *   2. **revealing** — sharp fades in; blur fades out after a small delay so
- *      both layers overlap and there is never a visible gap.
- *   3. **done** — blur removed from DOM, `will-change` cleared.
+ *   1. **pending** — grace period; blur is NOT rendered, sharp loads at
+ *      opacity 0. If the sharp image loads within this window (browser cache
+ *      hit), we jump straight to **done** — no blur ever appears.
+ *   2. **loading** — grace period expired; blur fades in, sharp still loading.
+ *   3. **revealing** — sharp loaded; sharp fades in, blur fades out (staggered).
+ *   4. **done** — blur removed from DOM, `will-change` cleared.
  */
 function BlurToSharpImage({
   src,
   alt,
   format,
   fit,
-  loader,
   blurDataUrl,
   blurWidth,
   blurQuality,
@@ -238,31 +258,59 @@ function BlurToSharpImage({
     [transitionPreset, transitionConfig],
   );
 
-  const [phase, setPhase] = useState<TransitionPhase>("loading");
+  const [phase, setPhase] = useState<TransitionPhase>(
+    transition.blurShowDelayMs > 0 ? "pending" : "loading",
+  );
   const [hasError, setHasError] = useState(false);
+  const sharpLoaded = useRef(false);
+  const blurTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const cleanupTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
-  useEffect(() => () => clearTimeout(cleanupTimer.current), []);
+  useEffect(() => {
+    if (transition.blurShowDelayMs <= 0) return;
+
+    blurTimer.current = setTimeout(() => {
+      if (!sharpLoaded.current) {
+        setPhase("loading");
+      }
+    }, transition.blurShowDelayMs);
+
+    return () => clearTimeout(blurTimer.current);
+  }, [transition.blurShowDelayMs]);
+
+  useEffect(() => {
+    if (phase !== "revealing") return;
+
+    const totalMs =
+      transition.sharpFadeInMs +
+      transition.blurFadeOutDelayMs +
+      transition.blurFadeOutMs;
+    cleanupTimer.current = setTimeout(() => setPhase("done"), totalMs + 60);
+
+    return () => clearTimeout(cleanupTimer.current);
+  }, [phase, transition]);
 
   const handleLoad = useCallback<ReactEventHandler<HTMLImageElement>>(
     (e) => {
-      setPhase("revealing");
+      sharpLoaded.current = true;
+      clearTimeout(blurTimer.current);
 
-      const totalMs =
-        transition.sharpFadeInMs +
-        transition.blurFadeOutDelayMs +
-        transition.blurFadeOutMs;
-      cleanupTimer.current = setTimeout(() => setPhase("done"), totalMs + 60);
+      setPhase((current) => {
+        if (current === "pending") return "done";
+        return "revealing";
+      });
 
       onLoad?.(e);
     },
-    [transition, onLoad],
+    [onLoad],
   );
 
   const handleError = useCallback<ReactEventHandler<HTMLImageElement>>(
     (e) => {
+      sharpLoaded.current = true;
+      clearTimeout(blurTimer.current);
       setHasError(true);
-      setPhase("revealing");
+      setPhase((current) => (current === "pending" ? "done" : "revealing"));
       onError?.(e);
     },
     [onError],
@@ -279,15 +327,15 @@ function BlurToSharpImage({
     });
 
   const objectFit = (style as CSSProperties | undefined)?.objectFit ?? fit;
-  const revealed = phase !== "loading";
+  const showBlur = phase === "loading" || phase === "revealing";
+  const revealed = phase === "revealing" || phase === "done";
 
   return (
     <div
       className="relative overflow-hidden"
       style={{ width: "100%", height: "100%" }}
     >
-      {/* Blur placeholder — removed from the DOM after the crossfade finishes */}
-      {phase !== "done" && (
+      {showBlur && (
         <Image
           src={placeholderUrl}
           alt=""
@@ -302,16 +350,16 @@ function BlurToSharpImage({
             objectFit,
             filter: "blur(20px)",
             transform: "scale(1.1)",
-            opacity: revealed ? 0 : 1,
-            transition: revealed
-              ? `opacity ${transition.blurFadeOutMs}ms ${transition.easing} ${transition.blurFadeOutDelayMs}ms`
-              : undefined,
+            opacity: phase === "revealing" ? 0 : 1,
+            transition:
+              phase === "revealing"
+                ? `opacity ${transition.blurFadeOutMs}ms ${transition.easing} ${transition.blurFadeOutDelayMs}ms`
+                : undefined,
             willChange: phase === "loading" ? "opacity" : undefined,
           }}
         />
       )}
 
-      {/* Sharp image */}
       <Image
         {...rest}
         src={src}
@@ -321,7 +369,6 @@ function BlurToSharpImage({
         height={height}
         sizes={sizes}
         fill={fill}
-        loader={loader}
         onLoad={handleLoad}
         onError={handleError}
         className={className}
@@ -329,8 +376,12 @@ function BlurToSharpImage({
           ...style,
           objectFit,
           opacity: revealed ? 1 : 0,
-          transition: `opacity ${transition.sharpFadeInMs}ms ${transition.easing}`,
-          willChange: phase === "loading" ? "opacity" : undefined,
+          transition:
+            phase === "revealing"
+              ? `opacity ${transition.sharpFadeInMs}ms ${transition.easing}`
+              : undefined,
+          willChange:
+            phase === "pending" || phase === "loading" ? "opacity" : undefined,
         }}
       />
 

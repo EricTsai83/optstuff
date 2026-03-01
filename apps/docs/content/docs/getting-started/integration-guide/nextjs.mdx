@@ -286,7 +286,8 @@ type OptStuffImageProps = Omit<ImageProps, "src" | "loader"> & {
   src: string;
   format?: "webp" | "avif" | "png" | "jpg";
   fit?: "cover" | "contain" | "fill";
-  bypassProxy?: boolean;
+  /** When true, src is treated as an already-signed OptStuff URL. */
+  preSigned?: boolean;
 };
 
 export function OptStuffImage({
@@ -294,15 +295,15 @@ export function OptStuffImage({
   alt,
   format = "webp",
   fit = "cover",
-  bypassProxy = false,
+  preSigned = false,
   quality = 80,
   ...rest
 }: OptStuffImageProps) {
-  const loader = ({ src: loaderSrc, width, quality: q }: ImageLoaderProps) => {
-    if (bypassProxy) {
-      return loaderSrc;
-    }
+  if (preSigned) {
+    return <Image {...rest} src={src} alt={alt} quality={quality} unoptimized />;
+  }
 
+  const loader = ({ src: loaderSrc, width, quality: q }: ImageLoaderProps) => {
     const params = new URLSearchParams({
       url: loaderSrc,
       w: String(width),
@@ -357,7 +358,7 @@ When your hero area appears blank while the rest of the page is already visible,
 Use this pattern for above-the-fold images:
 
 - Avoid long `animation-delay` on the hero image wrapper.
-- Pre-sign the hero URL in a Server Component and pass `bypassProxy` so the request skips `/api/optstuff` redirect.
+- Pre-sign the hero URL in a Server Component and pass `preSigned` so the request skips `/api/optstuff` redirect.
 - Use real blur data (`getBlurDataUrl`) and disable placeholder when blur fetch fails.
 
 This keeps the hero visually present even when serverless cold starts, redirect cache misses, or image origin latency happen.

@@ -196,7 +196,8 @@ type OptStuffImageProps = Omit<ImageProps, "src" | "loader"> & {
   src: string;
   format?: "webp" | "avif" | "png" | "jpg";
   fit?: "cover" | "contain" | "fill";
-  bypassProxy?: boolean;
+  /** When true, src is treated as an already-signed OptStuff URL. */
+  preSigned?: boolean;
 };
 
 export function OptStuffImage({
@@ -204,15 +205,15 @@ export function OptStuffImage({
   alt,
   format = "webp",
   fit = "cover",
-  bypassProxy = false,
+  preSigned = false,
   quality = 80,
   ...rest
 }: OptStuffImageProps) {
-  const loader = ({ src: loaderSrc, width, quality: q }: ImageLoaderProps) => {
-    if (bypassProxy) {
-      return loaderSrc;
-    }
+  if (preSigned) {
+    return <Image {...rest} src={src} alt={alt} quality={quality} unoptimized />;
+  }
 
+  const loader = ({ src: loaderSrc, width, quality: q }: ImageLoaderProps) => {
     const params = new URLSearchParams({
       url: loaderSrc,
       w: String(width),
@@ -323,7 +324,7 @@ For above-the-fold hero images, keep the image path short and predictable.
 ### Recommended Pattern
 
 1. Do not apply delayed reveal animation (`animation-delay`) to the hero image container.
-2. Pre-sign the hero URL in a Server Component and pass `bypassProxy` so the hero request skips `/api/optstuff` redirect.
+2. Pre-sign the hero URL in a Server Component and pass `preSigned` so the hero request skips `/api/optstuff` redirect.
 3. Load real blur data from the server; if blur fetch fails, render without placeholder.
 
 ```tsx
@@ -347,10 +348,10 @@ const hasHeroBlur = heroBlurDataUrl !== undefined;
   src={heroImageUrl}
   fill
   alt="Hero image"
-  preload
+  priority
   blurPlaceholder={hasHeroBlur}
   blurDataUrl={heroBlurDataUrl}
-  bypassProxy
+  preSigned
 />
 ```
 
