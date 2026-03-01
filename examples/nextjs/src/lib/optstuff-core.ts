@@ -16,6 +16,8 @@ const OPTSTUFF_PROJECT_SLUG = requireEnv("OPTSTUFF_PROJECT_SLUG");
 const OPTSTUFF_PUBLIC_KEY = requireEnv("OPTSTUFF_PUBLIC_KEY");
 const OPTSTUFF_SECRET_KEY = requireEnv("OPTSTUFF_SECRET_KEY");
 const EXPIRY_BUCKET_SECONDS = 3600;
+const allowedFormats = ["webp", "avif", "png", "jpg"];
+const allowedFits = ["cover", "contain", "fill"];
 
 export type ImageOperation = {
   width?: number;
@@ -86,14 +88,30 @@ function buildOperationString(ops: ImageOperation): string {
         "Invalid image operation: format must be a non-empty string",
       );
     }
-    parts.push(`f_${ops.format}`);
+
+    const format = ops.format.trim();
+    if (!allowedFormats.includes(format)) {
+      throw new Error(
+        `Invalid image operation: unsupported format "${format}". Allowed formats: ${allowedFormats.join(", ")}`,
+      );
+    }
+
+    parts.push(`f_${format}`);
   }
 
   if (ops.fit !== undefined) {
     if (typeof ops.fit !== "string" || ops.fit.trim() === "") {
       throw new Error("Invalid image operation: fit must be a non-empty string");
     }
-    parts.push(`fit_${ops.fit}`);
+
+    const fit = ops.fit.trim();
+    if (!allowedFits.includes(fit)) {
+      throw new Error(
+        `Invalid image operation: unsupported fit "${fit}". Allowed fits: ${allowedFits.join(", ")}`,
+      );
+    }
+
+    parts.push(`fit_${fit}`);
   }
 
   return parts.length > 0 ? parts.join(",") : "_";
@@ -121,7 +139,7 @@ export function generateOptStuffUrl(
   }
 
   const normalizedPathname = parsedImageUrl.pathname.replace(/\/+$/, "");
-  const normalizedImageUrl = `${parsedImageUrl.hostname}${normalizedPathname}`;
+  const normalizedImageUrl = `${parsedImageUrl.hostname}${parsedImageUrl.port ? `:${parsedImageUrl.port}` : ""}${normalizedPathname}${parsedImageUrl.search || ""}`;
 
   const signingPath = `${opString}/${normalizedImageUrl}`;
   const urlPath = `/api/v1/${OPTSTUFF_PROJECT_SLUG}/${signingPath}`;

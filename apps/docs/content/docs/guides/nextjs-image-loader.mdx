@@ -93,6 +93,9 @@ import { type NextRequest, NextResponse } from "next/server";
 export function GET(request: NextRequest) {
   const SIGNED_URL_TTL_SECONDS = 3600;
   const REDIRECT_CACHE_SECONDS = 300;
+  const MAX_DIMENSION = 8192;
+  const allowedFormats = new Set(["webp", "avif", "png", "jpg"]);
+  const allowedFits = new Set(["cover", "contain", "fill"]);
   const sp = request.nextUrl.searchParams;
   const url = sp.get("url");
 
@@ -106,10 +109,48 @@ export function GET(request: NextRequest) {
   const format = sp.get("f") ?? "webp";
   const fit = sp.get("fit") ?? "cover";
 
+  const parseOptionalDimension = (value: string | null) => {
+    if (value === null) return { ok: true as const, value: undefined };
+    if (!/^\d+$/.test(value)) return { ok: false as const };
+    const parsed = Number(value);
+    if (!Number.isFinite(parsed) || !Number.isInteger(parsed)) return { ok: false as const };
+    if (parsed < 1 || parsed > MAX_DIMENSION) return { ok: false as const };
+    return { ok: true as const, value: parsed };
+  };
+
+  const parsedWidth = parseOptionalDimension(width);
+  const parsedHeight = parseOptionalDimension(height);
+  const parsedQuality = Number(quality);
+
+  if (!parsedWidth.ok || !parsedHeight.ok) {
+    return NextResponse.json(
+      { error: `w/h must be positive integers between 1 and ${MAX_DIMENSION}` },
+      { status: 400 }
+    );
+  }
+  if (!/^\d+$/.test(quality) || !Number.isFinite(parsedQuality) || !Number.isInteger(parsedQuality) || parsedQuality < 1 || parsedQuality > 100) {
+    return NextResponse.json(
+      { error: "q must be an integer between 1 and 100" },
+      { status: 400 }
+    );
+  }
+  if (!allowedFormats.has(format)) {
+    return NextResponse.json(
+      { error: "f must be one of: webp,avif,png,jpg" },
+      { status: 400 }
+    );
+  }
+  if (!allowedFits.has(fit)) {
+    return NextResponse.json(
+      { error: "fit must be one of: cover,contain,fill" },
+      { status: 400 }
+    );
+  }
+
   const operations = {
-    width: width ? Number(width) : undefined,
-    height: height ? Number(height) : undefined,
-    quality: Number(quality),
+    width: parsedWidth.value,
+    height: parsedHeight.value,
+    quality: parsedQuality,
     format: format as "webp" | "avif" | "png" | "jpg",
     fit: fit as "cover" | "contain" | "fill",
   };
