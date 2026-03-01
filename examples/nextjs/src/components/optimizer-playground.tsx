@@ -98,6 +98,8 @@ export function OptimizerPlayground() {
   const chipInactive =
     "text-muted hover:text-foreground hover:bg-card-hover/60";
   const minNumericInput = 1;
+  const maxWidth = 4096;
+  const maxQuality = 100;
 
   return (
     <div className="space-y-6">
@@ -150,8 +152,13 @@ export function OptimizerPlayground() {
                 value={width}
                 onChange={(e) => {
                   const nextWidth = Number.parseInt(e.target.value, 10);
-                  if (Number.isFinite(nextWidth) && nextWidth >= minNumericInput) {
-                    setWidth(nextWidth);
+                  if (Number.isFinite(nextWidth)) {
+                    setWidth(
+                      Math.max(
+                        minNumericInput,
+                        Math.min(nextWidth, maxWidth),
+                      ),
+                    );
                   }
                 }}
                 onBlur={(e) => {
@@ -161,10 +168,14 @@ export function OptimizerPlayground() {
                     nextWidth < minNumericInput
                   ) {
                     setWidth(minNumericInput);
+                    return;
+                  }
+                  if (nextWidth > maxWidth) {
+                    setWidth(maxWidth);
                   }
                 }}
                 min={1}
-                max={4096}
+                max={maxWidth}
                 aria-label="Image width"
                 className="border-border bg-background text-foreground w-full rounded-lg border px-3 py-2.5 text-sm outline-none transition-all focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
               />
@@ -178,11 +189,13 @@ export function OptimizerPlayground() {
                 value={quality}
                 onChange={(e) => {
                   const nextQuality = Number.parseInt(e.target.value, 10);
-                  if (
-                    Number.isFinite(nextQuality) &&
-                    nextQuality >= minNumericInput
-                  ) {
-                    setQuality(nextQuality);
+                  if (Number.isFinite(nextQuality)) {
+                    setQuality(
+                      Math.max(
+                        minNumericInput,
+                        Math.min(nextQuality, maxQuality),
+                      ),
+                    );
                   }
                 }}
                 onBlur={(e) => {
@@ -192,10 +205,14 @@ export function OptimizerPlayground() {
                     nextQuality < minNumericInput
                   ) {
                     setQuality(minNumericInput);
+                    return;
+                  }
+                  if (nextQuality > maxQuality) {
+                    setQuality(maxQuality);
                   }
                 }}
                 min={1}
-                max={100}
+                max={maxQuality}
                 aria-label="Image quality"
                 className="border-border bg-background text-foreground w-full rounded-lg border px-3 py-2.5 text-sm outline-none transition-all focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
               />
@@ -214,6 +231,7 @@ export function OptimizerPlayground() {
                     key={f}
                     type="button"
                     onClick={() => setFormat(f)}
+                    aria-pressed={format === f}
                     aria-label={`Format: ${f}`}
                     className={`rounded-md py-2 text-[11px] font-semibold uppercase tracking-wider transition-all ${
                       format === f ? chipActive : chipInactive
@@ -234,6 +252,7 @@ export function OptimizerPlayground() {
                     key={m}
                     type="button"
                     onClick={() => setFit(m)}
+                    aria-pressed={fit === m}
                     aria-label={`Fit: ${m}`}
                     className={`rounded-md py-2 text-[11px] font-semibold capitalize transition-all ${
                       fit === m ? chipActive : chipInactive

@@ -139,7 +139,13 @@ export function generateOptStuffUrl(
   }
 
   const normalizedPathname = parsedImageUrl.pathname.replace(/\/+$/, "");
-  const normalizedImageUrl = `${parsedImageUrl.hostname}${parsedImageUrl.port ? `:${parsedImageUrl.port}` : ""}${normalizedPathname}${parsedImageUrl.search || ""}`;
+  const normalizedSearch = parsedImageUrl.search.startsWith("?")
+    ? parsedImageUrl.search.slice(1)
+    : parsedImageUrl.search;
+  const encodedSearch = normalizedSearch
+    ? `%3F${encodeURIComponent(normalizedSearch)}`
+    : "";
+  const normalizedImageUrl = `${parsedImageUrl.hostname}${parsedImageUrl.port ? `:${parsedImageUrl.port}` : ""}${normalizedPathname}${encodedSearch}`;
 
   const signingPath = `${opString}/${normalizedImageUrl}`;
   const urlPath = `/api/v1/${OPTSTUFF_PROJECT_SLUG}/${signingPath}`;
@@ -148,7 +154,11 @@ export function generateOptStuffUrl(
   params.set("key", OPTSTUFF_PUBLIC_KEY);
 
   let exp: number | undefined;
-  if (expiresInSeconds !== undefined && expiresInSeconds > 0) {
+  if (
+    expiresInSeconds !== undefined &&
+    Number.isFinite(expiresInSeconds) &&
+    expiresInSeconds > 0
+  ) {
     exp = computeBucketedExpiration(expiresInSeconds);
     params.set("exp", exp.toString());
   }
