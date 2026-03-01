@@ -3,10 +3,12 @@ packages:
   - packages/*
   - examples/*
 
+onlyBuiltDependencies:
+  - sharp
+
 ignoredBuiltDependencies:
   - '@clerk/shared'
   - '@parcel/watcher'
   - core-js-pure
   - esbuild
-  - sharp
   - unrs-resolver

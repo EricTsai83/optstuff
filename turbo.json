@@ -10,6 +10,8 @@
       "env": [
         "DATABASE_URL",
         "SKIP_ENV_VALIDATION",
+        "MFE_DEBUG",
+        "PROJECT_URL",
         "ALLOWED_DOMAINS",
         "CLERK_SECRET_KEY",
         "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY",
@@ -40,6 +42,7 @@
       "env": [
         "DATABASE_URL",
         "SKIP_ENV_VALIDATION",
+        "MFE_DEBUG",
         "PROJECT_URL",
         "CLERK_SECRET_KEY",
         "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY",

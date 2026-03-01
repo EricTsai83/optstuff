@@ -1,33 +1,13 @@
-import crypto from "crypto";
+import "server-only";
+
 import { HERO_BLUR_CONFIG } from "./hero-blur-config";
+import { generateOptStuffUrl } from "./optstuff-core";
+import type { ImageOperation } from "./optstuff-core";
 
-function requireEnv(name: string): string {
-  const value = process.env[name];
-  if (!value || value.includes("xxx") || value.includes("your-")) {
-    throw new Error(
-      `Missing or invalid environment variable: ${name}. Set it in examples/nextjs/.env.local`,
-    );
-  }
-  return value;
-}
-
-const OPTSTUFF_BASE_URL = requireEnv("OPTSTUFF_BASE_URL");
-const OPTSTUFF_PROJECT_SLUG = requireEnv("OPTSTUFF_PROJECT_SLUG");
-const OPTSTUFF_PUBLIC_KEY = requireEnv("OPTSTUFF_PUBLIC_KEY");
-const OPTSTUFF_SECRET_KEY = requireEnv("OPTSTUFF_SECRET_KEY");
-const EXPIRY_BUCKET_SECONDS = 3600;
 const BLUR_DATA_REVALIDATE_SECONDS = 3600;
 const BLUR_DATA_FETCH_TIMEOUT_MS = HERO_BLUR_CONFIG.fetchTimeoutMs;
 const BLUR_SUCCESS_CACHE_MS = HERO_BLUR_CONFIG.successCacheMs;
 const BLUR_MISS_CACHE_MS = HERO_BLUR_CONFIG.missCacheMs;
-
-export type ImageOperation = {
-  width?: number;
-  height?: number;
-  quality?: number;
-  format?: "webp" | "avif" | "png" | "jpg";
-  fit?: "cover" | "contain" | "fill";
-};
 
 type BlurDataFetchMode = "build-cache" | "realtime";
 
@@ -69,30 +49,6 @@ const blurMissCache = new Map<string, BlurMissCacheEntry>();
 const blurInFlight = new Map<string, Promise<BlurDataResult>>();
 const blurSuccessCacheTimers = new Map<string, ReturnType<typeof setTimeout>>();
 const blurMissCacheTimers = new Map<string, ReturnType<typeof setTimeout>>();
-
-function computeBucketedExpiration(expiresInSeconds: number): number {
-  const nowSeconds = Math.floor(Date.now() / 1000);
-  const ttlSeconds = Math.max(1, Math.floor(expiresInSeconds));
-  const bucketSeconds = Math.min(EXPIRY_BUCKET_SECONDS, ttlSeconds);
-  const rawExpiration = nowSeconds + ttlSeconds;
-  const bucketedExpiration =
-    bucketSeconds > 0 && bucketSeconds < ttlSeconds
-      ? Math.floor(rawExpiration / bucketSeconds) * bucketSeconds
-      : rawExpiration;
-  return Math.max(nowSeconds + 1, bucketedExpiration);
-}
-
-function buildOperationString(ops: ImageOperation): string {
-  const parts: string[] = [];
-
-  if (ops.width) parts.push(`w_${ops.width}`);
-  if (ops.height) parts.push(`h_${ops.height}`);
-  if (ops.quality) parts.push(`q_${ops.quality}`);
-  if (ops.format) parts.push(`f_${ops.format}`);
-  if (ops.fit) parts.push(`fit_${ops.fit}`);
-
-  return parts.length > 0 ? parts.join(",") : "_";
-}
 
 function buildBlurCacheKey(
   imageUrl: string,
@@ -162,41 +118,6 @@ function setMissCache(
   }, BLUR_MISS_CACHE_MS);
   timeout.unref?.();
   blurMissCacheTimers.set(key, timeout);
-}
-
-export function generateOptStuffUrl(
-  imageUrl: string,
-  operations: ImageOperation,
-  expiresInSeconds?: number,
-): string {
-  const opString = buildOperationString(operations);
-
-  const normalizedImageUrl = imageUrl
-    .replace(/^https?:\/\//, "")
-    .replace(/\/$/, "");
-
-  const signingPath = `${opString}/${normalizedImageUrl}`;
-  const urlPath = `/api/v1/${OPTSTUFF_PROJECT_SLUG}/${signingPath}`;
-
-  const params = new URLSearchParams();
-  params.set("key", OPTSTUFF_PUBLIC_KEY);
-
-  let exp: number | undefined;
-  if (expiresInSeconds !== undefined && expiresInSeconds > 0) {
-    exp = computeBucketedExpiration(expiresInSeconds);
-    params.set("exp", exp.toString());
-  }
-
-  const signPayload = exp ? `${signingPath}?exp=${exp}` : signingPath;
-  const sig = crypto
-    .createHmac("sha256", OPTSTUFF_SECRET_KEY)
-    .update(signPayload)
-    .digest("base64url")
-    .substring(0, 32);
-
-  params.set("sig", sig);
-
-  return `${OPTSTUFF_BASE_URL}${urlPath}?${params.toString()}`;
 }
 
 /**

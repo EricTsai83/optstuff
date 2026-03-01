@@ -1,4 +1,4 @@
-import { generateOptStuffUrl, type ImageOperation } from "@/lib/optstuff";
+import { generateOptStuffUrl, type ImageOperation } from "@/lib/optstuff-core";
 import { type NextRequest, NextResponse } from "next/server";
 
 const VALID_FORMATS = new Set(["webp", "avif", "png", "jpg"] as const);

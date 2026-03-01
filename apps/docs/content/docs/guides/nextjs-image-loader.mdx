@@ -73,7 +73,13 @@ Key points:
 
 ### Step 1: Signing Utility
 
-If you don't have one yet, create `lib/optstuff.ts`. See the [Next.js Integration Guide](/getting-started/integration-guide/nextjs#create-a-signing-utility) for details.
+If you don't have one yet, create `lib/optstuff-core.ts`. See the [Next.js Integration Guide](/getting-started/integration-guide/nextjs#create-a-signing-utility) for details.
+
+For clarity:
+
+- `optstuff-core.ts` = core runtime signing logic (recommended to copy first)
+- `optstuff-blur.ts` = optional server blur helper for hero/demo UX
+- Hero/playground/comparison components = demo-only UI, not required for integration
 
 ### Step 2: API Route for Signing
 
@@ -81,12 +87,15 @@ Create an API route that accepts image parameters, signs the URL server-side, an
 
 ```typescript
 // app/api/optstuff/route.ts
+import { generateOptStuffUrl } from "@/lib/optstuff-core";
 import { type NextRequest, NextResponse } from "next/server";
-import { signImageUrl } from "@/lib/optstuff";
 
 export function GET(request: NextRequest) {
   const SIGNED_URL_TTL_SECONDS = 3600;
   const REDIRECT_CACHE_SECONDS = 300;
+  const MAX_DIMENSION = 8192;
+  const allowedFormats = new Set(["webp", "avif", "png", "jpg"]);
+  const allowedFits = new Set(["cover", "contain", "fill"]);
   const sp = request.nextUrl.searchParams;
   const url = sp.get("url");
 
@@ -100,20 +109,53 @@ export function GET(request: NextRequest) {
   const format = sp.get("f") ?? "webp";
   const fit = sp.get("fit") ?? "cover";
 
-  const ops = [
-    width && `w_${width}`,
-    height && `h_${height}`,
-    `q_${quality}`,
-    `f_${format}`,
-    `fit_${fit}`,
-  ]
-    .filter(Boolean)
-    .join(",");
+  const parseOptionalDimension = (value: string | null) => {
+    if (value === null) return { ok: true as const, value: undefined };
+    if (!/^\d+$/.test(value)) return { ok: false as const };
+    const parsed = Number(value);
+    if (!Number.isFinite(parsed) || !Number.isInteger(parsed)) return { ok: false as const };
+    if (parsed < 1 || parsed > MAX_DIMENSION) return { ok: false as const };
+    return { ok: true as const, value: parsed };
+  };
 
-  const signedUrl = signImageUrl(url, ops, {
-    ttlSeconds: SIGNED_URL_TTL_SECONDS,
-    bucketSeconds: 3600, // keeps URLs stable within the same hour
-  });
+  const parsedWidth = parseOptionalDimension(width);
+  const parsedHeight = parseOptionalDimension(height);
+  const parsedQuality = Number(quality);
+
+  if (!parsedWidth.ok || !parsedHeight.ok) {
+    return NextResponse.json(
+      { error: `w/h must be positive integers between 1 and ${MAX_DIMENSION}` },
+      { status: 400 }
+    );
+  }
+  if (!/^\d+$/.test(quality) || !Number.isFinite(parsedQuality) || !Number.isInteger(parsedQuality) || parsedQuality < 1 || parsedQuality > 100) {
+    return NextResponse.json(
+      { error: "q must be an integer between 1 and 100" },
+      { status: 400 }
+    );
+  }
+  if (!allowedFormats.has(format)) {
+    return NextResponse.json(
+      { error: "f must be one of: webp,avif,png,jpg" },
+      { status: 400 }
+    );
+  }
+  if (!allowedFits.has(fit)) {
+    return NextResponse.json(
+      { error: "fit must be one of: cover,contain,fill" },
+      { status: 400 }
+    );
+  }
+
+  const operations = {
+    width: parsedWidth.value,
+    height: parsedHeight.value,
+    quality: parsedQuality,
+    format: format as "webp" | "avif" | "png" | "jpg",
+    fit: fit as "cover" | "contain" | "fill",
+  };
+
+  const signedUrl = generateOptStuffUrl(url, operations, SIGNED_URL_TTL_SECONDS);
 
   const response = NextResponse.redirect(signedUrl, 302);
   response.headers.set(
@@ -129,6 +171,15 @@ The 302 redirect is lightweight (headers only, no body). The browser follows it 
 <Callout type="info">
 The signing secret stays in the API Route. The client-side loader only constructs URLs to
 `/api/optstuff` — it never sees `OPTSTUFF_SECRET_KEY`.
+</Callout>
+
+<Callout type="info">
+Use both layers of validation in production:
+
+- Validate request params in your app's signing API route (`/api/optstuff`) to fail fast.
+- Keep OptStuff server-side operation validation enabled as defense-in-depth.
+
+Even if a client bypasses your app route and calls the endpoint directly, invalid operation values are still rejected server-side with `400`.
 </Callout>
 
 ### Step 3: Image Component
@@ -277,16 +328,19 @@ For above-the-fold hero images, keep the image path short and predictable.
 
 ```tsx
 // app/page.tsx (Server Component)
-import { generateOptStuffUrl, getBlurDataUrl } from "@/lib/optstuff";
+import { getBlurDataResult } from "@/lib/optstuff-blur";
+import { generateOptStuffUrl } from "@/lib/optstuff-core";
 
 const heroImageUrl = generateOptStuffUrl(
   "https://images.unsplash.com/photo-1506744038136-46273834b3fb",
   { width: 1600, quality: 85, format: "webp", fit: "cover" },
   7200
 );
-const heroBlurDataUrl = await getBlurDataUrl(
+const heroBlurResult = await getBlurDataResult(
   "https://images.unsplash.com/photo-1506744038136-46273834b3fb"
 );
+const heroBlurDataUrl =
+  heroBlurResult.status === "ok" ? heroBlurResult.dataUrl : undefined;
 const hasHeroBlur = heroBlurDataUrl !== undefined;
 
 <OptStuffImage
@@ -338,18 +392,20 @@ export const HERO_BLUR_CONFIG = {
 // app/page.tsx
 import { HERO_BLUR_CONFIG, HERO_BLUR_MODE } from "@/lib/hero-blur-config";
 import { cacheLife, unstable_noStore as noStore } from "next/cache";
-import { getBlurDataUrl } from "@/lib/optstuff";
+import { getBlurDataResult } from "@/lib/optstuff-blur";
 
 const heroBlurMode = HERO_BLUR_CONFIG.mode;
 if (heroBlurMode === HERO_BLUR_MODE.REALTIME) {
   noStore();
 }
 
-const heroBlurDataUrl = await getBlurDataUrl(
+const heroBlurResult = await getBlurDataResult(
   HERO_IMAGE_URL,
   { width: 32, quality: 20, format: "webp", fit: "cover" },
   { mode: heroBlurMode }
 );
+const heroBlurDataUrl =
+  heroBlurResult.status === "ok" ? heroBlurResult.dataUrl : undefined;
 ```
 
 In development, add a small debug panel for `mode`, `source`, `network-request`, `reason`, `status`, `content-type`, and `duration` so timeout/routing issues are visible immediately.

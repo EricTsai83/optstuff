@@ -3,7 +3,7 @@
 import { useState } from "react";
 
 type HeroRefreshToggleProps = {
-  enabled: boolean;
+  readonly enabled: boolean;
 };
 
 export function HeroRefreshToggle({ enabled }: HeroRefreshToggleProps) {
@@ -28,9 +28,9 @@ export function HeroRefreshToggle({ enabled }: HeroRefreshToggleProps) {
   }
 
   return (
-    <div className="border-border bg-card-hover/50 rounded-lg border p-3">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
+    <div className="border-border bg-card/60 rounded-xl border p-4 backdrop-blur-sm">
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="min-w-0 flex-1">
           <p className="text-foreground text-sm font-semibold tracking-tight">
             Force Hero Image Refresh
           </p>
@@ -45,7 +45,11 @@ export function HeroRefreshToggle({ enabled }: HeroRefreshToggleProps) {
           aria-pressed={enabled}
           onClick={handleToggle}
           disabled={isPending}
-          className="border-border bg-card hover:bg-card-hover text-foreground inline-flex min-w-[128px] items-center justify-center rounded-md border px-3 py-2 font-mono text-xs transition-colors disabled:cursor-not-allowed disabled:opacity-60"
+          className={`inline-flex min-w-[140px] items-center justify-center rounded-lg border px-4 py-2.5 font-mono text-xs font-medium transition-all disabled:cursor-not-allowed disabled:opacity-60 ${
+            enabled
+              ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 dark:text-emerald-400"
+              : "border-border bg-card text-foreground hover:bg-card-hover"
+          }`}
         >
           {isPending
             ? "updating..."

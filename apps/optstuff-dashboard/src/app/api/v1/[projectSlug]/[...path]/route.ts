@@ -16,6 +16,7 @@ import { checkRateLimit } from "@/server/lib/rate-limiter";
 import {
   parseSignatureParams,
   validateReferer,
+  validateSignedOperations,
   validateSourceDomain,
 } from "@/server/lib/validators";
 
@@ -65,6 +66,7 @@ type ValidatedRequestContext = {
   readonly project: NonNullable<Awaited<ReturnType<typeof getProjectConfigById>>>;
   readonly imageUrl: string;
   readonly parsed: NonNullable<ReturnType<typeof parseIpxPath>>;
+  readonly operations: ReturnType<typeof parseOperationsString>;
   readonly path: string[];
 };
 
@@ -265,6 +267,14 @@ async function validateRequest(
       ),
     };
   }
+  const operations = parseOperationsString(parsed.operations);
+  const operationValidation = validateSignedOperations(operations);
+  if (!operationValidation.ok) {
+    return {
+      ok: false,
+      response: NextResponse.json({ error: operationValidation.error }, { status: 400 }),
+    };
+  }
 
   // 4. Verify signature before project lookup and rate limiting:
   //    - rejects invalid traffic as early as possible
@@ -422,6 +432,7 @@ async function validateRequest(
       project,
       imageUrl,
       parsed,
+      operations,
       path,
     },
   };
@@ -446,14 +457,13 @@ export async function GET(
   if (!validation.ok) {
     return validation.response;
   }
-  const { project, imageUrl, apiKey, parsed } = validation.context;
+  const { project, imageUrl, apiKey, operations } = validation.context;
   const authTimeMs = Date.now() - startTime;
 
   // 9. Process image with IPX
   const transformStartTime = Date.now();
   try {
     const ipx = await getProjectIpxInstance();
-    const operations = parseOperationsString(parsed.operations);
     const processedImage = await ipx(imageUrl, operations).process();
 
     const imageData = ensureUint8Array(processedImage.data);

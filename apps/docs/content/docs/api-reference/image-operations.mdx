@@ -13,11 +13,11 @@ Image operations are specified in the URL path as comma-separated parameters.
 
 | Operation | Description | Example |
 |-----------|-------------|---------|
-| `w_{value}` | Width in pixels | `w_800` → 800px wide |
-| `h_{value}` | Height in pixels | `h_600` → 600px tall |
-| `s_{w}x{h}` | Size (width × height) | `s_200x200` → 200×200 |
+| `w_{value}` | Width in pixels (`1-8192`, integer) | `w_800` → 800px wide |
+| `h_{value}` | Height in pixels (`1-8192`, integer) | `h_600` → 600px tall |
+| `s_{w}x{h}` | Size (width × height), both values must be `1-8192` integers | `s_200x200` → 200×200 |
 | `f_{format}` | Output format | `f_webp`, `f_avif`, `f_png`, `f_jpg` |
-| `q_{value}` | Quality (1–100) | `q_80` → 80% quality |
+| `q_{value}` | Quality (`1-100`, integer) | `q_80` → 80% quality |
 | `fit_{mode}` | Fit mode | `fit_cover`, `fit_contain`, `fit_fill` |
 | `embed` | Embed mode | `embed` |
 | `_` | No operations (passthrough) | `_` |
@@ -60,6 +60,8 @@ Operations are comma-separated in the URL path:
 - `s_{w}x{h}` is equivalent to specifying both `w_` and `h_`
 - Quality defaults to the image engine's default if `q_` is not specified
 - Using `_` as the operations parameter forwards the original image without processing
+- Unsupported operation keys return `400` (fail-closed validation)
+- `embed` is a flag operation and must not include a value (use `embed`, not `embed_xxx`)
 
 ## Related Documentation
 
