@@ -61,7 +61,8 @@ export function BlurShowcase({ images }: BlurShowcaseProps) {
                   transitionConfig={{
                     sharpFadeInMs: 400,
                     blurFadeOutMs: 320,
-                    blurFadeOutDelayMs: 100,
+                    blurFadeOutDelayMs: 40,
+                    fastLoadTransition: true,
                   }}
                 />
               </div>

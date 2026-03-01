@@ -325,18 +325,24 @@ When blur generation fails, the demo now skips blur placeholder instead of injec
 
 Dev mode also includes a blur debug panel showing `mode`, `source`, whether a network request happened, and miss diagnostics (reason/status/content-type/duration).
 
-In development, you can use the **Dev Tool: Force Hero Image Refresh** card above the Hero image.
+In development, you can use the **Dev Tool: Hero Request Mode** card above the Hero image.
 
 How to test the button:
 
 1. Set `mode: HERO_BLUR_MODE.BUILD_CACHE` in `src/lib/hero-blur-config.ts`.
-2. Open the home page in dev mode, then click the button to `force refresh: on`.
+2. Open the home page in dev mode, then click the button to `request: fresh`.
 3. Confirm URL contains `?hero-refresh=1`.
 4. In the blur debug panel, verify:
-   - `Force Refresh: on`
+   - `Request Mode: fresh`
    - `Network Request: yes`
    - `source` is typically `network` for that request
 5. Click again to disable (or remove `?hero-refresh=1`) and return to normal cache behavior.
+
+`HERO_FORCE_REFRESH_URL_TTL_SECONDS` (in `src/app/page.tsx`) controls how long the force-refresh signed hero URL remains valid (`exp`).
+
+- Keep it short in local debug so refreshes tend to generate fresh signed URLs.
+- Recommended range: `10-30` seconds.
+- If set too low (for example `1`), rapid reloads may trigger `Image unavailable` because the signed URL can expire before the image request is sent.
 
 In `realtime` mode, blur already requests from network on every load. The button is still useful for forcing a fresh sharp hero image URL.
 
@@ -355,7 +361,7 @@ Supported OptStuff-specific props:
 - `preSigned?: boolean` — treat `src` as an already-signed URL (see [URL signing strategies](#url-signing-strategies))
 - `blurPlaceholder?: boolean`
 - `transitionPreset?: "instant" | "smooth" | "cinematic"`
-- `transitionConfig?: { sharpFadeInMs?, blurFadeOutMs?, blurFadeOutDelayMs?, blurShowDelayMs?, easing? }`
+- `transitionConfig?: { sharpFadeInMs?, blurFadeOutMs?, blurFadeOutDelayMs?, blurShowDelayMs?, easing?, fastLoadTransition? }`
 - `blurWidth?: number` (default `32`)
 - `blurQuality?: number` (default `20`)
 - `blurDataUrl?: string`

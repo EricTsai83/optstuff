@@ -105,7 +105,8 @@ export function HomePageContent({
         : "miss cache";
   const heroBlurNetworkRequestedLabel =
     heroBlurNetworkRequested === "yes" ? "yes" : "no";
-  const heroBlurForceRefreshLabel = heroForceRefresh === "yes" ? "on" : "off";
+  const heroBlurRequestModeLabel =
+    heroForceRefresh === "yes" ? "fresh" : "cached";
   const heroBlurDebugRows = [
     {
       label: "Mode",
@@ -128,10 +129,10 @@ export function HomePageContent({
       description: "Whether this render made a network fetch for blur.",
     },
     {
-      label: "Force Refresh",
-      value: heroBlurForceRefreshLabel,
+      label: "Request Mode",
+      value: heroBlurRequestModeLabel,
       description:
-        "Dev toggle that refreshes Hero blur and sharp image URL together.",
+        "Whether this render used normal cache behavior or forced fresh request.",
     },
     {
       label: "Failure Reason",
@@ -214,6 +215,12 @@ export function HomePageContent({
                   preload
                   blurPlaceholder={hasHeroBlurPlaceholder}
                   blurDataUrl={heroBlurDataUrl}
+                  transitionPreset="smooth"
+                  transitionConfig={{
+                    blurFadeOutDelayMs: 40,
+                    fastLoadTransition: heroForceRefresh === "yes",
+                    blurShowDelayMs: heroForceRefresh === "yes" ? 0 : 120,
+                  }}
                 />
               </div>
             </div>

@@ -33,6 +33,11 @@ export type TransitionConfig = {
   blurShowDelayMs?: number;
   /** CSS easing function for both layers. */
   easing?: string;
+  /**
+   * When `true`, cached/fast loads still run a short blur-to-sharp transition
+   * instead of skipping directly to final sharp state.
+   */
+  fastLoadTransition?: boolean;
 };
 
 // ─── Transition Presets ──────────────────────────────────────────────────────
@@ -46,6 +51,7 @@ const TRANSITION_PRESETS: Record<TransitionPreset, ResolvedTransition> = {
     blurFadeOutDelayMs: 0,
     blurShowDelayMs: 0,
     easing: "linear",
+    fastLoadTransition: false,
   },
   smooth: {
     sharpFadeInMs: 380,
@@ -53,6 +59,7 @@ const TRANSITION_PRESETS: Record<TransitionPreset, ResolvedTransition> = {
     blurFadeOutDelayMs: 100,
     blurShowDelayMs: 70,
     easing: "cubic-bezier(0.25, 1, 0.5, 1)",
+    fastLoadTransition: true,
   },
   cinematic: {
     sharpFadeInMs: 600,
@@ -60,6 +67,7 @@ const TRANSITION_PRESETS: Record<TransitionPreset, ResolvedTransition> = {
     blurFadeOutDelayMs: 160,
     blurShowDelayMs: 100,
     easing: "cubic-bezier(0.22, 1, 0.36, 1)",
+    fastLoadTransition: true,
   },
 };
 
@@ -80,6 +88,8 @@ function resolveTransition(
       overrides?.blurShowDelayMs ?? base.blurShowDelayMs,
     ),
     easing: overrides?.easing ?? base.easing,
+    fastLoadTransition:
+      overrides?.fastLoadTransition ?? base.fastLoadTransition,
   };
 }
 
@@ -219,7 +229,12 @@ type BlurToSharpImageProps = Omit<ImageProps, "src"> & {
   transitionConfig?: TransitionConfig;
 };
 
-type TransitionPhase = "pending" | "loading" | "revealing" | "done";
+type TransitionPhase =
+  | "pending"
+  | "loading"
+  | "fast-reveal-prep"
+  | "revealing"
+  | "done";
 
 /**
  * Renders two stacked `<Image>` layers and orchestrates a staggered crossfade
@@ -227,7 +242,9 @@ type TransitionPhase = "pending" | "loading" | "revealing" | "done";
  *
  *   1. **pending** — grace period; blur is NOT rendered, sharp loads at
  *      opacity 0. If the sharp image loads within this window (browser cache
- *      hit), we jump straight to **done** — no blur ever appears.
+ *      hit), behavior depends on `fastLoadTransition`:
+ *      - `false`: jump straight to **done** (no blur rendered).
+ *      - `true`: run a short reveal pass with a transient blur layer.
  *   2. **loading** — grace period expired; blur fades in, sharp still loading.
  *   3. **revealing** — sharp loaded; sharp fades in, blur fades out (staggered).
  *   4. **done** — blur removed from DOM, `will-change` cleared.
@@ -279,6 +296,13 @@ function BlurToSharpImage({
   }, [transition.blurShowDelayMs]);
 
   useEffect(() => {
+    if (phase !== "fast-reveal-prep") return;
+
+    const rafId = requestAnimationFrame(() => setPhase("revealing"));
+    return () => cancelAnimationFrame(rafId);
+  }, [phase]);
+
+  useEffect(() => {
     if (phase !== "revealing") return;
 
     const totalMs =
@@ -296,13 +320,16 @@ function BlurToSharpImage({
       clearTimeout(blurTimer.current);
 
       setPhase((current) => {
-        if (current === "pending") return "done";
+        if (current === "pending") {
+          return transition.fastLoadTransition ? "fast-reveal-prep" : "done";
+        }
+        if (current === "done") return "done";
         return "revealing";
       });
 
       onLoad?.(e);
     },
-    [onLoad],
+    [onLoad, transition.fastLoadTransition],
   );
 
   const handleError = useCallback<ReactEventHandler<HTMLImageElement>>(
@@ -327,7 +354,8 @@ function BlurToSharpImage({
     });
 
   const objectFit = (style as CSSProperties | undefined)?.objectFit ?? fit;
-  const showBlur = phase === "loading" || phase === "revealing";
+  const showBlur =
+    phase === "loading" || phase === "fast-reveal-prep" || phase === "revealing";
   const revealed = phase === "revealing" || phase === "done";
 
   return (
@@ -355,7 +383,10 @@ function BlurToSharpImage({
               phase === "revealing"
                 ? `opacity ${transition.blurFadeOutMs}ms ${transition.easing} ${transition.blurFadeOutDelayMs}ms`
                 : undefined,
-            willChange: phase === "loading" ? "opacity" : undefined,
+            willChange:
+              phase === "loading" || phase === "fast-reveal-prep"
+                ? "opacity"
+                : undefined,
           }}
         />
       )}
@@ -381,7 +412,11 @@ function BlurToSharpImage({
               ? `opacity ${transition.sharpFadeInMs}ms ${transition.easing}`
               : undefined,
           willChange:
-            phase === "pending" || phase === "loading" ? "opacity" : undefined,
+            phase === "pending" ||
+            phase === "loading" ||
+            phase === "fast-reveal-prep"
+              ? "opacity"
+              : undefined,
         }}
       />
 

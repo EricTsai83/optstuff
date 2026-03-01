@@ -10,7 +10,13 @@ import { cacheLife, unstable_noStore as noStore } from "next/cache";
 import { Suspense } from "react";
 
 const HERO_URL_TTL_SECONDS = 7200;
-const HERO_FORCE_REFRESH_URL_TTL_SECONDS = 1;
+/**
+ * Force-refresh mode signed URL TTL (seconds).
+ * Keep this short so refreshes tend to produce a new signed URL, but not so
+ * short that rapid reloads hit expiry before the image request is sent.
+ * Practical local-debug range: 10-30 seconds.
+ */
+const HERO_FORCE_REFRESH_URL_TTL_SECONDS = 15;
 type HomeSearchParams = Record<string, string | string[] | undefined>;
 type HomePageProps = {
   searchParams: Promise<HomeSearchParams>;
@@ -51,8 +57,8 @@ async function getCachedHeroImageUrl() {
 /**
  * Get a freshly signed hero URL for forced refresh.
  *
- * Uses a very short exp window so each reload gets a new URL,
- * which helps force a new sharp image request.
+ * Uses a short exp window so refresh still tends to bypass stale cache,
+ * while avoiding immediate expiry races during rapid reloads.
  */
 function getForceRefreshHeroImageUrl() {
   return generateOptStuffUrl(

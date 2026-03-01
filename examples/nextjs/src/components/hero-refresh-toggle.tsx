@@ -32,16 +32,16 @@ export function HeroRefreshToggle({ enabled }: HeroRefreshToggleProps) {
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="min-w-0 flex-1">
           <p className="text-foreground text-sm font-semibold tracking-tight">
-            Force Hero Image Refresh
+            Hero Request Mode
           </p>
           <p className="text-muted mt-1 text-xs leading-relaxed">
-            Refreshes both Hero blur and sharp image. It only affects this Hero
-            block and does not disable full-page cache.
+            Switch this Hero block between normal cache behavior and a forced
+            fresh request.
           </p>
         </div>
         <button
           type="button"
-          aria-label="Toggle force hero image refresh"
+          aria-label="Toggle hero request mode"
           aria-pressed={enabled}
           onClick={handleToggle}
           disabled={isPending}
@@ -54,8 +54,8 @@ export function HeroRefreshToggle({ enabled }: HeroRefreshToggleProps) {
           {isPending
             ? "updating..."
             : enabled
-              ? "force refresh: on"
-              : "force refresh: off"}
+              ? "request: fresh"
+              : "request: cached"}
         </button>
       </div>
     </div>
