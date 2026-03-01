@@ -6,15 +6,21 @@ import { ScrollReveal } from "@/components/scroll-reveal";
 import dynamic from "next/dynamic";
 import { Fragment } from "react";
 
+// Shared fallback UI for all lazily loaded demo sections.
+function LoadingPlaceholder({ message }: { readonly message: string }) {
+  return (
+    <div className="text-muted flex min-h-40 items-center justify-center text-sm">
+      {message}
+    </div>
+  );
+}
+
+// These sections are code-split and loaded on demand to keep initial JS smaller.
 const FormatComparison = dynamic(
   () =>
     import("@/components/format-comparison").then((m) => m.FormatComparison),
   {
-    loading: () => (
-      <div className="text-muted flex min-h-40 items-center justify-center text-sm">
-        Loading comparison...
-      </div>
-    ),
+    loading: () => <LoadingPlaceholder message="Loading comparison..." />,
   },
 );
 
@@ -22,9 +28,7 @@ const ResponsiveDemo = dynamic(
   () => import("@/components/responsive-demo").then((m) => m.ResponsiveDemo),
   {
     loading: () => (
-      <div className="text-muted flex min-h-40 items-center justify-center text-sm">
-        Loading responsive demo...
-      </div>
+      <LoadingPlaceholder message="Loading responsive demo..." />
     ),
   },
 );
@@ -35,11 +39,7 @@ const OptimizerPlayground = dynamic(
       (m) => m.OptimizerPlayground,
     ),
   {
-    loading: () => (
-      <div className="text-muted flex min-h-40 items-center justify-center text-sm">
-        Loading playground...
-      </div>
-    ),
+    loading: () => <LoadingPlaceholder message="Loading playground..." />,
   },
 );
 
@@ -569,6 +569,7 @@ export function HomePageContent({
             </ScrollReveal>
 
             <ScrollReveal delay={100}>
+              {/* DeferredMount delays mount by viewport position; dynamic loads the chunk when mounted. */}
               <DeferredMount
                 rootMargin="400px 0px"
                 placeholder={
