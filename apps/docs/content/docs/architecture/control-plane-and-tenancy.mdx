@@ -52,6 +52,10 @@ When creating a project from dashboard:
 6. Store encrypted secret in `api_key.secretKey`.
 7. Return `defaultApiKey` + plaintext `defaultSecretKey` once.
 
+<Callout type="warn">
+**Warning:** `defaultSecretKey` is shown only once during this response. Copy and store it immediately in your secrets manager or environment variables, because it cannot be retrieved again later.
+</Callout>
+
 This is why users can start integration immediately after first project creation.
 
 ## API Key Lifecycle Model

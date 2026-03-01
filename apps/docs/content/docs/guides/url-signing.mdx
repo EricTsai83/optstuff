@@ -97,7 +97,7 @@ const rawExp = now + ttlSeconds;
 const effectiveBucket = bucketSeconds > 0
   ? Math.min(bucketSeconds, ttlSeconds)
   : 0;
-const expiresAt = effectiveBucket > 0 && effectiveBucket < ttlSeconds
+const expiresAt = effectiveBucket > 0
   ? Math.floor(rawExp / effectiveBucket) * effectiveBucket
   : rawExp;
 const finalExpiresAt = Math.max(now + 1, expiresAt);
@@ -130,7 +130,7 @@ When `exp` is set, it **must** be included in both the signed payload and the UR
 If you generate `exp` as `now + ttl` on every render, each request can produce a different URL and reduce CDN/browser cache hit rate. For static or semi-static images, prefer **time-bucketed expiration**:
 
 - Choose a TTL (for example `3600` seconds)
-- Round the expiration to a bucket boundary (for example the current hour bucket)
+- Round the raw expiration (`rawExp = now + ttl`) down to its bucket boundary using `Math.floor(rawExp / bucket) * bucket` so multiple requests whose expirations fall in the same bucket reuse the same signed URL
 - Reuse the same signed URL inside that bucket window
 
 This keeps signatures valid while avoiding unnecessary cache fragmentation.
