@@ -11,7 +11,7 @@ function requireEnv(name: string): string {
   return value;
 }
 
-const OPTSTUFF_BASE_URL = requireEnv("OPTSTUFF_BASE_URL");
+const OPTSTUFF_BASE_URL = requireEnv("OPTSTUFF_BASE_URL").replace(/\/+$/, "");
 const OPTSTUFF_PROJECT_SLUG = requireEnv("OPTSTUFF_PROJECT_SLUG");
 const OPTSTUFF_PUBLIC_KEY = requireEnv("OPTSTUFF_PUBLIC_KEY");
 const OPTSTUFF_SECRET_KEY = requireEnv("OPTSTUFF_SECRET_KEY");
@@ -40,11 +40,61 @@ function computeBucketedExpiration(expiresInSeconds: number): number {
 function buildOperationString(ops: ImageOperation): string {
   const parts: string[] = [];
 
-  if (ops.width) parts.push(`w_${ops.width}`);
-  if (ops.height) parts.push(`h_${ops.height}`);
-  if (ops.quality) parts.push(`q_${ops.quality}`);
-  if (ops.format) parts.push(`f_${ops.format}`);
-  if (ops.fit) parts.push(`fit_${ops.fit}`);
+  if (ops.width !== undefined) {
+    if (
+      typeof ops.width !== "number" ||
+      !Number.isFinite(ops.width) ||
+      ops.width < 0
+    ) {
+      throw new Error(
+        "Invalid image operation: width must be a finite number >= 0",
+      );
+    }
+    parts.push(`w_${ops.width}`);
+  }
+
+  if (ops.height !== undefined) {
+    if (
+      typeof ops.height !== "number" ||
+      !Number.isFinite(ops.height) ||
+      ops.height < 0
+    ) {
+      throw new Error(
+        "Invalid image operation: height must be a finite number >= 0",
+      );
+    }
+    parts.push(`h_${ops.height}`);
+  }
+
+  if (ops.quality !== undefined) {
+    if (
+      typeof ops.quality !== "number" ||
+      !Number.isFinite(ops.quality) ||
+      ops.quality < 1 ||
+      ops.quality > 100
+    ) {
+      throw new Error(
+        "Invalid image operation: quality must be a finite number between 1 and 100",
+      );
+    }
+    parts.push(`q_${ops.quality}`);
+  }
+
+  if (ops.format !== undefined) {
+    if (typeof ops.format !== "string" || ops.format.trim() === "") {
+      throw new Error(
+        "Invalid image operation: format must be a non-empty string",
+      );
+    }
+    parts.push(`f_${ops.format}`);
+  }
+
+  if (ops.fit !== undefined) {
+    if (typeof ops.fit !== "string" || ops.fit.trim() === "") {
+      throw new Error("Invalid image operation: fit must be a non-empty string");
+    }
+    parts.push(`fit_${ops.fit}`);
+  }
 
   return parts.length > 0 ? parts.join(",") : "_";
 }
@@ -56,9 +106,22 @@ export function generateOptStuffUrl(
 ): string {
   const opString = buildOperationString(operations);
 
-  const normalizedImageUrl = imageUrl
-    .replace(/^https?:\/\//, "")
-    .replace(/\/$/, "");
+  let parsedImageUrl: URL;
+  try {
+    parsedImageUrl = new URL(imageUrl);
+  } catch {
+    throw new Error("Invalid imageUrl: must be a valid absolute URL");
+  }
+
+  if (
+    parsedImageUrl.protocol !== "http:" &&
+    parsedImageUrl.protocol !== "https:"
+  ) {
+    throw new Error("Invalid imageUrl: protocol must be http or https");
+  }
+
+  const normalizedPathname = parsedImageUrl.pathname.replace(/\/+$/, "");
+  const normalizedImageUrl = `${parsedImageUrl.hostname}${normalizedPathname}`;
 
   const signingPath = `${opString}/${normalizedImageUrl}`;
   const urlPath = `/api/v1/${OPTSTUFF_PROJECT_SLUG}/${signingPath}`;

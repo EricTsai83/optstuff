@@ -278,7 +278,7 @@ For above-the-fold hero images, keep the image path short and predictable.
 
 ```tsx
 // app/page.tsx (Server Component)
-import { getBlurDataUrl } from "@/lib/optstuff-blur";
+import { getBlurDataResult } from "@/lib/optstuff-blur";
 import { generateOptStuffUrl } from "@/lib/optstuff-core";
 
 const heroImageUrl = generateOptStuffUrl(
@@ -286,9 +286,11 @@ const heroImageUrl = generateOptStuffUrl(
   { width: 1600, quality: 85, format: "webp", fit: "cover" },
   7200
 );
-const heroBlurDataUrl = await getBlurDataUrl(
+const heroBlurResult = await getBlurDataResult(
   "https://images.unsplash.com/photo-1506744038136-46273834b3fb"
 );
+const heroBlurDataUrl =
+  heroBlurResult.status === "ok" ? heroBlurResult.dataUrl : undefined;
 const hasHeroBlur = heroBlurDataUrl !== undefined;
 
 <OptStuffImage
@@ -340,18 +342,20 @@ export const HERO_BLUR_CONFIG = {
 // app/page.tsx
 import { HERO_BLUR_CONFIG, HERO_BLUR_MODE } from "@/lib/hero-blur-config";
 import { cacheLife, unstable_noStore as noStore } from "next/cache";
-import { getBlurDataUrl } from "@/lib/optstuff-blur";
+import { getBlurDataResult } from "@/lib/optstuff-blur";
 
 const heroBlurMode = HERO_BLUR_CONFIG.mode;
 if (heroBlurMode === HERO_BLUR_MODE.REALTIME) {
   noStore();
 }
 
-const heroBlurDataUrl = await getBlurDataUrl(
+const heroBlurResult = await getBlurDataResult(
   HERO_IMAGE_URL,
   { width: 32, quality: 20, format: "webp", fit: "cover" },
   { mode: heroBlurMode }
 );
+const heroBlurDataUrl =
+  heroBlurResult.status === "ok" ? heroBlurResult.dataUrl : undefined;
 ```
 
 In development, add a small debug panel for `mode`, `source`, `network-request`, `reason`, `status`, `content-type`, and `duration` so timeout/routing issues are visible immediately.

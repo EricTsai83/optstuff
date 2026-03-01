@@ -158,6 +158,16 @@ export function HomePageContent({
       description: "Blur fetch duration in milliseconds.",
     },
   ].filter((row) => row.value !== undefined);
+  const footerBaseUrl = process.env.OPTSTUFF_BASE_URL;
+  let footerBaseHostname: string | null = null;
+
+  if (footerBaseUrl) {
+    try {
+      footerBaseHostname = new URL(footerBaseUrl).hostname;
+    } catch {
+      footerBaseHostname = null;
+    }
+  }
 
   return (
     <div className="bg-background text-foreground min-h-screen">
@@ -265,7 +275,7 @@ export function HomePageContent({
           className="bg-section-alt py-20 sm:py-28"
         >
           <div className="mx-auto max-w-6xl px-4 sm:px-6">
-            <ScrollReveal className="mb-6 text-center">
+            <ScrollReveal as="header" className="mb-6 text-center">
               <h2 className="text-foreground mb-4 text-3xl font-bold tracking-tight sm:text-4xl lg:text-5xl">
                 Format + Responsive, in One Flow
               </h2>
@@ -277,14 +287,14 @@ export function HomePageContent({
             </ScrollReveal>
 
             <div className="mt-10 grid gap-10 sm:mt-14 lg:gap-12">
-              <ScrollReveal delay={100}>
+              <ScrollReveal as="section" delay={100}>
                 <h3 className="text-foreground mb-4 text-center text-lg font-semibold sm:text-left sm:text-xl">
                   1) Choose an output format
                 </h3>
                 <FormatComparison />
               </ScrollReveal>
 
-              <ScrollReveal delay={200}>
+              <ScrollReveal as="section" delay={200}>
                 <h3 className="text-foreground mb-4 text-center text-lg font-semibold sm:text-left sm:text-xl">
                   2) Deliver the right width
                 </h3>
@@ -297,7 +307,7 @@ export function HomePageContent({
         {/* ─── Drop-in Replacement ─── */}
         <section className="py-20 sm:py-28">
           <div className="mx-auto max-w-6xl px-4 sm:px-6">
-            <ScrollReveal className="mb-12 text-center sm:mb-16">
+            <ScrollReveal as="header" className="mb-12 text-center sm:mb-16">
               <h2 className="text-foreground mb-4 text-3xl font-bold tracking-tight sm:text-4xl lg:text-5xl">
                 Drop-in Replacement
               </h2>
@@ -317,9 +327,9 @@ export function HomePageContent({
               </p>
             </ScrollReveal>
 
-            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            <ul className="grid list-none gap-6 p-0 sm:grid-cols-2 lg:grid-cols-3">
               {SHOWCASE_IMAGES.map((img, idx) => (
-                <ScrollReveal key={img.label} delay={idx * 120}>
+                <ScrollReveal as="li" key={img.label} delay={idx * 120}>
                   <div className="border-border bg-card group cursor-default overflow-hidden rounded-2xl border shadow-sm">
                     <div className="aspect-4/3 relative overflow-hidden">
                       <OptStuffImage
@@ -356,7 +366,7 @@ export function HomePageContent({
                   </div>
                 </ScrollReveal>
               ))}
-            </div>
+            </ul>
           </div>
         </section>
 
@@ -366,7 +376,7 @@ export function HomePageContent({
           className="bg-section-alt py-20 sm:py-28"
         >
           <div className="mx-auto max-w-6xl px-4 sm:px-6">
-            <ScrollReveal className="mb-12 text-center sm:mb-16">
+            <ScrollReveal as="header" className="mb-12 text-center sm:mb-16">
               <h2 className="text-foreground mb-4 text-3xl font-bold tracking-tight sm:text-4xl lg:text-5xl">
                 How It Works
               </h2>
@@ -375,7 +385,7 @@ export function HomePageContent({
               </p>
             </ScrollReveal>
 
-            <ScrollReveal delay={100}>
+            <ScrollReveal as="section" delay={100}>
               <div className="border-border bg-card relative rounded-2xl border p-6 shadow-sm sm:p-10">
                 {/* Pipeline visualization */}
                 <div className="mb-10 flex flex-col items-center gap-4 sm:mb-12 sm:flex-row sm:justify-between sm:gap-0">
@@ -558,7 +568,7 @@ export function HomePageContent({
         {/* ─── Playground ─── */}
         <section id="playground" className="py-20 sm:py-28">
           <div className="mx-auto max-w-6xl px-4 sm:px-6">
-            <ScrollReveal className="mb-12 text-center sm:mb-16">
+            <ScrollReveal as="header" className="mb-12 text-center sm:mb-16">
               <h2 className="text-foreground mb-4 text-3xl font-bold tracking-tight sm:text-4xl lg:text-5xl">
                 URL Playground
               </h2>
@@ -568,7 +578,7 @@ export function HomePageContent({
               </p>
             </ScrollReveal>
 
-            <ScrollReveal delay={100}>
+            <ScrollReveal as="section" delay={100}>
               {/* DeferredMount delays mount by viewport position; dynamic loads the chunk when mounted. */}
               <DeferredMount
                 rootMargin="400px 0px"
@@ -603,13 +613,15 @@ export function HomePageContent({
             </div>
             <p className="text-muted text-center text-xs sm:text-right">
               Built with Next.js · Tailwind CSS ·{" "}
-              {process.env.OPTSTUFF_BASE_URL ? (
+              {footerBaseUrl && footerBaseHostname ? (
                 <a
-                  href={process.env.OPTSTUFF_BASE_URL}
+                  href={footerBaseUrl}
                   className="text-emerald-600 transition-colors hover:text-emerald-500 hover:underline"
                 >
-                  {new URL(process.env.OPTSTUFF_BASE_URL).hostname}
+                  {footerBaseHostname}
                 </a>
+              ) : footerBaseUrl ? (
+                <span className="text-emerald-600">{footerBaseUrl}</span>
               ) : (
                 <span className="text-emerald-600">OptStuff</span>
               )}

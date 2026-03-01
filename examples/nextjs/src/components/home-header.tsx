@@ -1,5 +1,6 @@
 import { ScrollHeader } from "@/components/scroll-header";
 import { NAV_LINKS, RESOURCE_LINKS } from "@/components/home-header-links";
+import Link from "next/link";
 
 function renderNavLinks(variant: "desktop" | "mobile") {
   return NAV_LINKS.map((link) => (
@@ -78,8 +79,8 @@ export function HomeHeader() {
     <ScrollHeader>
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:h-18 sm:px-6">
         {/* Logo */}
-        <a
-          href="#"
+        <Link
+          href="/"
           className="group flex items-center gap-2.5 transition-opacity hover:opacity-80"
           aria-label="OptStuff home"
           tabIndex={0}
@@ -98,7 +99,7 @@ export function HomeHeader() {
           <span className="text-foreground text-sm font-semibold tracking-tight">
             OptStuff
           </span>
-        </a>
+        </Link>
 
         {/* Desktop nav */}
         <nav className="text-muted hidden items-center justify-center gap-1 text-sm md:flex">
