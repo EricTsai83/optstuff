@@ -1,6 +1,6 @@
 ---
 title: User Onboarding Flow
-description: Internal documentation — complete user onboarding journey from sign-up to first API key, including team creation, project setup, and documentation links strategy.
+description: Architecture documentation — complete user onboarding journey from sign-up to first API key, including team creation, project setup, and documentation links strategy.
 ---
 
 This document explains the complete user onboarding and getting-started flow in OptStuff Dashboard — from sign-up to having a working API key.
@@ -88,7 +88,7 @@ When the user submits the form:
 |----------|----------|
 | Slug already taken | Show error, user must choose different slug |
 | Invalid slug format | Show validation error with format requirements |
-| User already has personal team | Redirect to existing team (shouldn't happen normally) |
+| User already has personal team | In normal navigation they are redirected before onboarding; race-condition submit returns an explicit error |
 | Network error | Show generic error, allow retry |
 
 ## Phase 2: Project Creation (with Default API Key)
@@ -103,7 +103,7 @@ The dialog uses a two-step pattern (form → success):
 
 - **Project Name** (required)
 - **Description** (optional)
-- **Image Sources** — where original images are hosted (e.g., `images.unsplash.com`, `cdn.mysite.com`). Subdomains are included automatically.
+- **Image Sources** — where original images are hosted (e.g., `https://images.unsplash.com`, `https://cdn.mysite.com`). Subdomains are included automatically.
 - **Authorized Websites** (optional) — which websites can display optimized images. Leave empty to allow all. These can be configured later in Settings.
 - Submit creates the project **and** a default API key automatically
 
@@ -113,7 +113,7 @@ After project creation, the dialog transitions to a success screen showing:
 
 1. **Success header** — "Project Created" with project name
 2. **Warning banner** — "Copy and add these to your `.env` file before closing. The secret key is only shown once."
-3. **Combined key display** — Both keys shown in `.env` format (`OPTSTUFF_SECRET_KEY` and `OPTSTUFF_PUBLIC_KEY`) with a single copy button. The secret key is masked by default with a show/hide toggle.
+3. **Combined env block** — Variables shown in `.env` format (`OPTSTUFF_BASE_URL`, `OPTSTUFF_PROJECT_SLUG`, `OPTSTUFF_SECRET_KEY`, `OPTSTUFF_PUBLIC_KEY`) with one copy button. The preview masks the secret, but copy payload includes plaintext.
 4. **Next Steps** — Link to Integration Guide on the docs site
 5. **Done button** — Navigates to the new project's overview page
 
@@ -134,10 +134,8 @@ This ensures users see and copy their keys before proceeding.
 
 After project creation, the **Overview** tab shows a setup checklist if configuration is incomplete:
 
-1. Project created (done)
-2. Configure image sources (link to Settings)
-3. API key ready (done)
-4. Integrate into your app (link to docs)
+1. Configure image sources (link to Settings)
+2. API key ready
 
 The checklist disappears once all steps are completed.
 
@@ -177,6 +175,7 @@ export const DOCS_LINKS = {
   home: env.NEXT_PUBLIC_DOCS_URL,
   quickstart: `${env.NEXT_PUBLIC_DOCS_URL}/getting-started/quickstart`,
   integration: `${env.NEXT_PUBLIC_DOCS_URL}/getting-started/integration-guide`,
+  projectSetup: `${env.NEXT_PUBLIC_DOCS_URL}/getting-started/project-setup`,
   keyManagement: `${env.NEXT_PUBLIC_DOCS_URL}/guides/key-management`,
   security: `${env.NEXT_PUBLIC_DOCS_URL}/guides/security-best-practices`,
   urlSigning: `${env.NEXT_PUBLIC_DOCS_URL}/guides/url-signing`,
@@ -199,7 +198,8 @@ To change the docs URL, update `NEXT_PUBLIC_DOCS_URL` in the environment — no 
 | EmptyApiKeyState | API Keys guide | When a project has no API keys |
 | CreateProjectDialog (success) | Integration Guide | After creating a project + default key |
 | CreateApiKeyDialog (success) | Integration Guide | After creating an additional API key |
-| Overview Tab (checklist) | Integration Guide | Setup checklist item |
+| Overview Tab (setup checklist) | Settings tab | Incomplete setup step links to domain/security settings |
+| Overview Tab (resource cards) | Project Setup + Integration guides | Persistent quick links in project overview |
 
 ### Design Principles
 
@@ -237,7 +237,8 @@ The `teams` table enforces:
 
 ## Related Documentation
 
-- [Create API Key Flow](/internal/create-api-key-flow) — Detailed API key creation and encryption flow
+- [Create API Key Flow](/architecture/create-api-key-flow) — Detailed API key creation and encryption flow
+- [Control Plane and Multi-Tenancy](/architecture/control-plane-and-tenancy) — Team/project ownership and access model
 - [URL Signing](/guides/url-signing) — Request signing and authentication
 - [Domain Whitelisting](/guides/domain-whitelisting) — Domain whitelist configuration
 - [Integration Guide](/getting-started/integration-guide) — How to integrate OptStuff

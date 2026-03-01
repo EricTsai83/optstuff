@@ -19,7 +19,7 @@ Get started at no cost with generous limits for personal projects and prototypin
 | Per-minute | 60 requests |
 | Per-day | 10,000 requests |
 
-Rate limits are configurable per API key. See [Rate Limiting](/guides/rate-limiting) for tuning guidance.
+Default per-key limits are applied automatically. The data model supports per-key values, but dashboard UI controls for custom tuning are not yet available in this repository. See [Rate Limiting](/guides/rate-limiting) for current behavior.
 
 ## What Happens When You Exceed Limits
 
@@ -40,11 +40,11 @@ Other API keys on the same project are **not affected** — rate limits are enfo
 
 ### Monthly Usage Exceeded
 
-When your team's total monthly requests or bandwidth reaches the free plan limit:
+When your team's total monthly requests or bandwidth reaches the free-plan threshold:
 
 - Existing cached responses continue to be served by CDNs
-- New optimization requests may be throttled or rejected
-- Usage resets at the start of each billing period
+- Dashboard usage views show the threshold status for monitoring
+- In this repository, the `/api/v1` request path does not currently apply a separate monthly hard-stop check
 
 ## Paid Plans
 
@@ -73,7 +73,7 @@ Every OptStuff plan includes the full security and feature set:
 - HMAC-SHA256 signed URLs
 - AES-256-GCM encrypted key storage
 - Two-layer domain whitelisting
-- Configurable rate limits per API key
+- Per-key default rate limits (`60/min`, `10,000/day`)
 - Usage analytics and request logs
 - Multi-tenant team/project hierarchy
 

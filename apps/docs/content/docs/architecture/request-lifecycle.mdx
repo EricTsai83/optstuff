@@ -1,0 +1,123 @@
+---
+title: Request Lifecycle
+description: Runtime lifecycle for GET and HEAD requests in the image API, including validation order, response behavior, and background side effects.
+---
+
+This page documents exactly what happens when a request hits the image API route:
+
+`/api/v1/{projectSlug}/{operations}/{imageUrl}?key={publicKey}&sig={signature}&exp={optional}`
+
+## Why this matters
+
+Understanding this lifecycle lets you reason about:
+
+- Security boundaries (which checks happen before network fetch)
+- Cost behavior (when transforms or probes occur)
+- Failure behavior (`401` vs `403` vs `429` vs `502/500`)
+- Side effects (logging and usage updates)
+
+## Shared Validation Pipeline (`GET` + `HEAD`)
+
+Both methods run through the same validation pipeline before any upstream image fetch:
+
+```mermaid
+flowchart TD
+  A["Parse query params: key/sig/exp"] -->|Missing| E1["401"]
+  A -->|OK| B["Load API key config"]
+  B -->|Not found/revoked/expired| E2["401"]
+  B -->|OK| C["Parse operations + image path"]
+  C -->|Invalid| E3["400"]
+  C -->|OK| D["Verify signature (HMAC-SHA256)"]
+  D -->|Invalid/expired| E4["403"]
+  D -->|OK| F["Load project by apiKey.projectId"]
+  F -->|Not found| E5["404"]
+  F -->|Slug mismatch| E6["401"]
+  F -->|OK| G["Rate limit check: day -> minute"]
+  G -->|Exceeded| E7["429"]
+  G -->|OK| H["Validate Referer policy"]
+  H -->|Blocked| E8["403"]
+  H -->|OK| I["Normalize URL + validate source host"]
+  I -->|Blocked/invalid URL| E9["403 or 400"]
+  I -->|OK| J["Dispatch by method"]
+```
+
+## `GET` Lifecycle (transform path)
+
+```mermaid
+sequenceDiagram
+  participant C as Client
+  participant R as API Route
+  participant I as IPX
+  participant O as Origin
+  participant BG as after() background
+  participant DB as PostgreSQL
+  participant Redis as Redis
+
+  C->>R: GET signed image URL
+  R->>R: Shared validation pipeline
+  R->>I: ipx(imageUrl, operations).process()
+  I->>O: Fetch source bytes
+  I-->>R: Transformed bytes + format
+  R-->>C: 200 image + cache headers
+  R->>BG: Schedule usage/logging
+  BG->>Redis: SET NX write-throttle keys
+  BG->>DB: Update lastUsedAt/lastActivityAt (throttled)
+  BG->>DB: Insert request_log (+ sampled original size)
+```
+
+### `GET` response headers
+
+- `Cache-Control: public, s-maxage=31536000, max-age=31536000, immutable`
+- `Vary: Accept` (or `Accept, Referer` when referer policy exists)
+- `X-Head-Fast-Path: 0`
+- `Server-Timing: auth, transform, total`
+
+## `HEAD` Lifecycle (fast path)
+
+`HEAD` skips image transform and performs an upstream `HEAD` probe after validation.
+
+```mermaid
+flowchart TD
+  A["Shared validation pipeline"] --> B["Upstream HEAD probe (3s timeout, redirect:error)"]
+  B -->|Status 404/410| C["Pass through status"]
+  B -->|Other >=400| D["Map to 502/500"]
+  B -->|Non-image content-type| E["502"]
+  B -->|OK| F["200 headers-only"]
+```
+
+### `HEAD` response headers
+
+- `X-Head-Fast-Path: 1`
+- `Cache-Control` and `Vary` are still set
+- `Server-Timing: auth, probe, total`
+
+## Status Code Semantics
+
+| Category | Typical status | Notes |
+|---|---:|---|
+| Missing credentials | `401` | Missing `key`/`sig`, invalid API key, revoked/expired key |
+| Signature rejected | `403` | Invalid HMAC or expired `exp` signature payload |
+| Bad request format | `400` | Invalid path/operations/image URL encoding |
+| Abuse control | `429` | Per-key minute/day limit exceeded |
+| Policy denied | `403` | Referer or source domain blocked |
+| Upstream/runtime issues | `502` / `500` | Non-passthrough upstream failures, processing errors |
+
+## Background Side Effects
+
+After successful `GET` response:
+
+1. **Usage tracking** (fire-and-forget):  
+   throttled updates to `api_key.lastUsedAt` and `project.lastActivityAt`.
+2. **Request logging**:  
+   sanitized source URL (query/hash stripped), status/size/timing metadata.
+3. **Optional original size sampling**:  
+   ~10% requests perform an extra upstream `HEAD` for size analytics.
+
+These side effects are intentionally non-blocking to keep tail latency low.
+
+## Related Docs
+
+- [System Overview](/architecture/system-overview)
+- [Redis Schema](/architecture/redis-schema)
+- [API Endpoint](/api-reference/endpoint)
+- [URL Signing](/guides/url-signing)

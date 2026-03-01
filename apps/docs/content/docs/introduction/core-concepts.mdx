@@ -17,7 +17,7 @@ Team (organization)
 
 ### Teams
 
-A team is the top-level organization unit. When you sign up, a **personal team** is created automatically. You can create additional teams later for different organizations.
+A team is the top-level organization unit. On first sign-in, you are guided through onboarding to create your **personal team**. You can create additional teams later for different organizations.
 
 | Property | Description |
 |----------|-------------|
@@ -47,6 +47,8 @@ API keys also carry access rules:
 
 - **Rate limits** — per-minute and per-day request limits
 - **Expiration** — optional automatic invalidation date
+
+> **Current dashboard behavior:** new keys are created with default rate-limit values. Per-key tuning is stored in the data model but is not yet exposed in the dashboard UI.
 
 > **Important:** The secret key is only shown **once** at creation (or rotation). Store it securely in your environment variables.
 
@@ -101,3 +103,4 @@ Level 4: API Key Controls
 
 - [Quick Start](/getting-started/quickstart) — Get your first optimized image in 5 minutes
 - [Project Setup](/getting-started/project-setup) — Create teams, projects, and API keys
+- [System Design](/introduction/system-design) — End-to-end architecture and request flow

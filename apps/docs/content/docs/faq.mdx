@@ -30,11 +30,11 @@ Yes. The source code is available on [GitHub](https://github.com/EricTsai83/opts
 
 ### What happens when I exceed the free plan?
 
-When your team's monthly request or bandwidth limit is reached, new optimization requests may be throttled or rejected with a `429` response. Existing CDN-cached images continue to be served. Usage resets at the start of each billing period.
+In this repository, monthly limits are currently surfaced in dashboard usage views (monitoring/visibility). The `/api/v1` image endpoint does not enforce a separate monthly hard-stop check in the request path today. Existing CDN-cached images continue to be served normally.
 
 ### Can I increase rate limits on the free plan?
 
-Yes — rate limits are configurable per API key in the dashboard. The free plan's overall monthly request and bandwidth caps still apply. See [Rate Limiting](/guides/rate-limiting).
+Default per-key limits are applied automatically (`60/min`, `10,000/day`). The data model supports per-key values, but dashboard UI controls for custom tuning are not available yet in this repo. See [Rate Limiting](/guides/rate-limiting).
 
 ---
 
@@ -114,7 +114,7 @@ The image source domain is not in the project's allowed source domains list. Add
 
 ### I'm getting `429 Too Many Requests`
 
-You've exceeded per-minute or per-day rate limits for this API key. Check the `Retry-After` header in the response and wait before retrying. See [Rate Limiting](/guides/rate-limiting) to adjust limits.
+You've exceeded per-minute or per-day rate limits for this API key. Check the `Retry-After` header in the response and wait before retrying. See [Rate Limiting](/guides/rate-limiting) for behavior details and current configuration options.
 
 ### Images are not being cached by my CDN
 

@@ -42,7 +42,7 @@ const app = express();
 const SECRET_KEY = process.env.OPTSTUFF_SECRET_KEY;
 const PUBLIC_KEY = process.env.OPTSTUFF_PUBLIC_KEY;
 const PROJECT_SLUG = process.env.OPTSTUFF_PROJECT_SLUG;
-const ENDPOINT = process.env.OPTSTUFF_ENDPOINT;
+const BASE_URL = process.env.OPTSTUFF_BASE_URL;
 
 function signImageUrl(imageUrl, operations = "_", expiresIn) {
   const path = `${operations}/${imageUrl}`;
@@ -56,7 +56,7 @@ function signImageUrl(imageUrl, operations = "_", expiresIn) {
     .digest("base64url")
     .substring(0, 32);
 
-  let url = `${ENDPOINT}/${PROJECT_SLUG}/${path}?key=${PUBLIC_KEY}&sig=${sig}`;
+  let url = `${BASE_URL}/api/v1/${PROJECT_SLUG}/${path}?key=${PUBLIC_KEY}&sig=${sig}`;
   if (exp) url += `&exp=${exp}`;
   return url;
 }
@@ -86,7 +86,7 @@ import os
 SECRET_KEY = os.environ["OPTSTUFF_SECRET_KEY"]
 PUBLIC_KEY = os.environ["OPTSTUFF_PUBLIC_KEY"]
 PROJECT_SLUG = os.environ["OPTSTUFF_PROJECT_SLUG"]
-ENDPOINT = os.environ["OPTSTUFF_ENDPOINT"]
+BASE_URL = os.environ["OPTSTUFF_BASE_URL"]
 
 
 def sign_image_url(image_url: str, operations: str = "_", expires_in: int | None = None) -> str:
@@ -103,7 +103,7 @@ def sign_image_url(image_url: str, operations: str = "_", expires_in: int | None
 
     signature = base64.urlsafe_b64encode(sig_bytes).decode().rstrip("=")[:32]
 
-    url = f"{ENDPOINT}/{PROJECT_SLUG}/{path}?key={PUBLIC_KEY}&sig={signature}"
+    url = f"{BASE_URL}/api/v1/{PROJECT_SLUG}/{path}?key={PUBLIC_KEY}&sig={signature}"
     if exp:
         url += f"&exp={exp}"
     return url
@@ -168,7 +168,7 @@ var (
 	secretKey   = os.Getenv("OPTSTUFF_SECRET_KEY")
 	publicKey   = os.Getenv("OPTSTUFF_PUBLIC_KEY")
 	projectSlug = os.Getenv("OPTSTUFF_PROJECT_SLUG")
-	endpoint    = os.Getenv("OPTSTUFF_ENDPOINT")
+	baseURL     = os.Getenv("OPTSTUFF_BASE_URL")
 )
 
 func SignImageURL(imageURL, operations string, expiresIn int64) string {
@@ -198,7 +198,7 @@ func SignImageURL(imageURL, operations string, expiresIn int64) string {
 		params.Set("exp", fmt.Sprintf("%d", exp))
 	}
 
-	return fmt.Sprintf("%s/%s/%s?%s", endpoint, projectSlug, path, params.Encode())
+	return fmt.Sprintf("%s/api/v1/%s/%s?%s", baseURL, projectSlug, path, params.Encode())
 }
 ```
 
@@ -211,7 +211,7 @@ require "base64"
 OPTSTUFF_SECRET_KEY  = ENV.fetch("OPTSTUFF_SECRET_KEY")
 OPTSTUFF_PUBLIC_KEY  = ENV.fetch("OPTSTUFF_PUBLIC_KEY")
 OPTSTUFF_PROJECT_SLUG = ENV.fetch("OPTSTUFF_PROJECT_SLUG")
-OPTSTUFF_ENDPOINT    = ENV.fetch("OPTSTUFF_ENDPOINT")
+OPTSTUFF_BASE_URL    = ENV.fetch("OPTSTUFF_BASE_URL")
 
 def sign_image_url(image_url, operations: "_", expires_in: nil)
   path = "#{operations}/#{image_url}"
@@ -222,7 +222,7 @@ def sign_image_url(image_url, operations: "_", expires_in: nil)
   digest = OpenSSL::HMAC.digest("SHA256", OPTSTUFF_SECRET_KEY, payload)
   sig = Base64.urlsafe_encode64(digest, padding: false)[0, 32]
 
-  url = "#{OPTSTUFF_ENDPOINT}/#{OPTSTUFF_PROJECT_SLUG}/#{path}?key=#{OPTSTUFF_PUBLIC_KEY}&sig=#{sig}"
+  url = "#{OPTSTUFF_BASE_URL}/api/v1/#{OPTSTUFF_PROJECT_SLUG}/#{path}?key=#{OPTSTUFF_PUBLIC_KEY}&sig=#{sig}"
   url += "&exp=#{exp}" if exp
   url
 end
@@ -236,14 +236,14 @@ end
 $secretKey   = getenv('OPTSTUFF_SECRET_KEY');
 $publicKey   = getenv('OPTSTUFF_PUBLIC_KEY');
 $projectSlug = getenv('OPTSTUFF_PROJECT_SLUG');
-$endpoint    = getenv('OPTSTUFF_ENDPOINT');
+$baseUrl     = getenv('OPTSTUFF_BASE_URL');
 
 function signImageUrl(
     string $imageUrl,
     string $operations = '_',
     ?int $expiresIn = null
 ): string {
-    global $secretKey, $publicKey, $projectSlug, $endpoint;
+    global $secretKey, $publicKey, $projectSlug, $baseUrl;
 
     $path = "{$operations}/{$imageUrl}";
 
@@ -253,7 +253,7 @@ function signImageUrl(
     $sigRaw = hash_hmac('sha256', $payload, $secretKey, true);
     $sig = substr(rtrim(strtr(base64_encode($sigRaw), '+/', '-_'), '='), 0, 32);
 
-    $url = "{$endpoint}/{$projectSlug}/{$path}?key={$publicKey}&sig={$sig}";
+    $url = "{$baseUrl}/api/v1/{$projectSlug}/{$path}?key={$publicKey}&sig={$sig}";
     if ($exp) {
         $url .= "&exp={$exp}";
     }

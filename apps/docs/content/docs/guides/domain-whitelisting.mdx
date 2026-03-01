@@ -27,20 +27,24 @@ Both layers are configured in the project's **Settings** tab under **Domain Secu
 
 1. Navigate to **Dashboard → Project → Settings**
 2. In **Image Sources**, add the domains where your images are hosted
-3. Subdomain matching: adding `example.com` automatically allows `cdn.example.com`, `images.example.com`, etc.
+3. Use protocol-prefixed entries (for example `https://images.example.com`)
+4. Subdomain matching: adding `https://example.com` allows `example.com` and all subdomains (`cdn.example.com`, `img.example.com`, ...)
 
 | List Status | Production Behavior | Development Behavior |
 |-------------|--------------------|--------------------|
 | Empty (default) | **Reject all** requests (fail closed) | Allow all sources (for convenience) |
 | Non-empty | Only listed domains allowed | Only listed domains allowed |
 
-> **Important:** Always configure at least one image source domain before using OptStuff in production.
+> **Important:** Always configure at least one image source domain before using OptStuff in production. In production, an empty source list rejects all requests.
 
 ## Configuring Authorized Websites (Project Level)
 
 1. Navigate to **Dashboard → Project → Settings**
 2. In **Authorized Websites**, add your website domains
-3. Subdomain matching: adding `example.com` automatically allows `www.example.com`, `cdn.example.com`, etc.
+3. Use protocol-prefixed entries (for example `https://app.example.com`)
+4. Subdomains are **not** implied for exact host entries; use wildcard when needed:
+   - `https://app.example.com` → only this host
+   - `https://*.example.com` → all subdomains (and `example.com`)
 
 | List Status | Behavior |
 |-------------|----------|
@@ -53,8 +57,8 @@ Both layers are configured in the project's **Settings** tab under **Domain Secu
 
 ```text
 Project: my-company
-  allowedSourceDomains: [cdn.site-a.com, images.site-b.com, s3.amazonaws.com]
-  allowedRefererDomains: [site-a.com, site-b.com]
+  allowedSourceDomains: [https://cdn.site-a.com, https://images.site-b.com, https://s3.amazonaws.com]
+  allowedRefererDomains: [https://app.site-a.com, https://*.site-b.com]
 ```
 
 All API keys in this project share the same domain restrictions. Different keys are used for credential rotation and access control — not for domain segmentation.

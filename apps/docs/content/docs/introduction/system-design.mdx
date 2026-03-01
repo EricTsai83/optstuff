@@ -1,0 +1,115 @@
+---
+title: System Design
+description: End-to-end OptStuff architecture and request flows, including validation pipeline, data stores, and operational behavior.
+---
+
+This page explains how OptStuff is built end-to-end so you can reason about behavior, performance, and security before integrating at scale.
+
+For product-level concepts, see [What is OptStuff?](/introduction/what-is-optstuff). For setup, see [Quick Start](/getting-started/quickstart).
+
+## Architecture At A Glance
+
+```mermaid
+flowchart LR
+  Client["Browser / App / CDN"] --> Api["/api/v1/{projectSlug}/{operations}/{imageUrl}"]
+  Api --> Cache["Redis (config cache + rate limit counters)"]
+  Api --> Db["PostgreSQL (projects, api_key, request_log, usage)"]
+  Api --> Origin["Source Image Origin"]
+  Api --> Client
+```
+
+### Main Components
+
+| Component | Responsibility |
+|-----------|----------------|
+| **Image Gateway** (`/api/v1/...`) | Validates auth, signature, operations, rate limit, domain rules; serves optimized image |
+| **Validation Layer** | Parses `key/sig/exp`, checks operation bounds, validates `Referer` and source domain |
+| **Config Cache Layer** | Caches API key + project security settings in Redis (60s positive TTL, 10s negative TTL) |
+| **Rate Limiter** | Sliding-window per-day and per-minute limits per API key |
+| **Image Engine (IPX/Sharp)** | Fetches source image and applies operations (`w`, `h`, `q`, `f`, `fit`, `s`, `embed`) |
+| **Observability** | Logs requests, tracks usage, and updates last-used activity in background |
+
+## Request Flow (GET)
+
+```mermaid
+flowchart TD
+  A["Parse key/sig/exp"] -->|Invalid| E1["401"]
+  A -->|OK| B["Load API key config"]
+  B -->|Invalid/revoked/expired| E2["401"]
+  B -->|OK| C["Parse path + operations"]
+  C -->|Invalid| E3["400"]
+  C -->|OK| D["Verify HMAC signature"]
+  D -->|Invalid| E4["403"]
+  D -->|OK| F["Load project by projectId + slug match"]
+  F -->|Not found/mismatch| E5["404/401"]
+  F -->|OK| G["Rate limit (day -> minute)"]
+  G -->|Exceeded| E6["429"]
+  G -->|OK| H["Validate Referer domains"]
+  H -->|Blocked| E7["403"]
+  H -->|OK| I["Validate source domains"]
+  I -->|Blocked| E8["403"]
+  I -->|OK| J["IPX transform + return image"]
+```
+
+### Why this order matters
+
+- **Signature before quota usage** prevents unauthenticated requests from consuming quota.
+- **Project lookup by `projectId` from API key** prevents cross-project slug confusion.
+- **Domain checks before fetch/transform** enforce explicit source boundaries.
+
+## Request Flow (HEAD fast path)
+
+`HEAD` runs the same security pipeline as `GET`, but skips transform and returns headers only.
+
+```mermaid
+flowchart TD
+  A["Same validation pipeline as GET"] --> B["Probe upstream with HEAD"]
+  B -->|Upstream >= 400| C["Map status (404/410 passthrough, otherwise 502/500)"]
+  B -->|Non-image content type| D["502"]
+  B -->|OK| E["200 headers-only response"]
+```
+
+This is useful for cheap availability checks and health probes without paying full transform cost.
+
+## Data Model
+
+```text
+Team
+ └── Project
+      └── API Key
+```
+
+| Entity | Notes |
+|--------|------|
+| `team` | Top-level ownership boundary (personal team created during onboarding) |
+| `project` | Security settings (`allowedSourceDomains`, `allowedRefererDomains`) |
+| `api_key` | Public/secret pair, expiry, revocation, per-key rate-limit fields |
+| `request_log` | Per-request telemetry (source URL is sanitized before storage) |
+| `usage` | Aggregated usage metrics |
+
+## Security Boundaries
+
+| Layer | What it protects |
+|-------|------------------|
+| **Signed URLs (HMAC-SHA256)** | Prevents unauthorized URL forging |
+| **Source domain allowlist** | Controls which origins can be fetched |
+| **Referer allowlist** | Mitigates browser hotlinking on authorized keys |
+| **Key expiry/revocation** | Invalidates stale or compromised credentials |
+| **Rate limiting** | Limits abuse and accidental bursts |
+
+## Operational Behaviors To Know
+
+- **Redis unavailable:** rate limiter fails open (request allowed), prioritizing availability.
+- **Observability note:** when **Redis unavailable** and the **rate limiter fails open**, create two correlated alerts: one for Redis connectivity errors/instance DOWN (Redis errors, connection failures, or sentinel alerts), and one for abnormal `request_rate` or elevated `rate_limiter_fallback_count`; runbook action: investigate Redis first, then apply temporary stricter upstream limits or WAF rules until Redis recovers.
+- **Config propagation:** cache TTL means setting changes normally propagate within ~60s.
+- **Logging privacy:** request log sanitizes query/hash from source URLs.
+- **Usage updates:** telemetry work runs in background after response to reduce tail latency.
+
+## Related Docs
+
+- [API Endpoint](/api-reference/endpoint)
+- [Domain Whitelisting](/guides/domain-whitelisting)
+- [Rate Limiting](/guides/rate-limiting)
+- [Security Best Practices](/guides/security-best-practices)
+- [How OptStuff Is Built (Architecture)](/architecture/how-optstuff-is-built)
+- [System Overview (Architecture)](/architecture/system-overview)

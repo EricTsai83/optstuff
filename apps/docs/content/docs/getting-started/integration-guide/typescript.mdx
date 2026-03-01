@@ -15,7 +15,7 @@ Add to your `.env` file:
 OPTSTUFF_SECRET_KEY="sk_your_secret_key_here"
 OPTSTUFF_PUBLIC_KEY="pk_abc123..."
 OPTSTUFF_PROJECT_SLUG="your-project-slug"
-OPTSTUFF_ENDPOINT="https://your-optstuff-deployment.com/api/v1"
+OPTSTUFF_BASE_URL="https://your-optstuff-deployment.com"
 ```
 
 ## Create a Signing Utility
@@ -27,7 +27,7 @@ import { createHmac } from "crypto";
 
 const SECRET_KEY = process.env.OPTSTUFF_SECRET_KEY!;
 const PUBLIC_KEY = process.env.OPTSTUFF_PUBLIC_KEY!;
-const ENDPOINT = process.env.OPTSTUFF_ENDPOINT!;
+const BASE_URL = process.env.OPTSTUFF_BASE_URL!;
 const PROJECT_SLUG = process.env.OPTSTUFF_PROJECT_SLUG!;
 
 /**
@@ -60,7 +60,7 @@ export function signImageUrl(
     .digest("base64url")
     .substring(0, 32);
 
-  let url = `${ENDPOINT}/${PROJECT_SLUG}/${path}?key=${PUBLIC_KEY}&sig=${sig}`;
+  let url = `${BASE_URL}/api/v1/${PROJECT_SLUG}/${path}?key=${PUBLIC_KEY}&sig=${sig}`;
   if (exp) url += `&exp=${exp}`;
 
   return url;
@@ -183,8 +183,8 @@ Before going to production, verify:
 | Error | Likely Cause | Solution |
 |-------|-------------|----------|
 | `403` Invalid signature | Wrong key, wrong path order, or wrong encoding | See [Troubleshooting Signature Errors](/api-reference/error-codes#troubleshooting-signature-errors) |
-| `403` Source domain not allowed | Image origin not in key's allowed domains | Add the domain in Dashboard → API Key settings |
-| `403` Invalid referer | Your website not in project's allowed domains | Add the domain in Dashboard → Project settings |
+| `403` Source domain not allowed | Image origin not in project's allowed source domains | Add the domain in Dashboard → Project → Settings → Domain Security → Image Sources |
+| `403` Invalid referer | Your website not in project's allowed referer domains | Add the domain in Dashboard → Project → Settings → Domain Security → Authorized Websites |
 
 For the complete error reference, see [Error Codes](/api-reference/error-codes).
 

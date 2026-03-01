@@ -1,6 +1,6 @@
 ---
 title: Redis Schema
-description: Internal documentation — Redis key schema, cache-aside pattern, sliding window rate limiting, write throttling, and data durability.
+description: Architecture documentation — Redis key schema, cache-aside pattern, sliding window rate limiting, write throttling, and data durability.
 ---
 
 The caching layer uses Redis for three purposes: configuration caching, rate limiting, and write throttling. All keys have a TTL — nothing persists indefinitely.
@@ -28,14 +28,14 @@ All Redis keys use a structured prefix convention. Every key has a TTL — no ke
 
 ## Configuration Cache (Cache-Aside)
 
-**File:** `src/server/lib/config-cache.ts`
+**File:** `src/server/lib/config-cache.ts`  
 **Pattern:** Cache-Aside (Lazy Population)
 
 ### Cached Data
 
 Every image request requires two database lookups before processing:
 
-1. **ProjectConfig** — project ID, slug, team ID, allowed referrer domains (HTTP `Referer` header), allowed source domains
+1. **ProjectConfig** — project ID, slug, team ID, allowed Referer domains (HTTP `Referer` header), allowed source domains
 2. **ApiKeyConfig** — key ID, secret key (stored encrypted in cache, decrypted on read), expiration, revocation status, rate limits
 
 ### Read Flow
@@ -110,7 +110,7 @@ Active invalidation via `invalidateApiKeyCache` remains the primary revocation m
 
 ## Rate Limiting (Sliding Window)
 
-**File:** `src/server/lib/rate-limiter.ts`
+**File:** `src/server/lib/rate-limiter.ts`  
 **Pattern:** Sliding Window Counter (via `@upstash/ratelimit`)
 
 ### Implementation Flow
@@ -148,7 +148,14 @@ rateLimitPerDay: apiKey.rateLimitPerDay ?? 10000,       // default fallback
 
 ### Instance Lifecycle
 
-`Ratelimit` instances are lightweight configuration objects — they hold a reference to the shared Redis client, the window algorithm, and a key prefix. They are stateless: all actual counters live in Redis. Instances are created inline per `checkRateLimit` call rather than cached in-memory, because the construction cost is negligible and avoiding module-level `Map` state simplifies the code for serverless environments where containers are recycled frequently.
+`Ratelimit` instances are lightweight configuration objects — they hold a reference to the shared Redis client, the window algorithm, and a key prefix. They are stateless: all counters live in Redis.
+
+In the current implementation, instances **are cached in-memory by limit value**:
+
+- `minuteLimiterCache: Map<number, Ratelimit>`
+- `dayLimiterCache: Map<number, Ratelimit>`
+
+This avoids repeated object construction when many requests use the same effective limits.
 
 ### Resetting Counters
 
@@ -170,7 +177,7 @@ Rate limit instances are created with `analytics: true`, which sends usage metri
 
 ## Write Throttling (SET NX)
 
-**File:** `src/server/lib/usage-tracker.ts`
+**File:** `src/server/lib/usage-tracker.ts`  
 **Pattern:** Distributed Lock via SET NX (Set-If-Not-Exists)
 
 ### Implementation Flow
@@ -226,13 +233,17 @@ Redis contains **zero persistent data**. Every key falls into one of three categ
 | Rate limit counters | None (ephemeral by nature) | Counters reset to zero (briefly allows over-limit requests) |
 | Write throttle locks | None (control flags) | Triggers one extra database UPDATE per key (harmless) |
 
+When Redis is unavailable, rate limiting is designed to fail open (`allowed: true`) to preserve image-serving availability.
+
 ---
 
 ## Related Documentation
 
 | Document | Description |
 |----------|-------------|
+| [How OptStuff Is Built](/architecture/how-optstuff-is-built) | Recommended architecture reading path |
+| [Request Lifecycle](/architecture/request-lifecycle) | Runtime request path that consumes these Redis keys |
 | [Rate Limiting](/guides/rate-limiting) | User-facing rate limiting guide |
-| [System Overview](/internal/system-overview) | Full system architecture |
+| [System Overview](/architecture/system-overview) | Full system architecture |
 | [Domain Whitelisting](/guides/domain-whitelisting) | Domain whitelist configuration |
 | [Security Best Practices](/guides/security-best-practices) | Security recommendations |

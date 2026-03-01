@@ -208,3 +208,12 @@ Our system had multiple security layers (signatures, rate limits, domain allowli
 ### 4. Prefer Eliminating Behavior Over Detecting Abuse
 
 We could have tried to detect SSRF attempts by inspecting redirect targets, blocking private IP ranges, or analyzing response content. Each of those approaches is a cat-and-mouse game with known bypasses (DNS rebinding, IPv6 mapped addresses, cloud metadata via custom domains). Instead, we eliminated the behavior entirely: no redirects are followed, period. **Reducing capability is more reliable than detecting misuse.**
+
+---
+
+## Related Docs
+
+- [How OptStuff Is Built](/architecture/how-optstuff-is-built)
+- [System Overview](/architecture/system-overview)
+- [Request Lifecycle](/architecture/request-lifecycle)
+- [Security Best Practices](/guides/security-best-practices)
