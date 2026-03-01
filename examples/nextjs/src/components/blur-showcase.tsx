@@ -59,9 +59,9 @@ export function BlurShowcase({ images }: BlurShowcaseProps) {
                   blurPlaceholder
                   transitionPreset="smooth"
                   transitionConfig={{
-                    blurFadeDurationMs: 320,
-                    sharpFadeDurationMs: 220,
-                    sharpStartOpacity: 0.18,
+                    sharpFadeInMs: 400,
+                    blurFadeOutMs: 320,
+                    blurFadeOutDelayMs: 100,
                   }}
                 />
               </div>
