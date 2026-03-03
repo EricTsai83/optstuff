@@ -7,7 +7,7 @@ description: Frequently asked questions about OptStuff — pricing, CDN usage, m
 
 ### What is OptStuff?
 
-OptStuff is a secure image optimization API that resizes, compresses, and converts images on-the-fly via URL parameters. See [What is OptStuff?](/introduction/what-is-optstuff) for a full overview.
+OptStuff is a secure image optimization API that resizes, compresses, and converts images on-the-fly via URL parameters. See [What is OptStuff?](/docs) for a full overview.
 
 ### What image formats are supported?
 
@@ -22,19 +22,19 @@ Yes. The source code is available on [GitHub](https://github.com/EricTsai83/opts
 
 ---
 
-## Pricing and Limits
+## Cost & Rate Limits
 
-### What's included in the free plan?
+### How much does it cost to run OptStuff?
 
-10,000 requests and 1 GB bandwidth per month, with full access to all features (signed URLs, domain whitelisting, analytics, etc.). See [Pricing and Limits](/introduction/pricing-and-limits).
+OptStuff runs on serverless infrastructure (Vercel, Neon, Upstash, Clerk). You can start at $0/month using free tiers. At scale, the marginal cost is approximately $0.03 per 1,000 requests. See [Cost Analysis & Pricing Strategy](/introduction/cost-analysis) for a full breakdown.
 
-### What happens when I exceed the free plan?
+### What are the default rate limits?
 
-In this repository, monthly limits are currently surfaced in dashboard usage views (monitoring/visibility). The `/api/v1` image endpoint does not enforce a separate monthly hard-stop check in the request path today. Existing CDN-cached images continue to be served normally.
+Default per-key limits are `60/min` and `10,000/day`. The data model supports per-key values, but dashboard UI controls for custom tuning are not available yet. See [Rate Limiting](/guides/rate-limiting).
 
-### Can I increase rate limits on the free plan?
+### Can I increase rate limits?
 
-Default per-key limits are applied automatically (`60/min`, `10,000/day`). The data model supports per-key values, but dashboard UI controls for custom tuning are not available yet in this repo. See [Rate Limiting](/guides/rate-limiting).
+Yes, by updating the `api_key` table directly. Dashboard UI for per-key rate limit tuning is planned for a future release. See [Rate Limiting](/guides/rate-limiting) for details.
 
 ---
 

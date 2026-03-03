@@ -1,14 +1,21 @@
 {
   "title": "Documentation",
   "pages": [
+    "---Introduction---",
     "index",
-    "introduction",
-    "getting-started",
-    "guides",
-    "api-reference",
+    "...introduction",
+    "---Getting Started---",
+    "...getting-started",
+    "---Guides---",
+    "...guides",
+    "---API Reference---",
+    "...api-reference",
+    "---Self-Hosting---",
+    "...self-hosting",
+    "---Architecture---",
+    "...architecture",
+    "---Resources---",
     "faq",
-    "changelog",
-    "---",
-    "architecture"
+    "changelog"
   ]
 }

@@ -1,8 +1,6 @@
 {
-  "title": "Architecture",
   "pages": [
-    "how-optstuff-is-built",
-    "system-overview",
+    "overview",
     "request-lifecycle",
     "control-plane-and-tenancy",
     "redis-schema",

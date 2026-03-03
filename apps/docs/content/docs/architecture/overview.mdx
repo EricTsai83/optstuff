@@ -1,0 +1,166 @@
+---
+title: Architecture Overview
+description: Start here to understand the full OptStuff architecture — components, request pipelines, data stores, security model, and operational behavior.
+---
+
+If you want a complete mental model of OptStuff, read this page first. It gives you the big picture and an efficient reading path across the Architecture section.
+
+## Two-Plane Mental Model
+
+OptStuff has two major planes:
+
+1. **Control Plane (Dashboard + tRPC)**
+   Teams, projects, API keys, domain settings, and onboarding workflows.
+2. **Data Plane (Image API `/api/v1/...`)**
+   Signed request validation, source fetch, image transform, rate limiting, logging, and usage tracking.
+
+```mermaid
+flowchart LR
+  User["Developer / Team Owner"] --> Dashboard["Dashboard (Control Plane)"]
+  Dashboard --> TRPC["tRPC Routers"]
+  TRPC --> Pg["PostgreSQL\nteam/project/api_key/usage/request_log"]
+  TRPC --> Redis["Redis\ncache + rate limit + write throttle"]
+
+  Client["Browser / App / CDN"] --> API["Image API /api/v1/{projectSlug}/{operations}/{imageUrl}"]
+  API --> Redis
+  API --> Pg
+  API --> Origin["Source image origin"]
+  API --> Client
+```
+
+## Component Map
+
+| Component | Responsibility | Main Files |
+|-----------|----------------|------------|
+| **Image API Gateway** | Handles `GET`/`HEAD` image requests and enforces all request checks | `src/app/api/v1/[projectSlug]/[...path]/route.ts` |
+| **Validation Utilities** | Parses signature params, validates operations and domain rules | `src/server/lib/validators.ts`, `src/lib/ipx-utils.ts` |
+| **Crypto & Key Handling** | API key generation, encryption/decryption, signature verification | `src/server/lib/api-key.ts` |
+| **Config Cache** | Caches project/API-key configs (positive + negative cache) | `src/server/lib/config-cache.ts` |
+| **Rate Limiter** | Per-day and per-minute sliding-window checks | `src/server/lib/rate-limiter.ts` |
+| **Image Engine** | Fetch + transform using IPX/Sharp | `src/server/lib/ipx-factory.ts` |
+| **Observability** | Request logging and activity/usage updates | `src/server/lib/request-logger.ts`, `src/server/lib/usage-tracker.ts` |
+| **Control Plane (tRPC)** | Team/project/API-key management | `src/server/api/routers/*.ts` |
+| **Auth & Route Guard** | Clerk auth + service-route bypass for `/api/v1` | `src/server/api/trpc.ts`, `src/proxy.ts` |
+
+## Validation Pipeline
+
+```mermaid
+flowchart TD
+  A["Parse key/sig/exp"] -->|Invalid| E1["401"]
+  A -->|OK| B["Load API key config"]
+  B -->|Invalid/revoked/expired| E2["401"]
+  B -->|OK| C["Parse path + operations"]
+  C -->|Invalid| E3["400"]
+  C -->|OK| D["Verify HMAC-SHA256 signature"]
+  D -->|Invalid| E4["403"]
+  D -->|OK| F["Load project by apiKey.projectId\nand check slug match"]
+  F -->|Not found/mismatch| E5["404/401"]
+  F -->|OK| G["Rate limit check\n(day then minute)"]
+  G -->|Exceeded| E6["429"]
+  G -->|OK| H["Validate Referer domain"]
+  H -->|Blocked| E7["403"]
+  H -->|OK| I["Validate source domain"]
+  I -->|Blocked| E8["403"]
+  I -->|OK| J{"Method"}
+  J -->|GET| K["Transform image and return bytes"]
+  J -->|HEAD| L["Probe upstream and return headers only"]
+```
+
+### Why This Order
+
+- Signature verification happens before expensive project/rate-limit work on invalid traffic.
+- Project is loaded by `apiKey.projectId` first, then slug is matched to prevent cross-project confusion.
+- Rate limiting runs after signature verification so invalid requests cannot consume quota.
+
+## Request Flows
+
+### GET Flow
+
+```mermaid
+sequenceDiagram
+  participant C as Client
+  participant A as API Route
+  participant O as Origin
+  participant R as Redis
+  participant P as Postgres
+
+  C->>A: GET /api/v1/{slug}/{ops}/{imageUrl}?key&sig&exp
+  A->>R: Read api-key/project cache
+  A->>P: Fallback lookup (cache miss)
+  A->>A: Validate ops + signature + domains + limits
+  A->>O: Fetch source + transform (IPX/Sharp)
+  A-->>C: 200 image bytes + cache headers
+  A->>A: after() schedule usage/log updates
+  A->>R: usage throttle keys (NX/EX)
+  A->>P: request_log + lastUsed updates
+```
+
+### HEAD Fast-Path Flow
+
+- Reuses the same auth/abuse validation pipeline as `GET`.
+- Performs a lightweight upstream `HEAD` probe (no image transform).
+- Returns header-only responses with `X-Head-Fast-Path: 1`.
+
+## Data Model & Tenancy
+
+```text
+team
+ └── project
+      └── api_key
+```
+
+| Entity | Notes |
+|--------|------|
+| `team` | Ownership boundary (one personal team per user via onboarding) |
+| `project` | Holds domain security settings and aggregate usage metadata |
+| `api_key` | Public/secret pair, expiry, revocation, per-key rate-limit values |
+| `usage_record` | Aggregated usage rows |
+| `request_log` | Per-request operational telemetry (sanitized URL) |
+
+## Security Model
+
+| Layer | Mechanism | Notes |
+|-------|-----------|------|
+| URL Auth | HMAC-SHA256 signature | Constant-time compare, optional `exp` |
+| Key Storage | AES-256-GCM + HKDF | Secret keys encrypted at rest |
+| Source Control | `allowedSourceDomains` | Production empty-list is fail-closed |
+| Hotlinking Control | `allowedRefererDomains` | Missing `Referer` is allowed by design |
+| Abuse Control | Per-key rate limiting | Day window then minute window |
+
+## Operations Reference (Server Validation)
+
+| Operation | Example | Validation Rule |
+|-----------|---------|-----------------|
+| `w` | `w_800` | Integer `1..8192` |
+| `h` | `h_600` | Integer `1..8192` |
+| `q` | `q_80` | Integer `1..100` |
+| `f` | `f_webp` | `webp\|avif\|png\|jpg` |
+| `fit` | `fit_cover` | `cover\|contain\|fill` |
+| `s` | `s_1200x630` | `{w}x{h}` with each `1..8192` |
+| `embed` | `embed` | Flag only (no value) |
+
+## Operational Notes
+
+- **Cache propagation:** config cache TTL is 60s; negative cache TTL is 10s.
+- **Rate-limiter availability:** Redis failures fail open (request allowed).
+- **Request logging:** source URL is sanitized (query/hash removed); retention target is 30 days.
+- **Original-size metric:** sampled (10%) to avoid extra upstream `HEAD` on every success.
+- **HEAD upstream behavior:** non-image content-type probes are treated as transform-ineligible (`502`).
+
+## Recommended Reading Order
+
+To understand how the system was built up end-to-end, follow this order:
+
+1. [Control Plane and Multi-Tenancy](/architecture/control-plane-and-tenancy) — How teams/projects/API keys are modeled and managed.
+2. [User Onboarding Flow](/architecture/user-onboarding-flow) — How a new user becomes an active project owner.
+3. [Create API Key Flow](/architecture/create-api-key-flow) — Dual-key model, encryption-at-rest, and rotation.
+4. [Request Lifecycle](/architecture/request-lifecycle) — Request-by-request runtime path for `GET` and `HEAD`.
+5. [Redis Schema](/architecture/redis-schema) — Cache-aside, rate-limit counters, and write throttling.
+6. [SSRF Prevention](/architecture/ssrf-prevention) — Threat model and redirect-handling invariant.
+
+## Related Docs
+
+- [API Endpoint](/api-reference/endpoint)
+- [Rate Limiting](/guides/rate-limiting)
+- [URL Signing](/guides/url-signing)
+- [Security Best Practices](/guides/security-best-practices)

@@ -1,9 +1,7 @@
 {
-  "title": "Introduction",
   "pages": [
-    "what-is-optstuff",
     "core-concepts",
-    "system-design",
-    "pricing-and-limits"
+    "how-it-works",
+    "cost-analysis"
   ]
 }

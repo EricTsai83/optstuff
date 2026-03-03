@@ -1,0 +1,207 @@
+---
+title: Cost Analysis & Pricing Strategy
+description: How to reason about OptStuff's per-request cost — Vercel serverless, Neon PostgreSQL, Upstash Redis, Clerk auth, and how to set your pricing.
+---
+
+This page walks through the actual infrastructure costs behind running OptStuff, so you can understand the cost floor per request and reason about how to price your own instance.
+
+## Infrastructure Stack
+
+OptStuff runs on a serverless-first stack. Each service has its own billing model:
+
+| Service | Role | Billing Model |
+|---------|------|--------------|
+| [Vercel](https://vercel.com) | Hosting + serverless functions | Invocations + CPU time + memory + bandwidth |
+| [Neon](https://neon.tech) | PostgreSQL (teams, projects, keys, logs) | Compute Units (CU-hours) + storage |
+| [Upstash](https://upstash.com) | Redis (config cache + rate limiting) | Per-command |
+| [Clerk](https://clerk.com) | User authentication | Monthly Active Users (MAU) |
+
+## Per-Request Cost Breakdown
+
+When a browser requests an optimized image, here's what happens and what it costs:
+
+### 1. Vercel Function Invocation
+
+Every image request triggers one serverless function invocation.
+
+| Item | Value |
+|------|-------|
+| Price | $0.60 per 1M invocations |
+| Free tier (Hobby/Pro) | First 1M/month included |
+| **Per-request cost** | **$0.0000006** |
+
+### 2. Vercel Active CPU
+
+Image processing (Sharp/IPX resize, format conversion) is CPU-intensive. Vercel's Fluid Compute bills only for active CPU time — I/O wait (Redis, DB queries) is free.
+
+| Item | Value |
+|------|-------|
+| Rate (US region) | ~$0.128 per CPU-hour |
+| Typical image transform | 50–200ms CPU time |
+| Estimate at 100ms | $0.128 / 3,600 × 0.1 = **$0.0000036** |
+
+<Callout type="info">
+Simple resizes (e.g., `w_400`) take ~50ms. Heavy operations (large source + format conversion to AVIF) can reach 200ms+. The 100ms estimate is a reasonable midpoint for WebP output.
+</Callout>
+
+### 3. Vercel Provisioned Memory
+
+Memory is billed for the entire function instance lifetime (including I/O wait), not just CPU time.
+
+| Item | Value |
+|------|-------|
+| Rate (US region) | ~$0.0106 per GB-hour |
+| Function memory | ~256MB (0.25 GB) |
+| Instance lifetime | ~300ms (including I/O) |
+| Cost | 0.25 × (0.3 / 3,600) × $0.0106 = **$0.0000002** |
+
+Memory cost is negligible compared to CPU cost.
+
+### 4. Upstash Redis
+
+Each request makes 3–5 Redis commands: config cache lookup, rate limit checks (day + minute), and usage throttle.
+
+| Item | Value |
+|------|-------|
+| Rate | $0.20 per 100K commands |
+| Commands per request | ~4 |
+| **Per-request cost** | 4 × $0.000002 = **$0.000008** |
+
+### 5. Neon PostgreSQL
+
+Most requests hit the Redis config cache (60s TTL). Only cache misses or first requests for a key trigger a DB query. Background tasks (request logging, usage updates) are throttled to reduce DB load.
+
+| Item | Value |
+|------|-------|
+| Rate (Launch plan) | $0.106 per CU-hour |
+| DB queries per request | ~0.05 (amortized, most hit cache) |
+| Background write cost | ~0.02 queries amortized (throttled) |
+| **Per-request cost** | **~$0.000001** (amortized) |
+
+### 6. Vercel Bandwidth
+
+Optimized images are served as response bytes. This is often the largest variable cost.
+
+| Item | Value |
+|------|-------|
+| Pro plan included | 1 TB/month |
+| Overage rate | $0.15 per GB |
+| Average optimized image | ~80–150 KB |
+| Estimate at 100 KB | $0.15 / 1,000,000 × 100 = **$0.000015** |
+
+<Callout type="info">
+With a CDN in front (Cloudflare, CloudFront), most repeat requests are served from CDN cache and never reach Vercel. Actual bandwidth cost depends heavily on your CDN cache hit ratio.
+</Callout>
+
+## Per-Request Cost Summary
+
+| Component | Cost per Request | % of Total |
+|-----------|-----------------|------------|
+| Vercel CPU | $0.0000036 | 13% |
+| Vercel Bandwidth | $0.0000150 | 55% |
+| Upstash Redis | $0.0000080 | 29% |
+| Neon PostgreSQL | $0.0000010 | 4% |
+| Vercel Invocation | $0.0000006 | 2% |
+| Vercel Memory | $0.0000002 | 1% |
+| **Total** | **~$0.0000274** | 100% |
+
+Scaled up:
+
+| Volume | Variable Cost |
+|--------|--------------|
+| 1,000 requests | ~$0.03 |
+| 10,000 requests | ~$0.27 |
+| 100,000 requests | ~$2.74 |
+| 1,000,000 requests | ~$27.40 |
+
+## Monthly Fixed Costs
+
+Beyond per-request costs, there are fixed monthly platform fees:
+
+| Service | Free Tier | Paid Tier | When You Need Paid |
+|---------|-----------|-----------|-------------------|
+| **Vercel** | Hobby (free) | Pro $20/mo | Commercial use, team features |
+| **Neon** | 100 CU-hours + 0.5GB | Launch $19/mo | >100 CU-hours or >0.5GB storage |
+| **Upstash** | 10K commands/day | Pay-as-you-go or $10/mo fixed | >10K commands/day |
+| **Clerk** | 10,000 MAU | Pro $20/mo | >10,000 MAU or advanced features |
+
+### Minimum Monthly Cost Scenarios
+
+| Scenario | Vercel | Neon | Upstash | Clerk | Total Fixed |
+|----------|--------|------|---------|-------|------------|
+| **Hobby / Side project** | $0 | $0 | $0 | $0 | **$0/mo** |
+| **Small production** | $20 | $0 | $0 | $0 | **$20/mo** |
+| **Full production** | $20 | $19 | $10 | $20 | **$69/mo** |
+
+## Total Cost Model
+
+```
+Monthly Cost = Fixed Costs + (Per-Request Cost × Request Volume)
+```
+
+| Monthly Volume | Free Stack | Full Production Stack |
+|----------------|------------|----------------------|
+| 10,000 | $0 + $0.27 = **$0.27** | $69 + $0.27 = **$69.27** |
+| 100,000 | $0 + $2.74 = **$2.74** | $69 + $2.74 = **$71.74** |
+| 1,000,000 | Over free limits | $69 + $27.40 = **$96.40** |
+
+At 1M requests/month on full production stack, the effective cost per request is ~$0.0001 ($0.10 per 1,000 requests).
+
+## Pricing Strategy
+
+### Step 1: Identify Your Cost Floor
+
+From the analysis above, the marginal cost per request is ~$0.00003. But the real cost floor is dominated by fixed costs at low volume:
+
+| Volume | Effective Cost per 1K Requests |
+|--------|-------------------------------|
+| 10,000/mo | $6.93 per 1K (fixed costs dominate) |
+| 100,000/mo | $0.72 per 1K |
+| 1,000,000/mo | $0.10 per 1K (approaching marginal cost) |
+
+### Step 2: Compare with Alternatives
+
+| Service | Cost per 1K Optimizations |
+|---------|--------------------------|
+| **Cloudinary** (free tier) | $0 (up to 25K/mo), then ~$0.45 per 1K |
+| **imgix** | ~$3.00 per 1K (rendering) |
+| **Vercel Image Optimization** | ~$5.00 per 1K (at $5/1K source images) |
+| **OptStuff (self-hosted, 100K/mo)** | ~$0.72 per 1K |
+| **OptStuff (self-hosted, 1M/mo)** | ~$0.10 per 1K |
+
+Self-hosted OptStuff becomes very cost-competitive at scale because the per-request marginal cost is low and there are no per-optimization fees.
+
+### Step 3: Set Your Margin
+
+If you're offering OptStuff as a hosted service, consider this framework:
+
+| Tier | Price per 1K | Margin at 1M/mo Volume |
+|------|-------------|----------------------|
+| Free | $0 (first 10K/mo) | Loss leader for acquisition |
+| Starter | $0.50 per 1K | ~$0.40 profit per 1K (80%) |
+| Pro | $0.30 per 1K | ~$0.20 profit per 1K (67%) |
+| Enterprise | Custom | Volume discount, still >50% margin |
+
+### Step 4: Anchor on Value, Not Cost
+
+The cost analysis gives you a floor, but pricing should reflect **value delivered**:
+
+- An e-commerce site converting images to WebP might save 50%+ bandwidth costs
+- A media site serving 10M images/month from a CDN saves thousands vs. Cloudinary
+- The engineering time saved by not building an image pipeline has its own value
+
+Price based on the value you create, not the infrastructure cost you incur.
+
+## Key Takeaways
+
+1. **Bandwidth is the largest variable cost** (~55% per request) — CDN caching is your best cost optimization lever
+2. **Fixed costs dominate at low volume** — the free tiers of Vercel/Neon/Upstash/Clerk make it possible to start at $0/month
+3. **Marginal cost is very low** (~$0.03 per 1K requests) — at scale, OptStuff is significantly cheaper than commercial alternatives
+4. **CDN cache hit ratio is the single most impactful cost factor** — a 90% cache hit ratio means only 10% of requests reach your serverless functions
+
+## Related Documentation
+
+- [CDN and Caching](/guides/cdn-caching) — Maximize cache hit ratio to reduce costs
+- [Rate Limiting](/guides/rate-limiting) — Protect against cost spikes from abuse
+- [Deployment Guide](/self-hosting/deployment) — Deploy your own instance
+- [Environment Variables](/self-hosting/environment-variables) — Configure your infrastructure connections
