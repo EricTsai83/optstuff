@@ -82,6 +82,64 @@ Clients should respect the `Retry-After` header to avoid further 429 responses.
 | Medium (100 – 10,000 req/day) | Monitor analytics; increase per-day limit if hit legitimately |
 | High (> 10,000 req/day) | Set per-key limits based on expected traffic to avoid false 429s |
 
+## Client-Side Retry Strategy
+
+When receiving a `429` response, implement exponential backoff with jitter:
+
+```typescript
+async function fetchWithRetry(
+  url: string,
+  maxRetries: number = 3
+): Promise<Response> {
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    const response = await fetch(url);
+
+    if (response.status !== 429) return response;
+
+    if (attempt === maxRetries) return response;
+
+    const retryAfter = response.headers.get("Retry-After");
+    const baseDelay = retryAfter
+      ? Number(retryAfter) * 1000
+      : Math.pow(2, attempt) * 1000;
+    const jitter = Math.random() * 1000;
+    await new Promise((resolve) => setTimeout(resolve, baseDelay + jitter));
+  }
+
+  throw new Error("Unreachable");
+}
+```
+
+Key principles:
+
+- **Respect `Retry-After`** — always prefer the server-provided delay over your own backoff
+- **Add jitter** — prevents multiple clients from retrying in sync (thundering herd)
+- **Limit retries** — 3 retries is usually sufficient; more indicates a capacity problem
+
+## CDN and Rate Limiting Interaction
+
+If you place a CDN (Cloudflare, CloudFront, Vercel Edge) in front of OptStuff:
+
+| Scenario | Rate Limit Impact |
+|----------|------------------|
+| CDN cache **hit** | No request reaches OptStuff — rate limit is **not consumed** |
+| CDN cache **miss** | Request reaches OptStuff — rate limit is consumed |
+| First request for a URL | Always consumes quota (cache is cold) |
+
+This means rate limits primarily affect unique or uncached requests. For high-traffic sites with good CDN cache hit ratios, rate limits are rarely a concern.
+
+See [CDN and Caching](/guides/cdn-caching) for cache optimization strategies.
+
+## Monitoring Recommendations
+
+| What to Monitor | Why | Suggested Alert |
+|----------------|-----|----------------|
+| `429` response rate | Detect legitimate traffic hitting limits | Alert when `429` rate exceeds 5% of total requests |
+| Per-key daily usage | Catch keys approaching limits | Alert at 80% of daily quota |
+| Redis connectivity | Rate limiter depends on Redis | Alert on Redis connection errors |
+
+When the rate limiter fails open (Redis unavailable), monitor for abnormal traffic patterns and consider temporary upstream WAF rules until Redis recovers.
+
 ## Design Notes
 
 - Rate limits are checked **after** signature verification so that unauthenticated requests cannot exhaust quota.
@@ -92,5 +150,6 @@ Clients should respect the `Retry-After` header to avoid further 429 responses.
 ## Related Documentation
 
 - [Key Management](/guides/key-management) — Managing API keys (per-key rate limits not configurable in dashboard yet)
+- [CDN and Caching](/guides/cdn-caching) — Cache strategies that reduce rate limit pressure
 - [Error Codes](/api-reference/error-codes) — Rate limit error details
 - [Security Best Practices](/guides/security-best-practices) — Broader security context

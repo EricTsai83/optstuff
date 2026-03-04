@@ -1,4 +1,3 @@
 {
-  "title": "API Reference",
   "pages": ["endpoint", "image-operations", "error-codes", "versioning"]
 }

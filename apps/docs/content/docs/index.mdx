@@ -1,9 +1,11 @@
 ---
-title: OptStuff Documentation
-description: Secure, high-performance image optimization API with signed URLs, domain whitelisting, and multi-tenant support.
+title: What is OptStuff?
+description: OptStuff is a secure image optimization API that resizes, compresses, and converts images on-the-fly with signed URL security and multi-tenant support.
 ---
 
-OptStuff is a secure, high-performance image optimization API that transforms images on-the-fly with URL-based operations, signed URL security, and multi-tenant access control.
+OptStuff is a secure, high-performance image optimization API designed for developers and teams who need to deliver optimized images at scale with fine-grained access control.
+
+Point your image URLs through OptStuff's API endpoint, and it delivers optimized images with the right format, size, and quality — all controlled via URL parameters.
 
 ## Quick Example
 
@@ -25,20 +27,59 @@ const url = generateOptStuffUrl(
 );
 ```
 
+## Key Features
+
+- **On-the-fly Optimization** — Resize, format conversion (WebP, AVIF), and quality adjustment via URL parameters
+- **Signed URL Security** — HMAC-SHA256 signatures prevent unauthorized access
+- **Multi-tenant Architecture** — Teams → Projects → API Keys hierarchy
+- **Domain Whitelisting** — Control allowed image sources and referer domains
+- **Encrypted Key Storage** — AES-256-GCM encryption for API keys at rest
+- **Rate Limiting** — Configurable per-minute and per-day limits per API key
+- **Usage Analytics** — Request logs, bandwidth tracking, and top images statistics
+
+## How It Works
+
+1. **Create a Project** — Set up a project in the dashboard
+2. **Generate an API Key** — Get your public/secret key pair
+3. **Sign URLs** — Use the secret key to sign image request URLs server-side
+4. **Make Requests** — Send signed requests to the OptStuff API
+5. **Get Optimized Images** — Receive optimized images with caching headers
+
+## Use Cases
+
+| Scenario | How OptStuff Helps |
+|----------|-------------------|
+| **Web Applications** | Serve appropriately sized images for different screens; convert to modern formats (WebP, AVIF) |
+| **Content Delivery** | Integrate with your CDN for edge-cached, optimized images |
+| **E-commerce** | Thumbnail generation, zoom-ready images, consistent catalog dimensions |
+| **User-Generated Content** | Resize, compress, and convert user uploads to web-friendly formats |
+
+## Technical Specifications
+
+| Specification | Details |
+|---------------|---------|
+| Encryption | AES-256-GCM with HKDF key derivation |
+| Signing | HMAC-SHA256 |
+| Image Engine | IPX (powered by Sharp) |
+| Supported Input Formats | JPEG, PNG, WebP, AVIF, GIF |
+| Supported Output Formats | JPEG, PNG, WebP, AVIF |
+| Caching | Aggressive cache headers for CDN compatibility |
+
+## Pricing
+
+OptStuff is designed to run on serverless infrastructure at minimal cost. For a full breakdown of the per-request cost structure and pricing strategy, see [Cost Analysis & Pricing Strategy](/introduction/cost-analysis).
+
 ## Explore the Docs
 
 <Cards>
-  <Card title="What is OptStuff?" href="/introduction/what-is-optstuff">
-    Learn what OptStuff does, who it's for, and how it works.
-  </Card>
-  <Card title="System Design" href="/introduction/system-design">
-    Understand architecture, validation order, data stores, and request flows.
+  <Card title="Core Concepts" href="/introduction/core-concepts">
+    Teams, Projects, API Keys, signed URLs, and the permission model.
   </Card>
   <Card title="Quick Start" href="/getting-started/quickstart">
     Get your first optimized image in under 5 minutes.
   </Card>
   <Card title="Integration Guide" href="/getting-started/integration-guide">
-    Add OptStuff to your Next.js application with signed URLs.
+    Add OptStuff to your Next.js or TypeScript application with signed URLs.
   </Card>
   <Card title="API Reference" href="/api-reference/endpoint">
     Endpoint format, image operations, and error codes.
@@ -46,18 +87,10 @@ const url = generateOptStuffUrl(
   <Card title="Code Examples" href="/guides/code-examples">
     URL signing in Node.js, Python, Go, Ruby, and PHP.
   </Card>
-  <Card title="CDN and Caching" href="/guides/cdn-caching">
-    Set up Cloudflare, Vercel, or CloudFront for edge-cached delivery.
+  <Card title="Self-Hosting" href="/self-hosting/deployment">
+    Deploy your own OptStuff instance on Vercel.
+  </Card>
+  <Card title="Cost Analysis" href="/introduction/cost-analysis">
+    Per-request cost breakdown and pricing strategy for your SaaS.
   </Card>
 </Cards>
-
-## Key Capabilities
-
-| Feature | Description |
-|---------|-------------|
-| **On-the-fly Optimization** | Resize, format conversion (WebP, AVIF), and quality adjustment via URL parameters |
-| **Signed URL Security** | HMAC-SHA256 signatures prevent unauthorized access |
-| **Multi-tenant Architecture** | Teams, Projects, and API Keys hierarchy |
-| **Domain Whitelisting** | Two-layer control over who can use the API and which images can be processed |
-| **Rate Limiting** | Per-key per-minute and per-day limits (default values provided; dashboard tuning UI is not yet available) |
-| **Usage Analytics** | Request logs, bandwidth tracking, and top images statistics |

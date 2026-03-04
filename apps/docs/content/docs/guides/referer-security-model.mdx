@@ -1,6 +1,6 @@
 ---
-title: "Understanding Referer-Based Protection"
-description: "Why the browser Referer header is reliable for anti-hotlinking, why it's not a substitute for authentication, and how OptStuff uses it alongside signed URLs."
+title: Referer Security Model
+description: Why the browser Referer header is reliable for anti-hotlinking, why it's not a substitute for authentication, and how OptStuff uses it alongside signed URLs.
 ---
 
 When protecting image assets from unauthorized embedding, the HTTP `Referer` header is a surprisingly effective tool — if you understand its trust boundaries. This article explains when and why `Referer` is trustworthy, and how OptStuff leverages it as a supplementary anti-hotlinking layer.

@@ -1,4 +1,9 @@
 {
-  "title": "Getting Started",
-  "pages": ["quickstart", "project-setup", "integration-guide"]
+  "pages": [
+    "quickstart",
+    "project-setup",
+    "integration-guide",
+    "integrate-typescript",
+    "integrate-nextjs"
+  ]
 }

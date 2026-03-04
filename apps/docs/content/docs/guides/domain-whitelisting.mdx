@@ -51,7 +51,21 @@ Both layers are configured in the project's **Settings** tab under **Domain Secu
 | Empty (default) | All referers allowed |
 | Non-empty | Only listed domains allowed |
 
-> **Note:** When the list is non-empty, only requests with a `Referer` header that matches a listed domain are allowed. Requests **without** a `Referer` header (e.g., server-to-server calls, privacy-stripping browser policies) are always allowed — the signed URL already authenticates the request, and an absent referer does not indicate hotlinking. See [Understanding Referer-Based Protection](/guides/referer-security-model) for why.
+> **Note:** `allowedRefererDomains` is a best-effort browser-side signal enforced by `validateReferer()` for hotlinking protection, not a strong authentication guarantee. When `allowedRefererDomains` is non-empty, `validateReferer()` blocks requests only when a `Referer` is present and not allowed; requests **without** a `Referer` (for example, server-to-server calls or privacy-stripping browser policies) are intentionally allowed. For strict caller validation, use short-lived signed URLs. See [Referer Security Model](/guides/referer-security-model) for details.
+
+## Wildcard Syntax
+
+Wildcard entries use the `*` prefix to match all subdomains:
+
+| Entry | Matches | Does NOT Match |
+|-------|---------|----------------|
+| `https://example.com` | `example.com` and all subdomains (**Image Sources only**) | Subdomain matching in **Authorized Websites** |
+| `https://*.example.com` | `cdn.example.com`, `img.example.com`, `example.com` (**required for subdomain matching in Authorized Websites**) | `other-site.com` |
+| `https://cdn.example.com` | `cdn.example.com` only | `img.example.com` |
+
+<Callout type="info">
+Wildcard semantics differ by scope: for **Image Sources**, `https://example.com` includes subdomains automatically (for example, it allows `https://cdn.example.com/photo.jpg`); for **Authorized Websites**, subdomains are not implied, so use `https://*.example.com` when you need to allow referers like `https://app.example.com/page` (while `https://example.com` alone only matches that exact host).
+</Callout>
 
 ## Practical Example
 
@@ -63,8 +77,36 @@ Project: my-company
 
 All API keys in this project share the same domain restrictions. Different keys are used for credential rotation and access control — not for domain segmentation.
 
+## Environment-Specific Configuration
+
+| Environment | Image Sources | Authorized Websites |
+|-------------|--------------|-------------------|
+| **Development** | Empty list (allows all sources for convenience) | Empty list (allows all) |
+| **Staging** | Same as production | Add your staging domain (`https://staging.example.com`) |
+| **Production** | Explicitly list all allowed origins | Explicitly list all allowed websites |
+
+<Callout type="warn">
+In production, an empty `allowedSourceDomains` list rejects **all** requests (fail-closed). Always add at least one domain before going live.
+</Callout>
+
+## Troubleshooting
+
+| Error | Common Cause | Solution |
+|-------|-------------|----------|
+| `403` Source domain not allowed | Image origin not in project's allowed sources | Add the domain (with `https://` prefix) in Dashboard → Settings → Domain Security → Image Sources |
+| `403` Invalid referer | Your website not in allowed referer list | Add your domain in Dashboard → Settings → Domain Security → Authorized Websites |
+| `403` on images that formerly worked | Domain settings changed or cache propagation delay | Wait ~60s for settings to propagate; verify domains are still listed |
+| Images work in development but not production | Empty source list allows all in dev, rejects all in prod | Add explicit domains for production |
+
+### Common Mistakes
+
+- **Missing protocol** — Entries must include `https://` (e.g., `https://cdn.example.com`, not `cdn.example.com`)
+- **Trailing slashes** — Do not include trailing slashes (use `https://cdn.example.com`, not `https://cdn.example.com/`)
+- **Port numbers** — In `allowedRefererDomains`, list only the hostname (for example, use `http://localhost` with host `localhost`, not `http://localhost:3000`) because `validateReferer()` compares `refererUrl.hostname` (ports are ignored). If you need port-specific matching, update `validateReferer()` to compare `refererUrl.host` (or add explicit port-aware logic).
+
 ## Related Documentation
 
 - [Core Concepts](/introduction/core-concepts) — Overview of the resource hierarchy
+- [Referer Security Model](/guides/referer-security-model) — Trust model for Referer-based protection
 - [Security Best Practices](/guides/security-best-practices) — Broader security recommendations
 - [Error Codes](/api-reference/error-codes) — `403` errors for domain violations

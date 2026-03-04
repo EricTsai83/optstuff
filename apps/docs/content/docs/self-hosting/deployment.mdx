@@ -1,0 +1,84 @@
+---
+title: Deployment Guide
+description: How to deploy OptStuff — prerequisites, Vercel deployment, and production configuration.
+---
+
+OptStuff is open source and designed to be self-hosted. This guide walks you through deploying the application.
+
+## Prerequisites
+
+| Service | Purpose | Recommended Provider |
+|---------|---------|---------------------|
+| **PostgreSQL** | Data storage (teams, projects, API keys, usage) | [Neon](https://neon.tech), [Supabase](https://supabase.com), or any PostgreSQL provider |
+| **Clerk** | User authentication | [Clerk](https://clerk.com) (required) |
+| **Hosting** | Application runtime | [Vercel](https://vercel.com) (recommended), any Node.js-compatible platform |
+
+## Deploy to Vercel
+
+Vercel is the recommended deployment target as OptStuff is built on Next.js.
+
+### 1. Fork the Repository
+
+Fork [EricTsai83/optstuff](https://github.com/EricTsai83/optstuff) to your GitHub account.
+
+### 2. Set Up External Services
+
+#### PostgreSQL
+
+1. Create a PostgreSQL database (e.g., on [Neon](https://neon.tech))
+2. Note your connection string: `postgresql://user:password@host/database`
+
+#### Clerk
+
+1. Create a [Clerk](https://clerk.com) application
+2. Note your **Publishable Key** and **Secret Key**
+3. Configure sign-in/sign-up URLs to match your deployment
+
+#### API Key Encryption
+
+Generate a 32+ character encryption secret:
+
+```bash
+openssl rand -base64 32
+```
+
+### 3. Import to Vercel
+
+1. Go to [vercel.com/new](https://vercel.com/new)
+2. Import your forked repository
+3. Set the **Root Directory** to `apps/optstuff-dashboard`
+4. Add environment variables (see [Environment Variables](/self-hosting/environment-variables) for the full list)
+5. Deploy
+
+### 4. Run Database Migrations
+
+After the first deployment, run the database migrations:
+
+```bash
+pnpm db:push
+```
+
+Or use the Drizzle migration scripts included in the project.
+
+### 5. Verify
+
+1. Visit your deployment URL
+2. Sign up / sign in via Clerk
+3. Create a team and project
+4. Generate an API key and test an image request
+
+## Production Checklist
+
+- [ ] PostgreSQL database created and connected
+- [ ] Clerk application configured with correct redirect URLs
+- [ ] `API_KEY_ENCRYPTION_SECRET` set to a unique 32+ character value
+- [ ] `NEXT_PUBLIC_APP_URL` set to your production URL
+- [ ] Database migrations applied
+- [ ] First team and project created successfully
+- [ ] Test image request returns optimized image
+
+## Related Documentation
+
+- [Environment Variables](/self-hosting/environment-variables) — Complete reference of all configuration variables
+- [Project Setup](/getting-started/project-setup) — Dashboard walkthrough after deployment
+- [Quick Start](/getting-started/quickstart) — Test your first image request

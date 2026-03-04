@@ -1,0 +1,90 @@
+---
+title: Environment Variables
+description: Complete reference of all environment variables required to run OptStuff, organized by category.
+---
+
+This page documents all environment variables used by the OptStuff dashboard. Copy the `.env.example` file as a starting point:
+
+```bash
+cp apps/optstuff-dashboard/.env.example apps/optstuff-dashboard/.env
+```
+
+## Application
+
+| Variable | Required | Description | Example |
+|----------|----------|-------------|---------|
+| `NEXT_PUBLIC_APP_URL` | Yes | Public URL of your OptStuff deployment | `https://optstuff.example.com` |
+| `NEXT_PUBLIC_DOCS_URL` | No | URL of the documentation site | `https://docs.optstuff.example.com` |
+
+## Database (PostgreSQL)
+
+You need at least one database connection string. The specific variables depend on your provider.
+
+### Standard Connection
+
+| Variable | Required | Description | Example |
+|----------|----------|-------------|---------|
+| `DATABASE_URL` | Yes | Primary connection string (pooled recommended) | `postgresql://user:pass@host/db` |
+| `DATABASE_URL_UNPOOLED` | No | Direct connection (for migrations) | `postgresql://user:pass@host/db` |
+
+### Neon / Vercel Postgres
+
+If using Neon or Vercel Postgres, these additional variables may be set automatically:
+
+| Variable | Description |
+|----------|-------------|
+| `PGHOST` | Database host |
+| `PGHOST_UNPOOLED` | Direct (unpooled) database host |
+| `PGUSER` | Database user |
+| `PGDATABASE` | Database name |
+| `PGPASSWORD` | Database password |
+| `POSTGRES_URL` | Full connection URL |
+| `POSTGRES_URL_NON_POOLING` | Direct connection URL |
+
+## Authentication (Clerk)
+
+| Variable | Required | Description | Example |
+|----------|----------|-------------|---------|
+| `CLERK_SECRET_KEY` | Yes | Clerk server-side secret key | `sk_test_xxxx...` |
+| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | Yes | Clerk client-side publishable key | `pk_test_xxxx...` |
+| `NEXT_PUBLIC_CLERK_SIGN_IN_URL` | Yes | Sign-in page path | `/sign-in` |
+| `NEXT_PUBLIC_CLERK_SIGN_UP_URL` | Yes | Sign-up page path | `/sign-up` |
+| `NEXT_PUBLIC_CLERK_SIGN_IN_FORCE_REDIRECT_URL` | No | Redirect after sign-in | `/dashboard` |
+| `NEXT_PUBLIC_CLERK_SIGN_UP_FORCE_REDIRECT_URL` | No | Redirect after sign-up | `/dashboard` |
+| `NEXT_PUBLIC_CLERK_SIGN_IN_FALLBACK_REDIRECT_URL` | No | Fallback redirect after sign-in | `/dashboard` |
+| `NEXT_PUBLIC_CLERK_SIGN_UP_FALLBACK_REDIRECT_URL` | No | Fallback redirect after sign-up | `/dashboard` |
+
+## Encryption
+
+| Variable | Required | Description | Example |
+|----------|----------|-------------|---------|
+| `API_KEY_ENCRYPTION_SECRET` | Yes | Master key for AES-256-GCM encryption of API secret keys. Must be 32+ characters. | Generate with `openssl rand -base64 32` |
+
+<Callout type="warn">
+This is the most sensitive configuration value. If compromised, all stored API secret keys can be decrypted. There is no automatic rotation mechanism — rotating requires re-encrypting all keys.
+</Callout>
+
+## Debug
+
+| Variable | Required | Description | Default |
+|----------|----------|-------------|---------|
+| `MFE_DEBUG` | No | Enable microfrontend debug mode | `0` |
+
+## Client SDK Variables
+
+These variables are used in your application code (not the OptStuff dashboard) to interact with the API:
+
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `OPTSTUFF_BASE_URL` | OptStuff API base URL | `https://optstuff.example.com` |
+| `OPTSTUFF_PROJECT_SLUG` | Your project identifier | `my-blog` |
+| `OPTSTUFF_PUBLIC_KEY` | API public key | `pk_abc123...` |
+| `OPTSTUFF_SECRET_KEY` | API secret key (server-side only) | `sk_...` |
+
+For integration examples using these variables, see the [Integration Guide](/getting-started/integration-guide).
+
+## Related Documentation
+
+- [Deployment Guide](/self-hosting/deployment) — How to deploy OptStuff
+- [Key Management](/guides/key-management) — API key lifecycle
+- [Security Best Practices](/guides/security-best-practices) — Security recommendations

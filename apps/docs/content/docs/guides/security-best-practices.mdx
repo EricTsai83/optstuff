@@ -32,7 +32,7 @@ The optional `exp` parameter limits how long a signed URL is valid. Recommended 
 
 ### Domain Whitelisting
 
-Two-layer domain control restricts both who can use the service (referer domains) and which images can be processed (source domains). Both settings are configured at the project level in **Settings → Domain Security**. Referer validation targets browser-based hotlinking specifically — requests without a `Referer` header are allowed since they indicate server-to-server calls or privacy-stripping policies, not hotlinking. See [Domain Whitelisting](/guides/domain-whitelisting) for configuration and [Understanding Referer-Based Protection](/guides/referer-security-model) for the trust model.
+Two-layer domain control restricts both who can use the service (referer domains) and which images can be processed (source domains). Both settings are configured at the project level in **Settings → Domain Security**. Referer validation targets browser-based hotlinking specifically — requests without a `Referer` header are allowed since they indicate server-to-server calls or privacy-stripping policies, not hotlinking. See [Domain Whitelisting](/guides/domain-whitelisting) for configuration and [Referer Security Model](/guides/referer-security-model) for the trust model.
 
 ### Rate Limiting
 
@@ -73,10 +73,66 @@ Public keys (`pk_...`) are safe to expose in URLs. Secret keys (`sk_...`) never 
 | HMAC-SHA256 | URL signature generation |
 | Constant-time comparison | Timing-safe signature verification |
 
+## Production Checklist
+
+Use this checklist before going live:
+
+### API Key Security
+
+- [ ] Secret keys (`sk_...`) stored in server-side environment variables only
+- [ ] No secret keys in frontend code, Git, or client-side bundles
+- [ ] `.env` / `.env.local` files added to `.gitignore`
+- [ ] API key expiration set for non-permanent integrations
+- [ ] Unused or test keys revoked
+
+### Domain Security
+
+- [ ] `allowedSourceDomains` explicitly configured (empty list rejects all in production)
+- [ ] `allowedRefererDomains` configured if browser hotlinking is a concern
+- [ ] Development, staging, and production use separate projects or domain configs
+
+### URL Signing
+
+- [ ] All signing happens server-side (Server Components, API Routes, or backend services)
+- [ ] Appropriate `exp` expiration set on signed URLs
+- [ ] No signing logic in client-side JavaScript
+
+### Infrastructure
+
+- [ ] Redis health monitoring configured
+- [ ] Rate limit alerts set (see [Rate Limiting](/guides/rate-limiting#monitoring-recommendations))
+- [ ] HTTPS enforced on all endpoints
+
+## Environment Isolation
+
+Use separate projects and API keys for each environment to prevent cross-environment leakage:
+
+| Environment | Project | API Key | Source Domains |
+|-------------|---------|---------|---------------|
+| Development | `my-app-dev` | Dev key (short expiry) | Empty (allows all) |
+| Staging | `my-app-staging` | Staging key | Same as production |
+| Production | `my-app` | Production key | Explicitly listed |
+
+This ensures a compromised development key cannot access production resources, and development traffic does not consume production rate limits.
+
+## Incident Response: Key Compromise
+
+If an API key may have been exposed:
+
+1. **Rotate immediately** — Use the Rotate action in Dashboard → API Keys. This atomically revokes the old key and creates a new one.
+2. **Update environment variables** — Deploy the new secret key to all services that use it.
+3. **Review request logs** — Check Dashboard → Usage for suspicious traffic patterns during the exposure window.
+4. **Audit access** — Verify no unauthorized domains were added to the project's domain security settings.
+5. **Consider expiration** — For the new key, set a shorter expiration until you've confirmed the incident is contained.
+
+<Callout type="info">
+Rotation is atomic — the old key stops working the moment the new key is created. Plan for a brief window where in-flight requests with the old key may fail.
+</Callout>
+
 ## Related Documentation
 
 - [URL Signing](/guides/url-signing) — Signature generation and code examples
 - [Domain Whitelisting](/guides/domain-whitelisting) — Domain configuration
 - [Rate Limiting](/guides/rate-limiting) — Rate limit configuration
 - [Key Management](/guides/key-management) — API key lifecycle best practices
-- [SSRF Prevention: Image Proxy Design](/architecture/ssrf-prevention) — How the image proxy prevents Server-Side Request Forgery
+- [SSRF Prevention](/architecture/ssrf-prevention) — How the image proxy prevents Server-Side Request Forgery
