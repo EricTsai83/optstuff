@@ -95,7 +95,7 @@ In production, an empty `allowedSourceDomains` list rejects **all** requests (fa
 |-------|-------------|----------|
 | `403` Source domain not allowed | Image origin not in project's allowed sources | Add the domain (with `https://` prefix) in Dashboard → Settings → Domain Security → Image Sources |
 | `403` Invalid referer | Your website not in allowed referer list | Add your domain in Dashboard → Settings → Domain Security → Authorized Websites |
-| `403` on images that previously worked | Domain settings changed or cache propagation delay | Wait ~60s for settings to propagate; verify domains are still listed |
+| `403` on images that formerly worked | Domain settings changed or cache propagation delay | Wait ~60s for settings to propagate; verify domains are still listed |
 | Images work in development but not production | Empty source list allows all in dev, rejects all in prod | Add explicit domains for production |
 
 ### Common Mistakes
