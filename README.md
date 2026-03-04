@@ -80,16 +80,16 @@ pnpm dev
 
 ### Environment Variables
 
-See the [Environment Variables documentation](/self-hosting/environment-variables) for a complete reference.
+See the [Environment Variables documentation](./apps/docs/content/docs/self-hosting/environment-variables.mdx) for a complete reference.
 
 ## Documentation
 
 Full documentation is available in the docs site:
 
-- [Quick Start](/getting-started/quickstart) — Get your first optimized image in 5 minutes
-- [Integration Guide](/getting-started/integration-guide) — Add OptStuff to your application
-- [API Reference](/api-reference/endpoint) — Full endpoint documentation
-- [Self-Hosting](/self-hosting/deployment) — Deploy your own instance
+- [Quick Start](./apps/docs/content/docs/getting-started/quickstart.mdx) — Get your first optimized image in 5 minutes
+- [Integration Guide](./apps/docs/content/docs/getting-started/integration-guide.mdx) — Add OptStuff to your application
+- [API Reference](./apps/docs/content/docs/api-reference/endpoint.mdx) — Full endpoint documentation
+- [Self-Hosting](./apps/docs/content/docs/self-hosting/deployment.mdx) — Deploy your own instance
 
 ## License
 

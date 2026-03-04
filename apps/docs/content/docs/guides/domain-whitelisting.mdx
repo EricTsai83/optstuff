@@ -102,7 +102,7 @@ In production, an empty `allowedSourceDomains` list rejects **all** requests (fa
 
 - **Missing protocol** — Entries must include `https://` (e.g., `https://cdn.example.com`, not `cdn.example.com`)
 - **Trailing slashes** — Do not include trailing slashes (use `https://cdn.example.com`, not `https://cdn.example.com/`)
-- **Port numbers** — Include the port if your origin uses a non-standard port (e.g., `http://localhost:3000`)
+- **Port numbers** — In `allowedRefererDomains`, list only the hostname (for example, use `http://localhost` with host `localhost`, not `http://localhost:3000`) because `validateReferer()` compares `refererUrl.hostname` (ports are ignored). If you need port-specific matching, update `validateReferer()` to compare `refererUrl.host` (or add explicit port-aware logic).
 
 ## Related Documentation
 
