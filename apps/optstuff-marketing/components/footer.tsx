@@ -1,15 +1,39 @@
 import { Logo } from "@workspace/ui/components/logo";
-import { Github } from "lucide-react";
+import { ExternalLink, Github, type LucideIcon } from "lucide-react";
 import Link from "next/link";
 
-const FOOTER_NAVIGATION = {
+type FooterProductItem = {
+  href: string;
+  label: string;
+  external: boolean;
+  showExternalIndicator?: boolean;
+};
+
+type FooterSocialItem = {
+  href: string;
+  label: string;
+  icon: LucideIcon;
+  external: boolean;
+};
+
+type FooterNavigation = {
+  product: FooterProductItem[];
+  social: FooterSocialItem[];
+};
+
+const FOOTER_NAVIGATION: FooterNavigation = {
   product: [
-    { href: "#demo", label: "Demo", external: false },
     { href: "/blog", label: "Blog", external: false },
     {
       href: process.env.NEXT_PUBLIC_DOCS_URL ?? "#",
       label: "Docs",
       external: true,
+    },
+    {
+      href: "https://optstuff-nextjs.vercel.app/",
+      label: "Live Demo",
+      external: true,
+      showExternalIndicator: true,
     },
   ],
   social: [
@@ -20,7 +44,7 @@ const FOOTER_NAVIGATION = {
       external: true,
     },
   ],
-} as const;
+};
 
 export function Footer() {
   return (
@@ -42,8 +66,24 @@ export function Footer() {
                 {...(item.external
                   ? { target: "_blank", rel: "noopener noreferrer" }
                   : {})}
+                aria-label={
+                  item.external
+                    ? `${item.label}（外部連結，另開新分頁）`
+                    : item.label
+                }
               >
-                {item.label}
+                <span className="inline-flex items-center gap-1.5">
+                  <span>{item.label}</span>
+                  {item.showExternalIndicator ? (
+                    <>
+                      <ExternalLink
+                        className="h-3.5 w-3.5 opacity-80"
+                        aria-hidden="true"
+                      />
+                      <span className="sr-only">（外部連結，另開新分頁）</span>
+                    </>
+                  ) : null}
+                </span>
               </a>
             ))}
           </nav>

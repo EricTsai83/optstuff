@@ -18,7 +18,7 @@ import { Button } from "@workspace/ui/components/button";
 import { Logo } from "@workspace/ui/components/logo";
 import { ThemeToggleButton } from "@workspace/ui/components/theme-toggle-button";
 import { cn } from "@workspace/ui/lib/utils";
-import { Github, Menu, X } from "lucide-react";
+import { ExternalLink, Github, Menu, X } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
@@ -26,15 +26,21 @@ type NavigationItem = {
   readonly href: string;
   readonly label: string;
   readonly external: boolean;
+  readonly showExternalIndicator?: boolean;
 };
 
 const NAVIGATION: readonly NavigationItem[] = [
-  { href: "#demo", label: "Demo", external: false },
   { href: "/blog", label: "Blog", external: false },
   {
     href: process.env.NEXT_PUBLIC_DOCS_URL ?? "#",
     label: "Docs",
     external: true,
+  },
+  {
+    href: "https://optstuff-nextjs.vercel.app/",
+    label: "Live Demo",
+    external: true,
+    showExternalIndicator: true,
   },
 ] as const;
 
@@ -99,9 +105,25 @@ export function Header() {
                 {...(item.external
                   ? { target: "_blank", rel: "noopener noreferrer" }
                   : {})}
+                aria-label={
+                  item.external
+                    ? `${item.label} (opens in new tab)`
+                    : item.label
+                }
                 className="text-muted-foreground hover:text-foreground dark:text-foreground after:bg-foreground relative text-sm font-medium transition-colors after:absolute after:bottom-0 after:left-0 after:h-px after:w-0 after:transition-all after:duration-300 hover:after:w-full"
               >
-                {item.label}
+                <span className="inline-flex items-center gap-1">
+                  <span>{item.label}</span>
+                  {item.showExternalIndicator ? (
+                    <>
+                      <ExternalLink
+                        className="h-3.5 w-3.5 opacity-80"
+                        aria-hidden="true"
+                      />
+                      <span className="sr-only">external link</span>
+                    </>
+                  ) : null}
+                </span>
               </Link>
             ))}
           </nav>

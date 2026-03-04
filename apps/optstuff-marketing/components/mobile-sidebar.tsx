@@ -9,7 +9,7 @@ import {
 } from "@workspace/auth/client";
 import { Button } from "@workspace/ui/components/button";
 import { cn } from "@workspace/ui/lib/utils";
-import { Github } from "lucide-react";
+import { ExternalLink, Github } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
@@ -17,6 +17,7 @@ type NavigationItem = {
   readonly href: string;
   readonly label: string;
   readonly external: boolean;
+  readonly showExternalIndicator?: boolean;
 };
 
 type MobileSidebarProps = {
@@ -86,6 +87,11 @@ export function MobileSidebar({
                 {...(item.external
                   ? { target: "_blank", rel: "noopener noreferrer" }
                   : {})}
+                aria-label={
+                  item.external
+                    ? `${item.label} (opens in new tab)`
+                    : item.label
+                }
                 className={cn(
                   "border-border/30 text-foreground hover:text-accent group flex items-center justify-between border-b py-4 text-lg font-medium transition-all",
                   "transform",
@@ -99,7 +105,20 @@ export function MobileSidebar({
                   transitionProperty: "transform, opacity, color",
                 }}
               >
-                <span>{item.label}</span>
+                <span className="inline-flex items-center gap-1.5">
+                  <span>{item.label}</span>
+                  {item.showExternalIndicator ? (
+                    <>
+                      <ExternalLink
+                        className="h-4 w-4 opacity-80"
+                        aria-hidden="true"
+                      />
+                      <span className="sr-only">
+                        Live Demo (opens in new tab)
+                      </span>
+                    </>
+                  ) : null}
+                </span>
                 <span className="text-muted-foreground transition-transform duration-200 group-hover:translate-x-1">
                   →
                 </span>
