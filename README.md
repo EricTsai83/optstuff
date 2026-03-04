@@ -6,7 +6,7 @@ Secure, high-performance image optimization API with signed URLs, domain whiteli
 
 OptStuff is an open-source image optimization service that transforms images on-the-fly via URL parameters. Point your image URLs through the OptStuff API, and it delivers optimized images with the right format, size, and quality — all secured by HMAC-SHA256 signed URLs.
 
-```
+```http
 GET /api/v1/my-blog/w_800,q_80,f_webp/cdn.example.com/photo.jpg?key=pk_...&sig=...
 ```
 
@@ -34,7 +34,7 @@ GET /api/v1/my-blog/w_800,q_80,f_webp/cdn.example.com/photo.jpg?key=pk_...&sig=.
 
 ## Project Structure
 
-```
+```text
 apps/
   optstuff-dashboard/   # Main application (dashboard + image API)
   docs/                 # Documentation site (Fumadocs)

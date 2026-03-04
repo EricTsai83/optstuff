@@ -26,9 +26,9 @@ Every image request triggers one serverless function invocation.
 
 | Item | Value |
 |------|-------|
-| Price | $0.60 per 1M invocations |
-| Free tier (Hobby/Pro) | First 1M/month included |
-| **Per-request cost** | **$0.0000006** |
+| Price | $0.60 per 1M invocations (as of 2026-03-04 — source: [Vercel Pricing](https://vercel.com/pricing)) |
+| Free tier (Hobby/Pro) | First 1M/month included (as of 2026-03-04 — source: [Vercel Pricing](https://vercel.com/pricing)) |
+| **Per-request cost** | **$0.0000006** (derived from Vercel invocation pricing as of 2026-03-04 — source: [Vercel Pricing](https://vercel.com/pricing)) |
 
 ### 2. Vercel Active CPU
 
@@ -36,9 +36,9 @@ Image processing (Sharp/IPX resize, format conversion) is CPU-intensive. Vercel'
 
 | Item | Value |
 |------|-------|
-| Rate (US region) | ~$0.128 per CPU-hour |
+| Rate (US region) | ~$0.128 per CPU-hour (as of 2026-03-04 — source: [Vercel Pricing](https://vercel.com/pricing)) |
 | Typical image transform | 50–200ms CPU time |
-| Estimate at 100ms | $0.128 / 3,600 × 0.1 = **$0.0000036** |
+| Estimate at 100ms | $0.128 / 3,600 × 0.1 = **$0.0000036** (derived from Vercel CPU pricing as of 2026-03-04 — source: [Vercel Pricing](https://vercel.com/pricing)) |
 
 <Callout type="info">
 Simple resizes (e.g., `w_400`) take ~50ms. Heavy operations (large source + format conversion to AVIF) can reach 200ms+. The 100ms estimate is a reasonable midpoint for WebP output.
@@ -50,10 +50,10 @@ Memory is billed for the entire function instance lifetime (including I/O wait),
 
 | Item | Value |
 |------|-------|
-| Rate (US region) | ~$0.0106 per GB-hour |
+| Rate (US region) | ~$0.0106 per GB-hour (as of 2026-03-04 — source: [Vercel Pricing](https://vercel.com/pricing)) |
 | Function memory | ~256MB (0.25 GB) |
 | Instance lifetime | ~300ms (including I/O) |
-| Cost | 0.25 × (0.3 / 3,600) × $0.0106 = **$0.0000002** |
+| Cost | 0.25 × (0.3 / 3,600) × $0.0106 = **$0.0000002** (derived from Vercel memory pricing as of 2026-03-04 — source: [Vercel Pricing](https://vercel.com/pricing)) |
 
 Memory cost is negligible compared to CPU cost.
 
@@ -63,9 +63,9 @@ Each request makes 3–5 Redis commands: config cache lookup, rate limit checks 
 
 | Item | Value |
 |------|-------|
-| Rate | $0.20 per 100K commands |
+| Rate | $0.20 per 100K commands (as of 2026-03-04 — source: [Upstash Redis Pricing](https://upstash.com/pricing/redis)) |
 | Commands per request | ~4 |
-| **Per-request cost** | 4 × $0.000002 = **$0.000008** |
+| **Per-request cost** | 4 × $0.000002 = **$0.000008** (derived from Upstash pricing as of 2026-03-04 — source: [Upstash Redis Pricing](https://upstash.com/pricing/redis)) |
 
 ### 5. Neon PostgreSQL
 
@@ -73,10 +73,10 @@ Most requests hit the Redis config cache (60s TTL). Only cache misses or first r
 
 | Item | Value |
 |------|-------|
-| Rate (Launch plan) | $0.106 per CU-hour |
+| Rate (Launch plan) | $0.106 per CU-hour (as of 2026-03-04 — source: [Neon Pricing](https://neon.tech/pricing)) |
 | DB queries per request | ~0.05 (amortized, most hit cache) |
 | Background write cost | ~0.02 queries amortized (throttled) |
-| **Per-request cost** | **~$0.000001** (amortized) |
+| **Per-request cost** | **~$0.000001** (amortized; derived from Neon pricing as of 2026-03-04 — source: [Neon Pricing](https://neon.tech/pricing)) |
 
 ### 6. Vercel Bandwidth
 
@@ -84,10 +84,10 @@ Optimized images are served as response bytes. This is often the largest variabl
 
 | Item | Value |
 |------|-------|
-| Pro plan included | 1 TB/month |
-| Overage rate | $0.15 per GB |
+| Pro plan included | 1 TB/month (as of 2026-03-04 — source: [Vercel Pricing](https://vercel.com/pricing)) |
+| Overage rate | $0.15 per GB (as of 2026-03-04 — source: [Vercel Pricing](https://vercel.com/pricing)) |
 | Average optimized image | ~80–150 KB |
-| Estimate at 100 KB | $0.15 / 1,000,000 × 100 = **$0.000015** |
+| Estimate at 100 KB | $0.15 / 1,000,000 × 100 = **$0.000015** (derived from Vercel bandwidth pricing as of 2026-03-04 — source: [Vercel Pricing](https://vercel.com/pricing)) |
 
 <Callout type="info">
 With a CDN in front (Cloudflare, CloudFront), most repeat requests are served from CDN cache and never reach Vercel. Actual bandwidth cost depends heavily on your CDN cache hit ratio.
@@ -97,22 +97,22 @@ With a CDN in front (Cloudflare, CloudFront), most repeat requests are served fr
 
 | Component | Cost per Request | % of Total |
 |-----------|-----------------|------------|
-| Vercel CPU | $0.0000036 | 13% |
-| Vercel Bandwidth | $0.0000150 | 55% |
-| Upstash Redis | $0.0000080 | 29% |
-| Neon PostgreSQL | $0.0000010 | 4% |
-| Vercel Invocation | $0.0000006 | 2% |
-| Vercel Memory | $0.0000002 | 1% |
-| **Total** | **~$0.0000274** | 100% |
+| Vercel CPU | $0.0000036 | 12.7% |
+| Vercel Bandwidth | $0.0000150 | 52.8% |
+| Upstash Redis | $0.0000080 | 28.2% |
+| Neon PostgreSQL | $0.0000010 | 3.5% |
+| Vercel Invocation | $0.0000006 | 2.1% |
+| Vercel Memory | $0.0000002 | 0.7% |
+| **Total** | **~$0.0000284** | 100% |
 
 Scaled up:
 
 | Volume | Variable Cost |
 |--------|--------------|
 | 1,000 requests | ~$0.03 |
-| 10,000 requests | ~$0.27 |
-| 100,000 requests | ~$2.74 |
-| 1,000,000 requests | ~$27.40 |
+| 10,000 requests | ~$0.28 |
+| 100,000 requests | ~$2.84 |
+| 1,000,000 requests | ~$28.40 |
 
 ## Monthly Fixed Costs
 
@@ -141,9 +141,9 @@ Monthly Cost = Fixed Costs + (Per-Request Cost × Request Volume)
 
 | Monthly Volume | Free Stack | Full Production Stack |
 |----------------|------------|----------------------|
-| 10,000 | $0 + $0.27 = **$0.27** | $69 + $0.27 = **$69.27** |
-| 100,000 | $0 + $2.74 = **$2.74** | $69 + $2.74 = **$71.74** |
-| 1,000,000 | Over free limits | $69 + $27.40 = **$96.40** |
+| 10,000 | $0 + $0.28 = **$0.28** | $69 + $0.28 = **$69.28** |
+| 100,000 | $0 + $2.84 = **$2.84** | $69 + $2.84 = **$71.84** |
+| 1,000,000 | Over free limits | $69 + $28.40 = **$97.40** |
 
 At 1M requests/month on full production stack, the effective cost per request is ~$0.0001 ($0.10 per 1,000 requests).
 
@@ -194,7 +194,7 @@ Price based on the value you create, not the infrastructure cost you incur.
 
 ## Key Takeaways
 
-1. **Bandwidth is the largest variable cost** (~55% per request) — CDN caching is your best cost optimization lever
+1. **Bandwidth is the largest variable cost** (~53% per request) — CDN caching is your best cost optimization lever
 2. **Fixed costs dominate at low volume** — the free tiers of Vercel/Neon/Upstash/Clerk make it possible to start at $0/month
 3. **Marginal cost is very low** (~$0.03 per 1K requests) — at scale, OptStuff is significantly cheaper than commercial alternatives
 4. **CDN cache hit ratio is the single most impactful cost factor** — a 90% cache hit ratio means only 10% of requests reach your serverless functions

@@ -59,12 +59,12 @@ Wildcard entries use the `*` prefix to match all subdomains:
 
 | Entry | Matches | Does NOT Match |
 |-------|---------|----------------|
-| `https://example.com` | `example.com` and all subdomains | — |
-| `https://*.example.com` | `cdn.example.com`, `img.example.com`, `example.com` | `other-site.com` |
+| `https://example.com` | `example.com` and all subdomains (**Image Sources only**) | Subdomain matching in **Authorized Websites** |
+| `https://*.example.com` | `cdn.example.com`, `img.example.com`, `example.com` (**required for subdomain matching in Authorized Websites**) | `other-site.com` |
 | `https://cdn.example.com` | `cdn.example.com` only | `img.example.com` |
 
 <Callout type="info">
-For **Image Sources**, adding `https://example.com` automatically includes all subdomains. For **Authorized Websites**, use `https://*.example.com` explicitly when you need subdomain matching.
+Wildcard semantics differ by scope: for **Image Sources**, `https://example.com` includes subdomains automatically (for example, it allows `https://cdn.example.com/photo.jpg`); for **Authorized Websites**, subdomains are not implied, so use `https://*.example.com` when you need to allow referers like `https://app.example.com/page` (while `https://example.com` alone only matches that exact host).
 </Callout>
 
 ## Practical Example
