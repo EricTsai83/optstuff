@@ -161,13 +161,13 @@ From the analysis above, the marginal cost per request is ~$0.00003. But the rea
 
 ### Step 2: Compare with Alternatives
 
-| Service | Cost per 1K Optimizations |
-|---------|--------------------------|
-| **Cloudinary** (free tier) | $0 (up to 25K/mo), then ~$0.45 per 1K |
-| **imgix** | ~$3.00 per 1K (rendering) |
-| **Vercel Image Optimization** | ~$5.00 per 1K (at $5/1K source images) |
-| **OptStuff (self-hosted, 100K/mo)** | ~$0.72 per 1K |
-| **OptStuff (self-hosted, 1M/mo)** | ~$0.10 per 1K |
+| Service | Cost per 1K Optimizations | Source (as of 2026-03-XX) |
+|---------|----------------------------|----------------------------|
+| **Cloudinary** | Credit-based tiers: Free 25 credits/mo, Plus 225 credits/mo, Advanced 600 credits/mo (usage is credit-based, not fixed per-1K). | [https://cloudinary.com/pricing](https://cloudinary.com/pricing) |
+| **imgix** | Credit bundles: tiered ~$0.14-$0.25 per credit, with ~1-2 credits per GB depending on operation. | [https://www.imgix.com/pricing](https://www.imgix.com/pricing) |
+| **Vercel Image Optimization** | Usage-based: ~$0.05-$0.0812 per 1K transformations, plus cache read ~$0.40-$0.64 per 1M and cache write ~$4.00-$6.40 per 1M. | [https://vercel.com/docs/image-optimization/limits-and-pricing](https://vercel.com/docs/image-optimization/limits-and-pricing) |
+| **OptStuff (self-hosted, 100K/mo)** | ~$0.72 per 1K | Derived from this page |
+| **OptStuff (self-hosted, 1M/mo)** | ~$0.10 per 1K | Derived from this page |
 
 Self-hosted OptStuff becomes very cost-competitive at scale because the per-request marginal cost is low and there are no per-optimization fees.
 

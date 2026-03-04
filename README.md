@@ -80,16 +80,16 @@ pnpm dev
 
 ### Environment Variables
 
-See the [Environment Variables documentation](https://docs-optstuff.vercel.app/self-hosting/environment-variables) for a complete reference.
+See the [Environment Variables documentation](/self-hosting/environment-variables) for a complete reference.
 
 ## Documentation
 
-Full documentation is available at [docs-optstuff.vercel.app](https://docs-optstuff.vercel.app):
+Full documentation is available in the docs site:
 
-- [Quick Start](https://docs-optstuff.vercel.app/getting-started/quickstart) — Get your first optimized image in 5 minutes
-- [Integration Guide](https://docs-optstuff.vercel.app/getting-started/integration-guide) — Add OptStuff to your application
-- [API Reference](https://docs-optstuff.vercel.app/api-reference/endpoint) — Full endpoint documentation
-- [Self-Hosting](https://docs-optstuff.vercel.app/self-hosting/deployment) — Deploy your own instance
+- [Quick Start](/getting-started/quickstart) — Get your first optimized image in 5 minutes
+- [Integration Guide](/getting-started/integration-guide) — Add OptStuff to your application
+- [API Reference](/api-reference/endpoint) — Full endpoint documentation
+- [Self-Hosting](/self-hosting/deployment) — Deploy your own instance
 
 ## License
 

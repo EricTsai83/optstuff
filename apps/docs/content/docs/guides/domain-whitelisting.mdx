@@ -51,7 +51,7 @@ Both layers are configured in the project's **Settings** tab under **Domain Secu
 | Empty (default) | All referers allowed |
 | Non-empty | Only listed domains allowed |
 
-> **Note:** When the list is non-empty, only requests with a `Referer` header that matches a listed domain are allowed. Requests **without** a `Referer` header (e.g., server-to-server calls, privacy-stripping browser policies) are always allowed — the signed URL already authenticates the request, and an absent referer does not indicate hotlinking. See [Referer Security Model](/guides/referer-security-model) for why.
+> **Note:** `allowedRefererDomains` is a best-effort browser-side signal enforced by `validateReferer()` for hotlinking protection, not a strong authentication guarantee. When `allowedRefererDomains` is non-empty, `validateReferer()` blocks requests only when a `Referer` is present and not allowed; requests **without** a `Referer` (for example, server-to-server calls or privacy-stripping browser policies) are intentionally allowed. For strict caller validation, use short-lived signed URLs. See [Referer Security Model](/guides/referer-security-model) for details.
 
 ## Wildcard Syntax
 
