@@ -57,7 +57,17 @@ export async function revokeExpiredApiKeys(now = new Date()): Promise<{
     .set({ revokedAt: now })
     .where(inArray(apiKeys.id, expiredIds));
 
-  await Promise.all(affectedProjectIds.map(syncProjectApiKeyCount));
+  const syncResults = await Promise.allSettled(
+    affectedProjectIds.map((projectId) => syncProjectApiKeyCount(projectId)),
+  );
+  for (const [index, result] of syncResults.entries()) {
+    if (result.status === "rejected") {
+      console.error(
+        `[DailyMaintenance] Failed to sync API key count for project ${affectedProjectIds[index]}:`,
+        result.reason,
+      );
+    }
+  }
 
   await Promise.allSettled(
     expired.map((key) => invalidateApiKeyCache(key.publicKey)),
@@ -80,7 +90,7 @@ export async function revokeExpiredApiKeys(now = new Date()): Promise<{
 export async function runDailyMaintenance(): Promise<{
   ok: boolean;
   durationMs: number;
-  requestLogCleanup: { ok: boolean; error?: string };
+  requestLogCleanup: { ok: boolean; deletedCount?: number; error?: string };
   expiredApiKeySweep: {
     ok: boolean;
     expiredKeys?: number;
@@ -97,7 +107,7 @@ export async function runDailyMaintenance(): Promise<{
 
   const requestLogCleanup =
     cleanupResult.status === "fulfilled"
-      ? { ok: true }
+      ? { ok: true, deletedCount: cleanupResult.value }
       : { ok: false, error: String(cleanupResult.reason) };
 
   const expiredApiKeySweep =

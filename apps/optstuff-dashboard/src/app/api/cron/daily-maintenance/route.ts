@@ -18,11 +18,11 @@ type CronAuthResult =
  * @returns Authorization result with either success, unauthorized, or misconfigured status.
  */
 function authorizeCronRequest(request: Request): CronAuthResult {
-  const configuredSecret = env.CRON_SECRET ?? process.env.CRON_SECRET;
+  const configuredSecret = env.CRON_SECRET;
 
   // Allow local manual calls when developing without a cron secret.
   if (!configuredSecret) {
-    if (process.env.NODE_ENV === "production") {
+    if (env.NODE_ENV === "production") {
       return { ok: false, reason: "misconfigured" };
     }
     return { ok: true };

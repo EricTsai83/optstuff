@@ -25,11 +25,16 @@ const RETENTION_DAYS = 30;
  */
 export async function cleanupOldRequestLogs(
   retentionDays = RETENTION_DAYS,
-): Promise<void> {
+): Promise<number> {
   const cutoffDate = new Date();
   cutoffDate.setDate(cutoffDate.getDate() - retentionDays);
 
-  await db.delete(requestLogs).where(lt(requestLogs.createdAt, cutoffDate));
+  const deletedRows = await db
+    .delete(requestLogs)
+    .where(lt(requestLogs.createdAt, cutoffDate))
+    .returning({ id: requestLogs.id });
+
+  return deletedRows.length;
 }
 
 /**

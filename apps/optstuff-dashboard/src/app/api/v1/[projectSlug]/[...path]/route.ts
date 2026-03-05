@@ -46,13 +46,7 @@ const DEFAULT_SUCCESS_LOG_SAMPLE_RATE =
   env.NODE_ENV === "production" ? 0.2 : 1;
 
 function resolveSuccessLogSampleRate(): number {
-  const rawRate = process.env.REQUEST_LOG_SUCCESS_SAMPLE_RATE;
-  if (!rawRate) return DEFAULT_SUCCESS_LOG_SAMPLE_RATE;
-
-  const parsedRate = Number.parseFloat(rawRate);
-  if (!Number.isFinite(parsedRate)) return DEFAULT_SUCCESS_LOG_SAMPLE_RATE;
-
-  return Math.min(1, Math.max(0, parsedRate));
+  return env.REQUEST_LOG_SUCCESS_SAMPLE_RATE ?? DEFAULT_SUCCESS_LOG_SAMPLE_RATE;
 }
 
 const SUCCESS_LOG_SAMPLE_RATE = resolveSuccessLogSampleRate();
