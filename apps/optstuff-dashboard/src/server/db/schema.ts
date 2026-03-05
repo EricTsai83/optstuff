@@ -245,3 +245,32 @@ export const requestLogsRelations = relations(requestLogs, ({ one }) => ({
     references: [projects.id],
   }),
 }));
+
+// ============================================================================
+// Maintenance Retry Tasks
+// ============================================================================
+
+/**
+ * Durable retry queue for cron maintenance side effects.
+ *
+ * We only enqueue best-effort tasks here. Core state transitions (for example,
+ * setting api_key.revokedAt) are applied in their own write path first.
+ */
+export const maintenanceRetryTasks = pgTable(
+  "maintenance_retry_task",
+  (d) => ({
+    id: d.uuid().primaryKey().defaultRandom(),
+    taskType: d.varchar({ length: 64 }).notNull(),
+    taskKey: d.varchar({ length: 255 }).notNull(),
+    attempts: d.integer().default(0).notNull(),
+    maxAttempts: d.integer().default(5).notNull(),
+    nextRunAt: d.timestamp({ withTimezone: true }).defaultNow().notNull(),
+    lastError: d.text(),
+    createdAt: d.timestamp({ withTimezone: true }).defaultNow().notNull(),
+    updatedAt: d.timestamp({ withTimezone: true }).$onUpdate(() => new Date()),
+  }),
+  (t) => [
+    unique("maintenance_retry_task_type_key_unique").on(t.taskType, t.taskKey),
+    index("maintenance_retry_task_next_run_idx").on(t.nextRunAt),
+  ],
+);

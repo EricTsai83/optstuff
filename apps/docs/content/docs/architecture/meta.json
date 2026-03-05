@@ -2,6 +2,7 @@
   "pages": [
     "overview",
     "request-lifecycle",
+    "daily-maintenance-cron",
     "control-plane-and-tenancy",
     "redis-schema",
     "user-onboarding-flow",
