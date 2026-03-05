@@ -30,7 +30,7 @@ flowchart TD
   A["Cron trigger"] --> B["Authorize request"]
   B -->|OK| C["runDailyMaintenance()"]
   C --> D["Process retry queue first"]
-  C --> E["Run in parallel:<br/>1) cleanupOldRequestLogs<br/>2) revokeExpiredApiKeys"]
+  D --> E["Then run in parallel:<br/>1) cleanupOldRequestLogs<br/>2) revokeExpiredApiKeys"]
   E --> F["Aggregate job results"]
   F --> G["Return JSON status"]
 ```

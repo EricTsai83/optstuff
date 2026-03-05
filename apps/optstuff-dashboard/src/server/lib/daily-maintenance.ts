@@ -138,7 +138,7 @@ async function processMaintenanceRetryTasks(now = new Date()): Promise<{
     .from(maintenanceRetryTasks)
     .where(
       and(
-        lte(maintenanceRetryTasks.nextRunAt, new Date()),
+        lte(maintenanceRetryTasks.nextRunAt, now),
         lt(maintenanceRetryTasks.attempts, maintenanceRetryTasks.maxAttempts),
       ),
     );
@@ -217,12 +217,19 @@ export async function revokeExpiredApiKeys(now = new Date()): Promise<{
         `[DailyMaintenance] Failed to sync API key count for project ${projectId}:`,
         result.reason,
       );
-      await enqueueMaintenanceRetryTask(
-        RETRY_TASK_SYNC_PROJECT_API_KEY_COUNT,
-        projectId,
-        result.reason,
-      );
-      queuedRetryTasks += 1;
+      try {
+        await enqueueMaintenanceRetryTask(
+          RETRY_TASK_SYNC_PROJECT_API_KEY_COUNT,
+          projectId,
+          result.reason,
+        );
+        queuedRetryTasks += 1;
+      } catch (err) {
+        console.warn(
+          "[DailyMaintenance] Failed to enqueue retry task for API key count sync",
+          { err, projectId },
+        );
+      }
     }
   }
 
@@ -231,19 +238,28 @@ export async function revokeExpiredApiKeys(now = new Date()): Promise<{
   );
   for (const [index, result] of cacheInvalidationResults.entries()) {
     if (result.status === "rejected") {
-      const publicKey = expired[index]?.publicKey;
+      const expiredKey = expired[index];
+      const publicKey = expiredKey?.publicKey;
+      const projectId = expiredKey?.projectId;
       console.error(
         `[DailyMaintenance] Failed to invalidate API key cache for public key ${publicKey}:`,
         result.reason,
       );
 
       if (publicKey) {
-        await enqueueMaintenanceRetryTask(
-          RETRY_TASK_INVALIDATE_API_KEY_CACHE,
-          publicKey,
-          result.reason,
-        );
-        queuedRetryTasks += 1;
+        try {
+          await enqueueMaintenanceRetryTask(
+            RETRY_TASK_INVALIDATE_API_KEY_CACHE,
+            publicKey,
+            result.reason,
+          );
+          queuedRetryTasks += 1;
+        } catch (err) {
+          console.warn(
+            "[DailyMaintenance] Failed to enqueue retry task for API key cache invalidation",
+            { err, projectId },
+          );
+        }
       }
     }
   }
@@ -286,24 +302,35 @@ export async function runDailyMaintenance(): Promise<{
   };
 }> {
   const startedAt = Date.now();
-  const retryResult = await Promise.allSettled([processMaintenanceRetryTasks()]);
+  let retryQueue:
+    | {
+        ok: true;
+        processed: number;
+        succeeded: number;
+        failed: number;
+        exhausted: number;
+        remaining: number;
+      }
+    | { ok: false; error: string };
+
+  try {
+    const retryResult = await processMaintenanceRetryTasks();
+    retryQueue = {
+      ok: true,
+      processed: retryResult.processed,
+      succeeded: retryResult.succeeded,
+      failed: retryResult.failed,
+      exhausted: retryResult.exhausted,
+      remaining: retryResult.remaining,
+    };
+  } catch (error) {
+    retryQueue = { ok: false, error: String(error) };
+  }
 
   const [cleanupResult, sweepResult] = await Promise.allSettled([
     cleanupOldRequestLogs(),
     revokeExpiredApiKeys(),
   ]);
-
-  const retryQueue =
-    retryResult[0]?.status === "fulfilled"
-      ? {
-          ok: true,
-          processed: retryResult[0].value.processed,
-          succeeded: retryResult[0].value.succeeded,
-          failed: retryResult[0].value.failed,
-          exhausted: retryResult[0].value.exhausted,
-          remaining: retryResult[0].value.remaining,
-        }
-      : { ok: false, error: String(retryResult[0]?.reason) };
 
   const requestLogCleanup =
     cleanupResult.status === "fulfilled"
