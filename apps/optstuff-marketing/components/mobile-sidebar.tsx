@@ -224,7 +224,7 @@ export function MobileSidebar({
                   : {})}
                 aria-label={getExternalLinkAriaLabel(item.label, item.external)}
                 className={cn(
-                  "border-border/30 text-foreground hover:text-accent focus-visible:ring-ring focus-visible:ring-offset-background group flex items-center justify-between rounded-sm border-b py-4 text-lg font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2",
+                  "border-border/30 text-foreground hover:text-accent group flex items-center justify-between rounded-sm border-b py-4 text-lg font-medium focus-visible:outline-none",
                   prefersReducedMotion ? "transition-none" : "transition-all",
                   "transform",
                   shouldAnimate
