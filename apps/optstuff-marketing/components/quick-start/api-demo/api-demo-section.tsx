@@ -2,7 +2,7 @@
 
 import { cn } from "@workspace/ui/lib/utils";
 import { Check, Copy } from "lucide-react";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { CODE_EXAMPLES } from "../constants";
 import type { CodeTab } from "../types";
 import { TypewriterCode } from "./typewriter-code";
@@ -25,12 +25,31 @@ export function ApiDemoSection() {
     js: null,
     response: null,
   });
+  const copyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (copyTimeoutRef.current !== null) {
+        clearTimeout(copyTimeoutRef.current);
+      }
+      if (typingTimeoutRef.current !== null) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const handleCopy = async (): Promise<void> => {
     try {
       await navigator.clipboard.writeText(CODE_EXAMPLES[activeTab]);
       setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      if (copyTimeoutRef.current !== null) {
+        clearTimeout(copyTimeoutRef.current);
+      }
+      copyTimeoutRef.current = setTimeout(() => {
+        setCopied(false);
+        copyTimeoutRef.current = null;
+      }, 2000);
     } catch (error) {
       console.error("Failed to copy to clipboard:", error);
     }
@@ -39,7 +58,13 @@ export function ApiDemoSection() {
   const handleTabChange = (tab: CodeTab): void => {
     setActiveTab(tab);
     setIsTyping(true);
-    setTimeout(() => setIsTyping(false), 50);
+    if (typingTimeoutRef.current !== null) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+    typingTimeoutRef.current = setTimeout(() => {
+      setIsTyping(false);
+      typingTimeoutRef.current = null;
+    }, 50);
   };
 
   const handleTabKeyDown = (event: React.KeyboardEvent<HTMLButtonElement>): void => {
@@ -73,9 +98,6 @@ export function ApiDemoSection() {
       tabRefs.current[nextTab]?.focus();
     });
   };
-
-  const activeTabId = `api-demo-tab-${activeTab}`;
-  const activePanelId = `api-demo-panel-${activeTab}`;
 
   return (
     <div className="border-border/50 bg-card/30 overflow-hidden rounded-xl border backdrop-blur-sm sm:rounded-2xl">
@@ -122,18 +144,27 @@ export function ApiDemoSection() {
       </div>
 
       {/* Code Block */}
-      <div
-        id={activePanelId}
-        role="tabpanel"
-        aria-labelledby={activeTabId}
-        tabIndex={0}
-        className="relative"
-      >
-        <TypewriterCode
-          code={CODE_EXAMPLES[activeTab]}
-          isTyping={isTyping}
-          isResponse={activeTab === "response"}
-        />
+      <div className="relative">
+        {API_DEMO_TABS.map((tab) => {
+          const isActive = activeTab === tab;
+          return (
+            <div
+              key={tab}
+              id={`api-demo-panel-${tab}`}
+              role="tabpanel"
+              aria-labelledby={`api-demo-tab-${tab}`}
+              aria-hidden={!isActive}
+              hidden={!isActive}
+              tabIndex={isActive ? 0 : -1}
+            >
+              <TypewriterCode
+                code={CODE_EXAMPLES[tab]}
+                isTyping={isActive ? isTyping : false}
+                isResponse={tab === "response"}
+              />
+            </div>
+          );
+        })}
 
         {/* Copy Button */}
         <button

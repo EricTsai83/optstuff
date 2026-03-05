@@ -66,27 +66,31 @@ export function Footer() {
             className="text-muted-foreground dark:text-foreground flex flex-wrap items-center justify-center gap-x-6 gap-y-3 text-sm sm:gap-x-8"
             aria-label="Footer navigation"
           >
-            {FOOTER_NAVIGATION.product.map((item) => (
-              <a
-                key={item.href}
-                href={item.href}
-                className="hover:text-foreground after:bg-foreground focus-visible:ring-ring focus-visible:ring-offset-background relative rounded-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 after:absolute after:bottom-0 after:left-0 after:h-px after:w-0 after:transition-all after:duration-300 hover:after:w-full"
-                {...(item.external
-                  ? { target: "_blank", rel: "noopener noreferrer" }
-                  : {})}
-                aria-label={getExternalLinkAriaLabel(item.label, item.external)}
-              >
-                <span className="inline-flex items-center gap-1.5">
-                  <span>{item.label}</span>
-                  {item.showExternalIndicator ? (
-                    <ExternalLink
-                      className="h-3.5 w-3.5 opacity-80"
-                      aria-hidden="true"
-                    />
-                  ) : null}
-                </span>
-              </a>
-            ))}
+            {FOOTER_NAVIGATION.product.map((item) => {
+              const shouldShowExternalIndicator =
+                item.showExternalIndicator ?? item.external;
+              return (
+                <a
+                  key={item.href}
+                  href={item.href}
+                  className="hover:text-foreground after:bg-foreground focus-visible:ring-ring focus-visible:ring-offset-background relative rounded-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 after:absolute after:bottom-0 after:left-0 after:h-px after:w-0 after:transition-all after:duration-300 hover:after:w-full"
+                  {...(item.external
+                    ? { target: "_blank", rel: "noopener noreferrer" }
+                    : {})}
+                  aria-label={getExternalLinkAriaLabel(item.label, item.external)}
+                >
+                  <span className="inline-flex items-center gap-1.5">
+                    <span>{item.label}</span>
+                    {shouldShowExternalIndicator ? (
+                      <ExternalLink
+                        className="h-3.5 w-3.5 opacity-80"
+                        aria-hidden="true"
+                      />
+                    ) : null}
+                  </span>
+                </a>
+              );
+            })}
           </nav>
 
           {/* Social links */}

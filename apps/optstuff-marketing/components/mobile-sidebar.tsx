@@ -79,22 +79,25 @@ export function MobileSidebar({
 
   // Prevent body scroll when sidebar is open
   useEffect(() => {
+    let timer: ReturnType<typeof setTimeout> | null = null;
+
     if (isOpen) {
       document.body.style.overflow = "hidden";
       if (prefersReducedMotion) {
         setShouldAnimate(true);
-        return () => {
-          document.body.style.overflow = "";
-        };
+      } else {
+        // Small delay to ensure CSS transition starts properly
+        timer = setTimeout(() => setShouldAnimate(true), 50);
       }
-      // Small delay to ensure CSS transition starts properly
-      const timer = setTimeout(() => setShouldAnimate(true), 50);
-      return () => clearTimeout(timer);
     } else {
       document.body.style.overflow = "";
       setShouldAnimate(false);
     }
+
     return () => {
+      if (timer !== null) {
+        clearTimeout(timer);
+      }
       document.body.style.overflow = "";
     };
   }, [isOpen, prefersReducedMotion]);
