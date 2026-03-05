@@ -15,6 +15,10 @@ export const env = createEnv({
     // Upstash Redis for rate limiting
     UPSTASH_REDIS_REST_URL: z.string().url(),
     UPSTASH_REDIS_REST_TOKEN: z.string().min(1),
+    // Shared secret for Vercel cron route authentication
+    CRON_SECRET: z.string().min(1).optional(),
+    // Success request log sampling rate (0.0 ~ 1.0). Errors are always logged.
+    REQUEST_LOG_SUCCESS_SAMPLE_RATE: z.coerce.number().min(0).max(1).optional(),
   },
 
   /**
@@ -39,6 +43,9 @@ export const env = createEnv({
     API_KEY_ENCRYPTION_SECRET: process.env.API_KEY_ENCRYPTION_SECRET,
     UPSTASH_REDIS_REST_URL: process.env.UPSTASH_REDIS_REST_URL,
     UPSTASH_REDIS_REST_TOKEN: process.env.UPSTASH_REDIS_REST_TOKEN,
+    CRON_SECRET: process.env.CRON_SECRET,
+    REQUEST_LOG_SUCCESS_SAMPLE_RATE:
+      process.env.REQUEST_LOG_SUCCESS_SAMPLE_RATE,
   },
   /**
    * Run `build` or `dev` with `SKIP_ENV_VALIDATION` to skip env validation. This is especially
@@ -51,3 +58,9 @@ export const env = createEnv({
    */
   emptyStringAsUndefined: true,
 });
+
+if (env.NODE_ENV === "production" && !env.CRON_SECRET) {
+  console.warn(
+    "[Env] CRON_SECRET is required in production. Scheduled cron routes will fail until it is configured.",
+  );
+}

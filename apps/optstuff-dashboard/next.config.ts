@@ -3,7 +3,7 @@
  * for Docker builds.
  */
 import { withMicrofrontends } from "@vercel/microfrontends/next/config";
-import "./src/env.js";
+import "./src/env.ts";
 
 import type { NextConfig } from "next";
 const nextConfig: NextConfig = {

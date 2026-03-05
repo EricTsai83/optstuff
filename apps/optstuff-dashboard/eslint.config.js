@@ -7,9 +7,6 @@ import tseslint from "typescript-eslint";
 export default defineConfig(
   ...nextJsConfig,
   {
-    ignores: [".next"],
-  },
-  {
     files: ["**/*.ts", "**/*.tsx"],
     plugins: {
       drizzle,

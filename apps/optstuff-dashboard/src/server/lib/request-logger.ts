@@ -20,16 +20,17 @@ export type RequestLogData = {
 const RETENTION_DAYS = 30;
 
 /**
- * Probability of triggering cleanup on each request (1% = 0.01)
- * This distributes cleanup work across requests instead of needing a cron job
+ * Delete request logs older than retention window.
+ * Intended to run from a scheduled cron route.
  */
-const CLEANUP_PROBABILITY = 0.01;
-/**
- * Minimum interval between cleanup attempts in this process.
- * Prevents burst traffic from repeatedly running heavy delete queries.
- */
-const CLEANUP_MIN_INTERVAL_MS = 5 * 60 * 1000;
-let lastCleanupAttemptAt = 0;
+export async function cleanupOldRequestLogs(
+  retentionDays = RETENTION_DAYS,
+): Promise<void> {
+  const cutoffDate = new Date();
+  cutoffDate.setDate(cutoffDate.getDate() - retentionDays);
+
+  await db.delete(requestLogs).where(lt(requestLogs.createdAt, cutoffDate));
+}
 
 /**
  * Sanitize URL by removing query string and hash.
@@ -55,34 +56,6 @@ export function sanitizeUrl(url: string) {
 }
 
 /**
- * Probabilistic cleanup - runs cleanup with a small probability on each call.
- * This distributes the cleanup work across requests.
- */
-async function maybeCleanupOldLogs() {
-  const now = Date.now();
-  if (now - lastCleanupAttemptAt < CLEANUP_MIN_INTERVAL_MS) {
-    return;
-  }
-
-  // Only run cleanup ~1% of the time
-  if (Math.random() > CLEANUP_PROBABILITY) {
-    return;
-  }
-
-  lastCleanupAttemptAt = now;
-
-  try {
-    const cutoffDate = new Date();
-    cutoffDate.setDate(cutoffDate.getDate() - RETENTION_DAYS);
-
-    await db.delete(requestLogs).where(lt(requestLogs.createdAt, cutoffDate));
-  } catch (error) {
-    // Silently ignore cleanup errors - don't affect the main request
-    console.error("[RequestLog Cleanup] Failed:", error);
-  }
-}
-
-/**
  * Log a request to the database
  * This is fire-and-forget - we don't wait for the result
  *
@@ -101,11 +74,6 @@ export async function logRequest(projectId: string, data: RequestLogData) {
       processingTimeMs: data.processingTimeMs ?? null,
       originalSize: data.originalSize ?? null,
       optimizedSize: data.optimizedSize ?? null,
-    });
-
-    // Probabilistically cleanup old logs (fire-and-forget, ~1% of requests)
-    maybeCleanupOldLogs().catch(() => {
-      // Ignore cleanup errors
     });
   } catch (error) {
     // Log error but don't throw - we don't want to fail the image request

@@ -7,6 +7,7 @@ import {
   parseOperationsString,
   resolveContentType,
 } from "@/lib/ipx-utils";
+import { env } from "@/env";
 import { verifyUrlSignature } from "@/server/lib/api-key";
 import {
   getApiKeyConfig,
@@ -41,6 +42,20 @@ const PASSTHROUGH_STATUS_CODES = new Set([404, 410]);
 const CACHE_CONTROL_HEADER =
   "public, s-maxage=31536000, max-age=31536000, immutable";
 const ORIGINAL_SIZE_SAMPLE_RATE = 0.1;
+const DEFAULT_SUCCESS_LOG_SAMPLE_RATE =
+  env.NODE_ENV === "production" ? 0.2 : 1;
+
+function resolveSuccessLogSampleRate(): number {
+  const rawRate = process.env.REQUEST_LOG_SUCCESS_SAMPLE_RATE;
+  if (!rawRate) return DEFAULT_SUCCESS_LOG_SAMPLE_RATE;
+
+  const parsedRate = Number.parseFloat(rawRate);
+  if (!Number.isFinite(parsedRate)) return DEFAULT_SUCCESS_LOG_SAMPLE_RATE;
+
+  return Math.min(1, Math.max(0, parsedRate));
+}
+
+const SUCCESS_LOG_SAMPLE_RATE = resolveSuccessLogSampleRate();
 
 function mapUpstreamErrorStatus(error: unknown): number {
   const raw =
@@ -139,6 +154,12 @@ function buildServerTimingHeader(
 
 function shouldSampleOriginalSize(): boolean {
   return Math.random() < ORIGINAL_SIZE_SAMPLE_RATE;
+}
+
+function shouldLogSuccessfulRequest(): boolean {
+  return (
+    SUCCESS_LOG_SAMPLE_RATE >= 1 || Math.random() < SUCCESS_LOG_SAMPLE_RATE
+  );
 }
 
 type UpstreamProbeResult =
@@ -471,6 +492,8 @@ export async function GET(
     const transformTimeMs = Date.now() - transformStartTime;
     const processingTimeMs = Date.now() - startTime;
     const sampleOriginalSize = shouldSampleOriginalSize();
+    const logSuccessfulRequest = shouldLogSuccessfulRequest();
+    const shouldProbeOriginalSize = sampleOriginalSize && logSuccessfulRequest;
 
     // 10/11. Schedule usage tracking + logging after response is sent.
     // Sampling avoids sending an upstream HEAD for every successful request.
@@ -478,7 +501,7 @@ export async function GET(
       updateUsageInBackground(apiKey.id, project.id);
 
       let originalSize: number | undefined;
-      if (sampleOriginalSize) {
+      if (shouldProbeOriginalSize) {
         try {
           const headResponse = await fetch(imageUrl, {
             method: "HEAD",
@@ -494,15 +517,17 @@ export async function GET(
         }
       }
 
-      await logRequestAwait(project.id, {
-        sourceUrl: imageUrl,
-        status: "success",
-        processingTimeMs,
-        originalSize,
-        optimizedSize: imageData.length,
-      }).catch(() => {
-        // Ignore logging errors
-      });
+      if (logSuccessfulRequest) {
+        await logRequestAwait(project.id, {
+          sourceUrl: imageUrl,
+          status: "success",
+          processingTimeMs,
+          originalSize,
+          optimizedSize: imageData.length,
+        }).catch(() => {
+          // Ignore logging errors
+        });
+      }
     });
 
     const varyHeader = buildVaryHeader(project.allowedRefererDomains);
@@ -515,7 +540,7 @@ export async function GET(
         "Cache-Control": CACHE_CONTROL_HEADER,
         Vary: varyHeader,
         "X-Processing-Time": `${processingTimeMs}ms`,
-        "X-Original-Size-Sampled": sampleOriginalSize ? "1" : "0",
+        "X-Original-Size-Sampled": shouldProbeOriginalSize ? "1" : "0",
         "X-Head-Fast-Path": "0",
         "Server-Timing": buildServerTimingHeader(
           authTimeMs,
