@@ -110,12 +110,14 @@ export function SlidingTabs<TValue extends string>({
     defaultValue ?? firstValue,
   );
   const activeValue = controlledValue ?? internalValue ?? firstValue;
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
 
   // -- Indicator --
   const listRef = useRef<HTMLDivElement | null>(null);
   const triggerRefs = useRef<Map<TValue, HTMLButtonElement | null>>(new Map());
   const rafRef = useRef<number | null>(null);
   const prevTabRef = useRef<TValue | undefined>(activeValue);
+  const prevActiveValueRef = useRef<TValue | undefined>(activeValue);
   const squashRafRef = useRef<number | null>(null);
   const [indicator, setIndicator] = useState<IndicatorPosition>({
     x: 0,
@@ -156,12 +158,14 @@ export function SlidingTabs<TValue extends string>({
       if (squashRafRef.current !== null)
         cancelAnimationFrame(squashRafRef.current);
       setIsSquashing(false);
-      squashRafRef.current = requestAnimationFrame(() => {
+      if (!prefersReducedMotion) {
         squashRafRef.current = requestAnimationFrame(() => {
-          squashRafRef.current = null;
-          setIsSquashing(true);
+          squashRafRef.current = requestAnimationFrame(() => {
+            squashRafRef.current = null;
+            setIsSquashing(true);
+          });
         });
-      });
+      }
     }
 
     setIndicator((prev) => {
@@ -173,7 +177,7 @@ export function SlidingTabs<TValue extends string>({
         return prev;
       return { x, width: w, ready: w > 0 };
     });
-  }, [activeValue]);
+  }, [activeValue, prefersReducedMotion]);
 
   const scheduleMeasure = useCallback((): void => {
     if (rafRef.current !== null) return;
@@ -206,6 +210,15 @@ export function SlidingTabs<TValue extends string>({
       const direction: SlideDirection =
         curIdx === -1 || nxtIdx === -1 || nxtIdx > curIdx ? "left" : "right";
 
+      if (prefersReducedMotion) {
+        setAnimation({
+          displayedTab: toValue as string,
+          phase: "idle",
+          direction,
+        });
+        return;
+      }
+
       setAnimation({
         displayedTab: fromValue as string,
         phase: "exiting",
@@ -225,7 +238,13 @@ export function SlidingTabs<TValue extends string>({
       }, animationDuration.exit);
       timersRef.current.push(exitTimer);
     },
-    [animationDuration.enter, animationDuration.exit, clearTimers, items],
+    [
+      animationDuration.enter,
+      animationDuration.exit,
+      clearTimers,
+      items,
+      prefersReducedMotion,
+    ],
   );
 
   const handleValueChange = useCallback(
@@ -233,17 +252,13 @@ export function SlidingTabs<TValue extends string>({
       const nextValue = next as TValue;
       if (nextValue === activeValue) return;
 
-      if (controlledValue === undefined) setInternalValue(nextValue);
+      if (controlledValue === undefined) {
+        setInternalValue(nextValue);
+      }
       onValueChange?.(nextValue);
-      if (!activeValue) return;
-      runContentTransition(activeValue, nextValue);
+      if (controlledValue !== undefined) return;
     },
-    [
-      activeValue,
-      controlledValue,
-      onValueChange,
-      runContentTransition,
-    ],
+    [activeValue, controlledValue, onValueChange],
   );
 
   // -- Effects --
@@ -264,6 +279,65 @@ export function SlidingTabs<TValue extends string>({
   }, [scheduleMeasure]);
 
   useEffect(() => {
+    if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
+      return;
+    }
+    const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const updatePreference = () => {
+      setPrefersReducedMotion(mediaQuery.matches);
+    };
+
+    updatePreference();
+    if (typeof mediaQuery.addEventListener === "function") {
+      mediaQuery.addEventListener("change", updatePreference);
+      return () => mediaQuery.removeEventListener("change", updatePreference);
+    }
+
+    mediaQuery.addListener(updatePreference);
+    return () => mediaQuery.removeListener(updatePreference);
+  }, []);
+
+  useEffect(() => {
+    if (!prefersReducedMotion) return;
+
+    clearTimers();
+    if (squashRafRef.current !== null) {
+      cancelAnimationFrame(squashRafRef.current);
+      squashRafRef.current = null;
+    }
+    setIsSquashing(false);
+
+    if (activeValue) {
+      setAnimation((prev) => ({
+        ...prev,
+        displayedTab: activeValue as string,
+        phase: "idle",
+      }));
+    }
+  }, [activeValue, clearTimers, prefersReducedMotion]);
+
+  useEffect(() => {
+    const prevActiveValue = prevActiveValueRef.current;
+
+    if (!activeValue) {
+      prevActiveValueRef.current = activeValue;
+      return;
+    }
+
+    if (prevActiveValue && prevActiveValue !== activeValue) {
+      runContentTransition(prevActiveValue, activeValue);
+    } else if (!prevActiveValue) {
+      setAnimation((prev) => ({
+        ...prev,
+        displayedTab: activeValue as string,
+        phase: "idle",
+      }));
+    }
+
+    prevActiveValueRef.current = activeValue;
+  }, [activeValue, runContentTransition]);
+
+  useEffect(() => {
     if (typeof ResizeObserver === "undefined") return;
     const observer = new ResizeObserver(scheduleMeasure);
     const container = listRef.current;
@@ -273,30 +347,6 @@ export function SlidingTabs<TValue extends string>({
     });
     return () => observer.disconnect();
   }, [scheduleMeasure]);
-
-  useEffect(() => {
-    if (!activeValue) return;
-    if (animation.displayedTab === (activeValue as string)) return;
-    if (animation.phase !== "idle") return;
-
-    const displayedItem = items.find((item) => item.value === animation.displayedTab);
-    if (!displayedItem) {
-      setAnimation((prev) => ({
-        ...prev,
-        displayedTab: activeValue as string,
-        phase: "idle",
-      }));
-      return;
-    }
-
-    runContentTransition(displayedItem.value, activeValue);
-  }, [
-    activeValue,
-    animation.displayedTab,
-    animation.phase,
-    items,
-    runContentTransition,
-  ]);
 
   useEffect(
     () => () => {
@@ -331,8 +381,9 @@ export function SlidingTabs<TValue extends string>({
             aria-hidden="true"
             className={cn(
               "pointer-events-none absolute top-1 bottom-1 left-0",
-              "transition-[transform,width,opacity] duration-300 ease-out will-change-transform",
-              "motion-reduce:transition-none",
+              prefersReducedMotion
+                ? "will-change-transform transition-none"
+                : "transition-[transform,width,opacity] duration-300 ease-out will-change-transform motion-reduce:transition-none",
               indicator.ready ? "opacity-100" : "opacity-0",
             )}
             style={{
@@ -343,7 +394,9 @@ export function SlidingTabs<TValue extends string>({
             <div
               className={cn(
                 "bg-background h-full w-full rounded-full shadow-sm",
-                isSquashing && "animate-indicator-squash-stretch",
+                !prefersReducedMotion &&
+                  isSquashing &&
+                  "animate-indicator-squash-stretch",
                 indicatorClassName,
               )}
             />
@@ -383,11 +436,21 @@ export function SlidingTabs<TValue extends string>({
             <div className={contentCardClassName}>
               <div
                 className={cn(
-                  item.value === animation.displayedTab
+                  !prefersReducedMotion &&
+                    item.value === animation.displayedTab
                     ? getSlideClass(animation)
                     : "",
                   contentClassName,
                 )}
+                style={
+                  !prefersReducedMotion &&
+                  item.value === animation.displayedTab &&
+                  animation.phase !== "idle"
+                    ? {
+                        animationDuration: `${animation.phase === "entering" ? animationDuration.enter : animationDuration.exit}ms`,
+                      }
+                    : undefined
+                }
               >
                 {item.content}
               </div>

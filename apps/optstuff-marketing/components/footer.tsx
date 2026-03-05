@@ -1,6 +1,7 @@
 import { Logo } from "@workspace/ui/components/logo";
 import { ExternalLink, Github, type LucideIcon } from "lucide-react";
 import Link from "next/link";
+import { getExternalLinkAriaLabel } from "../lib/a11y";
 
 type FooterProductItem = {
   href: string;
@@ -52,38 +53,36 @@ export function Footer() {
       <div className="container mx-auto px-4 md:px-6">
         <div className="flex flex-col items-center gap-8 sm:gap-6">
           {/* Logo */}
-          <Link href="/" className="group flex items-center gap-2.5">
+          <Link
+            href="/"
+            className="group flex items-center gap-2.5 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+            aria-label="OptStuff Home"
+          >
             <Logo size={28} />
           </Link>
 
           {/* Navigation */}
-          <nav className="text-muted-foreground dark:text-foreground flex flex-wrap items-center justify-center gap-x-6 gap-y-3 text-sm sm:gap-x-8">
+          <nav
+            className="text-muted-foreground dark:text-foreground flex flex-wrap items-center justify-center gap-x-6 gap-y-3 text-sm sm:gap-x-8"
+            aria-label="Footer navigation"
+          >
             {FOOTER_NAVIGATION.product.map((item) => (
               <a
                 key={item.href}
                 href={item.href}
-                className="hover:text-foreground after:bg-foreground relative transition-colors after:absolute after:bottom-0 after:left-0 after:h-px after:w-0 after:transition-all after:duration-300 hover:after:w-full"
+                className="hover:text-foreground after:bg-foreground focus-visible:ring-ring focus-visible:ring-offset-background relative rounded-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 after:absolute after:bottom-0 after:left-0 after:h-px after:w-0 after:transition-all after:duration-300 hover:after:w-full"
                 {...(item.external
                   ? { target: "_blank", rel: "noopener noreferrer" }
                   : {})}
-                aria-label={
-                  item.external
-                    ? `${item.label} (external link, opens in new tab)`
-                    : item.label
-                }
+                aria-label={getExternalLinkAriaLabel(item.label, item.external)}
               >
                 <span className="inline-flex items-center gap-1.5">
                   <span>{item.label}</span>
                   {item.showExternalIndicator ? (
-                    <>
-                      <ExternalLink
-                        className="h-3.5 w-3.5 opacity-80"
-                        aria-hidden="true"
-                      />
-                      <span className="sr-only">
-                        (external link, opens in new tab)
-                      </span>
-                    </>
+                    <ExternalLink
+                      className="h-3.5 w-3.5 opacity-80"
+                      aria-hidden="true"
+                    />
                   ) : null}
                 </span>
               </a>
@@ -100,14 +99,10 @@ export function Footer() {
                   href={item.href}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-muted-foreground hover:text-foreground dark:text-foreground hover:bg-muted flex h-9 w-9 items-center justify-center rounded-lg transition-colors"
-                  aria-label={
-                    item.external
-                      ? `${item.label} (external link, opens in new tab)`
-                      : item.label
-                  }
+                  className="text-muted-foreground hover:text-foreground dark:text-foreground hover:bg-muted focus-visible:ring-ring focus-visible:ring-offset-background flex h-9 w-9 items-center justify-center rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+                  aria-label={getExternalLinkAriaLabel(item.label, item.external)}
                 >
-                  <Icon className="h-5 w-5" />
+                  <Icon className="h-5 w-5" aria-hidden="true" />
                 </a>
               );
             })}

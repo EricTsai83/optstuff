@@ -30,7 +30,7 @@ export function AnimatedLink({
       target={external ? "_blank" : undefined}
       rel={external ? "noopener noreferrer" : undefined}
       className={cn(
-        "group/animated-link inline-flex items-center font-semibold",
+        "group/animated-link focus-visible:ring-ring focus-visible:ring-offset-background inline-flex items-center rounded-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2",
         className,
       )}
       {...props}

@@ -765,3 +765,18 @@ Moving dot animations for request/response arrows
     box-shadow: none;
   }
 }
+
+/* ==========================================================================
+14. Reduced Motion Support
+Honor user preference and avoid non-essential motion
+========================================================================== */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

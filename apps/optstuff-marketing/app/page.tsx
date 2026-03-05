@@ -12,7 +12,11 @@ export default async function Home() {
     <div className="bg-background min-h-screen">
       <HeroBackground />
       <Header />
-      <main className="pb-16 pt-20 sm:pb-20 sm:pt-24 md:pb-32 md:pt-40">
+      <main
+        id="main-content"
+        tabIndex={-1}
+        className="pb-16 pt-20 sm:pb-20 sm:pt-24 md:pb-32 md:pt-40"
+      >
         <HeroIntro />
         <ImageOptimizationDemo />
         <QuickStart />
