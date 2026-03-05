@@ -27,8 +27,8 @@ export const env = createEnv({
    * `NEXT_PUBLIC_`.
    */
   client: {
-    NEXT_PUBLIC_APP_URL: z.string().url(),
-    NEXT_PUBLIC_DOCS_URL: z.string().url(),
+    NEXT_PUBLIC_APP_URL: z.url(),
+    NEXT_PUBLIC_DOCS_URL: z.url(),
   },
 
   /**
@@ -58,9 +58,3 @@ export const env = createEnv({
    */
   emptyStringAsUndefined: true,
 });
-
-if (env.NODE_ENV === "production" && !env.CRON_SECRET) {
-  console.warn(
-    "[Env] CRON_SECRET is required in production. Scheduled cron routes will fail until it is configured.",
-  );
-}
