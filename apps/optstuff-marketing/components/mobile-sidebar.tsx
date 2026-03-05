@@ -58,6 +58,7 @@ export function MobileSidebar({
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
   const sidebarRef = useRef<HTMLElement | null>(null);
   const previousFocusedElementRef = useRef<HTMLElement | null>(null);
+  const previousBodyOverflowRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (
@@ -82,6 +83,9 @@ export function MobileSidebar({
     let timer: ReturnType<typeof setTimeout> | null = null;
 
     if (isOpen) {
+      if (previousBodyOverflowRef.current === null) {
+        previousBodyOverflowRef.current = document.body.style.overflow;
+      }
       document.body.style.overflow = "hidden";
       if (prefersReducedMotion) {
         setShouldAnimate(true);
@@ -90,7 +94,10 @@ export function MobileSidebar({
         timer = setTimeout(() => setShouldAnimate(true), 50);
       }
     } else {
-      document.body.style.overflow = "";
+      if (previousBodyOverflowRef.current !== null) {
+        document.body.style.overflow = previousBodyOverflowRef.current;
+        previousBodyOverflowRef.current = null;
+      }
       setShouldAnimate(false);
     }
 
@@ -98,7 +105,10 @@ export function MobileSidebar({
       if (timer !== null) {
         clearTimeout(timer);
       }
-      document.body.style.overflow = "";
+      if (previousBodyOverflowRef.current !== null) {
+        document.body.style.overflow = previousBodyOverflowRef.current;
+        previousBodyOverflowRef.current = null;
+      }
     };
   }, [isOpen, prefersReducedMotion]);
 
@@ -234,7 +244,7 @@ export function MobileSidebar({
               >
                 <span className="inline-flex items-center gap-1.5">
                   <span>{item.label}</span>
-                  {item.showExternalIndicator ? (
+                  {(item.showExternalIndicator ?? item.external) ? (
                     <ExternalLink
                       className="h-4 w-4 opacity-80"
                       aria-hidden="true"
