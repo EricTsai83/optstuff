@@ -68,7 +68,7 @@ export function Footer() {
                   : {})}
                 aria-label={
                   item.external
-                    ? `${item.label}（外部連結，另開新分頁）`
+                    ? `${item.label} (external link, opens in new tab)`
                     : item.label
                 }
               >
@@ -80,7 +80,9 @@ export function Footer() {
                         className="h-3.5 w-3.5 opacity-80"
                         aria-hidden="true"
                       />
-                      <span className="sr-only">（外部連結，另開新分頁）</span>
+                      <span className="sr-only">
+                        (external link, opens in new tab)
+                      </span>
                     </>
                   ) : null}
                 </span>
@@ -99,7 +101,11 @@ export function Footer() {
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-muted-foreground hover:text-foreground dark:text-foreground hover:bg-muted flex h-9 w-9 items-center justify-center rounded-lg transition-colors"
-                  aria-label={item.label}
+                  aria-label={
+                    item.external
+                      ? `${item.label} (external link, opens in new tab)`
+                      : item.label
+                  }
                 >
                   <Icon className="h-5 w-5" />
                 </a>

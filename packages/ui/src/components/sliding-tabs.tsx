@@ -188,29 +188,33 @@ export function SlidingTabs<TValue extends string>({
     timersRef.current = [];
   }, []);
 
-  const handleValueChange = useCallback(
-    (next: string): void => {
-      const nextValue = next as TValue;
-      if (nextValue === activeValue) return;
-
+  const runContentTransition = useCallback(
+    (fromValue: TValue, toValue: TValue): void => {
       clearTimers();
 
-      const curIdx = items.findIndex((i) => i.value === activeValue);
-      const nxtIdx = items.findIndex((i) => i.value === nextValue);
-      const direction: SlideDirection = nxtIdx > curIdx ? "left" : "right";
+      if (fromValue === toValue) {
+        setAnimation((prev) => ({
+          ...prev,
+          displayedTab: toValue as string,
+          phase: "idle",
+        }));
+        return;
+      }
 
-      if (controlledValue === undefined) setInternalValue(nextValue);
-      onValueChange?.(nextValue);
+      const curIdx = items.findIndex((i) => i.value === fromValue);
+      const nxtIdx = items.findIndex((i) => i.value === toValue);
+      const direction: SlideDirection =
+        curIdx === -1 || nxtIdx === -1 || nxtIdx > curIdx ? "left" : "right";
 
       setAnimation({
-        displayedTab: activeValue as string,
+        displayedTab: fromValue as string,
         phase: "exiting",
         direction,
       });
 
       const exitTimer = setTimeout(() => {
         setAnimation({
-          displayedTab: nextValue as string,
+          displayedTab: toValue as string,
           phase: "entering",
           direction,
         });
@@ -221,13 +225,24 @@ export function SlidingTabs<TValue extends string>({
       }, animationDuration.exit);
       timersRef.current.push(exitTimer);
     },
+    [animationDuration.enter, animationDuration.exit, clearTimers, items],
+  );
+
+  const handleValueChange = useCallback(
+    (next: string): void => {
+      const nextValue = next as TValue;
+      if (nextValue === activeValue) return;
+
+      if (controlledValue === undefined) setInternalValue(nextValue);
+      onValueChange?.(nextValue);
+      if (!activeValue) return;
+      runContentTransition(activeValue, nextValue);
+    },
     [
       activeValue,
-      items,
       controlledValue,
       onValueChange,
-      clearTimers,
-      animationDuration,
+      runContentTransition,
     ],
   );
 
@@ -259,6 +274,30 @@ export function SlidingTabs<TValue extends string>({
     return () => observer.disconnect();
   }, [scheduleMeasure]);
 
+  useEffect(() => {
+    if (!activeValue) return;
+    if (animation.displayedTab === (activeValue as string)) return;
+    if (animation.phase !== "idle") return;
+
+    const displayedItem = items.find((item) => item.value === animation.displayedTab);
+    if (!displayedItem) {
+      setAnimation((prev) => ({
+        ...prev,
+        displayedTab: activeValue as string,
+        phase: "idle",
+      }));
+      return;
+    }
+
+    runContentTransition(displayedItem.value, activeValue);
+  }, [
+    activeValue,
+    animation.displayedTab,
+    animation.phase,
+    items,
+    runContentTransition,
+  ]);
+
   useEffect(
     () => () => {
       clearTimers();
@@ -272,14 +311,11 @@ export function SlidingTabs<TValue extends string>({
   // -- Render --
 
   if (!items.length || !activeValue) return null;
-
-  const displayedContent = items.find(
-    (i) => i.value === animation.displayedTab,
-  )?.content;
+  const renderedTabValue = (animation.displayedTab || activeValue) as TValue;
 
   return (
     <Tabs
-      value={activeValue}
+      value={renderedTabValue}
       onValueChange={handleValueChange}
       className={cn("w-full", className)}
     >
@@ -342,21 +378,23 @@ export function SlidingTabs<TValue extends string>({
         <TabsContent
           key={item.value}
           value={item.value}
-          className="hidden"
-        />
-      ))}
-      <div className={contentWrapperClassName}>
-        <div className={contentCardClassName}>
-          <div
-            className={cn(
-              getSlideClass(animation),
-              contentClassName,
-            )}
-          >
-            {displayedContent}
+        >
+          <div className={contentWrapperClassName}>
+            <div className={contentCardClassName}>
+              <div
+                className={cn(
+                  item.value === animation.displayedTab
+                    ? getSlideClass(animation)
+                    : "",
+                  contentClassName,
+                )}
+              >
+                {item.content}
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
+        </TabsContent>
+      ))}
     </Tabs>
   );
 }

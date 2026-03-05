@@ -114,7 +114,7 @@ export function MobileSidebar({
                         aria-hidden="true"
                       />
                       <span className="sr-only">
-                        Live Demo (opens in new tab)
+                        {`${item.label} (opens in new tab)`}
                       </span>
                     </>
                   ) : null}
