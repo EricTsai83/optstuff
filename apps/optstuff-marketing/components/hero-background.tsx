@@ -6,6 +6,8 @@ export function HeroBackground() {
         xmlns="http://www.w3.org/2000/svg"
         className="pointer-events-none absolute inset-0 hidden h-full w-full dark:block"
         preserveAspectRatio="xMidYMid slice"
+        aria-hidden="true"
+        focusable="false"
       >
         <defs>
           <pattern
@@ -86,6 +88,8 @@ export function HeroBackground() {
         xmlns="http://www.w3.org/2000/svg"
         className="pointer-events-none absolute inset-0 block h-full w-full dark:hidden"
         preserveAspectRatio="xMidYMid slice"
+        aria-hidden="true"
+        focusable="false"
       >
         <defs>
           <radialGradient id="glow-light" cx="50%" cy="0%" r="60%">

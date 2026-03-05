@@ -1,5 +1,6 @@
 import { HeroAnimation } from "@/components/hero-animation";
 import { AnimatedLink } from "@/components/ui/animated-link";
+import { getExternalLinkAriaLabel } from "@/lib/a11y";
 import { Button } from "@workspace/ui/components/button";
 import { ArrowRight } from "lucide-react";
 
@@ -20,6 +21,7 @@ export function HeroIntro() {
           href="https://github.com/unjs/ipx"
           external
           showExternalIcon
+          aria-label={getExternalLinkAriaLabel("IPX GitHub repository", true)}
         >
           🖼️ IPX
         </AnimatedLink>
@@ -60,6 +62,7 @@ export function HeroIntro() {
                 href={process.env.NEXT_PUBLIC_DOCS_URL ?? "#"}
                 target="_blank"
                 rel="noopener noreferrer"
+                aria-label={getExternalLinkAriaLabel("Documentation", true)}
               >
                 Documentation
               </a>

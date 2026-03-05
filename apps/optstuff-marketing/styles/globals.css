@@ -13,18 +13,6 @@
   --animate-hero-card-border-flash: hero-card-border-flash 650ms
     cubic-bezier(0.25, 0.1, 0.25, 1) 500ms both;
 
-  /* Tab animations */
-  --animate-tab-slide-in-from-right: tab-slide-in-from-right 0.25s
-    cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
-  --animate-tab-slide-in-from-left: tab-slide-in-from-left 0.25s
-    cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
-  --animate-tab-slide-out-to-left: tab-slide-out-to-left 0.15s
-    cubic-bezier(0.55, 0.085, 0.68, 0.53) forwards;
-  --animate-tab-slide-out-to-right: tab-slide-out-to-right 0.15s
-    cubic-bezier(0.55, 0.085, 0.68, 0.53) forwards;
-  --animate-indicator-squash-stretch: indicator-squash-stretch 0.35s
-    cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-
   /* Hero & text animations */
   --animate-scan-line: scan-line 0.15s ease-out forwards;
   --animate-hero-soundwave: hero-soundwave 2s cubic-bezier(0.1, 0, 0.3, 1)
@@ -158,79 +146,8 @@ Smooth lift effect with shadow on hover
 }
 
 /* ==========================================================================
-6. Tab Content Transition Animations
-Uses percentage-based translate values (30%) for smooth, responsive animations
-========================================================================== */
-
-/* --- Tab Slide In From Right --- */
-@keyframes tab-slide-in-from-right {
-  from {
-    opacity: 0;
-    transform: translateX(30%);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-/* --- Tab Slide In From Left --- */
-@keyframes tab-slide-in-from-left {
-  from {
-    opacity: 0;
-    transform: translateX(-30%);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-/* --- Tab Slide Out To Left --- */
-@keyframes tab-slide-out-to-left {
-  from {
-    opacity: 1;
-    transform: translateX(0);
-  }
-  to {
-    opacity: 0;
-    transform: translateX(-30%);
-  }
-}
-
-/* --- Tab Slide Out To Right --- */
-@keyframes tab-slide-out-to-right {
-  from {
-    opacity: 1;
-    transform: translateX(0);
-  }
-  to {
-    opacity: 0;
-    transform: translateX(30%);
-  }
-}
-
-/* --- Tab Indicator Squash-and-Stretch (for velocity feel) --- */
-@keyframes indicator-squash-stretch {
-  0% {
-    transform: scaleX(1) scaleY(1);
-  }
-  20% {
-    transform: scaleX(1.2) scaleY(0.8);
-  }
-  50% {
-    transform: scaleX(1.15) scaleY(0.85);
-  }
-  80% {
-    transform: scaleX(1.05) scaleY(0.95);
-  }
-  100% {
-    transform: scaleX(1) scaleY(1);
-  }
-}
-
-/* ==========================================================================
-7. Feature Card Icon Animations
+6. Feature Card Icon Animations
+(Tab animations moved to @workspace/ui globals.css)
 Unique animations for each icon type to add visual interest on hover
 ========================================================================== */
 
@@ -846,5 +763,20 @@ Moving dot animations for request/response arrows
   .feature-card-hover:hover {
     transform: none;
     box-shadow: none;
+  }
+}
+
+/* ==========================================================================
+14. Reduced Motion Support
+Honor user preference and avoid non-essential motion
+========================================================================== */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }

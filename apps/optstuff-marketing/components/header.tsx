@@ -6,6 +6,7 @@ import {
   calculateBorderOpacity,
   useScrollPercent,
 } from "@/hooks/use-scroll-percent";
+import { getExternalLinkAriaLabel } from "@/lib/a11y";
 import {
   ClerkLoaded,
   ClerkLoading,
@@ -18,7 +19,7 @@ import { Button } from "@workspace/ui/components/button";
 import { Logo } from "@workspace/ui/components/logo";
 import { ThemeToggleButton } from "@workspace/ui/components/theme-toggle-button";
 import { cn } from "@workspace/ui/lib/utils";
-import { Github, Menu, X } from "lucide-react";
+import { ExternalLink, Github, Menu, X } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
@@ -26,15 +27,21 @@ type NavigationItem = {
   readonly href: string;
   readonly label: string;
   readonly external: boolean;
+  readonly showExternalIndicator?: boolean;
 };
 
 const NAVIGATION: readonly NavigationItem[] = [
-  { href: "#demo", label: "Demo", external: false },
   { href: "/blog", label: "Blog", external: false },
   {
     href: process.env.NEXT_PUBLIC_DOCS_URL ?? "#",
     label: "Docs",
     external: true,
+  },
+  {
+    href: "https://optstuff-nextjs.vercel.app/",
+    label: "Live Demo",
+    external: true,
+    showExternalIndicator: true,
   },
 ] as const;
 
@@ -85,13 +92,14 @@ export function Header() {
           {/* Left: Logo */}
           <Link
             href="/"
-            className="group flex items-center gap-2.5 justify-self-start"
+            className="group flex items-center gap-2.5 justify-self-start rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+            aria-label="OptStuff Home"
           >
             <Logo size={HEADER_CONFIG.logo.size} />
           </Link>
 
           {/* Center: Navigation - Desktop only */}
-          <nav className="hidden items-center gap-6 md:flex">
+          <nav className="hidden items-center gap-6 md:flex" aria-label="Primary navigation">
             {NAVIGATION.map((item) => (
               <Link
                 key={item.href}
@@ -99,9 +107,18 @@ export function Header() {
                 {...(item.external
                   ? { target: "_blank", rel: "noopener noreferrer" }
                   : {})}
-                className="text-muted-foreground hover:text-foreground dark:text-foreground after:bg-foreground relative text-sm font-medium transition-colors after:absolute after:bottom-0 after:left-0 after:h-px after:w-0 after:transition-all after:duration-300 hover:after:w-full"
+                aria-label={getExternalLinkAriaLabel(item.label, item.external)}
+                className="text-muted-foreground hover:text-foreground dark:text-foreground after:bg-foreground focus-visible:ring-ring focus-visible:ring-offset-background relative rounded-sm text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 after:absolute after:bottom-0 after:left-0 after:h-px after:w-0 after:transition-all after:duration-300 hover:after:w-full"
               >
-                {item.label}
+                <span className="inline-flex items-center gap-1">
+                  <span>{item.label}</span>
+                  {item.showExternalIndicator ? (
+                    <ExternalLink
+                      className="h-3.5 w-3.5 opacity-80"
+                      aria-hidden="true"
+                    />
+                  ) : null}
+                </span>
               </Link>
             ))}
           </nav>
@@ -112,9 +129,11 @@ export function Header() {
             {isMobile && (
               <button
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                className="text-foreground hover:bg-muted relative flex h-9 w-9 items-center justify-center rounded-md transition-colors"
+                className="text-foreground hover:bg-muted focus-visible:ring-ring focus-visible:ring-offset-background relative flex h-9 w-9 items-center justify-center rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
                 aria-label={isMobileMenuOpen ? "Close menu" : "Open menu"}
                 aria-expanded={isMobileMenuOpen}
+                aria-controls="mobile-navigation-drawer"
+                aria-haspopup="dialog"
               >
                 <Menu
                   className={cn(
@@ -123,6 +142,7 @@ export function Header() {
                       ? "rotate-90 scale-0 opacity-0"
                       : "rotate-0 scale-100 opacity-100",
                   )}
+                  aria-hidden="true"
                 />
                 <X
                   className={cn(
@@ -131,6 +151,7 @@ export function Header() {
                       ? "rotate-0 scale-100 opacity-100"
                       : "-rotate-90 scale-0 opacity-0",
                   )}
+                  aria-hidden="true"
                 />
               </button>
             )}
@@ -142,10 +163,10 @@ export function Header() {
               href={HEADER_CONFIG.github}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-muted-foreground hover:text-foreground dark:text-foreground hover:bg-muted hidden h-9 w-9 items-center justify-center rounded-md transition-colors md:flex"
+              className="text-muted-foreground hover:text-foreground dark:text-foreground hover:bg-muted focus-visible:ring-ring focus-visible:ring-offset-background hidden h-9 w-9 items-center justify-center rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 md:flex"
               aria-label="GitHub repository"
             >
-              <Github className="h-5 w-5" />
+              <Github className="h-5 w-5" aria-hidden="true" />
             </a>
 
             {/* Desktop auth/CTA buttons */}
