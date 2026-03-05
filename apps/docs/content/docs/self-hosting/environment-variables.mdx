@@ -16,6 +16,18 @@ cp apps/optstuff-dashboard/.env.example apps/optstuff-dashboard/.env
 | `NEXT_PUBLIC_APP_URL` | Yes | Public URL of your OptStuff deployment | `https://optstuff.example.com` |
 | `NEXT_PUBLIC_DOCS_URL` | No | URL of the documentation site | `https://docs.optstuff.example.com` |
 
+## Scheduling & Maintenance
+
+| Variable | Required | Description | Example |
+|----------|----------|-------------|---------|
+| `CRON_SECRET` | Yes (production) | Bearer token used to authorize internal cron routes such as daily maintenance. | Generate with `openssl rand -hex 32` |
+
+## Observability
+
+| Variable | Required | Description | Default |
+|----------|----------|-------------|---------|
+| `REQUEST_LOG_SUCCESS_SAMPLE_RATE` | No | Success request log sampling rate (`0.0` to `1.0`). Error/forbidden/rate-limited logs are always recorded. | `0.2` in production, `1.0` otherwise |
+
 ## Database (PostgreSQL)
 
 You need at least one database connection string. The specific variables depend on your provider.

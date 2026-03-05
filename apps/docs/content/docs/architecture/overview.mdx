@@ -143,7 +143,7 @@ team
 
 - **Cache propagation:** config cache TTL is 60s; negative cache TTL is 10s.
 - **Rate-limiter availability:** Redis failures fail open (request allowed).
-- **Request logging:** source URL is sanitized (query/hash removed); retention target is 30 days.
+- **Request logging:** source URL is sanitized (query/hash removed); retention target is 30 days; errors are always logged while successful requests can be sampled via `REQUEST_LOG_SUCCESS_SAMPLE_RATE`.
 - **Original-size metric:** sampled (10%) to avoid extra upstream `HEAD` on every success.
 - **HEAD upstream behavior:** non-image content-type probes are treated as transform-ineligible (`502`).
 

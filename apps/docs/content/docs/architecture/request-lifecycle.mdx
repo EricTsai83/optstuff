@@ -62,7 +62,7 @@ sequenceDiagram
   R->>BG: Schedule usage/logging
   BG->>Redis: SET NX write-throttle keys
   BG->>DB: Update lastUsedAt/lastActivityAt (throttled)
-  BG->>DB: Insert request_log (+ sampled original size)
+  BG->>DB: Insert request_log (sampled success, full errors)
 ```
 
 ### `GET` response headers
@@ -114,6 +114,24 @@ After successful `GET` response:
    ~10% requests perform an extra upstream `HEAD` for size analytics.
 
 These side effects are intentionally non-blocking to keep tail latency low.
+
+## Production Logging Strategy
+
+OptStuff uses a tiered request logging policy to balance observability and runtime cost:
+
+- **Error and policy-denied requests** (`error`, `forbidden`, `rate_limited`) are logged **100%**.
+- **Successful requests** can be sampled via `REQUEST_LOG_SUCCESS_SAMPLE_RATE` (`0.0 ~ 1.0`).
+- Default behavior:
+  - `production`: `0.2` (20%)
+  - `development` / `test`: `1.0` (100%)
+
+### Design Rationale
+
+At high traffic volume, writing one relational row per success request can become a significant DB write load in serverless environments. Sampling successful traffic while retaining all abnormal traffic preserves debugging signal (what failed, why, and where) and reduces write amplification on the hot path.
+
+### Operational Trade-off
+
+When success sampling is below `1.0`, request-log-derived dashboards (for example top images or aggregate bandwidth computed from `request_log`) become sampled telemetry, not strict accounting. For exact billing or quota math, use dedicated usage counters/aggregates instead of per-request logs.
 
 ## Related Docs
 

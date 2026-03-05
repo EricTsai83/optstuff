@@ -60,7 +60,7 @@ Server-Timing: auth;dur=7, transform;dur=35, total;dur=42
 | `Vary` | `Accept` and (when configured) `Referer` to preserve correct cache behavior |
 | `X-Processing-Time` | Server-side processing time in milliseconds |
 | `X-Head-Fast-Path` | `0` for normal image transform (`GET`), `1` for `HEAD` fast path |
-| `X-Original-Size-Sampled` | `1` when upstream original-size probing is sampled, otherwise `0` |
+| `X-Original-Size-Sampled` | `1` when an upstream `HEAD` probe is actually scheduled for this request, otherwise `0` |
 | `Server-Timing` | Request stage timing (`auth`, `probe` when applicable, `transform`, `total`) for performance debugging |
 
 ### Success (200) — HEAD
