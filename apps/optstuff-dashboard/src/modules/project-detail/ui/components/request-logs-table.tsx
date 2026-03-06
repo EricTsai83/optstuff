@@ -92,17 +92,17 @@ function getSavingsPercent(
 
 function SkeletonRow() {
   return (
-    <tr>
+    <tr className="hidden md:table-row">
       <td className="px-4 py-3">
         <Skeleton className="h-4 w-52" />
       </td>
-      <td className="hidden px-4 py-3 md:table-cell">
+      <td className="px-4 py-3">
         <Skeleton className="h-5 w-16" />
       </td>
       <td className="hidden px-4 py-3 lg:table-cell">
         <Skeleton className="h-4 w-12" />
       </td>
-      <td className="hidden px-4 py-3 sm:table-cell">
+      <td className="px-4 py-3">
         <Skeleton className="h-4 w-24" />
       </td>
       <td className="px-4 py-3 text-right">
@@ -112,19 +112,89 @@ function SkeletonRow() {
   );
 }
 
+function MobileSkeletonCard() {
+  return (
+    <div className="border-border/30 border-b px-4 py-3 last:border-0 md:hidden">
+      <div className="flex items-center justify-between">
+        <Skeleton className="h-4 w-40" />
+        <Skeleton className="h-5 w-16 rounded-full" />
+      </div>
+      <div className="mt-2 flex items-center gap-3">
+        <Skeleton className="h-3.5 w-24" />
+        <Skeleton className="h-3.5 w-16" />
+        <Skeleton className="ml-auto h-3.5 w-14" />
+      </div>
+    </div>
+  );
+}
+
+function MobileLogCard({ log }: { readonly log: RequestLog }) {
+  const statusConfig = getStatusConfig(log.status);
+  const savings = getSavingsPercent(log.originalSize, log.optimizedSize);
+  const StatusIcon = statusConfig.icon;
+
+  return (
+    <div className="border-border/30 hover:bg-muted/40 border-b px-4 py-3 transition-colors last:border-0 md:hidden">
+      <div className="flex items-start justify-between gap-2">
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <span className="block min-w-0 flex-1 truncate font-mono text-sm">
+              {log.sourceUrl}
+            </span>
+          </TooltipTrigger>
+          <TooltipContent side="bottom" className="max-w-sm">
+            <p className="break-all font-mono text-xs">{log.sourceUrl}</p>
+          </TooltipContent>
+        </Tooltip>
+        <Badge variant={statusConfig.variant} className="shrink-0 gap-1">
+          <StatusIcon className="h-3 w-3" />
+          {statusConfig.label}
+        </Badge>
+      </div>
+      <div className="text-muted-foreground mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
+        {log.originalSize && log.optimizedSize ? (
+          <span className="inline-flex items-center gap-1 tabular-nums">
+            {formatBytes(Number(log.originalSize))}
+            <ArrowDownRight className="text-emerald-500 h-3 w-3" />
+            {formatBytes(Number(log.optimizedSize))}
+            {savings != null && savings > 0 && (
+              <span className="text-emerald-600 dark:text-emerald-400 font-medium">
+                -{savings}%
+              </span>
+            )}
+          </span>
+        ) : log.optimizedSize ? (
+          <span className="tabular-nums">
+            {formatBytes(Number(log.optimizedSize))}
+          </span>
+        ) : null}
+        {log.processingTimeMs != null && (
+          <span className="inline-flex items-center gap-0.5 tabular-nums">
+            <Timer className="h-3 w-3" />
+            {log.processingTimeMs}ms
+          </span>
+        )}
+        <span className="ml-auto whitespace-nowrap">
+          {formatDistanceToNow(new Date(log.createdAt), { addSuffix: true })}
+        </span>
+      </div>
+    </div>
+  );
+}
+
 export function RequestLogsTable({ logs, isLoading }: RequestLogsTableProps) {
   const columnHeaders = (
     <tr className="border-border/50 border-b text-left">
       <th className="text-muted-foreground px-4 py-2.5 text-xs font-medium tracking-wide">
         Source URL
       </th>
-      <th className="text-muted-foreground hidden px-4 py-2.5 text-xs font-medium tracking-wide md:table-cell">
+      <th className="text-muted-foreground px-4 py-2.5 text-xs font-medium tracking-wide">
         Status
       </th>
       <th className="text-muted-foreground hidden px-4 py-2.5 text-xs font-medium tracking-wide lg:table-cell">
         Time
       </th>
-      <th className="text-muted-foreground hidden px-4 py-2.5 text-xs font-medium tracking-wide sm:table-cell">
+      <th className="text-muted-foreground px-4 py-2.5 text-xs font-medium tracking-wide">
         Size
       </th>
       <th className="text-muted-foreground px-4 py-2.5 text-right text-xs font-medium tracking-wide">
@@ -141,7 +211,14 @@ export function RequestLogsTable({ logs, isLoading }: RequestLogsTableProps) {
           <CardDescription>Last 20 API requests</CardDescription>
         </CardHeader>
         <CardContent className="px-0 pb-2">
-          <table className="w-full">
+          {/* Mobile skeleton */}
+          <div className="md:hidden">
+            {Array.from({ length: 5 }, (_, i) => (
+              <MobileSkeletonCard key={i} />
+            ))}
+          </div>
+          {/* Desktop skeleton */}
+          <table className="hidden w-full md:table">
             <thead>{columnHeaders}</thead>
             <tbody>
               {Array.from({ length: 5 }, (_, i) => (
@@ -170,26 +247,31 @@ export function RequestLogsTable({ logs, isLoading }: RequestLogsTableProps) {
               No requests yet
             </div>
           ) : (
-            <table className="w-full">
-              <thead>{columnHeaders}</thead>
-              <tbody>
-                {logs.map((log) => {
-                  const statusConfig = getStatusConfig(log.status);
-                  const savings = getSavingsPercent(
-                    log.originalSize,
-                    log.optimizedSize,
-                  );
+            <>
+              {/* Mobile: card list */}
+              <div className="md:hidden">
+                {logs.map((log) => (
+                  <MobileLogCard key={log.id} log={log} />
+                ))}
+              </div>
 
-                  return (
-                    <tr
-                      key={log.id}
-                      className="border-border/30 hover:bg-muted/40 border-b transition-colors last:border-0"
-                    >
-                      <td className="max-w-[280px] px-4 py-2.5">
-                        <div className="flex items-center gap-2 md:hidden">
-                          <span
-                            className={`h-1.5 w-1.5 shrink-0 rounded-full ${statusConfig.dotClass}`}
-                          />
+              {/* Desktop: table */}
+              <table className="hidden w-full md:table">
+                <thead>{columnHeaders}</thead>
+                <tbody>
+                  {logs.map((log) => {
+                    const statusConfig = getStatusConfig(log.status);
+                    const savings = getSavingsPercent(
+                      log.originalSize,
+                      log.optimizedSize,
+                    );
+
+                    return (
+                      <tr
+                        key={log.id}
+                        className="border-border/30 hover:bg-muted/40 border-b transition-colors last:border-0"
+                      >
+                        <td className="max-w-[280px] px-4 py-2.5">
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <span className="block truncate font-mono text-sm">
@@ -202,94 +284,80 @@ export function RequestLogsTable({ logs, isLoading }: RequestLogsTableProps) {
                               </p>
                             </TooltipContent>
                           </Tooltip>
-                        </div>
-                        <div className="hidden md:block">
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <span className="block truncate font-mono text-sm">
-                                {log.sourceUrl}
-                              </span>
-                            </TooltipTrigger>
-                            <TooltipContent side="bottom" className="max-w-sm">
-                              <p className="break-all font-mono text-xs">
-                                {log.sourceUrl}
-                              </p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </div>
-                      </td>
+                        </td>
 
-                      <td className="hidden px-4 py-2.5 md:table-cell">
-                        <Badge
-                          variant={statusConfig.variant}
-                          className="gap-1"
-                        >
-                          <statusConfig.icon className="h-3 w-3" />
-                          {statusConfig.label}
-                        </Badge>
-                      </td>
+                        <td className="px-4 py-2.5">
+                          <Badge
+                            variant={statusConfig.variant}
+                            className="gap-1"
+                          >
+                            <statusConfig.icon className="h-3 w-3" />
+                            {statusConfig.label}
+                          </Badge>
+                        </td>
 
-                      <td className="text-muted-foreground hidden px-4 py-2.5 lg:table-cell">
-                        {log.processingTimeMs != null ? (
-                          <span className="inline-flex items-center gap-1 tabular-nums text-sm">
-                            <Timer className="h-3 w-3" />
-                            {log.processingTimeMs}ms
-                          </span>
-                        ) : (
-                          <span className="text-muted-foreground/50 text-sm">
-                            —
-                          </span>
-                        )}
-                      </td>
+                        <td className="text-muted-foreground hidden px-4 py-2.5 lg:table-cell">
+                          {log.processingTimeMs != null ? (
+                            <span className="inline-flex items-center gap-1 tabular-nums text-sm">
+                              <Timer className="h-3 w-3" />
+                              {log.processingTimeMs}ms
+                            </span>
+                          ) : (
+                            <span className="text-muted-foreground/50 text-sm">
+                              —
+                            </span>
+                          )}
+                        </td>
 
-                      <td className="hidden px-4 py-2.5 sm:table-cell">
-                        {log.originalSize && log.optimizedSize ? (
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <span className="inline-flex items-center gap-1.5 text-sm tabular-nums">
-                                <span className="text-muted-foreground">
-                                  {formatBytes(Number(log.originalSize))}
-                                </span>
-                                <ArrowDownRight className="text-emerald-500 h-3 w-3" />
-                                <span>
-                                  {formatBytes(Number(log.optimizedSize))}
-                                </span>
-                                {savings != null && savings > 0 && (
-                                  <span className="text-emerald-600 dark:text-emerald-400 text-xs font-medium">
-                                    -{savings}%
+                        <td className="px-4 py-2.5">
+                          {log.originalSize && log.optimizedSize ? (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <span className="inline-flex items-center gap-1.5 text-sm tabular-nums">
+                                  <span className="text-muted-foreground">
+                                    {formatBytes(Number(log.originalSize))}
                                   </span>
+                                  <ArrowDownRight className="text-emerald-500 h-3 w-3" />
+                                  <span>
+                                    {formatBytes(Number(log.optimizedSize))}
+                                  </span>
+                                  {savings != null && savings > 0 && (
+                                    <span className="text-emerald-600 dark:text-emerald-400 text-xs font-medium">
+                                      -{savings}%
+                                    </span>
+                                  )}
+                                </span>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                Saved{" "}
+                                {formatBytes(
+                                  Number(log.originalSize) -
+                                    Number(log.optimizedSize),
                                 )}
-                              </span>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              Saved{" "}
-                              {formatBytes(
-                                Number(log.originalSize) -
-                                  Number(log.optimizedSize),
-                              )}
-                            </TooltipContent>
-                          </Tooltip>
-                        ) : log.optimizedSize ? (
-                          <span className="text-muted-foreground text-sm tabular-nums">
-                            {formatBytes(Number(log.optimizedSize))}
-                          </span>
-                        ) : (
-                          <span className="text-muted-foreground/50 text-sm">
-                            —
-                          </span>
-                        )}
-                      </td>
+                              </TooltipContent>
+                            </Tooltip>
+                          ) : log.optimizedSize ? (
+                            <span className="text-muted-foreground text-sm tabular-nums">
+                              {formatBytes(Number(log.optimizedSize))}
+                            </span>
+                          ) : (
+                            <span className="text-muted-foreground/50 text-sm">
+                              —
+                            </span>
+                          )}
+                        </td>
 
-                      <td className="text-muted-foreground px-4 py-2.5 text-right text-sm whitespace-nowrap">
-                        {formatDistanceToNow(new Date(log.createdAt), {
-                          addSuffix: true,
-                        })}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                        <td className="text-muted-foreground px-4 py-2.5 text-right text-sm whitespace-nowrap">
+                          {formatDistanceToNow(new Date(log.createdAt), {
+                            addSuffix: true,
+                          })}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </>
           )}
         </CardContent>
       </Card>

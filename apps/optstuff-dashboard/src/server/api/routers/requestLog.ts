@@ -1,4 +1,4 @@
-import { desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, gte, lte, sql } from "drizzle-orm";
 import { z } from "zod";
 
 import { verifyProjectAccess } from "@/server/api/lib/access";
@@ -34,6 +34,47 @@ export const requestLogRouter = createTRPCRouter({
         originalSize: log.originalSize,
         optimizedSize: log.optimizedSize,
         createdAt: log.createdAt,
+      }));
+    }),
+
+  /**
+   * Get daily request volume aggregated from request logs.
+   */
+  getDailyVolume: protectedProcedure
+    .input(
+      z.object({
+        projectId: z.string().uuid(),
+        startDate: z.string(),
+        endDate: z.string(),
+      }),
+    )
+    .query(async ({ ctx, input }) => {
+      await verifyProjectAccess(ctx.db, input.projectId, ctx.userId);
+
+      const result = await ctx.db
+        .select({
+          date: sql<string>`date(${requestLogs.createdAt})`.as("date"),
+          requestCount: sql<number>`count(*)::int`.as("request_count"),
+          bytesProcessed:
+            sql<number>`coalesce(sum(${requestLogs.optimizedSize}), 0)::bigint`.as(
+              "bytes_processed",
+            ),
+        })
+        .from(requestLogs)
+        .where(
+          and(
+            eq(requestLogs.projectId, input.projectId),
+            gte(requestLogs.createdAt, new Date(input.startDate)),
+            lte(requestLogs.createdAt, new Date(input.endDate + "T23:59:59Z")),
+          ),
+        )
+        .groupBy(sql`date(${requestLogs.createdAt})`)
+        .orderBy(sql`date(${requestLogs.createdAt})`);
+
+      return result.map((r) => ({
+        date: r.date,
+        requestCount: r.requestCount,
+        bytesProcessed: Number(r.bytesProcessed),
       }));
     }),
 
@@ -79,7 +120,6 @@ export const requestLogRouter = createTRPCRouter({
     .query(async ({ ctx, input }) => {
       await verifyProjectAccess(ctx.db, input.projectId, ctx.userId);
 
-      // Get aggregated bandwidth stats
       const result = await ctx.db
         .select({
           totalRequests: sql<number>`count(*)::int`.as("total_requests"),
@@ -95,6 +135,10 @@ export const requestLogRouter = createTRPCRouter({
             sql<number>`coalesce(sum(${requestLogs.optimizedSize}), 0)::bigint`.as(
               "total_optimized_size",
             ),
+          avgProcessingTimeMs:
+            sql<number>`coalesce(avg(${requestLogs.processingTimeMs})::int, 0)`.as(
+              "avg_processing_time_ms",
+            ),
         })
         .from(requestLogs)
         .where(eq(requestLogs.projectId, input.projectId));
@@ -108,6 +152,7 @@ export const requestLogRouter = createTRPCRouter({
           totalOptimizedSize: 0,
           bandwidthSaved: 0,
           savingsPercentage: 0,
+          avgProcessingTimeMs: 0,
         };
       }
 
@@ -125,6 +170,7 @@ export const requestLogRouter = createTRPCRouter({
         totalOptimizedSize: optimizedSize,
         bandwidthSaved,
         savingsPercentage: Math.round(savingsPercentage * 10) / 10,
+        avgProcessingTimeMs: stats.avgProcessingTimeMs,
       };
     }),
 });
