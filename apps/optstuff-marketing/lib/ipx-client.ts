@@ -1,4 +1,4 @@
-import { getVercelProjectUrl } from "@/lib/utils";
+import { getProjectBaseUrl } from "@/lib/utils";
 import { createIPX, ipxFSStorage, ipxHttpStorage } from "ipx";
 import path from "path";
 
@@ -9,15 +9,15 @@ import path from "path";
  * - Local filesystem storage (public directory)
  * - HTTP remote images (only whitelisted domains, prevents SSRF attacks)
  */
-const vercelUrl = getVercelProjectUrl();
-const vercelDomain = vercelUrl.hostname;
+const projectBaseUrl = getProjectBaseUrl();
+const projectDomain = projectBaseUrl.hostname;
 
 export const ipx = createIPX({
   alias: {
-    optstuff: vercelUrl.toString(),
+    optstuff: projectBaseUrl.toString(),
   },
   storage: ipxFSStorage({ dir: path.join(process.cwd(), "public") }),
   httpStorage: ipxHttpStorage({
-    domains: [vercelDomain], // only allow images from the Vercel project URL
+    domains: [projectDomain], // only allow images from the project base URL
   }),
 });
