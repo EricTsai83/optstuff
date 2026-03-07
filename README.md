@@ -1,7 +1,7 @@
 <p align="center">
   <picture>
   <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/EricTsai83/optstuff/main/assets/og-readme.png">
-  <img src="https://raw.githubusercontent.com/EricTsai83/optstuff/main/assets/og-readme.png" width="600" height="180" alt="Logo for OptStuff">
+  <img src="https://raw.githubusercontent.com/EricTsai83/optstuff/main/assets/og-readme.png" width="600" height="315" alt="Logo for OptStuff">
 </picture>
 </p>
 
