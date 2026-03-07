@@ -1,4 +1,4 @@
-import { and, desc, eq, gte, lte, sql } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, lte, sql } from "drizzle-orm";
 import { z } from "zod";
 
 import { verifyProjectAccess } from "@/server/api/lib/access";
@@ -7,21 +7,33 @@ import { requestLogs } from "@/server/db/schema";
 
 export const requestLogRouter = createTRPCRouter({
   /**
-   * Get the most recent request logs for a project.
-   * Returns the last 20 requests.
+   * Get the most recent request logs for a project,
+   * optionally filtered by status before applying the row cap.
    */
   getRecentLogs: protectedProcedure
     .input(
       z.object({
         projectId: z.string().uuid(),
+        startDate: z.string(),
+        endDate: z.string(),
         limit: z.number().int().min(1).max(100).default(20),
+        statuses: z.array(z.string()).optional(),
       }),
     )
     .query(async ({ ctx, input }) => {
       await verifyProjectAccess(ctx.db, input.projectId, ctx.userId);
 
+      const conditions = [
+        eq(requestLogs.projectId, input.projectId),
+        gte(requestLogs.createdAt, new Date(input.startDate)),
+        lte(requestLogs.createdAt, new Date(input.endDate)),
+      ];
+      if (input.statuses && input.statuses.length > 0) {
+        conditions.push(inArray(requestLogs.status, input.statuses));
+      }
+
       const logs = await ctx.db.query.requestLogs.findMany({
-        where: eq(requestLogs.projectId, input.projectId),
+        where: and(...conditions),
         orderBy: [desc(requestLogs.createdAt)],
         limit: input.limit,
       });
@@ -86,13 +98,14 @@ export const requestLogRouter = createTRPCRouter({
     .input(
       z.object({
         projectId: z.string().uuid(),
+        startDate: z.string(),
+        endDate: z.string(),
         limit: z.number().int().min(1).max(50).default(10),
       }),
     )
     .query(async ({ ctx, input }) => {
       await verifyProjectAccess(ctx.db, input.projectId, ctx.userId);
 
-      // Aggregate by sourceUrl to get request counts
       const result = await ctx.db
         .select({
           sourceUrl: requestLogs.sourceUrl,
@@ -103,7 +116,13 @@ export const requestLogRouter = createTRPCRouter({
             ),
         })
         .from(requestLogs)
-        .where(eq(requestLogs.projectId, input.projectId))
+        .where(
+          and(
+            eq(requestLogs.projectId, input.projectId),
+            gte(requestLogs.createdAt, new Date(input.startDate)),
+            lte(requestLogs.createdAt, new Date(input.endDate)),
+          ),
+        )
         .groupBy(requestLogs.sourceUrl)
         .orderBy(sql`count(*) desc`)
         .limit(input.limit);
@@ -116,7 +135,13 @@ export const requestLogRouter = createTRPCRouter({
    * Compares original size vs optimized size.
    */
   getBandwidthSavings: protectedProcedure
-    .input(z.object({ projectId: z.string().uuid() }))
+    .input(
+      z.object({
+        projectId: z.string().uuid(),
+        startDate: z.string(),
+        endDate: z.string(),
+      }),
+    )
     .query(async ({ ctx, input }) => {
       await verifyProjectAccess(ctx.db, input.projectId, ctx.userId);
 
@@ -141,7 +166,13 @@ export const requestLogRouter = createTRPCRouter({
             ),
         })
         .from(requestLogs)
-        .where(eq(requestLogs.projectId, input.projectId));
+        .where(
+          and(
+            eq(requestLogs.projectId, input.projectId),
+            gte(requestLogs.createdAt, new Date(input.startDate)),
+            lte(requestLogs.createdAt, new Date(input.endDate)),
+          ),
+        );
 
       const stats = result[0];
       if (!stats) {

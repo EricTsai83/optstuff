@@ -178,17 +178,40 @@ export const usageRouter = createTRPCRouter({
       z.object({
         projectId: z.string().uuid(),
         days: z.number().int().min(1).max(365).default(30),
+        startDate: z.string().optional(),
+        endDate: z.string().optional(),
       }),
     )
     .query(async ({ ctx, input }) => {
       await verifyProjectAccess(ctx.db, input.projectId, ctx.userId);
 
-      const { startDate, endDate } = getDateRange(input.days);
+      let startDate: string;
+      let endDate: string;
+      let days: number;
 
-      const prevEndDay = new Date();
-      prevEndDay.setDate(prevEndDay.getDate() - input.days - 1);
-      const prevStartDay = new Date();
-      prevStartDay.setDate(prevStartDay.getDate() - input.days * 2);
+      if (input.startDate && input.endDate) {
+        startDate = input.startDate.split("T")[0]!;
+        endDate = input.endDate.split("T")[0]!;
+        const msPerDay = 1000 * 60 * 60 * 24;
+        days = Math.max(
+          1,
+          Math.ceil(
+            (new Date(endDate).getTime() - new Date(startDate).getTime()) /
+              msPerDay,
+          ),
+        );
+      } else {
+        ({ startDate, endDate } = getDateRange(input.days));
+        days = input.days;
+      }
+
+      const msPerDay = 1000 * 60 * 60 * 24;
+      const prevEndDay = new Date(
+        new Date(startDate).getTime() - msPerDay,
+      );
+      const prevStartDay = new Date(
+        prevEndDay.getTime() - days * msPerDay,
+      );
       const prevStartDate = prevStartDay.toISOString().split("T")[0]!;
       const prevEndDate = prevEndDay.toISOString().split("T")[0]!;
 
@@ -221,13 +244,13 @@ export const usageRouter = createTRPCRouter({
       );
 
       return {
-        days: input.days,
+        days,
         startDate,
         endDate,
         totalRequests,
         totalBytes,
-        averageDailyRequests: Math.round(totalRequests / input.days),
-        averageDailyBytes: Math.round(totalBytes / input.days),
+        averageDailyRequests: Math.round(totalRequests / days),
+        averageDailyBytes: Math.round(totalBytes / days),
         previousPeriod: {
           totalRequests: prevTotalRequests,
           totalBytes: prevTotalBytes,
