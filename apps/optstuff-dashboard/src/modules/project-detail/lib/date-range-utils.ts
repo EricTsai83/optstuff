@@ -33,17 +33,16 @@ export function calcTrend(current: number, previous: number): number {
 }
 
 /**
- * Builds a date range ending at yesterday 23:59:59.999 and spanning `numDays` days back.
+ * Builds a date range ending at the end of today and spanning `numDays` days back.
  *
  * @param numDays - Number of days to include in the range.
- * @returns An object with `from` (start of range) and `to` (end of yesterday).
+ * @returns An object with `from` (start of range) and `to` (end of today).
  */
 export function getDateRangeFromDays(numDays: number): {
   from: Date;
   to: Date;
 } {
   const to = new Date();
-  to.setDate(to.getDate() - 1);
   to.setHours(23, 59, 59, 999);
   const from = new Date(to);
   from.setDate(from.getDate() - (numDays - 1));

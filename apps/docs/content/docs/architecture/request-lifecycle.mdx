@@ -62,6 +62,7 @@ sequenceDiagram
   R->>BG: Schedule usage/logging
   BG->>Redis: SET NX write-throttle keys
   BG->>DB: Update lastUsedAt/lastActivityAt (throttled)
+  BG->>Redis: Buffer usage counters (minute hash bucket)
   BG->>DB: Insert request_log (sampled success, full errors)
 ```
 
@@ -108,10 +109,14 @@ After successful `GET` response:
 
 1. **Usage tracking** (fire-and-forget):  
    throttled updates to `api_key.lastUsedAt` and `project.lastActivityAt`.
-2. **Request logging**:  
+2. **Usage metering buffer** (fire-and-forget):  
+   increment Redis minute-bucket counters for `(projectId, apiKeyId, requests, bytes)`.
+3. **Request logging**:  
    sanitized source URL (query/hash stripped), status/size/timing metadata.
-3. **Optional original size sampling**:  
+4. **Optional original size sampling**:  
    ~10% requests perform an extra upstream `HEAD` for size analytics.
+
+Buffered usage counters are later flushed to `usage_record` by cron maintenance (default: `/api/cron/daily-maintenance`; optional high-frequency flush route: `/api/cron/flush-usage-buffer`).
 
 These side effects are intentionally non-blocking to keep tail latency low.
 

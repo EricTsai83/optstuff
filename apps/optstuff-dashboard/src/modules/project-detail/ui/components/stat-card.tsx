@@ -24,7 +24,7 @@ export function StatCard({
 }: StatCardProps) {
   return (
     <Card>
-      <CardContent className="p-4 sm:p-6">
+      <CardContent className="px-4 sm:px-6">
         <div className="flex items-center justify-between">
           <p className="text-muted-foreground text-sm font-medium">{title}</p>
           {icon && <div className="text-muted-foreground/60">{icon}</div>}

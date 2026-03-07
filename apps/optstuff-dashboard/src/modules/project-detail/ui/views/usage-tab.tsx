@@ -13,6 +13,7 @@ import { StatusFilterDropdown } from "../components/status-filter-dropdown";
 import { TimePresetPicker } from "../components/time-preset-picker";
 import { TopImagesList } from "../components/top-images-list";
 import { UsageChart } from "../components/usage-chart";
+import { UsageSyncPanel } from "../components/usage-sync-panel";
 import { useDateRange } from "../hooks/use-date-range";
 import { useUsageData } from "../hooks/use-usage-data";
 
@@ -37,6 +38,8 @@ export function UsageTab({ projectId }: UsageTabProps) {
   const {
     usageSummary,
     isSummaryLoading,
+    meteringStatus,
+    isMeteringStatusLoading,
     dailyVolume,
     isDailyLoading,
     bandwidthSavings,
@@ -50,6 +53,7 @@ export function UsageTab({ projectId }: UsageTabProps) {
     successRate,
   } = useUsageData({
     projectId,
+    days: dateRange.days,
     computedDateRange: dateRange.computedDateRange,
     statusFilters,
   });
@@ -77,38 +81,48 @@ export function UsageTab({ projectId }: UsageTabProps) {
 
   return (
     <div className="space-y-8">
-      <div className="flex flex-wrap items-center gap-2 md:flex-nowrap md:gap-3">
-        <TimePresetPicker
-          preset={dateRange.preset}
-          open={dateRange.presetOpen}
-          onOpenChange={dateRange.setPresetOpen}
-          timeInput={dateRange.timeInput}
-          onTimeInputChange={dateRange.setTimeInput}
-          onTimeInputKeyDown={dateRange.handleTimeInputKeyDown}
-          onPresetChange={dateRange.handlePresetChange}
-          onTimeInputApply={dateRange.handleTimeInputApply}
-        />
+      <div className="space-y-3">
+        <div className="flex flex-wrap items-center gap-2 md:flex-nowrap md:gap-3">
+          <TimePresetPicker
+            preset={dateRange.preset}
+            open={dateRange.presetOpen}
+            onOpenChange={dateRange.setPresetOpen}
+            timeInput={dateRange.timeInput}
+            onTimeInputChange={dateRange.setTimeInput}
+            onTimeInputKeyDown={dateRange.handleTimeInputKeyDown}
+            onPresetChange={dateRange.handlePresetChange}
+            onTimeInputApply={dateRange.handleTimeInputApply}
+          />
 
-        <DateRangeCalendarPicker
-          open={dateRange.calendarOpen}
-          onOpenChange={dateRange.setCalendarOpen}
-          committedRange={dateRange.committedRange}
-          calendarRange={dateRange.calendarRange}
-          onDateRangeSelect={dateRange.handleDateRangeSelect}
-          startDateInput={dateRange.startDateInput}
-          onStartDateInputChange={dateRange.setStartDateInput}
-          startTimeInput={dateRange.startTimeInput}
-          onStartTimeInputChange={dateRange.setStartTimeInput}
-          endDateInput={dateRange.endDateInput}
-          onEndDateInputChange={dateRange.setEndDateInput}
-          endTimeInput={dateRange.endTimeInput}
-          onEndTimeInputChange={dateRange.setEndTimeInput}
-          onManualApply={dateRange.handleManualApply}
-        />
+          <DateRangeCalendarPicker
+            open={dateRange.calendarOpen}
+            onOpenChange={dateRange.setCalendarOpen}
+            committedRange={dateRange.committedRange}
+            calendarRange={dateRange.calendarRange}
+            onDateRangeSelect={dateRange.handleDateRangeSelect}
+            startDateInput={dateRange.startDateInput}
+            onStartDateInputChange={dateRange.setStartDateInput}
+            startTimeInput={dateRange.startTimeInput}
+            onStartTimeInputChange={dateRange.setStartTimeInput}
+            endDateInput={dateRange.endDateInput}
+            onEndDateInputChange={dateRange.setEndDateInput}
+            endTimeInput={dateRange.endTimeInput}
+            onEndTimeInputChange={dateRange.setEndTimeInput}
+            onManualApply={dateRange.handleManualApply}
+          />
 
-        <StatusFilterDropdown
-          statusFilters={statusFilters}
-          onStatusFiltersChange={setStatusFilters}
+          <StatusFilterDropdown
+            statusFilters={statusFilters}
+            onStatusFiltersChange={setStatusFilters}
+          />
+        </div>
+      </div>
+
+      <div className="flex justify-end">
+        <UsageSyncPanel
+          projectId={projectId}
+          meteringStatus={meteringStatus}
+          isLoading={isMeteringStatusLoading}
         />
       </div>
 
@@ -151,7 +165,9 @@ export function UsageTab({ projectId }: UsageTabProps) {
         savingsPercentage={bandwidthSavings?.savingsPercentage ?? 0}
         pairedSizeSamples={bandwidthSavings?.pairedSizeSamples ?? 0}
         successfulRequests={bandwidthSavings?.successfulRequests ?? 0}
-        sampleCoveragePercentage={bandwidthSavings?.sampleCoveragePercentage ?? 0}
+        sampleCoveragePercentage={
+          bandwidthSavings?.sampleCoveragePercentage ?? 0
+        }
         isEstimated={bandwidthSavings?.isEstimated ?? false}
         isLoading={isBandwidthLoading}
       />

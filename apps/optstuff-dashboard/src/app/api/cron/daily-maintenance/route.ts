@@ -1,40 +1,7 @@
 import { NextResponse } from "next/server";
 
-import { env } from "@/env";
+import { authorizeCronRequest } from "@/server/lib/cron-auth";
 import { runDailyMaintenance } from "@/server/lib/daily-maintenance";
-
-type CronAuthResult =
-  | { ok: true }
-  | { ok: false; reason: "unauthorized" | "misconfigured" };
-
-/**
- * Validates whether a cron request is authorized to execute maintenance tasks.
- *
- * In production, `CRON_SECRET` must be configured. When missing, the request is
- * treated as a server misconfiguration. In non-production environments, requests
- * are allowed without a secret to simplify local testing.
- *
- * @param request - Incoming HTTP request to the cron endpoint.
- * @returns Authorization result with either success, unauthorized, or misconfigured status.
- */
-function authorizeCronRequest(request: Request): CronAuthResult {
-  const configuredSecret = env.CRON_SECRET;
-
-  // Allow local manual calls when developing without a cron secret.
-  if (!configuredSecret) {
-    if (env.NODE_ENV === "production") {
-      return { ok: false, reason: "misconfigured" };
-    }
-    return { ok: true };
-  }
-
-  const authorization = request.headers.get("authorization");
-  if (authorization !== `Bearer ${configuredSecret}`) {
-    return { ok: false, reason: "unauthorized" };
-  }
-
-  return { ok: true };
-}
 
 /**
  * Executes daily maintenance jobs through the cron endpoint.
