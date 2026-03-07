@@ -1,4 +1,17 @@
-# OptStuff
+<p align="center">
+  <picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/EricTsai83/optstuff/main/assets/og-readme.png">
+  <img src="https://github.com/EricTsai83/optstuff/blob/main/assets/og-readme.png" width="480" height="80" alt="Logo for OptStuff">
+</picture>
+</p>
+
+<p align="center">
+  A thing for optimizing images.
+</p>
+
+<div align="center">
+  <a href="https://optstuff.com">Home</a> | <a href="https://docs.optstuff.com">Docs</a> | <a href="https://optstuff-nextjs.vercel.app">Demo</a>
+</div>
 
 Secure, high-performance image optimization API with signed URLs, domain whitelisting, and multi-tenant support.
 
