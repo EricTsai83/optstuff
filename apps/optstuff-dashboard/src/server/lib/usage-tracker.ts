@@ -9,7 +9,7 @@
  * serverless environments (no reliance on in-memory timers or process-local state).
  */
 
-import { eq, sql } from "drizzle-orm";
+import { eq, inArray, sql } from "drizzle-orm";
 
 import { db } from "@/server/db";
 import {
@@ -39,6 +39,28 @@ const USAGE_BUFFER_LAST_FLUSH_SUCCESS_AT_KEY =
 const FIELD_DELIMITER = "|";
 const FIELD_REQUESTS = "req";
 const FIELD_BYTES = "bytes";
+const RELEASE_FLUSH_LOCK_SCRIPT = `
+if redis.call("GET", KEYS[1]) == ARGV[1] then
+  return redis.call("DEL", KEYS[1])
+end
+return 0
+`;
+const BUFFER_USAGE_INCREMENT_SCRIPT = `
+local ttl = tonumber(ARGV[1])
+local requestCount = tonumber(ARGV[2])
+local bytesProcessed = tonumber(ARGV[3])
+
+if requestCount and requestCount > 0 then
+  redis.call("HINCRBY", KEYS[1], ARGV[4], requestCount)
+end
+
+if bytesProcessed and bytesProcessed > 0 then
+  redis.call("HINCRBY", KEYS[1], ARGV[5], bytesProcessed)
+end
+
+redis.call("EXPIRE", KEYS[1], ttl)
+return 1
+`;
 
 type UsageMetricField = typeof FIELD_REQUESTS | typeof FIELD_BYTES;
 
@@ -51,7 +73,7 @@ type UsageBufferInput = {
 
 type AggregatedUsageRow = {
   projectId: string;
-  apiKeyId: string;
+  apiKeyId: string | null;
   date: string;
   requestCount: number;
   bytesProcessed: number;
@@ -177,10 +199,9 @@ async function acquireFlushLock(): Promise<string | null> {
 
 async function releaseFlushLock(token: string): Promise<void> {
   const redis = getRedis();
-  const currentToken = await redis.get<string>(USAGE_BUFFER_FLUSH_LOCK_KEY);
-  if (currentToken === token) {
-    await redis.del(USAGE_BUFFER_FLUSH_LOCK_KEY);
-  }
+  await redis.eval(RELEASE_FLUSH_LOCK_SCRIPT, [USAGE_BUFFER_FLUSH_LOCK_KEY], [
+    token,
+  ]);
 }
 
 function parseTimestamp(value: string | null | undefined): Date | null {
@@ -231,8 +252,46 @@ async function flushSingleBufferKey(
     return { upsertedRows: 0, totalRequests: 0, totalBytes: 0 };
   }
 
-  const totalRequests = rows.reduce((sum, row) => sum + row.requestCount, 0);
-  const totalBytes = rows.reduce((sum, row) => sum + row.bytesProcessed, 0);
+  const projectIds = [...new Set(rows.map((row) => row.projectId))];
+  const apiKeyIds = [
+    ...new Set(
+      rows
+        .map((row) => row.apiKeyId)
+        .filter((apiKeyId): apiKeyId is string => apiKeyId !== null),
+    ),
+  ];
+  const [existingProjects, existingApiKeys] = await Promise.all([
+    projectIds.length > 0
+      ? db
+          .select({ id: projects.id })
+          .from(projects)
+          .where(inArray(projects.id, projectIds))
+      : Promise.resolve([] as Array<{ id: string }>),
+    apiKeyIds.length > 0
+      ? db
+          .select({ id: apiKeys.id })
+          .from(apiKeys)
+          .where(inArray(apiKeys.id, apiKeyIds))
+      : Promise.resolve([] as Array<{ id: string }>),
+  ]);
+
+  const projectsSet = new Set(existingProjects.map((project) => project.id));
+  const apiKeysSet = new Set(existingApiKeys.map((apiKey) => apiKey.id));
+  const filteredRows = rows.filter(
+    (row) =>
+      projectsSet.has(row.projectId) &&
+      (row.apiKeyId === null || apiKeysSet.has(row.apiKeyId)),
+  );
+  if (filteredRows.length === 0) {
+    await redis.del(redisKey);
+    return { upsertedRows: 0, totalRequests: 0, totalBytes: 0 };
+  }
+
+  const totalRequests = filteredRows.reduce(
+    (sum, row) => sum + row.requestCount,
+    0,
+  );
+  const totalBytes = filteredRows.reduce((sum, row) => sum + row.bytesProcessed, 0);
   let shouldApplyRows = false;
 
   await db.transaction(async (tx) => {
@@ -240,7 +299,7 @@ async function flushSingleBufferKey(
       .insert(usageBufferFlushLedger)
       .values({
         bucket,
-        rowCount: rows.length,
+        rowCount: filteredRows.length,
         totalRequests,
         totalBytes,
       })
@@ -252,7 +311,7 @@ async function flushSingleBufferKey(
     if (!ledgerClaim) return;
     shouldApplyRows = true;
 
-    for (const row of rows) {
+    for (const row of filteredRows) {
       await tx
         .insert(usageRecords)
         .values({
@@ -280,7 +339,7 @@ async function flushSingleBufferKey(
   }
 
   return {
-    upsertedRows: rows.length,
+    upsertedRows: filteredRows.length,
     totalRequests,
     totalBytes,
   };
@@ -298,30 +357,15 @@ export function bufferUsageIncrement(input: UsageBufferInput): void {
   const redis = getRedis();
   const bucket = toUtcMinuteBucket(new Date());
   const key = getUsageBufferKey(bucket);
-  const tasks: Promise<unknown>[] = [];
 
-  if (requestCount > 0) {
-    tasks.push(
-      redis.hincrby(
-        key,
-        encodeUsageField(input.projectId, input.apiKeyId, FIELD_REQUESTS),
-        requestCount,
-      ),
-    );
-  }
-
-  if (bytesProcessed > 0) {
-    tasks.push(
-      redis.hincrby(
-        key,
-        encodeUsageField(input.projectId, input.apiKeyId, FIELD_BYTES),
-        bytesProcessed,
-      ),
-    );
-  }
-
-  void Promise.all(tasks)
-    .then(() => redis.expire(key, USAGE_BUFFER_TTL_SECONDS))
+  void redis
+    .eval(BUFFER_USAGE_INCREMENT_SCRIPT, [key], [
+      String(USAGE_BUFFER_TTL_SECONDS),
+      String(requestCount),
+      String(bytesProcessed),
+      encodeUsageField(input.projectId, input.apiKeyId, FIELD_REQUESTS),
+      encodeUsageField(input.projectId, input.apiKeyId, FIELD_BYTES),
+    ])
     .catch((error: unknown) => {
       console.error(
         `Failed to buffer usage increment (project=${input.projectId}, key=${input.apiKeyId}):`,

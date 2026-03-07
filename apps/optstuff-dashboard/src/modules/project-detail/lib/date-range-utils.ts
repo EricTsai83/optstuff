@@ -1,4 +1,8 @@
-/** Represents a date range with an optional end date, used across all date-related filtering UI. */
+/**
+ * Represents a date range with an optional end date, used across all date-related filtering UI.
+ *
+ * Date-only ranges in this module use local-time day boundaries (start/end of day in the user's locale).
+ */
 export type DateRange = {
   from: Date | undefined;
   to?: Date | undefined;
@@ -43,10 +47,10 @@ export function getDateRangeFromDays(numDays: number): {
   to: Date;
 } {
   const to = new Date();
-  to.setUTCHours(23, 59, 59, 999);
+  to.setHours(23, 59, 59, 999);
   const from = new Date(to);
-  from.setUTCDate(from.getUTCDate() - (numDays - 1));
-  from.setUTCHours(0, 0, 0, 0);
+  from.setDate(from.getDate() - (numDays - 1));
+  from.setHours(0, 0, 0, 0);
   return { from, to };
 }
 

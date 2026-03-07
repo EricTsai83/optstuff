@@ -59,16 +59,6 @@ export function UsageSyncPanel({
     try {
       const result = await flushNow({ projectId });
 
-      await Promise.all([
-        utils.usage.getSummary.invalidate(),
-        utils.usage.getMeteringStatus.invalidate(),
-        utils.usage.getTeamSummary.invalidate(),
-        utils.usage.getAllTeamsSummary.invalidate(),
-        utils.usage.getByApiKey.invalidate(),
-        utils.usage.getDailyUsage.invalidate(),
-        utils.usage.getMonthlyUsage.invalidate(),
-      ]);
-
       if (result.reason === "cooldown") {
         toast.info("Already up to date", {
           description: `Usage was synced recently. Try again in ${result.cooldownSeconds}s.`,
@@ -87,9 +77,20 @@ export function UsageSyncPanel({
 
       if (result.ok && result.flushResult) {
         const fr = result.flushResult;
+
+        await Promise.all([
+          utils.usage.getSummary.invalidate(),
+          utils.usage.getMeteringStatus.invalidate(),
+          utils.usage.getTeamSummary.invalidate(),
+          utils.usage.getAllTeamsSummary.invalidate(),
+          utils.usage.getByApiKey.invalidate(),
+          utils.usage.getDailyUsage.invalidate(),
+          utils.usage.getMonthlyUsage.invalidate(),
+        ]);
+
         if (fr.totalRequests > 0) {
           toast.success("Usage data updated", {
-            description: `Synced ${fr.totalRequests.toLocaleString()} new requests.`,
+            description: `Synced ${fr.totalRequests.toLocaleString()} requests globally across all projects (triggered from project ${projectId}).`,
             duration: 5000,
           });
         } else {
@@ -192,6 +193,7 @@ export function UsageSyncPanel({
         size="sm"
         onClick={() => void handleFlushNow()}
         disabled={isPending}
+        aria-label={isPending ? "Syncing…" : "Sync Now"}
         className="text-muted-foreground hover:text-foreground h-7 gap-1 px-2 text-xs"
       >
         <RefreshCw className={cn("h-3 w-3", isPending && "animate-spin")} />
