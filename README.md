@@ -10,7 +10,7 @@
 </p>
 
 <div align="center">
-  <a href="https://optstuff.com">Home</a> | <a href="https://docs-optstuff.com">Docs</a> | <a href="https://optstuff-nextjs.vercel.app">Demo</a>
+  <a href="https://optstuff.vercel.app">Home</a> | <a href="https://docs-optstuff.vercel.app">Docs</a> | <a href="https://optstuff-nextjs.vercel.app">Demo</a>
 </div>
 
 
