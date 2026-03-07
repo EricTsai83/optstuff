@@ -135,8 +135,21 @@ export function useDateRange(initialDays = 7) {
     const parseManualDate = (dateStr: string, timeStr: string): Date | null => {
       const d = new Date(dateStr);
       if (Number.isNaN(d.getTime())) return null;
-      const [h, m] = timeStr.split(":").map(Number);
-      if (h == null || m == null || Number.isNaN(h) || Number.isNaN(m))
+      const parts = timeStr.split(":");
+      if (parts.length !== 2) return null;
+      const [h, m] = parts.map(Number);
+      if (
+        h == null ||
+        m == null ||
+        Number.isNaN(h) ||
+        Number.isNaN(m) ||
+        !Number.isInteger(h) ||
+        !Number.isInteger(m) ||
+        h < 0 ||
+        h > 23 ||
+        m < 0 ||
+        m > 59
+      )
         return null;
       d.setHours(h, m, 0, 0);
       return d;
