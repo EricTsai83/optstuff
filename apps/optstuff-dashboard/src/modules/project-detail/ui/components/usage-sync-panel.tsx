@@ -60,8 +60,8 @@ export function UsageSyncPanel({
       const result = await flushNow({ projectId });
 
       if (result.reason === "cooldown") {
-        toast.info("Already up to date", {
-          description: `Usage was synced recently. Try again in ${result.cooldownSeconds}s.`,
+        toast.info("Sync already triggered recently", {
+          description: `Sync was recently triggered and is currently on cooldown. Try again in ${result.cooldownSeconds}s.`,
           duration: 5000,
         });
         return;
@@ -155,8 +155,19 @@ export function UsageSyncPanel({
     <div className="flex items-center gap-x-3 gap-y-2">
       {/* Mobile: compact single label */}
       <span className="flex items-center gap-x-1.5 text-xs sm:hidden">
-        <span className="text-muted-foreground">Synced</span>
-        <ValueOrSpinner value={lastSuccess} isError={hasStatusError} />
+        {hasStatusError ? (
+          <span
+            className="text-destructive/90"
+            title={statusErrorMessage ?? undefined}
+          >
+            Status unavailable
+          </span>
+        ) : (
+          <>
+            <span className="text-muted-foreground">Synced</span>
+            <ValueOrSpinner value={lastSuccess} />
+          </>
+        )}
       </span>
 
       {/* Desktop: full labels with separator */}

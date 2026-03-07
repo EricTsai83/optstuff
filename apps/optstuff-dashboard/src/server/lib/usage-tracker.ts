@@ -73,7 +73,7 @@ type UsageBufferInput = {
 
 type AggregatedUsageRow = {
   projectId: string;
-  apiKeyId: string | null;
+  apiKeyId: string;
   date: string;
   requestCount: number;
   bytesProcessed: number;
@@ -253,13 +253,7 @@ async function flushSingleBufferKey(
   }
 
   const projectIds = [...new Set(rows.map((row) => row.projectId))];
-  const apiKeyIds = [
-    ...new Set(
-      rows
-        .map((row) => row.apiKeyId)
-        .filter((apiKeyId): apiKeyId is string => apiKeyId !== null),
-    ),
-  ];
+  const apiKeyIds = [...new Set(rows.map((row) => row.apiKeyId))];
   const [existingProjects, existingApiKeys] = await Promise.all([
     projectIds.length > 0
       ? db
@@ -278,9 +272,7 @@ async function flushSingleBufferKey(
   const projectsSet = new Set(existingProjects.map((project) => project.id));
   const apiKeysSet = new Set(existingApiKeys.map((apiKey) => apiKey.id));
   const filteredRows = rows.filter(
-    (row) =>
-      projectsSet.has(row.projectId) &&
-      (row.apiKeyId === null || apiKeysSet.has(row.apiKeyId)),
+    (row) => projectsSet.has(row.projectId) && apiKeysSet.has(row.apiKeyId),
   );
   if (filteredRows.length === 0) {
     await redis.del(redisKey);
