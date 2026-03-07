@@ -5,6 +5,10 @@ import { verifyProjectAccess } from "@/server/api/lib/access";
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
 import { requestLogs } from "@/server/db/schema";
 
+const zDateString = z
+  .string()
+  .refine((v) => !isNaN(Date.parse(v)), { message: "Invalid date string" });
+
 export const requestLogRouter = createTRPCRouter({
   /**
    * Get the most recent request logs for a project,
@@ -14,8 +18,8 @@ export const requestLogRouter = createTRPCRouter({
     .input(
       z.object({
         projectId: z.string().uuid(),
-        startDate: z.string(),
-        endDate: z.string(),
+        startDate: zDateString,
+        endDate: zDateString,
         limit: z.number().int().min(1).max(100).default(20),
         statuses: z.array(z.string()).optional(),
       }),
@@ -56,8 +60,8 @@ export const requestLogRouter = createTRPCRouter({
     .input(
       z.object({
         projectId: z.string().uuid(),
-        startDate: z.string(),
-        endDate: z.string(),
+        startDate: zDateString,
+        endDate: zDateString,
       }),
     )
     .query(async ({ ctx, input }) => {
@@ -98,8 +102,8 @@ export const requestLogRouter = createTRPCRouter({
     .input(
       z.object({
         projectId: z.string().uuid(),
-        startDate: z.string(),
-        endDate: z.string(),
+        startDate: zDateString,
+        endDate: zDateString,
         limit: z.number().int().min(1).max(50).default(10),
       }),
     )
@@ -138,8 +142,8 @@ export const requestLogRouter = createTRPCRouter({
     .input(
       z.object({
         projectId: z.string().uuid(),
-        startDate: z.string(),
-        endDate: z.string(),
+        startDate: zDateString,
+        endDate: zDateString,
       }),
     )
     .query(async ({ ctx, input }) => {
