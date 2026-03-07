@@ -13,7 +13,6 @@
   <a href="https://optstuff.com">Home</a> | <a href="https://docs.optstuff.com">Docs</a> | <a href="https://optstuff-nextjs.vercel.app">Demo</a>
 </div>
 
-Secure, high-performance image optimization API with signed URLs, domain whitelisting, and multi-tenant support.
 
 ## What is OptStuff?
 
