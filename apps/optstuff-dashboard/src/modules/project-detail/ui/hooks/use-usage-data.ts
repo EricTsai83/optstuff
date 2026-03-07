@@ -7,8 +7,6 @@ import { calcTrend, STATUS_OPTIONS } from "../../lib/date-range-utils";
 type UseUsageDataParams = {
   /** The project to fetch usage data for. */
   projectId: string;
-  /** Number of days in the selected range (used for summary comparison). */
-  days: number;
   /** Full ISO timestamps derived from the committed date range. */
   computedDateRange: { startDate: string; endDate: string };
   /** Active request-status filters applied to the logs table. */
@@ -24,7 +22,6 @@ type UseUsageDataParams = {
  */
 export function useUsageData({
   projectId,
-  days,
   computedDateRange,
   statusFilters,
 }: UseUsageDataParams) {
@@ -35,7 +32,7 @@ export function useUsageData({
     isLoading: isSummaryLoading,
     isError: isSummaryError,
     error: summaryError,
-  } = api.usage.getSummary.useQuery({ projectId, days, startDate, endDate });
+  } = api.requestLog.getSummary.useQuery({ projectId, startDate, endDate });
 
   const {
     data: dailyVolume,

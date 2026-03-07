@@ -50,7 +50,6 @@ export function UsageTab({ projectId }: UsageTabProps) {
     successRate,
   } = useUsageData({
     projectId,
-    days: dateRange.days,
     computedDateRange: dateRange.computedDateRange,
     statusFilters,
   });

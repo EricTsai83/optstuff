@@ -90,6 +90,80 @@ export const requestLogRouter = createTRPCRouter({
     }),
 
   /**
+   * Get usage summary from request logs with previous-period comparison.
+   */
+  getSummary: protectedProcedure
+    .input(
+      z.object({
+        projectId: z.string().uuid(),
+        startDate: zDateString,
+        endDate: zDateString,
+      }),
+    )
+    .query(async ({ ctx, input }) => {
+      await verifyProjectAccess(ctx.db, input.projectId, ctx.userId);
+
+      const startInclusive = parseDateInput(input.startDate);
+      const endExclusive = toEndExclusive(input.endDate);
+      const rangeDurationMs = Math.max(
+        1,
+        endExclusive.getTime() - startInclusive.getTime(),
+      );
+
+      const previousStartInclusive = new Date(
+        startInclusive.getTime() - rangeDurationMs,
+      );
+      const previousEndExclusive = startInclusive;
+
+      const queryTotals = async (from: Date, to: Date) => {
+        const result = await ctx.db
+          .select({
+            totalRequests: sql<number>`count(*)::int`.as("total_requests"),
+            totalBytes:
+              sql<number>`coalesce(sum(${requestLogs.optimizedSize}), 0)::bigint`.as(
+                "total_bytes",
+              ),
+          })
+          .from(requestLogs)
+          .where(
+            and(
+              eq(requestLogs.projectId, input.projectId),
+              gte(requestLogs.createdAt, from),
+              lt(requestLogs.createdAt, to),
+            ),
+          );
+
+        const totals = result[0];
+        return {
+          totalRequests: totals?.totalRequests ?? 0,
+          totalBytes: Number(totals?.totalBytes ?? 0),
+        };
+      };
+
+      const [current, previous] = await Promise.all([
+        queryTotals(startInclusive, endExclusive),
+        queryTotals(previousStartInclusive, previousEndExclusive),
+      ]);
+
+      const msPerDay = 1000 * 60 * 60 * 24;
+      const days = Math.max(1, Math.ceil(rangeDurationMs / msPerDay));
+
+      return {
+        days,
+        startDate: input.startDate,
+        endDate: input.endDate,
+        totalRequests: current.totalRequests,
+        totalBytes: current.totalBytes,
+        averageDailyRequests: Math.round(current.totalRequests / days),
+        averageDailyBytes: Math.round(current.totalBytes / days),
+        previousPeriod: {
+          totalRequests: previous.totalRequests,
+          totalBytes: previous.totalBytes,
+        },
+      };
+    }),
+
+  /**
    * Get daily request volume aggregated from request logs.
    */
   getDailyVolume: protectedProcedure
