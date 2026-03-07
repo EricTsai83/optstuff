@@ -6,14 +6,21 @@
  * 2) VERCEL_URL (always https://)
  * 3) localhost development fallback
  */
-export function getProjectBaseUrl() {
+export function getProjectBaseUrl(): URL {
   const projectUrl = process.env.PROJECT_URL?.trim();
 
   if (projectUrl) {
     try {
       return new URL(projectUrl);
     } catch {
-      return new URL(`https://${projectUrl}`);
+      try {
+        return new URL(`https://${projectUrl}`);
+      } catch {
+        // Intentionally fail fast so deployment config issues are visible immediately.
+        throw new Error(
+          `Invalid PROJECT_URL value "${projectUrl}". Set PROJECT_URL as an absolute URL (e.g. "https://example.com") or provide a valid hostname.`,
+        );
+      }
     }
   }
 
