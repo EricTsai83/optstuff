@@ -91,8 +91,8 @@ sequenceDiagram
   A->>O: Fetch source + transform (IPX/Sharp)
   A-->>C: 200 image bytes + cache headers
   A->>A: after() schedule usage/log updates
-  A->>R: usage throttle keys (NX/EX)
-  A->>P: request_log + lastUsed updates
+  A->>R: usage throttle keys + usage minute buffer
+  A->>P: request_log + metadata updates
 ```
 
 ### HEAD Fast-Path Flow
@@ -144,6 +144,7 @@ team
 - **Cache propagation:** config cache TTL is 60s; negative cache TTL is 10s.
 - **Rate-limiter availability:** Redis failures fail open (request allowed).
 - **Request logging:** source URL is sanitized (query/hash removed); retention target is 30 days; errors are always logged while successful requests can be sampled via `REQUEST_LOG_SUCCESS_SAMPLE_RATE`.
+- **Usage metering:** successful request counters are buffered in Redis minute buckets and flushed to `usage_record` via scheduled cron maintenance (with optional high-frequency flush route on higher plans).
 - **Original-size metric:** sampled (10%) to avoid extra upstream `HEAD` on every success.
 - **Metric formulas:** exact Usage metric formulas and caveats are documented in [Usage Metrics Calculations](/architecture/usage-metrics-calculations).
 - **HEAD upstream behavior:** non-image content-type probes are treated as transform-ineligible (`502`).
@@ -156,9 +157,10 @@ To understand how the system was built up end-to-end, follow this order:
 2. [User Onboarding Flow](/architecture/user-onboarding-flow) — How a new user becomes an active project owner.
 3. [Create API Key Flow](/architecture/create-api-key-flow) — Dual-key model, encryption-at-rest, and rotation.
 4. [Request Lifecycle](/architecture/request-lifecycle) — Request-by-request runtime path for `GET` and `HEAD`.
-5. [Usage Metrics Calculations](/architecture/usage-metrics-calculations) — Exact formulas, data sources, and sampling caveats for analytics.
-6. [Redis Schema](/architecture/redis-schema) — Cache-aside, rate-limit counters, and write throttling.
-7. [SSRF Prevention](/architecture/ssrf-prevention) — Threat model and redirect-handling invariant.
+5. [Usage Metering Pipeline](/architecture/usage-metering-pipeline) — Hot-path buffering, flush jobs, consistency model, and operational controls.
+6. [Usage Metrics Calculations](/architecture/usage-metrics-calculations) — Exact formulas, data sources, and sampling caveats for analytics.
+7. [Redis Schema](/architecture/redis-schema) — Cache-aside, rate-limit counters, write throttling, and usage buffer keys.
+8. [SSRF Prevention](/architecture/ssrf-prevention) — Threat model and redirect-handling invariant.
 
 ## Related Docs
 
@@ -166,4 +168,5 @@ To understand how the system was built up end-to-end, follow this order:
 - [Rate Limiting](/guides/rate-limiting)
 - [URL Signing](/guides/url-signing)
 - [Usage Metrics Calculations](/architecture/usage-metrics-calculations)
+- [Usage Metering Pipeline](/architecture/usage-metering-pipeline)
 - [Security Best Practices](/guides/security-best-practices)

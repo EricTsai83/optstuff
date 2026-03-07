@@ -118,9 +118,21 @@ async function logRequestAwait(projectId: string, data: RequestLogPayload) {
   await logRequest(projectId, data);
 }
 
-function updateUsageInBackground(apiKeyId: string, projectId: string): void {
+function updateUsageInBackground(
+  apiKeyId: string,
+  projectId: string,
+  bytesProcessed: number,
+): void {
   void getUsageTrackerModule()
-    .then(({ updateApiKeyLastUsed }) => updateApiKeyLastUsed(apiKeyId, projectId))
+    .then(({ bufferUsageIncrement, updateApiKeyLastUsed }) => {
+      updateApiKeyLastUsed(apiKeyId, projectId);
+      bufferUsageIncrement({
+        projectId,
+        apiKeyId,
+        requestCount: 1,
+        bytesProcessed,
+      });
+    })
     .catch(() => undefined);
 }
 
@@ -492,7 +504,7 @@ export async function GET(
     // 10/11. Schedule usage tracking + logging after response is sent.
     // Sampling avoids sending an upstream HEAD for every successful request.
     after(async () => {
-      updateUsageInBackground(apiKey.id, project.id);
+      updateUsageInBackground(apiKey.id, project.id, imageData.length);
 
       let originalSize: number | undefined;
       if (shouldProbeOriginalSize) {

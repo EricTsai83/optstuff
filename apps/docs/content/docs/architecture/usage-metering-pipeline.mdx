@@ -1,0 +1,190 @@
+---
+title: Usage Metering Pipeline
+description: End-to-end design of usage metering in OptStuff, including hot-path buffering, Redis minute buckets, cron flushing, consistency model, and operations runbook.
+---
+
+This document records the full system design for usage metering in OptStuff.
+
+## Quick Terms (for new readers)
+
+If you are new to this stack, these are the only terms you need first:
+
+- **Redis**: in-memory key-value store used here as a temporary buffer and coordination lock.
+- **Postgres**: persistent database; this is the source of truth for long-term usage totals.
+- **Cron route**: an HTTP endpoint called on a schedule (for example once per day).
+- **Flush**: move buffered usage increments from Redis into Postgres aggregates.
+- **`SET NX EX` lock**: "set only if absent, and auto-expire after N seconds" (short-lived lock pattern).
+- **Flush ledger**: durable DB table row per bucket that prevents double-apply if a flush retries.
+
+## Why This Exists
+
+OptStuff needs two different analytics layers:
+
+1. **Authoritative metering** for product totals, team/project summaries, and future billing-style reporting.
+2. **Operational telemetry** for debugging and request-level analytics.
+
+These goals have different write/read patterns, so they are intentionally split:
+
+- `usage_record` = authoritative aggregate counters
+- `request_log` = request-level telemetry
+
+## Data Model Responsibilities
+
+| Table | Granularity | Typical Use | Retention |
+|-------|-------------|-------------|-----------|
+| `usage_record` | `(projectId, apiKeyId, date)` aggregate | Totals, trends, usage summaries | Long-lived |
+| `request_log` | Per request | Recent logs, top images, diagnostics, bandwidth estimation | 30-day cleanup |
+
+## Design Constraints
+
+- Request serving path (`/api/v1/...`) must stay low-latency.
+- Serverless instances are ephemeral (no reliable in-memory batching).
+- Free-tier deployments may only allow a single scheduled cron route.
+- Duplicate flush jobs must not corrupt counters.
+
+## Chosen Architecture
+
+### 1) Hot Path: Non-blocking Buffer Writes
+
+On successful GET image responses:
+
+- Request metadata is still handled (`lastUsedAt`, `lastActivityAt`) with `SET NX EX` throttling (set-if-absent + auto-expire).
+- Usage increments are buffered into Redis minute buckets:
+  - key: `usage:buffer:minute:{YYYYMMDDHHmm}`
+  - hash fields:
+    - `{projectId}|{apiKeyId}|req`
+    - `{projectId}|{apiKeyId}|bytes`
+
+This avoids direct per-request upserts to `usage_record`.
+
+### 2) Background Flush: Cron -> Postgres Upsert
+
+Default free-tier schedule:
+
+- `GET /api/cron/daily-maintenance`
+- schedule: once per day (for example `0 3 * * *`)
+
+`runDailyMaintenance()` internally executes `flushUsageBufferToDatabase()`.
+
+Upgrade path when higher cron capacity is available:
+
+- keep daily maintenance as-is
+- add a second high-frequency schedule for `GET /api/cron/flush-usage-buffer`
+- no data-model changes required
+
+Operator fallback:
+
+- project owners can trigger the same flush pipeline manually from the dashboard
+- this is intended for freshness on low-frequency schedules, not as the primary automation path
+
+Flush behavior:
+
+1. Acquire a short-lived Redis lock (`usage:buffer:flush:lock`) with TTL.
+2. Scan `usage:buffer:minute:*` keys.
+3. Skip very recent buckets (safety lag) to avoid clock-skew races.
+4. Parse each bucket hash into aggregate rows.
+5. In one Postgres transaction, insert a durable flush-ledger row for that bucket; only if the ledger insert succeeds do additive upserts run for `usage_record`.
+6. Delete the Redis bucket after transaction commit (safe to retry cleanup without replaying usage).
+
+### 3) Summary Reads
+
+Summary APIs (`usage.getSummary`, `usage.getTeamSummary`, etc.) continue reading from `usage_record`.
+
+This keeps total metrics semantically separate from `request_log` sampling behavior.
+
+## Consistency Model
+
+This pipeline is **eventually consistent**:
+
+- On free-tier single-daily schedule, expected lag can approach one day.
+- With high-frequency flush scheduling, lag is roughly cron interval + safety lag.
+- During that window, recent successful traffic may exist in Redis but not yet in `usage_record`.
+
+This trade-off is intentional to protect request-path performance.
+
+## Failure and Recovery Behavior
+
+### Redis write failure on hot path
+
+- Request response is not blocked.
+- Usage increment may be dropped.
+- Error is logged.
+
+### Flush job overlap
+
+- `acquireFlushLock()` uses Redis `SET NX EX` ("set only if absent, then auto-expire") with a time limit (`USAGE_BUFFER_FLUSH_LOCK_TTL_SECONDS`, currently 55s).
+- The lock is not renewed while flushing. If a flush runs longer than 55 seconds, the lock can expire and a second worker may start.
+- The real no-double-apply guard is the durable per-bucket flush ledger in Postgres (claim-before-apply), not the lock by itself.
+
+### Flush job crash
+
+- Redis buckets can remain when a worker crashes mid-run.
+- If DB commit already happened but Redis delete did not, the next run sees the same bucket but skips additive replay via the durable bucket ledger, then deletes the bucket.
+
+### Postgres upsert failure for a bucket
+
+- The transaction (ledger + additive upserts) is rolled back.
+- Bucket is not deleted, so later cron runs can retry safely.
+
+## Performance Rationale
+
+Why not direct DB writes per request?
+
+- High traffic creates hot-row lock contention on `(projectId, apiKeyId, date)`.
+- Adds write latency and resource pressure to the request path.
+
+Why Redis minute buckets?
+
+- Request path does cheap increments only.
+- Upserts are batched and amortized.
+- Operational controls (lag, lock, schedule) are explicit and tunable.
+
+## Operational Controls
+
+Key parameters in code:
+
+- `USAGE_BUFFER_SAFE_LAG_MINUTES`
+- `USAGE_BUFFER_TTL_SECONDS`
+- `USAGE_BUFFER_FLUSH_LOCK_TTL_SECONDS`
+- cron schedule for `/api/cron/daily-maintenance` (and optional `/api/cron/flush-usage-buffer`)
+
+Tune these based on traffic volume and staleness tolerance.
+
+## Runbook
+
+### Verify pipeline health
+
+1. Check cron success for `/api/cron/daily-maintenance`.
+2. Inspect flush response fields:
+   - `processedKeys`
+   - `failedKeys`
+   - `upsertedRows`
+   - `totalRequests`, `totalBytes`
+3. Confirm `usage_record` rows increase during active traffic.
+
+### If summaries look stale
+
+1. Confirm daily cron is running and authorized.
+2. Check Redis lock/key backlog (`usage:buffer:minute:*` growth).
+3. Check DB upsert errors in logs.
+4. Use the dashboard's manual sync control to force a flush when needed.
+
+## Rollout Notes
+
+When enabling this on an existing deployment:
+
+- New traffic starts populating `usage_record` through Redis flush.
+- Historical periods may remain sparse unless backfilled.
+- On free-tier daily-only scheduling, same-day metrics are intentionally delayed.
+
+Recommended follow-up:
+
+- Run a one-time backfill for recent historical windows when required by reporting.
+
+## Related Docs
+
+- [Architecture Overview](/architecture/overview)
+- [Request Lifecycle](/architecture/request-lifecycle)
+- [Daily Maintenance Cron](/architecture/daily-maintenance-cron)
+- [Usage Metrics Calculations](/architecture/usage-metrics-calculations)
+- [Redis Schema](/architecture/redis-schema)

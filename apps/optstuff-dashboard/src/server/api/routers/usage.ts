@@ -9,6 +9,13 @@ import {
 } from "@/server/api/lib/access";
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
 import { apiKeys, projects, teams, usageRecords } from "@/server/db/schema";
+import { getRedis } from "@/server/lib/redis";
+import {
+  getUsageBufferFlushStatus,
+  flushUsageBufferToDatabase,
+} from "@/server/lib/usage-tracker";
+
+const MANUAL_USAGE_FLUSH_COOLDOWN_SECONDS = 60;
 
 export const usageRouter = createTRPCRouter({
   /**
@@ -59,11 +66,12 @@ export const usageRouter = createTRPCRouter({
             bytesProcessed: input.bytesProcessed,
           })
           .onConflictDoUpdate({
-            target: [
-              usageRecords.projectId,
-              usageRecords.apiKeyId,
-              usageRecords.date,
-            ],
+            target: input.apiKeyId
+              ? [usageRecords.projectId, usageRecords.apiKeyId, usageRecords.date]
+              : [usageRecords.projectId, usageRecords.date],
+            targetWhere: input.apiKeyId
+              ? sql`${usageRecords.apiKeyId} IS NOT NULL`
+              : sql`${usageRecords.apiKeyId} IS NULL`,
             set: {
               requestCount: sql`${usageRecords.requestCount} + ${input.requestCount}`,
               bytesProcessed: sql`${usageRecords.bytesProcessed} + ${input.bytesProcessed}`,
@@ -114,9 +122,7 @@ export const usageRouter = createTRPCRouter({
       const dailyUsage = records.reduce(
         (acc, record) => {
           const date = record.date;
-          if (!acc[date]) {
-            acc[date] = { date, requestCount: 0, bytesProcessed: 0 };
-          }
+          acc[date] ??= { date, requestCount: 0, bytesProcessed: 0 };
           acc[date].requestCount += record.requestCount;
           acc[date].bytesProcessed += record.bytesProcessed;
           return acc;
@@ -259,6 +265,65 @@ export const usageRouter = createTRPCRouter({
     }),
 
   /**
+   * Get usage metering freshness information for dashboard display.
+   */
+  getMeteringStatus: protectedProcedure
+    .input(
+      z.object({
+        projectId: z.string().uuid(),
+      }),
+    )
+    .query(async ({ ctx, input }) => {
+      await verifyProjectAccess(ctx.db, input.projectId, ctx.userId);
+
+      const flushStatus = await getUsageBufferFlushStatus();
+
+      return {
+        lastFlushRunAt: flushStatus.lastFlushRunAt,
+        lastFlushSuccessAt: flushStatus.lastFlushSuccessAt,
+      };
+    }),
+
+  /**
+   * Manually flush buffered usage counters into `usage_record`.
+   *
+   * The action is project-scoped for authorization but the flush itself is
+   * global, since usage buckets are shared across all projects.
+   */
+  flushNow: protectedProcedure
+    .input(
+      z.object({
+        projectId: z.string().uuid(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      await verifyProjectAccess(ctx.db, input.projectId, ctx.userId);
+
+      const redis = getRedis();
+      const cooldownKey = `usage:buffer:manual-trigger:${ctx.userId}`;
+      const cooldownResult = await redis.set(cooldownKey, "1", {
+        nx: true,
+        ex: MANUAL_USAGE_FLUSH_COOLDOWN_SECONDS,
+      });
+
+      if (cooldownResult !== "OK") {
+        return {
+          ok: false as const,
+          reason: "cooldown" as const,
+          cooldownSeconds: MANUAL_USAGE_FLUSH_COOLDOWN_SECONDS,
+        };
+      }
+
+      const flushResult = await flushUsageBufferToDatabase();
+      return {
+        ok: flushResult.ok,
+        reason: "executed" as const,
+        cooldownSeconds: 0,
+        flushResult,
+      };
+    }),
+
+  /**
    * Get usage breakdown by API key for a project.
    */
   getByApiKey: protectedProcedure
@@ -287,15 +352,13 @@ export const usageRouter = createTRPCRouter({
           const keyName = record.apiKey?.name ?? "Unknown";
           const publicKey = record.apiKey?.publicKey ?? "???";
 
-          if (!acc[keyId]) {
-            acc[keyId] = {
-              apiKeyId: keyId,
-              name: keyName,
-              publicKey,
-              requestCount: 0,
-              bytesProcessed: 0,
-            };
-          }
+          acc[keyId] ??= {
+            apiKeyId: keyId,
+            name: keyName,
+            publicKey,
+            requestCount: 0,
+            bytesProcessed: 0,
+          };
           acc[keyId].requestCount += record.requestCount;
           acc[keyId].bytesProcessed += record.bytesProcessed;
           return acc;

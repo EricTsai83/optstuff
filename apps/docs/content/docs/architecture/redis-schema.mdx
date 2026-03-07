@@ -3,7 +3,16 @@ title: Redis Schema
 description: Architecture documentation — Redis key schema, cache-aside pattern, sliding window rate limiting, write throttling, and data durability.
 ---
 
-The caching layer uses Redis for three purposes: configuration caching, rate limiting, and write throttling. All keys have a TTL — nothing persists indefinitely.
+The caching layer uses Redis for four purposes: configuration caching, rate limiting, write throttling, and usage buffering/flush coordination. All keys have a TTL — nothing persists indefinitely.
+
+## Quick Reader Guide
+
+If you are not familiar with this stack, read the tables with this mental model:
+
+- **Key prefix**: groups related Redis keys (similar to a namespace).
+- **TTL**: auto-expiry time; Redis deletes the key after this window.
+- **Source of truth**: where durable/canonical data lives (usually Postgres).
+- **Control flag/lock key**: coordination-only state; losing it usually affects timing, not correctness.
 
 For the user-facing rate limiting guide (behavior, configuration, tuning), see [Rate Limiting](/guides/rate-limiting).
 
@@ -23,6 +32,8 @@ All Redis keys use a structured prefix convention. Every key has a TTL — no ke
 | `ratelimit:ipx:day:` | Per-day rate limit counter | ~24h | `ratelimit:ipx:day:pk_abc123` |
 | `usage:apikey:` | API key write throttle lock | 30s | `usage:apikey:uuid-123` |
 | `usage:project:` | Project write throttle lock | 30s | `usage:project:uuid-456` |
+| `usage:buffer:minute:` | Buffered usage counters (minute bucket hash) | 14 days (2 weeks) | `usage:buffer:minute:202603071230` |
+| `usage:buffer:flush:lock` | Flush worker lock | ~55s | `usage:buffer:flush:lock` |
 
 ---
 
@@ -175,10 +186,12 @@ Rate limit instances are created with `analytics: true`, which sends usage metri
 
 ---
 
-## Write Throttling (SET NX)
+## Usage Activity Throttling (SET NX / "set if absent")
 
 **File:** `src/server/lib/usage-tracker.ts`  
 **Pattern:** Distributed Lock via SET NX (Set-If-Not-Exists)
+
+`SET ... NX EX 30` means "create this key only if it does not already exist, and auto-expire it after 30 seconds."
 
 ### Implementation Flow
 
@@ -223,15 +236,65 @@ Write throttling runs as **fire-and-forget** — it does not `await` the result 
 
 ---
 
+## Usage Metering Buffer + Flush
+
+**Files:** `src/server/lib/usage-tracker.ts`, `src/app/api/cron/flush-usage-buffer/route.ts`  
+**Pattern:** Request-path Redis buffering + cron batch upsert to Postgres
+
+### Purpose
+
+Avoid per-request database upserts on the image-serving hot path while still aggregating usage totals into `usage_record`.
+
+### Write Path
+
+On successful image responses:
+
+- Request path records usage increments into Redis hash buckets by minute.
+- Bucket key format: `usage:buffer:minute:{YYYYMMDDHHmm}` (UTC minute).
+- Hash fields:
+  - `{projectId}|{apiKeyId}|req`
+  - `{projectId}|{apiKeyId}|bytes`
+
+### Flush Path
+
+Default free-tier mode runs flush as part of `/api/cron/daily-maintenance` (once per day).  
+When plan limits allow, you can additionally schedule `/api/cron/flush-usage-buffer` at higher frequency.
+
+Flush flow:
+
+1. Acquires lock key `usage:buffer:flush:lock` (SET NX EX).
+2. Scans `usage:buffer:minute:*`.
+3. Skips too-recent buckets (safety lag).
+4. Aggregates each bucket into `(projectId, apiKeyId, date)` rows.
+5. Writes a durable per-bucket flush ledger row in Postgres, then applies additive upserts into `usage_record` only when the bucket has not been flushed before.
+6. Deletes the Redis bucket after the transaction commits (safe to retry if cleanup is interrupted).
+
+### Consistency
+
+This design is eventually consistent by intent:
+
+- Totals in `usage_record` can lag recent traffic.
+- The lag is bounded by cron interval + flush safety lag (daily on free tier, lower when high-frequency flush is enabled).
+
+### Why This Instead of Direct DB Writes
+
+- Reduces hot-row contention on `usage_record` unique keys.
+- Keeps image response path non-blocking.
+- Makes write amplification and DB load tunable via cron cadence.
+
+---
+
 ## Data Durability
 
-Redis contains **zero persistent data**. Every key falls into one of three categories:
+Redis contains **zero persistent data**. Every key falls into one of five categories:
 
 | Category | Source of Truth | If Redis Is Wiped |
 |----------|----------------|-------------------|
 | Config cache | PostgreSQL | Next request refills from database (higher latency for one request) |
 | Rate limit counters | None (ephemeral by nature) | Counters reset to zero (briefly allows over-limit requests) |
-| Write throttle locks | None (control flags) | Triggers one extra database UPDATE per key (harmless) |
+| Activity throttle locks | None (control flags) | Triggers one extra metadata UPDATE per key (harmless) |
+| Flush lock | None (coordination flag, derived from application state/DB) | May trigger extra flush attempt; buffered increments retained. |
+| Usage buffer buckets | `usage_record` after flush | Any not-yet-flushed increments are lost |
 
 When Redis is unavailable, rate limiting is designed to fail open (`allowed: true`) to preserve image-serving availability.
 

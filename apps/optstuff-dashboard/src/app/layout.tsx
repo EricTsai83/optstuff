@@ -1,6 +1,7 @@
 import "@/styles/globals.css";
 import { TRPCReactProvider } from "@/trpc/react";
 import { AuthProvider } from "@workspace/auth/provider";
+import { Toaster } from "@workspace/ui/components/sonner";
 import { ThemeProvider } from "@workspace/ui/components/theme-provider";
 import { TooltipProvider } from "@workspace/ui/components/tooltip";
 import { type Metadata } from "next";
@@ -39,6 +40,7 @@ export default function RootLayout({
           <AuthProvider afterSignOutUrl="/sign-in">
             <TRPCReactProvider>
               <TooltipProvider>{children}</TooltipProvider>
+              <Toaster />
             </TRPCReactProvider>
           </AuthProvider>
         </ThemeProvider>

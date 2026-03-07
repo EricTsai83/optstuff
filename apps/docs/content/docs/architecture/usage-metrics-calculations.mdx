@@ -9,7 +9,7 @@ This page documents how each Usage metric is computed, where its data comes from
 
 | Source | Table | Purpose | Reliability |
 |--------|-------|---------|-------------|
-| Aggregated usage | `usage_record` | Billing-like totals (`totalRequests`, `totalBytes`) | High (authoritative aggregate) |
+| Aggregated usage | `usage_record` | Aggregate totals (`totalRequests`, `totalBytes`) | Best-effort aggregate (hot-path Redis increments can be dropped on Redis failures; eventually consistent by flush cadence) |
 | Request telemetry | `request_log` | Request-level analytics (logs, top images, response time, bandwidth estimate) | Medium (sampling may apply) |
 
 ## Sampling Model (Important)
@@ -20,10 +20,13 @@ Two sampling controls affect request-log-derived metrics:
 - Original size probing is sampled at `10%` (to avoid an upstream `HEAD` on every success request).
 
 Because of this, request-log metrics are **analytics telemetry**, not strict accounting.  
-For quota/billing style totals, use `usage_record`-based metrics.
+`usage_record` is also **best-effort** today (hot-path Redis increments can be lost before flush), so do **not** treat it as strict quota/billing accounting until the write path is made durable end-to-end.
+
+`usage_record` values are buffered and flushed from Redis, so very recent traffic can appear with a delay determined by your cron schedule (daily on free tier; near-real-time when high-frequency flush is enabled).
 
 See also:
 - [Request Lifecycle](/architecture/request-lifecycle)
+- [Usage Metering Pipeline](/architecture/usage-metering-pipeline)
 - [Environment Variables](/self-hosting/environment-variables)
 
 ## Date Range Semantics

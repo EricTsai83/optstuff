@@ -1,6 +1,6 @@
 ---
 title: Daily Maintenance Cron
-description: Design and rationale for the scheduled maintenance pipeline, including retry processing, request-log cleanup, and expired API key revocation.
+description: Design and rationale for the scheduled maintenance pipeline, including retry processing, usage-buffer flush, request-log cleanup, and expired API key revocation.
 ---
 
 This page describes the `/api/cron/daily-maintenance` pipeline and explains why each step is implemented this way.
@@ -21,7 +21,10 @@ The cron pipeline optimizes for:
 1. **Correct core state first**: key revocation must be durable and idempotent.
 2. **Best-effort side effects**: denormalized counts and cache invalidation should not block the whole run.
 3. **Recoverability**: failed side effects are persisted and retried later.
-4. **Low operational overhead**: works on Vercel Free/Hobby without extra queue infrastructure.
+4. **Low operational overhead**: one daily cron can handle all periodic work on Vercel Free/Hobby.
+5. **Upgrade-friendly design**: usage flush is exposed separately so higher-frequency schedules can be added later.
+
+For low-frequency environments, operators can also trigger a protected manual usage flush from the dashboard without changing the scheduled architecture.
 
 ## End-to-end pipeline
 
@@ -30,7 +33,7 @@ flowchart TD
   A["Cron trigger"] --> B["Authorize request"]
   B -->|OK| C["runDailyMaintenance()"]
   C --> D["Process retry queue first"]
-  D --> E["Then run in parallel:<br/>1) cleanupOldRequestLogs<br/>2) revokeExpiredApiKeys"]
+  D --> E["Then run in parallel:<br/>1) flushUsageBufferToDatabase<br/>2) cleanupOldRequestLogs<br/>3) revokeExpiredApiKeys"]
   E --> F["Aggregate job results"]
   F --> G["Return JSON status"]
 ```
@@ -61,7 +64,17 @@ Each retry task contains:
 - Failure increments `attempts`, stores `lastError`, and schedules next attempt with exponential backoff.
 - Exhausted tasks (`attempts >= maxAttempts`) stay recorded and stop auto-running until re-enqueued by a new failure event.
 
-## Step 2A: Request log cleanup
+## Step 2A: Usage buffer flush
+
+`flushUsageBufferToDatabase()` moves Redis minute buckets into `usage_record`.
+
+### Why this runs in daily cron
+
+- Supports free-tier environments that can only schedule one cron job.
+- Keeps authoritative usage metrics (`usage_record`) up to date without requiring a second scheduler.
+- Still keeps the request path non-blocking by buffering writes in Redis first.
+
+## Step 2B: Request log cleanup
 
 `cleanupOldRequestLogs()` deletes logs older than retention and returns `deletedCount`.
 
@@ -70,7 +83,7 @@ Each retry task contains:
 - Gives an immediate operational signal ("did cleanup do work this run?").
 - Makes cron output more useful for monitoring and debugging.
 
-## Step 2B: Expired API key sweep
+## Step 2C: Expired API key sweep
 
 `revokeExpiredApiKeys()` executes:
 
@@ -100,6 +113,7 @@ This provides eventual convergence without requiring external workers/queues.
 `runDailyMaintenance()` returns structured per-job status:
 
 - `retryQueue`: processed/succeeded/failed/exhausted/remaining
+- `usageBufferFlush`: scanned/processed keys, upserted rows, counters, and failures
 - `requestLogCleanup`: `ok` + `deletedCount`
 - `expiredApiKeySweep`: `ok` + `expiredKeys` + `affectedProjects` + `queuedRetryTasks`
 - top-level `ok` and `durationMs`
@@ -108,7 +122,7 @@ This shape keeps the endpoint machine-readable for alerting and human-readable f
 
 ## Why this fits Vercel Free/Hobby
 
-- Uses one cron route and Postgres only (no extra infrastructure).
+- Uses one scheduled cron route with Postgres and Redis (buffer/lock) — no extra queue infrastructure.
 - Avoids single-point short-circuit failures on batch side effects.
 - Supports eventual repair by retry queue + next cron execution.
 - Maintains idempotent core updates (`revokedAt IS NULL` guard) for safe re-runs.
@@ -125,3 +139,4 @@ Potential future upgrades:
 - Dedicated reconciliation job (periodic full `apiKeyCount` rebuild).
 - Separate dead-letter handling UI/reporting for exhausted tasks.
 - Distributed lock to prevent overlapping cron executions under high latency.
+- Re-enable a higher-frequency schedule for `/api/cron/flush-usage-buffer` when plan limits allow.

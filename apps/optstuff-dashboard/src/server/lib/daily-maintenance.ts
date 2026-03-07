@@ -4,6 +4,7 @@ import { db } from "@/server/db";
 import { apiKeys, maintenanceRetryTasks, projects } from "@/server/db/schema";
 import { invalidateApiKeyCache } from "@/server/lib/config-cache";
 import { cleanupOldRequestLogs } from "@/server/lib/request-logger";
+import { flushUsageBufferToDatabase } from "@/server/lib/usage-tracker";
 
 const RETRY_BATCH_LIMIT = 200;
 const RETRY_BASE_DELAY_MS = 60_000;
@@ -292,6 +293,19 @@ export async function runDailyMaintenance(): Promise<{
     remaining?: number;
     error?: string;
   };
+  usageBufferFlush: {
+    ok: boolean;
+    skippedByLock?: boolean;
+    scannedKeys?: number;
+    processedKeys?: number;
+    skippedRecentKeys?: number;
+    upsertedRows?: number;
+    totalRequests?: number;
+    totalBytes?: number;
+    failedKeys?: number;
+    durationMs?: number;
+    error?: string;
+  };
   requestLogCleanup: { ok: boolean; deletedCount?: number; error?: string };
   expiredApiKeySweep: {
     ok: boolean;
@@ -327,10 +341,28 @@ export async function runDailyMaintenance(): Promise<{
     retryQueue = { ok: false, error: String(error) };
   }
 
-  const [cleanupResult, sweepResult] = await Promise.allSettled([
+  const [usageFlushResult, cleanupResult, sweepResult] = await Promise.allSettled([
+    flushUsageBufferToDatabase(),
     cleanupOldRequestLogs(),
     revokeExpiredApiKeys(),
   ]);
+
+  const usageBufferFlush =
+    usageFlushResult.status === "fulfilled"
+      ? {
+          ok: usageFlushResult.value.ok,
+          skippedByLock: usageFlushResult.value.skippedByLock,
+          scannedKeys: usageFlushResult.value.scannedKeys,
+          processedKeys: usageFlushResult.value.processedKeys,
+          skippedRecentKeys: usageFlushResult.value.skippedRecentKeys,
+          upsertedRows: usageFlushResult.value.upsertedRows,
+          totalRequests: usageFlushResult.value.totalRequests,
+          totalBytes: usageFlushResult.value.totalBytes,
+          failedKeys: usageFlushResult.value.failedKeys,
+          durationMs: usageFlushResult.value.durationMs,
+          error: usageFlushResult.value.error,
+        }
+      : { ok: false, error: String(usageFlushResult.reason) };
 
   const requestLogCleanup =
     cleanupResult.status === "fulfilled"
@@ -348,9 +380,10 @@ export async function runDailyMaintenance(): Promise<{
       : { ok: false, error: String(sweepResult.reason) };
 
   return {
-    ok: retryQueue.ok && requestLogCleanup.ok && expiredApiKeySweep.ok,
+    ok: retryQueue.ok && usageBufferFlush.ok && requestLogCleanup.ok && expiredApiKeySweep.ok,
     durationMs: Date.now() - startedAt,
     retryQueue,
+    usageBufferFlush,
     requestLogCleanup,
     expiredApiKeySweep,
   };

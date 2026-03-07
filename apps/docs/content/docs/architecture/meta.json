@@ -2,6 +2,7 @@
   "pages": [
     "overview",
     "request-lifecycle",
+    "usage-metering-pipeline",
     "daily-maintenance-cron",
     "control-plane-and-tenancy",
     "redis-schema",
