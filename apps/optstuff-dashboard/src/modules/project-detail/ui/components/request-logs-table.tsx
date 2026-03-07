@@ -19,6 +19,7 @@ import {
 import { formatDistanceToNow } from "date-fns";
 import {
   ArrowDownRight,
+  ArrowUpRight,
   CheckCircle2,
   Clock,
   Gauge,
@@ -155,12 +156,24 @@ function MobileLogCard({ log }: { readonly log: RequestLog }) {
         {log.originalSize != null && log.optimizedSize != null ? (
           <span className="inline-flex items-center gap-1 tabular-nums">
             {formatBytes(Number(log.originalSize))}
-            <ArrowDownRight className="text-emerald-500 h-3 w-3" />
-            {formatBytes(Number(log.optimizedSize))}
-            {savings != null && savings > 0 && (
-              <span className="text-emerald-600 dark:text-emerald-400 font-medium">
-                -{savings}%
-              </span>
+            {savings != null && savings > 0 ? (
+              <>
+                <ArrowDownRight className="text-emerald-500 h-3 w-3" />
+                {formatBytes(Number(log.optimizedSize))}
+                <span className="text-emerald-600 dark:text-emerald-400 font-medium">
+                  -{savings}%
+                </span>
+              </>
+            ) : (
+              <>
+                <ArrowUpRight className="text-orange-500 h-3 w-3" />
+                {formatBytes(Number(log.optimizedSize))}
+                {savings != null && savings < 0 && (
+                  <span className="text-orange-600 dark:text-orange-400 font-medium">
+                    +{Math.abs(savings)}%
+                  </span>
+                )}
+              </>
             )}
           </span>
         ) : log.optimizedSize != null ? (
@@ -318,23 +331,35 @@ export function RequestLogsTable({ logs, isLoading }: RequestLogsTableProps) {
                                   <span className="text-muted-foreground">
                                     {formatBytes(Number(log.originalSize))}
                                   </span>
-                                  <ArrowDownRight className="text-emerald-500 h-3 w-3" />
-                                  <span>
-                                    {formatBytes(Number(log.optimizedSize))}
-                                  </span>
-                                  {savings != null && savings > 0 && (
-                                    <span className="text-emerald-600 dark:text-emerald-400 text-xs font-medium">
-                                      -{savings}%
-                                    </span>
+                                  {savings != null && savings > 0 ? (
+                                    <>
+                                      <ArrowDownRight className="text-emerald-500 h-3 w-3" />
+                                      <span>
+                                        {formatBytes(Number(log.optimizedSize))}
+                                      </span>
+                                      <span className="text-emerald-600 dark:text-emerald-400 text-xs font-medium">
+                                        -{savings}%
+                                      </span>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <ArrowUpRight className="text-orange-500 h-3 w-3" />
+                                      <span>
+                                        {formatBytes(Number(log.optimizedSize))}
+                                      </span>
+                                      {savings != null && savings < 0 && (
+                                        <span className="text-orange-600 dark:text-orange-400 text-xs font-medium">
+                                          +{Math.abs(savings)}%
+                                        </span>
+                                      )}
+                                    </>
                                   )}
                                 </span>
                               </TooltipTrigger>
                               <TooltipContent>
-                                Saved{" "}
-                                {formatBytes(
-                                  Number(log.originalSize) -
-                                    Number(log.optimizedSize),
-                                )}
+                                {savings != null && savings > 0
+                                  ? `Saved ${formatBytes(Number(log.originalSize) - Number(log.optimizedSize))}`
+                                  : `Increased ${formatBytes(Number(log.optimizedSize) - Number(log.originalSize))}`}
                               </TooltipContent>
                             </Tooltip>
                           ) : log.optimizedSize != null ? (

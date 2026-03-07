@@ -66,9 +66,7 @@ export function useUsageData({
       statuses: allStatusesSelected ? undefined : [...statusFilters],
     });
 
-  const prev = usageSummary?.previousPeriod as
-    | { totalRequests: number; totalBytes: number }
-    | undefined;
+  const prev = usageSummary?.previousPeriod;
 
   const requestsTrend = calcTrend(
     usageSummary?.totalRequests ?? 0,

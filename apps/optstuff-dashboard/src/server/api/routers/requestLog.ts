@@ -165,7 +165,7 @@ export const requestLogRouter = createTRPCRouter({
               "total_optimized_size",
             ),
           avgProcessingTimeMs:
-            sql<number>`coalesce(avg(${requestLogs.processingTimeMs})::int, 0)`.as(
+            sql<number>`coalesce(round(avg(${requestLogs.processingTimeMs}))::int, 0)`.as(
               "avg_processing_time_ms",
             ),
         })
