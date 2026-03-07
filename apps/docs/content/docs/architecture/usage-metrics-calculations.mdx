@@ -118,11 +118,15 @@ totalOriginalSize = sum(originalSize on paired samples)
 totalOptimizedSize = sum(optimizedSize on paired samples)
 
 bandwidthSaved = totalOriginalSize - totalOptimizedSize
-savingsPercentage = totalOriginalSize > 0 ? (bandwidthSaved / totalOriginalSize) * 100 : 0
+rawSavingsPercentage = totalOriginalSize > 0
+  ? (bandwidthSaved / totalOriginalSize) * 100
+  : 0
+savingsPercentage = round(rawSavingsPercentage * 10) / 10
 
-sampleCoveragePercentage = successfulRequests > 0
+rawSampleCoveragePercentage = successfulRequests > 0
   ? (pairedSizeSamples / successfulRequests) * 100
   : 0
+sampleCoveragePercentage = round(rawSampleCoveragePercentage * 10) / 10
 
 isEstimated = pairedSizeSamples < successfulRequests
 ```
@@ -132,6 +136,7 @@ Interpretation:
 - `isEstimated = true` means not all successful logs had paired size data.
 - Coverage indicates how much of successful log traffic contributed to size-based savings math.
 - Negative `bandwidthSaved` means optimized outputs were larger than originals in the sampled set.
+- The request log API returns `savingsPercentage` and `sampleCoveragePercentage` rounded to **1 decimal place**.
 
 ### 7) Daily Volume Chart
 

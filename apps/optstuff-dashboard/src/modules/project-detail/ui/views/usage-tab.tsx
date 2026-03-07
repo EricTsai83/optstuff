@@ -56,6 +56,10 @@ export function UsageTab({ projectId }: UsageTabProps) {
   });
 
   const trendLabel = `vs prev ${dateRange.days}d`;
+  const avgResponseTimeDisplay =
+    bandwidthSavings?.avgProcessingTimeMs === null
+      ? "—"
+      : `${bandwidthSavings?.avgProcessingTimeMs ?? 0}ms`;
 
   if (isSummaryLoading) {
     return (
@@ -130,7 +134,7 @@ export function UsageTab({ projectId }: UsageTabProps) {
         />
         <StatCard
           title="Avg Response Time"
-          value={`${bandwidthSavings?.avgProcessingTimeMs ?? 0}ms`}
+          value={avgResponseTimeDisplay}
           icon={<Timer className="h-4 w-4" />}
         />
       </div>

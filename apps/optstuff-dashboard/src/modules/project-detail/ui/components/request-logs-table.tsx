@@ -282,6 +282,7 @@ export function RequestLogsTable({ logs, isLoading }: RequestLogsTableProps) {
                 <tbody>
                   {logs.map((log) => {
                     const statusConfig = getStatusConfig(log.status);
+                    const StatusIcon = statusConfig.icon;
                     const savings = getSavingsPercent(
                       log.originalSize,
                       log.optimizedSize,
@@ -316,7 +317,7 @@ export function RequestLogsTable({ logs, isLoading }: RequestLogsTableProps) {
                             variant={statusConfig.variant}
                             className="gap-1"
                           >
-                            <statusConfig.icon className="h-3 w-3" />
+                            <StatusIcon className="h-3 w-3" />
                             {statusConfig.label}
                           </Badge>
                         </td>

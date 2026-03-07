@@ -71,10 +71,11 @@ export const requestLogRouter = createTRPCRouter({
     )
     .query(async ({ ctx, input }) => {
       await verifyProjectAccess(ctx.db, input.projectId, ctx.userId);
+      const utcDateExpr = sql`date(timezone('UTC', ${requestLogs.createdAt}))`;
 
       const result = await ctx.db
         .select({
-          date: sql<string>`date(${requestLogs.createdAt})`.as("date"),
+          date: sql<string>`${utcDateExpr}`.as("date"),
           requestCount: sql<number>`count(*)::int`.as("request_count"),
           bytesProcessed:
             sql<number>`coalesce(sum(${requestLogs.optimizedSize}), 0)::bigint`.as(
@@ -89,8 +90,8 @@ export const requestLogRouter = createTRPCRouter({
             lt(requestLogs.createdAt, toEndExclusive(input.endDate)),
           ),
         )
-        .groupBy(sql`date(${requestLogs.createdAt})`)
-        .orderBy(sql`date(${requestLogs.createdAt})`);
+        .groupBy(utcDateExpr)
+        .orderBy(utcDateExpr);
 
       return result.map((r) => ({
         date: r.date,
