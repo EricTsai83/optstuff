@@ -16,6 +16,8 @@ type UsageSyncPanelProps = {
   readonly projectId: string;
   readonly meteringStatus?: MeteringStatus;
   readonly isLoading?: boolean;
+  readonly isMeteringStatusError?: boolean;
+  readonly meteringStatusError?: unknown;
 };
 
 function toValidDate(value: Date | string | null | undefined): Date | null {
@@ -30,10 +32,24 @@ function toRelativeTimeLabel(value: Date | string | null | undefined): string {
   return formatDistanceToNowStrict(parsed, { addSuffix: true });
 }
 
+function getErrorMessage(error: unknown): string | null {
+  if (!error) return null;
+  if (error instanceof Error && error.message) return error.message;
+  if (typeof error === "object" && error !== null && "message" in error) {
+    const message = (error as { message?: unknown }).message;
+    if (typeof message === "string" && message.trim().length > 0) {
+      return message;
+    }
+  }
+  return null;
+}
+
 export function UsageSyncPanel({
   projectId,
   meteringStatus,
   isLoading,
+  isMeteringStatusError,
+  meteringStatusError,
 }: UsageSyncPanelProps) {
   const utils = api.useUtils();
 
@@ -95,21 +111,39 @@ export function UsageSyncPanel({
     }
   };
 
+  const statusErrorMessage = isMeteringStatusError
+    ? getErrorMessage(meteringStatusError)
+    : null;
+  const hasStatusError = Boolean(isMeteringStatusError);
   const lastSuccess = isLoading
     ? null
-    : toRelativeTimeLabel(meteringStatus?.lastFlushSuccessAt);
+    : hasStatusError
+      ? "Error"
+      : toRelativeTimeLabel(meteringStatus?.lastFlushSuccessAt);
   const lastAttempt = isLoading
     ? null
-    : toRelativeTimeLabel(meteringStatus?.lastFlushRunAt);
+    : hasStatusError
+      ? "Error"
+      : toRelativeTimeLabel(meteringStatus?.lastFlushRunAt);
 
-  const ValueOrSpinner = ({ value }: { readonly value: string | null }) =>
+  const ValueOrSpinner = ({
+    value,
+    isError = false,
+  }: {
+    readonly value: string | null;
+    readonly isError?: boolean;
+  }) =>
     isLoading ? (
       <Loader2 className="text-muted-foreground/60 h-3 w-3 animate-spin" />
     ) : (
       <span
         className={cn(
           "font-medium",
-          value === "—" ? "text-muted-foreground/60" : "text-foreground/80",
+          isError
+            ? "text-destructive/90"
+            : value === "—"
+              ? "text-muted-foreground/60"
+              : "text-foreground/80",
         )}
       >
         {value}
@@ -121,22 +155,35 @@ export function UsageSyncPanel({
       {/* Mobile: compact single label */}
       <span className="flex items-center gap-x-1.5 text-xs sm:hidden">
         <span className="text-muted-foreground">Synced</span>
-        <ValueOrSpinner value={lastSuccess} />
+        <ValueOrSpinner value={lastSuccess} isError={hasStatusError} />
       </span>
 
       {/* Desktop: full labels with separator */}
       <div className="hidden items-center gap-x-3 text-xs sm:flex">
         <span className="flex items-center gap-x-1.5">
           <span className="text-muted-foreground">Last sync</span>
-          <ValueOrSpinner value={lastSuccess} />
+          <ValueOrSpinner value={lastSuccess} isError={hasStatusError} />
         </span>
         <span className="text-border select-none" aria-hidden="true">
           ·
         </span>
         <span className="flex items-center gap-x-1.5">
           <span className="text-muted-foreground">Attempt</span>
-          <ValueOrSpinner value={lastAttempt} />
+          <ValueOrSpinner value={lastAttempt} isError={hasStatusError} />
         </span>
+        {hasStatusError ? (
+          <>
+            <span className="text-border select-none" aria-hidden="true">
+              ·
+            </span>
+            <span
+              className="text-destructive/90"
+              title={statusErrorMessage ?? undefined}
+            >
+              Status unavailable
+            </span>
+          </>
+        ) : null}
       </div>
 
       {/* Mobile: icon-only button / Desktop: text button */}

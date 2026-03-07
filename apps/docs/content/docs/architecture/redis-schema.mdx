@@ -3,7 +3,7 @@ title: Redis Schema
 description: Architecture documentation — Redis key schema, cache-aside pattern, sliding window rate limiting, write throttling, and data durability.
 ---
 
-The caching layer uses Redis for three purposes: configuration caching, rate limiting, and write throttling. All keys have a TTL — nothing persists indefinitely.
+The caching layer uses Redis for four purposes: configuration caching, rate limiting, write throttling, and usage buffering/flush coordination. All keys have a TTL — nothing persists indefinitely.
 
 For the user-facing rate limiting guide (behavior, configuration, tuning), see [Rate Limiting](/guides/rate-limiting).
 
@@ -232,7 +232,7 @@ Write throttling runs as **fire-and-forget** — it does not `await` the result 
 
 ### Purpose
 
-Avoid per-request database upserts on the image-serving hot path while preserving authoritative usage totals in `usage_record`.
+Avoid per-request database upserts on the image-serving hot path while still aggregating usage totals into `usage_record`.
 
 ### Write Path
 
@@ -255,8 +255,8 @@ Flush flow:
 2. Scans `usage:buffer:minute:*`.
 3. Skips too-recent buckets (safety lag).
 4. Aggregates each bucket into `(projectId, apiKeyId, date)` rows.
-5. Upserts rows into `usage_record` with additive updates.
-6. Deletes flushed Redis bucket.
+5. Writes a durable per-bucket flush ledger row in Postgres, then applies additive upserts into `usage_record` only when the bucket has not been flushed before.
+6. Deletes the Redis bucket after the transaction commits (safe to retry if cleanup is interrupted).
 
 ### Consistency
 
@@ -275,7 +275,7 @@ This design is eventually consistent by intent:
 
 ## Data Durability
 
-Redis contains **zero persistent data**. Every key falls into one of three categories:
+Redis contains **zero persistent data**. Every key falls into one of four categories:
 
 | Category | Source of Truth | If Redis Is Wiped |
 |----------|----------------|-------------------|

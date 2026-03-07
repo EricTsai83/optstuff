@@ -12,7 +12,12 @@
 import { eq, sql } from "drizzle-orm";
 
 import { db } from "@/server/db";
-import { apiKeys, projects, usageRecords } from "@/server/db/schema";
+import {
+  apiKeys,
+  projects,
+  usageBufferFlushLedger,
+  usageRecords,
+} from "@/server/db/schema";
 import { getRedis } from "@/server/lib/redis";
 
 /**
@@ -226,7 +231,27 @@ async function flushSingleBufferKey(
     return { upsertedRows: 0, totalRequests: 0, totalBytes: 0 };
   }
 
+  const totalRequests = rows.reduce((sum, row) => sum + row.requestCount, 0);
+  const totalBytes = rows.reduce((sum, row) => sum + row.bytesProcessed, 0);
+  let shouldApplyRows = false;
+
   await db.transaction(async (tx) => {
+    const [ledgerClaim] = await tx
+      .insert(usageBufferFlushLedger)
+      .values({
+        bucket,
+        rowCount: rows.length,
+        totalRequests,
+        totalBytes,
+      })
+      .onConflictDoNothing()
+      .returning({ bucket: usageBufferFlushLedger.bucket });
+
+    // Already flushed in an earlier successful commit (for example after a
+    // worker crash before Redis cleanup) - skip additive replay.
+    if (!ledgerClaim) return;
+    shouldApplyRows = true;
+
     for (const row of rows) {
       await tx
         .insert(usageRecords)
@@ -250,10 +275,14 @@ async function flushSingleBufferKey(
 
   await redis.del(redisKey);
 
+  if (!shouldApplyRows) {
+    return { upsertedRows: 0, totalRequests: 0, totalBytes: 0 };
+  }
+
   return {
     upsertedRows: rows.length,
-    totalRequests: rows.reduce((sum, row) => sum + row.requestCount, 0),
-    totalBytes: rows.reduce((sum, row) => sum + row.bytesProcessed, 0),
+    totalRequests,
+    totalBytes,
   };
 }
 

@@ -204,6 +204,25 @@ export const usageRecordsRelations = relations(usageRecords, ({ one }) => ({
   }),
 }));
 
+/**
+ * Durable idempotency ledger for usage-buffer flush buckets.
+ *
+ * Each Redis minute bucket (`YYYYMMDDHHmm`) can be applied at most once to
+ * `usage_record`. If a worker crashes after DB commit but before Redis delete,
+ * the next run skips the additive upsert by consulting this ledger.
+ */
+export const usageBufferFlushLedger = pgTable(
+  "usage_buffer_flush_ledger",
+  (d) => ({
+    bucket: d.varchar({ length: 12 }).primaryKey(),
+    flushedAt: d.timestamp({ withTimezone: true }).defaultNow().notNull(),
+    rowCount: d.integer().default(0).notNull(),
+    totalRequests: d.integer().default(0).notNull(),
+    totalBytes: d.bigint({ mode: "number" }).default(0).notNull(),
+  }),
+  (t) => [index("usage_buffer_flush_ledger_flushed_at_idx").on(t.flushedAt)],
+);
+
 // ============================================================================
 // Request Logs (for IPX service monitoring)
 // ============================================================================

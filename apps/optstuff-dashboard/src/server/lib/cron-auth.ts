@@ -1,3 +1,5 @@
+import { createHash, timingSafeEqual } from "node:crypto";
+
 import { env } from "@/env";
 
 export type CronAuthResult =
@@ -21,7 +23,18 @@ export function authorizeCronRequest(request: Request): CronAuthResult {
   }
 
   const authorization = request.headers.get("authorization");
-  if (authorization !== `Bearer ${configuredSecret}`) {
+  if (!authorization?.startsWith("Bearer ")) {
+    return { ok: false, reason: "unauthorized" };
+  }
+
+  const incomingToken = authorization.slice("Bearer ".length);
+  if (!incomingToken) {
+    return { ok: false, reason: "unauthorized" };
+  }
+
+  const providedDigest = createHash("sha256").update(incomingToken).digest();
+  const expectedDigest = createHash("sha256").update(configuredSecret).digest();
+  if (!timingSafeEqual(providedDigest, expectedDigest)) {
     return { ok: false, reason: "unauthorized" };
   }
 

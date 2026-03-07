@@ -122,7 +122,7 @@ This shape keeps the endpoint machine-readable for alerting and human-readable f
 
 ## Why this fits Vercel Free/Hobby
 
-- Uses one scheduled cron route and Postgres only (no extra queue infrastructure).
+- Uses one scheduled cron route with Postgres and Redis (buffer/lock) — no extra queue infrastructure.
 - Avoids single-point short-circuit failures on batch side effects.
 - Supports eventual repair by retry queue + next cron execution.
 - Maintains idempotent core updates (`revokedAt IS NULL` guard) for safe re-runs.

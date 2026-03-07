@@ -40,6 +40,8 @@ export function UsageTab({ projectId }: UsageTabProps) {
     isSummaryLoading,
     meteringStatus,
     isMeteringStatusLoading,
+    isMeteringStatusError,
+    meteringStatusError,
     dailyVolume,
     isDailyLoading,
     bandwidthSavings,
@@ -123,6 +125,8 @@ export function UsageTab({ projectId }: UsageTabProps) {
           projectId={projectId}
           meteringStatus={meteringStatus}
           isLoading={isMeteringStatusLoading}
+          isMeteringStatusError={isMeteringStatusError}
+          meteringStatusError={meteringStatusError}
         />
       </div>
 
