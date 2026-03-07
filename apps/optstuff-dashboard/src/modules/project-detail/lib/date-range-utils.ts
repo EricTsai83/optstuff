@@ -78,7 +78,15 @@ function parseFixedDate(input: string): Date | null {
   if (slashMatch) {
     const m = Number(slashMatch[1]) - 1;
     const d = Number(slashMatch[2]);
-    if (m >= 0 && m < 12 && d >= 1 && d <= 31) return new Date(year, m, d);
+    if (m >= 0 && m < 12 && d >= 1 && d <= 31) {
+      const date = new Date(year, m, d);
+      if (
+        date.getFullYear() === year &&
+        date.getMonth() === m &&
+        date.getDate() === d
+      )
+        return date;
+    }
   }
 
   const nameMatch =
@@ -88,7 +96,15 @@ function parseFixedDate(input: string): Date | null {
   if (nameMatch) {
     const m = MONTHS[nameMatch[1]!.toLowerCase().slice(0, 3)]!;
     const d = Number(nameMatch[2]);
-    if (d >= 1 && d <= 31) return new Date(year, m, d);
+    if (d >= 1 && d <= 31) {
+      const date = new Date(year, m, d);
+      if (
+        date.getFullYear() === year &&
+        date.getMonth() === m &&
+        date.getDate() === d
+      )
+        return date;
+    }
   }
 
   return null;
@@ -156,6 +172,7 @@ export function parseTimeInput(input: string): DateRange | null {
       const from = parseFixedDate(parts[0]!);
       const to = parseFixedDate(parts[1]!);
       if (from && to) {
+        if (from.getTime() > to.getTime()) return null;
         to.setHours(23, 59, 59, 999);
         return { from, to };
       }

@@ -86,7 +86,7 @@ function getSavingsPercent(
   original: number | null,
   optimized: number | null,
 ): number | null {
-  if (!original || !optimized || original === 0) return null;
+  if (original == null || optimized == null || original === 0) return null;
   return Math.round(((original - optimized) / original) * 100);
 }
 
@@ -152,7 +152,7 @@ function MobileLogCard({ log }: { readonly log: RequestLog }) {
         </Badge>
       </div>
       <div className="text-muted-foreground mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
-        {log.originalSize && log.optimizedSize ? (
+        {log.originalSize != null && log.optimizedSize != null ? (
           <span className="inline-flex items-center gap-1 tabular-nums">
             {formatBytes(Number(log.originalSize))}
             <ArrowDownRight className="text-emerald-500 h-3 w-3" />
@@ -163,7 +163,7 @@ function MobileLogCard({ log }: { readonly log: RequestLog }) {
               </span>
             )}
           </span>
-        ) : log.optimizedSize ? (
+        ) : log.optimizedSize != null ? (
           <span className="tabular-nums">
             {formatBytes(Number(log.optimizedSize))}
           </span>
@@ -310,7 +310,8 @@ export function RequestLogsTable({ logs, isLoading }: RequestLogsTableProps) {
                         </td>
 
                         <td className="px-4 py-2.5">
-                          {log.originalSize && log.optimizedSize ? (
+                          {log.originalSize != null &&
+                          log.optimizedSize != null ? (
                             <Tooltip>
                               <TooltipTrigger asChild>
                                 <span className="inline-flex items-center gap-1.5 text-sm tabular-nums">
@@ -336,7 +337,7 @@ export function RequestLogsTable({ logs, isLoading }: RequestLogsTableProps) {
                                 )}
                               </TooltipContent>
                             </Tooltip>
-                          ) : log.optimizedSize ? (
+                          ) : log.optimizedSize != null ? (
                             <span className="text-muted-foreground text-sm tabular-nums">
                               {formatBytes(Number(log.optimizedSize))}
                             </span>
