@@ -16,7 +16,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@workspace/ui/components/tooltip";
-import { formatDistanceToNow } from "date-fns";
+import { formatDistanceToNowStrict } from "date-fns";
 import {
   ArrowDownRight,
   ArrowUpRight,
@@ -43,6 +43,11 @@ type RequestLogsTableProps = {
   readonly isLoading?: boolean;
 };
 
+const NO_BASELINE_SAVINGS = -1;
+
+/**
+ * Maps raw request status values to badge UI configuration.
+ */
 function getStatusConfig(status: string) {
   switch (status) {
     case "success":
@@ -83,14 +88,226 @@ function getStatusConfig(status: string) {
   }
 }
 
+/**
+ * Calculates per-row savings percentage.
+ * Returns `null` when size inputs are missing, `0` for no change,
+ * and `NO_BASELINE_SAVINGS` when original size is zero.
+ */
 function getSavingsPercent(
   original: number | null,
   optimized: number | null,
 ): number | null {
-  if (original == null || optimized == null || original === 0) return null;
+  if (original == null || optimized == null) return null;
+  if (original === optimized) return 0;
+  if (original === 0) return NO_BASELINE_SAVINGS;
   return Math.round(((original - optimized) / original) * 100);
 }
 
+type StatusBadgeProps = {
+  readonly status: string;
+  readonly className?: string;
+};
+
+/**
+ * Renders a standardized status badge for both mobile and desktop layouts.
+ */
+function StatusBadge({ status, className }: StatusBadgeProps) {
+  const statusConfig = getStatusConfig(status);
+  const StatusIcon = statusConfig.icon;
+
+  return (
+    <Badge
+      variant={statusConfig.variant}
+      className={["gap-1", className].filter(Boolean).join(" ")}
+    >
+      <StatusIcon className="h-3 w-3" />
+      {statusConfig.label}
+    </Badge>
+  );
+}
+
+type RelativeTimeProps = {
+  readonly createdAt: Date;
+  readonly className?: string;
+};
+
+/**
+ * Displays the relative timestamp for a log item.
+ */
+function RelativeTime({ createdAt, className }: RelativeTimeProps) {
+  const relativeTimeText = formatDistanceToNowStrict(new Date(createdAt), {
+    addSuffix: true,
+  });
+
+  return (
+    <span className={className} title={relativeTimeText}>
+      {relativeTimeText}
+    </span>
+  );
+}
+
+type ProcessingTimeDisplayProps = {
+  readonly processingTimeMs: number | null;
+  readonly variant: "mobile" | "desktop";
+};
+
+/**
+ * Renders processing time with variant-specific fallback behavior.
+ */
+function ProcessingTimeDisplay({
+  processingTimeMs,
+  variant,
+}: ProcessingTimeDisplayProps) {
+  if (processingTimeMs == null) {
+    if (variant === "desktop") {
+      return <span className="text-muted-foreground/50 text-sm">—</span>;
+    }
+    return null;
+  }
+
+  const className =
+    variant === "desktop"
+      ? "inline-flex items-center gap-1 tabular-nums text-sm"
+      : "inline-flex items-center gap-0.5 tabular-nums";
+
+  return (
+    <span className={className}>
+      <Timer className="h-3 w-3" />
+      {processingTimeMs}ms
+    </span>
+  );
+}
+
+type SizeSavingsDisplayProps = {
+  readonly originalSize: number | null;
+  readonly optimizedSize: number | null;
+  readonly processingTimeMs: number | null;
+  readonly variant: "mobile" | "desktop";
+};
+
+/**
+ * Renders size and savings information consistently across mobile/desktop.
+ */
+function SizeSavingsDisplay({
+  originalSize,
+  optimizedSize,
+  processingTimeMs,
+  variant,
+}: SizeSavingsDisplayProps) {
+  const savings = getSavingsPercent(originalSize, optimizedSize);
+
+  /**
+   * Renders paired original/optimized size values with savings state styling.
+   */
+  const renderPairedSizes = (className: string) => {
+    if (originalSize == null || optimizedSize == null) return null;
+
+    return (
+      <span className={className}>
+        <span className={variant === "desktop" ? "text-muted-foreground" : ""}>
+          {formatBytes(Number(originalSize))}
+        </span>
+        {savings != null && savings > 0 ? (
+          <>
+            <ArrowDownRight className="h-3 w-3 text-emerald-500" />
+            <span>{formatBytes(Number(optimizedSize))}</span>
+            <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">
+              -{savings}%
+            </span>
+          </>
+        ) : savings != null &&
+          savings < 0 &&
+          savings !== NO_BASELINE_SAVINGS ? (
+          <>
+            <ArrowUpRight className="h-3 w-3 text-orange-500" />
+            <span>{formatBytes(Number(optimizedSize))}</span>
+            <span className="text-xs font-medium text-orange-600 dark:text-orange-400">
+              +{Math.abs(savings)}%
+            </span>
+          </>
+        ) : savings === NO_BASELINE_SAVINGS ? (
+          <>
+            <ArrowUpRight className="h-3 w-3 text-amber-500" />
+            <span>{formatBytes(Number(optimizedSize))}</span>
+            <span className="text-xs font-medium text-amber-600 dark:text-amber-400">
+              No baseline
+            </span>
+          </>
+        ) : (
+          <>
+            <span className="mx-0.5">→</span>
+            <span>{formatBytes(Number(optimizedSize))}</span>
+            <span className="text-muted-foreground text-xs font-medium">
+              0%
+            </span>
+          </>
+        )}
+      </span>
+    );
+  };
+
+  /**
+   * Builds desktop tooltip text from the current savings state.
+   */
+  const getDesktopTooltip = () => {
+    if (originalSize == null || optimizedSize == null) return null;
+    if (savings === NO_BASELINE_SAVINGS) {
+      return "No baseline (original size is 0 B)";
+    }
+    if (savings != null && savings > 0) {
+      return `Saved ${formatBytes(Number(originalSize) - Number(optimizedSize))}`;
+    }
+    if (savings != null && savings < 0) {
+      return `Increased ${formatBytes(Number(optimizedSize) - Number(originalSize))}`;
+    }
+    return "No change";
+  };
+
+  if (variant === "mobile") {
+    return (
+      <>
+        {originalSize != null && optimizedSize != null ? (
+          renderPairedSizes("inline-flex items-center gap-1 tabular-nums")
+        ) : optimizedSize != null ? (
+          <span className="tabular-nums">
+            {formatBytes(Number(optimizedSize))}
+          </span>
+        ) : null}
+        <ProcessingTimeDisplay
+          processingTimeMs={processingTimeMs}
+          variant="mobile"
+        />
+      </>
+    );
+  }
+
+  if (originalSize != null && optimizedSize != null) {
+    return (
+      <Tooltip>
+        <TooltipTrigger asChild>
+          {renderPairedSizes(
+            "inline-flex items-center gap-1.5 text-sm tabular-nums",
+          )}
+        </TooltipTrigger>
+        <TooltipContent>{getDesktopTooltip()}</TooltipContent>
+      </Tooltip>
+    );
+  }
+
+  if (optimizedSize != null) {
+    return (
+      <span className="text-muted-foreground text-sm tabular-nums">
+        {formatBytes(Number(optimizedSize))}
+      </span>
+    );
+  }
+
+  return <span className="text-muted-foreground/50 text-sm">—</span>;
+}
+
+/**
+ * Desktop table skeleton row shown while loading.
+ */
 function SkeletonRow() {
   return (
     <tr className="hidden md:table-row">
@@ -113,6 +330,9 @@ function SkeletonRow() {
   );
 }
 
+/**
+ * Mobile skeleton card shown while loading.
+ */
 function MobileSkeletonCard() {
   return (
     <div className="border-border/30 border-b px-4 py-3 last:border-0 md:hidden">
@@ -129,11 +349,10 @@ function MobileSkeletonCard() {
   );
 }
 
+/**
+ * Mobile rendering for a single request log row.
+ */
 function MobileLogCard({ log }: { readonly log: RequestLog }) {
-  const statusConfig = getStatusConfig(log.status);
-  const savings = getSavingsPercent(log.originalSize, log.optimizedSize);
-  const StatusIcon = statusConfig.icon;
-
   return (
     <div className="border-border/30 hover:bg-muted/40 border-b px-4 py-3 transition-colors last:border-0 md:hidden">
       <div className="flex items-start justify-between gap-2">
@@ -141,7 +360,7 @@ function MobileLogCard({ log }: { readonly log: RequestLog }) {
           <TooltipTrigger asChild>
             <button
               type="button"
-              className="block min-w-0 flex-1 truncate font-mono text-sm text-left"
+              className="block min-w-0 flex-1 truncate text-left font-mono text-sm"
               aria-label={log.sourceUrl}
             >
               {log.sourceUrl}
@@ -151,74 +370,43 @@ function MobileLogCard({ log }: { readonly log: RequestLog }) {
             <p className="break-all font-mono text-xs">{log.sourceUrl}</p>
           </TooltipContent>
         </Tooltip>
-        <Badge variant={statusConfig.variant} className="shrink-0 gap-1">
-          <StatusIcon className="h-3 w-3" />
-          {statusConfig.label}
-        </Badge>
+        <StatusBadge status={log.status} className="shrink-0" />
       </div>
       <div className="text-muted-foreground mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
-        {log.originalSize != null && log.optimizedSize != null ? (
-          <span className="inline-flex items-center gap-1 tabular-nums">
-            {formatBytes(Number(log.originalSize))}
-            {savings != null && savings > 0 ? (
-              <>
-                <ArrowDownRight className="text-emerald-500 h-3 w-3" />
-                {formatBytes(Number(log.optimizedSize))}
-                <span className="text-emerald-600 dark:text-emerald-400 font-medium">
-                  -{savings}%
-                </span>
-              </>
-            ) : savings != null && savings < 0 ? (
-              <>
-                <ArrowUpRight className="text-orange-500 h-3 w-3" />
-                {formatBytes(Number(log.optimizedSize))}
-                <span className="text-orange-600 dark:text-orange-400 font-medium">
-                  +{Math.abs(savings)}%
-                </span>
-              </>
-            ) : (
-              <>
-                <span className="mx-0.5">→</span>
-                {formatBytes(Number(log.optimizedSize))}
-                <span className="text-muted-foreground font-medium">0%</span>
-              </>
-            )}
-          </span>
-        ) : log.optimizedSize != null ? (
-          <span className="tabular-nums">
-            {formatBytes(Number(log.optimizedSize))}
-          </span>
-        ) : null}
-        {log.processingTimeMs != null && (
-          <span className="inline-flex items-center gap-0.5 tabular-nums">
-            <Timer className="h-3 w-3" />
-            {log.processingTimeMs}ms
-          </span>
-        )}
-        <span className="ml-auto whitespace-nowrap">
-          {formatDistanceToNow(new Date(log.createdAt), { addSuffix: true })}
-        </span>
+        <SizeSavingsDisplay
+          originalSize={log.originalSize}
+          optimizedSize={log.optimizedSize}
+          processingTimeMs={log.processingTimeMs}
+          variant="mobile"
+        />
+        <RelativeTime
+          createdAt={log.createdAt}
+          className="ml-auto whitespace-nowrap"
+        />
       </div>
     </div>
   );
 }
 
+/**
+ * Responsive request logs table with mobile cards and desktop rows.
+ */
 export function RequestLogsTable({ logs, isLoading }: RequestLogsTableProps) {
   const columnHeaders = (
     <tr className="border-border/50 border-b text-left">
       <th className="text-muted-foreground px-4 py-2.5 text-xs font-medium tracking-wide">
         Source URL
       </th>
-      <th className="text-muted-foreground px-4 py-2.5 text-xs font-medium tracking-wide">
+      <th className="text-muted-foreground w-28 whitespace-nowrap px-4 py-2.5 text-xs font-medium tracking-wide lg:w-32">
         Status
       </th>
-      <th className="text-muted-foreground hidden px-4 py-2.5 text-xs font-medium tracking-wide lg:table-cell">
+      <th className="text-muted-foreground hidden w-24 whitespace-nowrap px-4 py-2.5 text-xs font-medium tracking-wide lg:table-cell">
         Time
       </th>
-      <th className="text-muted-foreground px-4 py-2.5 text-xs font-medium tracking-wide">
+      <th className="text-muted-foreground w-40 whitespace-nowrap px-4 py-2.5 text-xs font-medium tracking-wide lg:w-48">
         Size
       </th>
-      <th className="text-muted-foreground px-4 py-2.5 text-right text-xs font-medium tracking-wide">
+      <th className="text-muted-foreground w-32 whitespace-nowrap px-4 py-2.5 text-right text-xs font-medium tracking-wide lg:w-36">
         When
       </th>
     </tr>
@@ -239,7 +427,7 @@ export function RequestLogsTable({ logs, isLoading }: RequestLogsTableProps) {
             ))}
           </div>
           {/* Desktop skeleton */}
-          <table className="hidden w-full md:table">
+          <table className="hidden w-full table-fixed md:table">
             <thead>{columnHeaders}</thead>
             <tbody>
               {Array.from({ length: 5 }, (_, i) => (
@@ -277,28 +465,21 @@ export function RequestLogsTable({ logs, isLoading }: RequestLogsTableProps) {
               </div>
 
               {/* Desktop: table */}
-              <table className="hidden w-full md:table">
+              <table className="hidden w-full table-fixed md:table">
                 <thead>{columnHeaders}</thead>
                 <tbody>
                   {logs.map((log) => {
-                    const statusConfig = getStatusConfig(log.status);
-                    const StatusIcon = statusConfig.icon;
-                    const savings = getSavingsPercent(
-                      log.originalSize,
-                      log.optimizedSize,
-                    );
-
                     return (
                       <tr
                         key={log.id}
                         className="border-border/30 hover:bg-muted/40 border-b transition-colors last:border-0"
                       >
-                        <td className="max-w-[280px] px-4 py-2.5">
+                        <td className="min-w-0 px-4 py-2.5">
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <button
                                 type="button"
-                                className="block truncate font-mono text-sm text-left"
+                                className="block w-full min-w-0 truncate text-left font-mono text-sm"
                                 aria-label={log.sourceUrl}
                               >
                                 {log.sourceUrl}
@@ -312,94 +493,34 @@ export function RequestLogsTable({ logs, isLoading }: RequestLogsTableProps) {
                           </Tooltip>
                         </td>
 
-                        <td className="px-4 py-2.5">
-                          <Badge
-                            variant={statusConfig.variant}
-                            className="gap-1"
-                          >
-                            <StatusIcon className="h-3 w-3" />
-                            {statusConfig.label}
-                          </Badge>
+                        <td className="w-28 whitespace-nowrap px-4 py-2.5 lg:w-32">
+                          <StatusBadge
+                            status={log.status}
+                            className="whitespace-nowrap"
+                          />
                         </td>
 
                         <td className="text-muted-foreground hidden px-4 py-2.5 lg:table-cell">
-                          {log.processingTimeMs != null ? (
-                            <span className="inline-flex items-center gap-1 tabular-nums text-sm">
-                              <Timer className="h-3 w-3" />
-                              {log.processingTimeMs}ms
-                            </span>
-                          ) : (
-                            <span className="text-muted-foreground/50 text-sm">
-                              —
-                            </span>
-                          )}
+                          <ProcessingTimeDisplay
+                            processingTimeMs={log.processingTimeMs}
+                            variant="desktop"
+                          />
                         </td>
 
-                        <td className="px-4 py-2.5">
-                          {log.originalSize != null &&
-                          log.optimizedSize != null ? (
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <span className="inline-flex items-center gap-1.5 text-sm tabular-nums">
-                                  <span className="text-muted-foreground">
-                                    {formatBytes(Number(log.originalSize))}
-                                  </span>
-                                  {savings != null && savings > 0 ? (
-                                    <>
-                                      <ArrowDownRight className="text-emerald-500 h-3 w-3" />
-                                      <span>
-                                        {formatBytes(Number(log.optimizedSize))}
-                                      </span>
-                                      <span className="text-emerald-600 dark:text-emerald-400 text-xs font-medium">
-                                        -{savings}%
-                                      </span>
-                                    </>
-                                  ) : savings != null && savings < 0 ? (
-                                    <>
-                                      <ArrowUpRight className="text-orange-500 h-3 w-3" />
-                                      <span>
-                                        {formatBytes(Number(log.optimizedSize))}
-                                      </span>
-                                      <span className="text-orange-600 dark:text-orange-400 text-xs font-medium">
-                                        +{Math.abs(savings)}%
-                                      </span>
-                                    </>
-                                  ) : (
-                                    <>
-                                      <span className="mx-0.5">→</span>
-                                      <span>
-                                        {formatBytes(Number(log.optimizedSize))}
-                                      </span>
-                                      <span className="text-muted-foreground text-xs font-medium">
-                                        0%
-                                      </span>
-                                    </>
-                                  )}
-                                </span>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                {savings != null && savings > 0
-                                  ? `Saved ${formatBytes(Number(log.originalSize) - Number(log.optimizedSize))}`
-                                  : savings != null && savings < 0
-                                    ? `Increased ${formatBytes(Number(log.optimizedSize) - Number(log.originalSize))}`
-                                    : "No change"}
-                              </TooltipContent>
-                            </Tooltip>
-                          ) : log.optimizedSize != null ? (
-                            <span className="text-muted-foreground text-sm tabular-nums">
-                              {formatBytes(Number(log.optimizedSize))}
-                            </span>
-                          ) : (
-                            <span className="text-muted-foreground/50 text-sm">
-                              —
-                            </span>
-                          )}
+                        <td className="w-40 px-4 py-2.5 lg:w-48">
+                          <SizeSavingsDisplay
+                            originalSize={log.originalSize}
+                            optimizedSize={log.optimizedSize}
+                            processingTimeMs={log.processingTimeMs}
+                            variant="desktop"
+                          />
                         </td>
 
-                        <td className="text-muted-foreground px-4 py-2.5 text-right text-sm whitespace-nowrap">
-                          {formatDistanceToNow(new Date(log.createdAt), {
-                            addSuffix: true,
-                          })}
+                        <td className="text-muted-foreground w-32 whitespace-nowrap px-4 py-2.5 text-right text-sm lg:w-36">
+                          <RelativeTime
+                            createdAt={log.createdAt}
+                            className="inline-block whitespace-nowrap"
+                          />
                         </td>
                       </tr>
                     );

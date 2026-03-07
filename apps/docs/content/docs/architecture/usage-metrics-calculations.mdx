@@ -80,7 +80,9 @@ Source: `request_log`
 Formula:
 
 ```text
-successRate = round(successfulRequests / totalRequests * 100)
+successRate = totalRequests > 0
+  ? round(successfulRequests / totalRequests * 100)
+  : 0
 ```
 
 Where:
@@ -88,7 +90,11 @@ Where:
 - `successfulRequests = count(status = 'success')`
 - `totalRequests = count(*)`
 
-Interpretation note: if success logs are sampled, this becomes a sampled estimate rather than an exact success rate.
+For empty ranges (`totalRequests == 0`), the metric is defined as `0` to avoid a divide-by-zero branch.  
+If your product prefers a non-numeric empty-state, render this branch as `N/A` in the UI while keeping backend math explicit.
+
+Interpretation note: if successful request logs are down-sampled, `successfulRequests / totalRequests` is **systematically biased downward** (it understates the true success rate), because the numerator is sampled while the denominator is not.  
+Do not treat this ratio as an unbiased approximation unless sampling is symmetric; when reporting, either correct by the success-log sampling rate or clearly label it as a downward-biased telemetry metric.
 
 ### 5) Avg Response Time (ms)
 
