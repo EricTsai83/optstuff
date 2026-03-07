@@ -10,7 +10,7 @@ type UseUsageDataParams = {
   projectId: string;
   /** Number of days in the selected range (used for summary comparison). */
   days: number;
-  /** ISO date strings derived from the committed date range. */
+  /** Full ISO timestamps derived from the committed date range. */
   computedDateRange: { startDate: string; endDate: string };
   /** Active request-status filters applied to the logs table. */
   statusFilters: Set<string>;

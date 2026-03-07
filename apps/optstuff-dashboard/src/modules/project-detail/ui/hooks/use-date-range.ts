@@ -51,8 +51,8 @@ export function useDateRange(initialDays = 7) {
 
   const computedDateRange = useMemo(() => {
     return {
-      startDate: committedRange.from.toISOString().split("T")[0]!,
-      endDate: committedRange.to.toISOString().split("T")[0]!,
+      startDate: committedRange.from.toISOString(),
+      endDate: committedRange.to.toISOString(),
     };
   }, [committedRange]);
 

@@ -65,7 +65,7 @@ export const requestLogRouter = createTRPCRouter({
           and(
             eq(requestLogs.projectId, input.projectId),
             gte(requestLogs.createdAt, new Date(input.startDate)),
-            lte(requestLogs.createdAt, new Date(input.endDate + "T23:59:59Z")),
+            lte(requestLogs.createdAt, new Date(input.endDate)),
           ),
         )
         .groupBy(sql`date(${requestLogs.createdAt})`)
