@@ -1,23 +1,15 @@
-import type { LucideIcon } from "lucide-react";
 import { Activity, Code, Key, LayoutDashboard, Settings } from "lucide-react";
 
-export type ProjectTab =
-  | "overview"
-  | "api-keys"
-  | "usage"
-  | "developer"
-  | "settings";
-
-type ProjectTabConfig = {
-  readonly value: ProjectTab;
-  readonly label: string;
-  readonly icon: LucideIcon;
-};
-
-export const PROJECT_TABS: readonly ProjectTabConfig[] = [
+export const PROJECT_TABS = [
   { value: "overview", label: "Overview", icon: LayoutDashboard },
   { value: "api-keys", label: "API Keys", icon: Key },
   { value: "usage", label: "Usage", icon: Activity },
   { value: "developer", label: "Developer", icon: Code },
   { value: "settings", label: "Settings", icon: Settings },
-];
+] as const;
+
+export type ProjectTab = (typeof PROJECT_TABS)[number]["value"];
+
+export function isProjectTab(tab: string): tab is ProjectTab {
+  return PROJECT_TABS.some((projectTab) => projectTab.value === tab);
+}

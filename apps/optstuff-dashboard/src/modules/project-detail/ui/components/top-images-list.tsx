@@ -11,9 +11,9 @@ import {
 import { ImageIcon } from "lucide-react";
 
 type TopImage = {
-  sourceUrl: string;
-  requestCount: number;
-  totalOptimizedSize: number;
+  readonly sourceUrl: string;
+  readonly requestCount: number;
+  readonly totalOptimizedSize: number;
 };
 
 type TopImagesListProps = {
@@ -21,9 +21,16 @@ type TopImagesListProps = {
   readonly isLoading?: boolean;
 };
 
-function truncateUrl(url: string, maxLength = 50): string {
-  if (url.length <= maxLength) return url;
-  return `${url.slice(0, maxLength - 3)}...`;
+function extractPathname(url: string): string {
+  try {
+    const parsed = new URL(url);
+    const pathname = parsed.pathname;
+    const filename = pathname.split("/").filter(Boolean).pop();
+    return filename ?? pathname;
+  } catch {
+    const parts = url.split("/").filter(Boolean);
+    return parts.pop() ?? url;
+  }
 }
 
 export function TopImagesList({ images, isLoading }: TopImagesListProps) {
@@ -35,9 +42,12 @@ export function TopImagesList({ images, isLoading }: TopImagesListProps) {
           <CardDescription>Most requested images</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="space-y-3">
+          <div className="space-y-2 sm:space-y-3">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="bg-muted h-12 animate-pulse rounded-lg" />
+              <div
+                key={i}
+                className="bg-muted h-16 animate-pulse rounded-lg sm:h-12"
+              />
             ))}
           </div>
         </CardContent>
@@ -60,23 +70,26 @@ export function TopImagesList({ images, isLoading }: TopImagesListProps) {
             No image requests yet
           </div>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-2 sm:space-y-3">
             {images.map((image, index) => (
               <div
                 key={image.sourceUrl}
-                className="bg-muted/50 flex items-center gap-3 rounded-lg p-3"
+                className="bg-muted/50 flex items-start gap-2.5 rounded-lg p-2.5 sm:items-center sm:gap-3 sm:p-3"
               >
-                <div className="bg-primary/10 text-primary flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-medium">
+                <div className="bg-primary/10 text-primary mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-medium sm:mt-0 sm:h-8 sm:w-8 sm:text-sm">
                   {index + 1}
                 </div>
                 <div className="min-w-0 flex-1">
                   <p
-                    className="truncate font-mono text-sm"
+                    className="truncate text-xs font-medium sm:font-mono sm:text-sm"
                     title={image.sourceUrl}
                   >
-                    {truncateUrl(image.sourceUrl)}
+                    <span className="sm:hidden">
+                      {extractPathname(image.sourceUrl)}
+                    </span>
+                    <span className="hidden sm:inline">{image.sourceUrl}</span>
                   </p>
-                  <div className="text-muted-foreground flex gap-4 text-xs">
+                  <div className="text-muted-foreground mt-0.5 flex gap-3 text-[11px] sm:gap-4 sm:text-xs">
                     <span>{formatNumber(image.requestCount)} requests</span>
                     <span>{formatBytes(Number(image.totalOptimizedSize))}</span>
                   </div>

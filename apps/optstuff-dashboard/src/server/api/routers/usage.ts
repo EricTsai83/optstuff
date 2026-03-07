@@ -171,34 +171,90 @@ export const usageRouter = createTRPCRouter({
     }),
 
   /**
-   * Get usage summary for a project (last 30 days).
+   * Get usage summary for a project with previous period comparison.
    */
   getSummary: protectedProcedure
-    .input(z.object({ projectId: z.string().uuid() }))
+    .input(
+      z.object({
+        projectId: z.string().uuid(),
+        days: z.number().int().min(1).max(365).default(30),
+        startDate: z.string().optional(),
+        endDate: z.string().optional(),
+      }),
+    )
     .query(async ({ ctx, input }) => {
       await verifyProjectAccess(ctx.db, input.projectId, ctx.userId);
 
-      const { startDate, endDate } = getDateRange(30);
+      let startDate: string;
+      let endDate: string;
+      let days: number;
 
-      const records = await ctx.db.query.usageRecords.findMany({
-        where: and(
-          eq(usageRecords.projectId, input.projectId),
-          gte(usageRecords.date, startDate),
-          lte(usageRecords.date, endDate),
-        ),
-      });
+      if (input.startDate && input.endDate) {
+        startDate = input.startDate.split("T")[0]!;
+        endDate = input.endDate.split("T")[0]!;
+        const msPerDay = 1000 * 60 * 60 * 24;
+        days = Math.max(
+          1,
+          Math.ceil(
+            (new Date(endDate).getTime() - new Date(startDate).getTime()) /
+              msPerDay,
+          ),
+        );
+      } else {
+        ({ startDate, endDate } = getDateRange(input.days));
+        days = input.days;
+      }
+
+      const msPerDay = 1000 * 60 * 60 * 24;
+      const prevEndDay = new Date(
+        new Date(startDate).getTime() - msPerDay,
+      );
+      const prevStartDay = new Date(
+        prevEndDay.getTime() - days * msPerDay,
+      );
+      const prevStartDate = prevStartDay.toISOString().split("T")[0]!;
+      const prevEndDate = prevEndDay.toISOString().split("T")[0]!;
+
+      const [records, prevRecords] = await Promise.all([
+        ctx.db.query.usageRecords.findMany({
+          where: and(
+            eq(usageRecords.projectId, input.projectId),
+            gte(usageRecords.date, startDate),
+            lte(usageRecords.date, endDate),
+          ),
+        }),
+        ctx.db.query.usageRecords.findMany({
+          where: and(
+            eq(usageRecords.projectId, input.projectId),
+            gte(usageRecords.date, prevStartDate),
+            lte(usageRecords.date, prevEndDate),
+          ),
+        }),
+      ]);
 
       const totalRequests = records.reduce((sum, r) => sum + r.requestCount, 0);
       const totalBytes = records.reduce((sum, r) => sum + r.bytesProcessed, 0);
+      const prevTotalRequests = prevRecords.reduce(
+        (sum, r) => sum + r.requestCount,
+        0,
+      );
+      const prevTotalBytes = prevRecords.reduce(
+        (sum, r) => sum + r.bytesProcessed,
+        0,
+      );
 
       return {
-        period: "last_30_days",
+        days,
         startDate,
         endDate,
         totalRequests,
         totalBytes,
-        averageDailyRequests: Math.round(totalRequests / 30),
-        averageDailyBytes: Math.round(totalBytes / 30),
+        averageDailyRequests: Math.round(totalRequests / days),
+        averageDailyBytes: Math.round(totalBytes / days),
+        previousPeriod: {
+          totalRequests: prevTotalRequests,
+          totalBytes: prevTotalBytes,
+        },
       };
     }),
 

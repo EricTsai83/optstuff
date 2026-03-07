@@ -145,6 +145,7 @@ team
 - **Rate-limiter availability:** Redis failures fail open (request allowed).
 - **Request logging:** source URL is sanitized (query/hash removed); retention target is 30 days; errors are always logged while successful requests can be sampled via `REQUEST_LOG_SUCCESS_SAMPLE_RATE`.
 - **Original-size metric:** sampled (10%) to avoid extra upstream `HEAD` on every success.
+- **Metric formulas:** exact Usage metric formulas and caveats are documented in [Usage Metrics Calculations](/architecture/usage-metrics-calculations).
 - **HEAD upstream behavior:** non-image content-type probes are treated as transform-ineligible (`502`).
 
 ## Recommended Reading Order
@@ -155,12 +156,14 @@ To understand how the system was built up end-to-end, follow this order:
 2. [User Onboarding Flow](/architecture/user-onboarding-flow) — How a new user becomes an active project owner.
 3. [Create API Key Flow](/architecture/create-api-key-flow) — Dual-key model, encryption-at-rest, and rotation.
 4. [Request Lifecycle](/architecture/request-lifecycle) — Request-by-request runtime path for `GET` and `HEAD`.
-5. [Redis Schema](/architecture/redis-schema) — Cache-aside, rate-limit counters, and write throttling.
-6. [SSRF Prevention](/architecture/ssrf-prevention) — Threat model and redirect-handling invariant.
+5. [Usage Metrics Calculations](/architecture/usage-metrics-calculations) — Exact formulas, data sources, and sampling caveats for analytics.
+6. [Redis Schema](/architecture/redis-schema) — Cache-aside, rate-limit counters, and write throttling.
+7. [SSRF Prevention](/architecture/ssrf-prevention) — Threat model and redirect-handling invariant.
 
 ## Related Docs
 
 - [API Endpoint](/api-reference/endpoint)
 - [Rate Limiting](/guides/rate-limiting)
 - [URL Signing](/guides/url-signing)
+- [Usage Metrics Calculations](/architecture/usage-metrics-calculations)
 - [Security Best Practices](/guides/security-best-practices)

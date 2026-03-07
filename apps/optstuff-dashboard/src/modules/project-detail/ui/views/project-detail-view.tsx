@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
-import { PROJECT_TABS, type ProjectTab } from "../../constants";
+import { isProjectTab, PROJECT_TABS, type ProjectTab } from "../../constants";
 import type { Project, Team } from "../../types";
 import { ApiKeyList } from "../components/api-key-list";
 import { DeveloperTab } from "./developer-tab";
@@ -32,11 +32,8 @@ export function ProjectDetailView({
   team,
   defaultTab,
 }: ProjectDetailViewProps) {
-  const initialTab = (
-    defaultTab && PROJECT_TABS.some((t) => t.value === defaultTab)
-      ? defaultTab
-      : "overview"
-  ) as ProjectTab;
+  const initialTab =
+    defaultTab && isProjectTab(defaultTab) ? defaultTab : "overview";
 
   const [activeTab, setActiveTab] = useState<ProjectTab>(initialTab);
 
@@ -52,7 +49,11 @@ export function ProjectDetailView({
       <NavigationTabs
         tabs={PROJECT_TABS}
         activeTab={activeTab}
-        onTabChange={(tab) => setActiveTab(tab as ProjectTab)}
+        onTabChange={(tab) => {
+          if (isProjectTab(tab)) {
+            setActiveTab(tab);
+          }
+        }}
       />
 
       <main className="container mx-auto flex-1 px-4 py-6">
@@ -108,7 +109,9 @@ export function ProjectDetailView({
           )}
         </div>
 
-        {activeTab === "overview" && <OverviewTab project={project} teamSlug={team.slug} />}
+        {activeTab === "overview" && (
+          <OverviewTab project={project} teamSlug={team.slug} />
+        )}
         {activeTab === "api-keys" && (
           <ApiKeyList projectId={project.id} projectSlug={project.slug} />
         )}

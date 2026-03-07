@@ -1,5 +1,6 @@
 "use client";
 
+import { formatBytes, formatNumber } from "@/lib/format";
 import {
   Card,
   CardContent,
@@ -8,74 +9,106 @@ import {
   CardTitle,
 } from "@workspace/ui/components/card";
 import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
+  type ChartConfig,
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+} from "@workspace/ui/components/chart";
+import { useMemo, useState } from "react";
+import { Bar, BarChart, CartesianGrid, XAxis } from "recharts";
 
 type UsageData = {
-  date: string;
-  requestCount: number;
-  bytesProcessed: number;
+  readonly date: string;
+  readonly requestCount: number;
+  readonly bytesProcessed: number;
 };
 
 type UsageChartProps = {
   readonly data: UsageData[];
+  readonly days?: number;
   readonly isLoading?: boolean;
 };
 
-function formatDate(dateStr: string) {
-  const date = new Date(dateStr);
-  return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-}
+const chartConfig = {
+  requestCount: {
+    label: "Requests",
+    color: "var(--chart-1)",
+  },
+  bytesProcessed: {
+    label: "Bandwidth",
+    color: "var(--chart-2)",
+  },
+} satisfies ChartConfig;
 
-function formatBytes(bytes: number): string {
-  if (bytes === 0) return "0 B";
-  const k = 1024;
-  const sizes = ["B", "KB", "MB", "GB"];
-  const i = Math.min(
-    Math.floor(Math.log(bytes) / Math.log(k)),
-    sizes.length - 1,
+type MetricKey = "requestCount" | "bytesProcessed";
+
+export function UsageChart({ data, days = 30, isLoading }: UsageChartProps) {
+  const [activeMetric, setActiveMetric] = useState<MetricKey>("requestCount");
+  const periodLabel = `Last ${days} days`;
+
+  const chartData = useMemo(
+    () =>
+      [...data]
+        .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+        .map((item) => ({ ...item })),
+    [data],
   );
-  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(1))} ${sizes[i]}`;
-}
 
-export function UsageChart({ data, isLoading }: UsageChartProps) {
+  const totals = useMemo(
+    () => ({
+      requestCount: data.reduce((sum, d) => sum + d.requestCount, 0),
+      bytesProcessed: data.reduce((sum, d) => sum + d.bytesProcessed, 0),
+    }),
+    [data],
+  );
+
+  const headerContent = (
+    <CardHeader className="p-0! flex flex-col items-stretch border-b sm:flex-row">
+      <div className="sm:py-0! flex flex-1 flex-col justify-center gap-1 px-6 py-5">
+        <CardTitle>Usage</CardTitle>
+        <CardDescription>{periodLabel}</CardDescription>
+      </div>
+      {!isLoading && chartData.length > 0 && (
+        <div className="flex">
+          {(["requestCount", "bytesProcessed"] as const).map((key) => (
+            <button
+              key={key}
+              data-active={activeMetric === key}
+              className="relative z-30 flex flex-1 cursor-pointer flex-col justify-center gap-1 border-t px-6 py-4 text-left transition-colors even:border-l sm:border-l sm:border-t-0 sm:px-8 sm:py-6 data-[active=false]:text-muted-foreground data-[active=false]:hover:bg-muted/30 data-[active=true]:bg-muted/50 data-[active=true]:shadow-[inset_0_-2px_0_0_var(--color-primary)]"
+              onClick={() => setActiveMetric(key)}
+            >
+              <span className="text-muted-foreground text-xs">
+                {chartConfig[key].label}
+              </span>
+              <span className="text-lg font-bold leading-none sm:text-3xl">
+                {key === "bytesProcessed"
+                  ? formatBytes(totals[key])
+                  : formatNumber(totals[key])}
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
+    </CardHeader>
+  );
+
   if (isLoading) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Request Volume</CardTitle>
-          <CardDescription>Last 30 days</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="bg-muted h-[300px] animate-pulse rounded" />
+      <Card className="py-0 pb-4">
+        {headerContent}
+        <CardContent className="p-6">
+          <div className="bg-muted h-[250px] animate-pulse rounded" />
         </CardContent>
       </Card>
     );
   }
 
-  // Sort data by date ascending for chart
-  const chartData = [...data]
-    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-    .map((item) => ({
-      ...item,
-      formattedDate: formatDate(item.date),
-    }));
-
   if (chartData.length === 0) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Request Volume</CardTitle>
-          <CardDescription>Last 30 days</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="text-muted-foreground flex h-[300px] items-center justify-center">
+      <Card className="py-0 pb-4">
+        {headerContent}
+        <CardContent className="p-6">
+          <div className="text-muted-foreground flex h-[250px] items-center justify-center text-sm">
             No data available
           </div>
         </CardContent>
@@ -84,51 +117,55 @@ export function UsageChart({ data, isLoading }: UsageChartProps) {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Request Volume</CardTitle>
-        <CardDescription>Last 30 days</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <ResponsiveContainer width="100%" height={300}>
-          <BarChart data={chartData}>
-            <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+    <Card className="py-0 pb-4">
+      {headerContent}
+      <CardContent className="px-2 sm:p-6">
+        <ChartContainer
+          config={chartConfig}
+          className="aspect-auto h-[250px] w-full"
+        >
+          <BarChart
+            accessibilityLayer
+            data={chartData}
+            margin={{ left: 12, right: 12 }}
+          >
+            <CartesianGrid vertical={false} />
             <XAxis
-              dataKey="formattedDate"
-              tick={{ fontSize: 12 }}
+              dataKey="date"
               tickLine={false}
               axisLine={false}
+              tickMargin={8}
+              minTickGap={32}
+              tickFormatter={(value: string) => {
+                const date = new Date(value);
+                return date.toLocaleDateString("en-US", {
+                  month: "short",
+                  day: "numeric",
+                });
+              }}
             />
-            <YAxis
-              tick={{ fontSize: 12 }}
-              tickLine={false}
-              axisLine={false}
-              tickFormatter={(value) =>
-                value >= 1000 ? `${(value / 1000).toFixed(0)}k` : value
+            <ChartTooltip
+              content={
+                <ChartTooltipContent
+                  className="w-[150px]"
+                  nameKey={activeMetric}
+                  labelFormatter={(value: string) =>
+                    new Date(value).toLocaleDateString("en-US", {
+                      month: "short",
+                      day: "numeric",
+                      year: "numeric",
+                    })
+                  }
+                />
               }
             />
-            <Tooltip
-              contentStyle={{
-                backgroundColor: "hsl(var(--popover))",
-                border: "1px solid hsl(var(--border))",
-                borderRadius: "6px",
-              }}
-              labelStyle={{ color: "hsl(var(--popover-foreground))" }}
-              formatter={(value, name) => {
-                const numValue = Number(value) || 0;
-                if (name === "requestCount") return [numValue, "Requests"];
-                if (name === "bytesProcessed")
-                  return [formatBytes(numValue), "Bandwidth"];
-                return [numValue, String(name)];
-              }}
-            />
             <Bar
-              dataKey="requestCount"
-              fill="hsl(var(--primary))"
+              dataKey={activeMetric}
+              fill={`var(--color-${activeMetric})`}
               radius={[4, 4, 0, 0]}
             />
           </BarChart>
-        </ResponsiveContainer>
+        </ChartContainer>
       </CardContent>
     </Card>
   );
