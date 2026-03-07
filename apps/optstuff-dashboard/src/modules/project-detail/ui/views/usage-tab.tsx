@@ -146,6 +146,10 @@ export function UsageTab({ projectId }: UsageTabProps) {
         totalOptimizedSize={bandwidthSavings?.totalOptimizedSize ?? 0}
         bandwidthSaved={bandwidthSavings?.bandwidthSaved ?? 0}
         savingsPercentage={bandwidthSavings?.savingsPercentage ?? 0}
+        pairedSizeSamples={bandwidthSavings?.pairedSizeSamples ?? 0}
+        successfulRequests={bandwidthSavings?.successfulRequests ?? 0}
+        sampleCoveragePercentage={bandwidthSavings?.sampleCoveragePercentage ?? 0}
+        isEstimated={bandwidthSavings?.isEstimated ?? false}
         isLoading={isBandwidthLoading}
       />
 

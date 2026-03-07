@@ -15,6 +15,10 @@ type BandwidthSavingsProps = {
   readonly totalOptimizedSize: number;
   readonly bandwidthSaved: number;
   readonly savingsPercentage: number;
+  readonly pairedSizeSamples: number;
+  readonly successfulRequests: number;
+  readonly sampleCoveragePercentage: number;
+  readonly isEstimated: boolean;
   readonly isLoading?: boolean;
 };
 
@@ -23,6 +27,10 @@ export function BandwidthSavingsCard({
   totalOptimizedSize,
   bandwidthSaved,
   savingsPercentage,
+  pairedSizeSamples,
+  successfulRequests,
+  sampleCoveragePercentage,
+  isEstimated,
   isLoading,
 }: BandwidthSavingsProps) {
   if (isLoading) {
@@ -39,16 +47,24 @@ export function BandwidthSavingsCard({
     );
   }
 
-  const clampedPercentage = Math.min(100, Math.max(0, savingsPercentage));
+  const isPositiveSavings = bandwidthSaved >= 0;
+  const savingsClassName = isPositiveSavings ? "text-green-500" : "text-orange-500";
+  const percentLabel = isPositiveSavings
+    ? `${Math.max(0, savingsPercentage)}%`
+    : `+${Math.abs(savingsPercentage)}%`;
 
   return (
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <TrendingDown className="h-5 w-5 text-green-500" />
+          <TrendingDown className={`h-5 w-5 ${savingsClassName}`} />
           Bandwidth Savings
         </CardTitle>
-        <CardDescription>Original vs Optimized file sizes</CardDescription>
+        <CardDescription>
+          {isEstimated
+            ? "Estimated from sampled successful requests"
+            : "Original vs Optimized file sizes"}
+        </CardDescription>
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
@@ -65,18 +81,30 @@ export function BandwidthSavingsCard({
             </p>
           </div>
           <div>
-            <p className="text-muted-foreground text-xs">Total Saved</p>
-            <p className="text-xl font-bold tabular-nums text-green-500 sm:text-2xl">
-              {formatBytes(Math.max(0, bandwidthSaved))}
+            <p className="text-muted-foreground text-xs">
+              {isPositiveSavings ? "Total Saved" : "Total Increase"}
+            </p>
+            <p className={`text-xl font-bold tabular-nums sm:text-2xl ${savingsClassName}`}>
+              {formatBytes(Math.abs(bandwidthSaved))}
             </p>
           </div>
           <div>
-            <p className="text-muted-foreground text-xs">Reduction</p>
-            <p className="text-xl font-bold tabular-nums text-green-500 sm:text-2xl">
-              {clampedPercentage}%
+            <p className="text-muted-foreground text-xs">
+              {isPositiveSavings ? "Reduction" : "Increase"}
+            </p>
+            <p className={`text-xl font-bold tabular-nums sm:text-2xl ${savingsClassName}`}>
+              {percentLabel}
             </p>
           </div>
         </div>
+        {isEstimated && (
+          <p className="text-muted-foreground mt-3 text-xs">
+            Coverage: {sampleCoveragePercentage}% ({pairedSizeSamples.toLocaleString()} /
+            {" "}
+            {successfulRequests.toLocaleString()} sampled successes include both original
+            and optimized sizes)
+          </p>
+        )}
       </CardContent>
     </Card>
   );

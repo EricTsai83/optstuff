@@ -93,6 +93,10 @@ Optimized images are served as response bytes. This is often the largest variabl
 With a CDN in front (Cloudflare, CloudFront), most repeat requests are served from CDN cache and never reach Vercel. Actual bandwidth cost depends heavily on your CDN cache hit ratio.
 </Callout>
 
+<Callout type="warning">
+Do not use request-log-derived dashboard metrics (for example, **Bandwidth Savings**) as billing/accounting numbers. Those analytics can be sampled and are intended for operational trend analysis. For exact metric formulas and interpretation boundaries, see [Usage Metrics Calculations](/architecture/usage-metrics-calculations).
+</Callout>
+
 ## Per-Request Cost Summary
 
 | Component | Cost per Request | % of Total |
@@ -202,6 +206,7 @@ Price based on the value you create, not the infrastructure cost you incur.
 ## Related Documentation
 
 - [CDN and Caching](/guides/cdn-caching) — Maximize cache hit ratio to reduce costs
+- [Usage Metrics Calculations](/architecture/usage-metrics-calculations) — Exact formulas, data sources, and sampling caveats for dashboard metrics
 - [Rate Limiting](/guides/rate-limiting) — Protect against cost spikes from abuse
 - [Deployment Guide](/self-hosting/deployment) — Deploy your own instance
 - [Environment Variables](/self-hosting/environment-variables) — Configure your infrastructure connections

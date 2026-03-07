@@ -1,13 +1,17 @@
-import { and, desc, eq, gte, inArray, lte, sql } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, lt, sql } from "drizzle-orm";
 import { z } from "zod";
 
 import { verifyProjectAccess } from "@/server/api/lib/access";
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
 import { requestLogs } from "@/server/db/schema";
 
-const zDateString = z
-  .string()
-  .refine((v) => !isNaN(Date.parse(v)), { message: "Invalid date string" });
+const zDateString = z.iso.date();
+
+function toEndExclusive(isoDate: string): Date {
+  const d = new Date(isoDate);
+  d.setUTCDate(d.getUTCDate() + 1);
+  return d;
+}
 
 export const requestLogRouter = createTRPCRouter({
   /**
@@ -27,10 +31,11 @@ export const requestLogRouter = createTRPCRouter({
     .query(async ({ ctx, input }) => {
       await verifyProjectAccess(ctx.db, input.projectId, ctx.userId);
 
+      const endExclusive = toEndExclusive(input.endDate);
       const conditions = [
         eq(requestLogs.projectId, input.projectId),
         gte(requestLogs.createdAt, new Date(input.startDate)),
-        lte(requestLogs.createdAt, new Date(input.endDate)),
+        lt(requestLogs.createdAt, endExclusive),
       ];
       if (input.statuses && input.statuses.length > 0) {
         conditions.push(inArray(requestLogs.status, input.statuses));
@@ -81,7 +86,7 @@ export const requestLogRouter = createTRPCRouter({
           and(
             eq(requestLogs.projectId, input.projectId),
             gte(requestLogs.createdAt, new Date(input.startDate)),
-            lte(requestLogs.createdAt, new Date(input.endDate)),
+            lt(requestLogs.createdAt, toEndExclusive(input.endDate)),
           ),
         )
         .groupBy(sql`date(${requestLogs.createdAt})`)
@@ -124,7 +129,7 @@ export const requestLogRouter = createTRPCRouter({
           and(
             eq(requestLogs.projectId, input.projectId),
             gte(requestLogs.createdAt, new Date(input.startDate)),
-            lte(requestLogs.createdAt, new Date(input.endDate)),
+            lt(requestLogs.createdAt, toEndExclusive(input.endDate)),
           ),
         )
         .groupBy(requestLogs.sourceUrl)
@@ -156,16 +161,20 @@ export const requestLogRouter = createTRPCRouter({
             sql<number>`count(*) filter (where ${requestLogs.status} = 'success')::int`.as(
               "successful_requests",
             ),
+          pairedSizeSamples:
+            sql<number>`count(*) filter (where ${requestLogs.status} = 'success' and ${requestLogs.originalSize} is not null and ${requestLogs.optimizedSize} is not null)::int`.as(
+              "paired_size_samples",
+            ),
           totalOriginalSize:
-            sql<number>`coalesce(sum(${requestLogs.originalSize}), 0)::bigint`.as(
+            sql<number>`coalesce(sum(${requestLogs.originalSize}) filter (where ${requestLogs.status} = 'success' and ${requestLogs.originalSize} is not null and ${requestLogs.optimizedSize} is not null), 0)::bigint`.as(
               "total_original_size",
             ),
           totalOptimizedSize:
-            sql<number>`coalesce(sum(${requestLogs.optimizedSize}), 0)::bigint`.as(
+            sql<number>`coalesce(sum(${requestLogs.optimizedSize}) filter (where ${requestLogs.status} = 'success' and ${requestLogs.originalSize} is not null and ${requestLogs.optimizedSize} is not null), 0)::bigint`.as(
               "total_optimized_size",
             ),
           avgProcessingTimeMs:
-            sql<number>`coalesce(round(avg(${requestLogs.processingTimeMs}))::int, 0)`.as(
+            sql<number | null>`round(avg(${requestLogs.processingTimeMs}))::int`.as(
               "avg_processing_time_ms",
             ),
         })
@@ -174,7 +183,7 @@ export const requestLogRouter = createTRPCRouter({
           and(
             eq(requestLogs.projectId, input.projectId),
             gte(requestLogs.createdAt, new Date(input.startDate)),
-            lte(requestLogs.createdAt, new Date(input.endDate)),
+            lt(requestLogs.createdAt, toEndExclusive(input.endDate)),
           ),
         );
 
@@ -183,24 +192,33 @@ export const requestLogRouter = createTRPCRouter({
         return {
           totalRequests: 0,
           successfulRequests: 0,
+          pairedSizeSamples: 0,
+          sampleCoveragePercentage: 0,
+          isEstimated: false,
           totalOriginalSize: 0,
           totalOptimizedSize: 0,
           bandwidthSaved: 0,
           savingsPercentage: 0,
-          avgProcessingTimeMs: 0,
+          avgProcessingTimeMs: null as number | null,
         };
       }
 
       const originalSize = Number(stats.totalOriginalSize);
       const optimizedSize = Number(stats.totalOptimizedSize);
-      // Clamp to non-negative to handle cases where optimized > original
-      const bandwidthSaved = Math.max(0, originalSize - optimizedSize);
+      const bandwidthSaved = originalSize - optimizedSize;
       const savingsPercentage =
         originalSize > 0 ? (bandwidthSaved / originalSize) * 100 : 0;
+      const sampleCoveragePercentage =
+        stats.successfulRequests > 0
+          ? (stats.pairedSizeSamples / stats.successfulRequests) * 100
+          : 0;
 
       return {
         totalRequests: stats.totalRequests,
         successfulRequests: stats.successfulRequests,
+        pairedSizeSamples: stats.pairedSizeSamples,
+        sampleCoveragePercentage: Math.round(sampleCoveragePercentage * 10) / 10,
+        isEstimated: stats.pairedSizeSamples < stats.successfulRequests,
         totalOriginalSize: originalSize,
         totalOptimizedSize: optimizedSize,
         bandwidthSaved,

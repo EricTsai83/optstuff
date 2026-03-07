@@ -1,0 +1,208 @@
+---
+title: Usage Metrics Calculations
+description: Exact formulas, data sources, and caveats for Usage tab metrics, including bandwidth savings estimation and sampling behavior.
+---
+
+This page documents how each Usage metric is computed, where its data comes from, and how to interpret it safely.
+
+## Data Sources
+
+| Source | Table | Purpose | Reliability |
+|--------|-------|---------|-------------|
+| Aggregated usage | `usage_record` | Billing-like totals (`totalRequests`, `totalBytes`) | High (authoritative aggregate) |
+| Request telemetry | `request_log` | Request-level analytics (logs, top images, response time, bandwidth estimate) | Medium (sampling may apply) |
+
+## Sampling Model (Important)
+
+Two sampling controls affect request-log-derived metrics:
+
+- Successful request logs can be sampled via `REQUEST_LOG_SUCCESS_SAMPLE_RATE` (default: `0.2` in production, `1.0` otherwise).
+- Original size probing is sampled at `10%` (to avoid an upstream `HEAD` on every success request).
+
+Because of this, request-log metrics are **analytics telemetry**, not strict accounting.  
+For quota/billing style totals, use `usage_record`-based metrics.
+
+See also:
+- [Request Lifecycle](/architecture/request-lifecycle)
+- [Environment Variables](/self-hosting/environment-variables)
+
+## Date Range Semantics
+
+Most request-log queries use:
+
+- `createdAt >= startDate`
+- `createdAt < endExclusive`
+
+Where `endExclusive` is `endDate + 1 day (UTC)`.  
+This models a user-facing **inclusive end date** while keeping SQL range logic unambiguous.
+
+## Usage Tab Metrics
+
+### 1) Total Requests
+
+Source: `usage_record`
+
+Formula:
+
+```text
+totalRequests = sum(requestCount)
+```
+
+### 2) Bandwidth
+
+Source: `usage_record`
+
+Formula:
+
+```text
+totalBytes = sum(bytesProcessed)
+```
+
+This is the primary bandwidth total used for period summaries and trend cards.
+
+### 3) Request Trend (%) / Bandwidth Trend (%)
+
+Source: `usage_record` (current period vs previous period)
+
+Formula:
+
+```text
+if previous == 0:
+  trend = 100 if current > 0 else 0
+else:
+  trend = round((current - previous) / previous * 100)
+```
+
+### 4) Success Rate (%)
+
+Source: `request_log`
+
+Formula:
+
+```text
+successRate = round(successfulRequests / totalRequests * 100)
+```
+
+Where:
+
+- `successfulRequests = count(status = 'success')`
+- `totalRequests = count(*)`
+
+Interpretation note: if success logs are sampled, this becomes a sampled estimate rather than an exact success rate.
+
+### 5) Avg Response Time (ms)
+
+Source: `request_log`
+
+Formula:
+
+```text
+avgProcessingTimeMs = round(avg(processingTimeMs))
+```
+
+If no rows have `processingTimeMs`, value is `null` (UI may render fallback display).
+
+### 6) Bandwidth Savings (Estimated)
+
+Source: `request_log` (paired successful samples only)
+
+To avoid denominator mismatch, savings is computed only from rows where **both** `originalSize` and `optimizedSize` exist and status is `success`.
+
+Definitions:
+
+```text
+successfulRequests = count(status = 'success')
+pairedSizeSamples = count(status = 'success' and originalSize != null and optimizedSize != null)
+
+totalOriginalSize = sum(originalSize on paired samples)
+totalOptimizedSize = sum(optimizedSize on paired samples)
+
+bandwidthSaved = totalOriginalSize - totalOptimizedSize
+savingsPercentage = totalOriginalSize > 0 ? (bandwidthSaved / totalOriginalSize) * 100 : 0
+
+sampleCoveragePercentage = successfulRequests > 0
+  ? (pairedSizeSamples / successfulRequests) * 100
+  : 0
+
+isEstimated = pairedSizeSamples < successfulRequests
+```
+
+Interpretation:
+
+- `isEstimated = true` means not all successful logs had paired size data.
+- Coverage indicates how much of successful log traffic contributed to size-based savings math.
+- Negative `bandwidthSaved` means optimized outputs were larger than originals in the sampled set.
+
+### 7) Daily Volume Chart
+
+Source: `request_log`
+
+Per day:
+
+```text
+requestCount = count(*)
+bytesProcessed = sum(optimizedSize)
+```
+
+### 8) Top Images
+
+Source: `request_log`
+
+Grouped by `sourceUrl`:
+
+```text
+requestCount = count(*)
+totalOptimizedSize = sum(optimizedSize)
+```
+
+Ordered by `requestCount desc`.
+
+### 9) Request Logs Row Savings
+
+Source: `request_log` row fields
+
+Formula:
+
+```text
+savingsPercent = round((originalSize - optimizedSize) / originalSize * 100)
+```
+
+UI branches:
+
+- `> 0`: reduction (green, down-right arrow)
+- `< 0`: increase (orange, up-right arrow)
+- `= 0`: neutral (`0%` / `No change`)
+- `null`: unavailable (missing size data)
+
+### 10) Summary Daily Averages
+
+Source: `usage_record`
+
+Formula:
+
+```text
+averageDailyRequests = round(totalRequests / days)
+averageDailyBytes = round(totalBytes / days)
+```
+
+Where `days` is derived from the selected range used by `getSummary`.
+
+### 11) Previous Period Baseline
+
+Source: `usage_record`
+
+`getSummary` computes previous-period start/end dates immediately before the current period, then compares:
+
+```text
+previousPeriod.totalRequests = sum(requestCount in previous period)
+previousPeriod.totalBytes = sum(bytesProcessed in previous period)
+```
+
+These are the baseline values used by trend percentages.
+
+## Best-Practice Guidance
+
+- Use `usage_record` metrics for reporting that needs stable totals over time.
+- Treat `request_log` metrics as operational analytics and trend signals.
+- Always communicate sampling context when showing request-log-derived percentages.
+- For strict financial accounting, use dedicated counters/aggregates instead of request-log inference.

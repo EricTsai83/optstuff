@@ -139,9 +139,13 @@ function MobileLogCard({ log }: { readonly log: RequestLog }) {
       <div className="flex items-start justify-between gap-2">
         <Tooltip>
           <TooltipTrigger asChild>
-            <span className="block min-w-0 flex-1 truncate font-mono text-sm">
+            <button
+              type="button"
+              className="block min-w-0 flex-1 truncate font-mono text-sm text-left"
+              aria-label={log.sourceUrl}
+            >
               {log.sourceUrl}
-            </span>
+            </button>
           </TooltipTrigger>
           <TooltipContent side="bottom" className="max-w-sm">
             <p className="break-all font-mono text-xs">{log.sourceUrl}</p>
@@ -164,15 +168,19 @@ function MobileLogCard({ log }: { readonly log: RequestLog }) {
                   -{savings}%
                 </span>
               </>
-            ) : (
+            ) : savings != null && savings < 0 ? (
               <>
                 <ArrowUpRight className="text-orange-500 h-3 w-3" />
                 {formatBytes(Number(log.optimizedSize))}
-                {savings != null && savings < 0 && (
-                  <span className="text-orange-600 dark:text-orange-400 font-medium">
-                    +{Math.abs(savings)}%
-                  </span>
-                )}
+                <span className="text-orange-600 dark:text-orange-400 font-medium">
+                  +{Math.abs(savings)}%
+                </span>
+              </>
+            ) : (
+              <>
+                <span className="mx-0.5">→</span>
+                {formatBytes(Number(log.optimizedSize))}
+                <span className="text-muted-foreground font-medium">0%</span>
               </>
             )}
           </span>
@@ -287,9 +295,13 @@ export function RequestLogsTable({ logs, isLoading }: RequestLogsTableProps) {
                         <td className="max-w-[280px] px-4 py-2.5">
                           <Tooltip>
                             <TooltipTrigger asChild>
-                              <span className="block truncate font-mono text-sm">
+                              <button
+                                type="button"
+                                className="block truncate font-mono text-sm text-left"
+                                aria-label={log.sourceUrl}
+                              >
                                 {log.sourceUrl}
-                              </span>
+                              </button>
                             </TooltipTrigger>
                             <TooltipContent side="bottom" className="max-w-sm">
                               <p className="break-all font-mono text-xs">
@@ -341,17 +353,25 @@ export function RequestLogsTable({ logs, isLoading }: RequestLogsTableProps) {
                                         -{savings}%
                                       </span>
                                     </>
-                                  ) : (
+                                  ) : savings != null && savings < 0 ? (
                                     <>
                                       <ArrowUpRight className="text-orange-500 h-3 w-3" />
                                       <span>
                                         {formatBytes(Number(log.optimizedSize))}
                                       </span>
-                                      {savings != null && savings < 0 && (
-                                        <span className="text-orange-600 dark:text-orange-400 text-xs font-medium">
-                                          +{Math.abs(savings)}%
-                                        </span>
-                                      )}
+                                      <span className="text-orange-600 dark:text-orange-400 text-xs font-medium">
+                                        +{Math.abs(savings)}%
+                                      </span>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <span className="mx-0.5">→</span>
+                                      <span>
+                                        {formatBytes(Number(log.optimizedSize))}
+                                      </span>
+                                      <span className="text-muted-foreground text-xs font-medium">
+                                        0%
+                                      </span>
                                     </>
                                   )}
                                 </span>
@@ -359,7 +379,9 @@ export function RequestLogsTable({ logs, isLoading }: RequestLogsTableProps) {
                               <TooltipContent>
                                 {savings != null && savings > 0
                                   ? `Saved ${formatBytes(Number(log.originalSize) - Number(log.optimizedSize))}`
-                                  : `Increased ${formatBytes(Number(log.optimizedSize) - Number(log.originalSize))}`}
+                                  : savings != null && savings < 0
+                                    ? `Increased ${formatBytes(Number(log.optimizedSize) - Number(log.originalSize))}`
+                                    : "No change"}
                               </TooltipContent>
                             </Tooltip>
                           ) : log.optimizedSize != null ? (
