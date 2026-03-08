@@ -74,14 +74,14 @@ export async function TeamUsage({ teamId }: TeamUsageProps) {
             label="API Requests"
             used={totalRequests}
             total={USAGE_LIMITS.requests}
-            format={formatNumber}
+            formatType="number"
             showPercentage
           />
           <UsageProgressBar
             label="Bandwidth"
             used={totalBytes}
             total={USAGE_LIMITS.bandwidth}
-            format={formatBytes}
+            formatType="bytes"
             showPercentage
           />
         </CardContent>

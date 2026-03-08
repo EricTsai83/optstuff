@@ -5,7 +5,7 @@ import {
   UsageProgressBarSkeleton,
 } from "@/components/usage-progress-bar";
 import { USAGE_LIMITS } from "@/lib/constants";
-import { formatBytes, formatNumber } from "@/lib/format";
+import type { FormatType } from "@/components/usage-progress-bar";
 import { Button } from "@workspace/ui/components/button";
 import { Separator } from "@workspace/ui/components/separator";
 import {
@@ -30,18 +30,23 @@ export function UsageCard({
 }: UsageCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
 
-  const usageData = [
+  const usageData: {
+    name: string;
+    used: number;
+    total: number;
+    formatType: FormatType;
+  }[] = [
     {
       name: "API Requests",
       used: totalRequests,
       total: USAGE_LIMITS.requests,
-      format: formatNumber,
+      formatType: "number",
     },
     {
       name: "Bandwidth",
       used: totalBytes,
       total: USAGE_LIMITS.bandwidth,
-      format: formatBytes,
+      formatType: "bytes",
     },
   ];
 
@@ -82,7 +87,7 @@ export function UsageCard({
                       label={item.name}
                       used={item.used}
                       total={item.total}
-                      format={item.format}
+                      formatType={item.formatType}
                       compact
                     />
                   ))}

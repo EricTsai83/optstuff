@@ -28,7 +28,7 @@ import {
 import Link from "next/link";
 import { useState } from "react";
 import { getProjectColor } from "../../constants";
-import { ProjectListSkeleton } from "../skeletons/project-list-skeleton";
+import { ProjectListSkeleton } from "./project-list.skeleton";
 import { CreateProjectDialog } from "./create-project-dialog";
 
 type ProjectListProps = {

@@ -2,7 +2,9 @@ export { ApiCodeExamples, DocsLink } from "./api-code-examples";
 export { EditApiKeyDialog, RotatedKeyDialog } from "./api-key-dialogs";
 export { ApiKeyItem } from "./api-key-item";
 export { ApiKeyList } from "./api-key-list";
-export { ApiKeyListSkeleton, EmptyApiKeyState } from "./api-key-skeleton";
+export { ApiKeyListSkeleton, EmptyApiKeyState } from "./api-key-list.skeleton";
+export { ProjectDetailSkeleton } from "./project-detail.skeleton";
+export { ProjectTabsSkeleton } from "./project-tabs.skeleton";
 export {
   STATUS_COLORS,
   getExpirationStatus,

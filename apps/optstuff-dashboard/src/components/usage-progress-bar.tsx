@@ -1,26 +1,32 @@
 "use client";
 
+import { formatBytes, formatNumber } from "@/lib/format";
 import { cn } from "@workspace/ui/lib/utils";
+
+export type FormatType = "number" | "bytes";
 
 type UsageProgressBarProps = {
   readonly label: string;
   readonly used: number;
   readonly total: number;
-  readonly format: (value: number) => string;
+  readonly formatType: FormatType;
   /** Show percentage text below the bar */
   readonly showPercentage?: boolean;
   /** Compact variant for sidebar/mobile use */
   readonly compact?: boolean;
 };
 
+const formatters = { number: formatNumber, bytes: formatBytes } as const;
+
 export function UsageProgressBar({
   label,
   used,
   total,
-  format,
+  formatType,
   showPercentage = false,
   compact = false,
 }: UsageProgressBarProps) {
+  const format = formatters[formatType];
   const safePercentage = total <= 0 ? 0 : Math.min((used / total) * 100, 100);
   const isWarning = safePercentage > 80;
   const isDanger = safePercentage > 95;

@@ -5,7 +5,7 @@ import {
   UsageProgressBarSkeleton,
 } from "@/components/usage-progress-bar";
 import { USAGE_LIMITS } from "@/lib/constants";
-import { formatBytes, formatNumber } from "@/lib/format";
+import { formatNumber } from "@/lib/format";
 import { api } from "@/trpc/react";
 import {
   Tabs,
@@ -61,14 +61,14 @@ export function MobileTabs({ teamId }: MobileTabsProps) {
               label="API Requests"
               used={teamSummary?.totalRequests ?? 0}
               total={USAGE_LIMITS.requests}
-              format={formatNumber}
+              formatType="number"
               compact
             />
             <UsageProgressBar
               label="Bandwidth"
               used={teamSummary?.totalBytes ?? 0}
               total={USAGE_LIMITS.bandwidth}
-              format={formatBytes}
+              formatType="bytes"
               compact
             />
           </div>

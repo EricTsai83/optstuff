@@ -4,31 +4,33 @@ export type { NavTab, Team } from "./types";
 // Constants
 export { NAV_TABS, SCROLL_CONFIG } from "./constants";
 
-// Components
+// Components & Skeletons
 export {
   CreateProjectDialog,
   CreateTeamDialog,
   GetStartedCard,
   MobileTabs,
+  MobileTabsSkeleton,
   NavigationTabs,
+  NavTabsSkeleton,
   ProjectList,
+  ProjectListSkeleton,
   QuickStatsCard,
   SearchToolbar,
+  SearchToolbarSkeleton,
   TeamNavigationTabs,
   TeamSwitcher,
+  TeamSwitcherSkeleton,
   UsageCard,
   UsageSidebar,
+  UsageSidebarSkeleton,
 } from "./ui/components";
 
-// Skeletons
+// Views & View Skeletons (TeamUsage is a server component — import directly from ./ui/views/team-usage)
 export {
-  MobileTabsSkeleton,
-  NavTabsSkeleton,
-  ProjectListSkeleton,
-  SearchToolbarSkeleton,
-  TeamSwitcherSkeleton,
-  UsageSidebarSkeleton,
-} from "./ui/skeletons";
-
-// Views (TeamUsage is a server component — import directly from ./ui/views/team-usage)
-export { TeamOverview, TeamSettings } from "./ui/views";
+  TeamOverview,
+  TeamOverviewSkeleton,
+  TeamSettings,
+  TeamSettingsSkeleton,
+  TeamUsageSkeleton,
+} from "./ui/views";

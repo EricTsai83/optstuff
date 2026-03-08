@@ -14,7 +14,7 @@ import { Check, ChevronDown, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import type { Team } from "../../types";
-import { TeamSwitcherSkeleton } from "../skeletons/team-switcher-skeleton";
+import { TeamSwitcherSkeleton } from "./team-switcher.skeleton";
 import { CreateTeamDialog } from "./create-team-dialog";
 
 type TeamSwitcherProps = {

@@ -15,7 +15,7 @@ export function TeamOverview({ teamId, teamSlug }: TeamOverviewProps) {
   const [searchQuery, setSearchQuery] = useState("");
 
   return (
-    <>
+    <div className="space-y-4">
       <SearchToolbar
         teamId={teamId}
         teamSlug={teamSlug}
@@ -31,6 +31,6 @@ export function TeamOverview({ teamId, teamSlug }: TeamOverviewProps) {
           searchQuery={searchQuery}
         />
       </div>
-    </>
+    </div>
   );
 }

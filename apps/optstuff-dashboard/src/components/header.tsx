@@ -91,8 +91,8 @@ export function Header({ teamSlug }: HeaderProps) {
       />
 
       <MobileSidebar
-        isOpen={isSidebarOpen}
-        onClose={() => setIsSidebarOpen(false)}
+        open={isSidebarOpen}
+        onOpenChange={setIsSidebarOpen}
       />
     </>
   );

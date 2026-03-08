@@ -17,7 +17,7 @@ export default async function TeamTabsLayout({
       <Header teamSlug={teamSlug} />
       <TeamNavigationTabs teamSlug={teamSlug} />
       <div className="pb-24">
-        <main className="container mx-auto flex-1 px-4 py-4">{children}</main>
+        <main className="container mx-auto flex-1 px-4 py-10">{children}</main>
       </div>
     </>
   );

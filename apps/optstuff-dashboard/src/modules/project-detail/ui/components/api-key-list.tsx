@@ -12,7 +12,7 @@ import { Key } from "lucide-react";
 import { useState } from "react";
 import { EditApiKeyDialog, RotatedKeyDialog } from "./api-key-dialogs";
 import { ApiKeyItem } from "./api-key-item";
-import { ApiKeyListSkeleton, EmptyApiKeyState } from "./api-key-skeleton";
+import { ApiKeyListSkeleton, EmptyApiKeyState } from "./api-key-list.skeleton";
 import type {
   ApiKeyData,
   EditingKeyData,
@@ -47,7 +47,7 @@ export function ApiKeyList({ projectId, projectSlug }: ApiKeyListProps) {
   const { mutate: rotateKey, isPending: isRotating } =
     api.apiKey.rotate.useMutation({
       onSuccess: (result) => {
-        utils.apiKey.list.invalidate();
+        void utils.apiKey.list.invalidate();
         if (result?.publicKey && result?.secretKey && result?.name) {
           setRotatedKey({
             publicKey: result.publicKey,
@@ -61,7 +61,7 @@ export function ApiKeyList({ projectId, projectSlug }: ApiKeyListProps) {
   const { mutate: updateKey, isPending: isUpdating } =
     api.apiKey.update.useMutation({
       onSuccess: () => {
-        utils.apiKey.list.invalidate();
+        void utils.apiKey.list.invalidate();
         setEditingKey(null);
       },
     });
