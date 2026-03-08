@@ -18,10 +18,10 @@ export async function getVerifiedTeam(teamSlug: string) {
   }
 
   const team = await db.query.teams.findFirst({
-    where: eq(teams.slug, teamSlug),
+    where: and(eq(teams.slug, teamSlug), eq(teams.ownerId, userId)),
   });
 
-  if (team?.ownerId === userId) {
+  if (team) {
     return team;
   }
 

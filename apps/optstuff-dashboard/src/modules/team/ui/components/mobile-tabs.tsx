@@ -29,10 +29,11 @@ const TABS = [
 ] as const;
 
 export function MobileTabs({ teamId }: MobileTabsProps) {
-  const { data: teamSummary, isLoading } = api.usage.getTeamSummary.useQuery(
-    { teamId },
-    { enabled: !!teamId },
-  );
+  const {
+    data: teamSummary,
+    isLoading,
+    isError,
+  } = api.usage.getTeamSummary.useQuery({ teamId }, { enabled: !!teamId });
 
   return (
     <Tabs defaultValue="usage" className="md:hidden">
@@ -54,6 +55,10 @@ export function MobileTabs({ teamId }: MobileTabsProps) {
           <div className="space-y-4">
             <UsageProgressBarSkeleton compact />
             <UsageProgressBarSkeleton compact />
+          </div>
+        ) : isError ? (
+          <div className="text-destructive py-6 text-center text-sm">
+            Failed to load usage data
           </div>
         ) : teamSummary ? (
           <div className="space-y-4">
@@ -90,6 +95,10 @@ export function MobileTabs({ teamId }: MobileTabsProps) {
               <div className="bg-muted mx-auto h-8 w-10 animate-pulse rounded" />
               <div className="bg-muted mx-auto mt-1 h-4 w-16 animate-pulse rounded" />
             </div>
+          </div>
+        ) : isError ? (
+          <div className="text-destructive py-6 text-center text-sm">
+            Failed to load stats
           </div>
         ) : teamSummary ? (
           <div className="grid grid-cols-2 gap-4">
