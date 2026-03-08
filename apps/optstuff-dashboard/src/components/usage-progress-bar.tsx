@@ -76,10 +76,18 @@ export function UsageProgressBarSkeleton({
 }: UsageProgressBarSkeletonProps) {
   return (
     <div className={cn("space-y-1.5", compact && "space-y-1")}>
-      <div className="bg-muted h-4 w-full animate-pulse rounded" />
+      <div className="flex items-center justify-between text-sm">
+        <div className="flex items-center gap-2">
+          {compact && (
+            <div className="bg-muted h-2 w-2 animate-pulse rounded-full" />
+          )}
+          <div className="bg-muted h-5 w-20 animate-pulse rounded" />
+        </div>
+        <div className="bg-muted h-5 w-24 animate-pulse rounded" />
+      </div>
       <div
         className={cn(
-          "bg-muted animate-pulse rounded-full",
+          "bg-muted overflow-hidden animate-pulse rounded-full",
           compact ? "h-1.5" : "h-2",
         )}
       />

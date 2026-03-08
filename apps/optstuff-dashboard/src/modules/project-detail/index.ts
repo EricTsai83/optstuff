@@ -13,3 +13,9 @@ export { ApiKeyList } from "./ui/components/api-key-list";
 export { CreateApiKeyDialog } from "./ui/components/create-api-key-dialog";
 export { InfoField } from "./ui/components/info-field";
 export { StatCard } from "./ui/components/stat-card";
+
+// Skeletons
+export {
+  ProjectDetailSkeleton,
+  ProjectTabsSkeleton,
+} from "./ui/skeletons";
