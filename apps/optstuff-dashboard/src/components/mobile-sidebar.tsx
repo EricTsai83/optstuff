@@ -3,12 +3,13 @@
 import { DOCS_LINKS } from "@/lib/constants";
 import { ClerkLoaded, ClerkLoading, UserButton } from "@workspace/auth/client";
 import { UserButtonSkeleton } from "@workspace/auth/components/user-button-skeleton";
-import { Separator } from "@workspace/ui/components/separator";
+import { Button } from "@workspace/ui/components/button";
 import {
   Drawer,
   DrawerContent,
   DrawerTitle,
 } from "@workspace/ui/components/drawer";
+import { Separator } from "@workspace/ui/components/separator";
 import {
   BookOpen,
   FileText,
@@ -76,21 +77,26 @@ export function MobileSidebar({ open, onOpenChange }: MobileSidebarProps) {
           {SIDEBAR_LINKS.map((item) => {
             const Icon = item.icon;
             return (
-              <a
+              <Button
                 key={item.href}
-                href={item.href}
-                onClick={() => onOpenChange(false)}
-                {...(item.external
-                  ? { target: "_blank", rel: "noopener noreferrer" }
-                  : {})}
-                className="hover:bg-accent hover:text-accent-foreground text-foreground flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors duration-100"
+                variant="ghost"
+                asChild
+                className="h-auto justify-start gap-3 px-3 py-2.5 text-foreground [&_svg]:text-muted-foreground [&:hover_svg]:text-accent-foreground"
               >
-                <Icon className="text-muted-foreground h-4 w-4" />
-                <span className="flex-1">{item.label}</span>
-                {item.external && (
-                  <span className="text-muted-foreground text-xs">↗</span>
-                )}
-              </a>
+                <a
+                  href={item.href}
+                  onClick={() => onOpenChange(false)}
+                  {...(item.external
+                    ? { target: "_blank", rel: "noopener noreferrer" }
+                    : {})}
+                >
+                  <Icon />
+                  <span className="flex-1">{item.label}</span>
+                  {item.external && (
+                    <span className="text-muted-foreground text-xs">↗</span>
+                  )}
+                </a>
+              </Button>
             );
           })}
 
@@ -100,26 +106,22 @@ export function MobileSidebar({ open, onOpenChange }: MobileSidebarProps) {
             Preferences
           </p>
 
-          <button
-            type="button"
+          <Button
+            variant="ghost"
             onClick={() => setTheme(isDark ? "light" : "dark")}
-            className="hover:bg-accent hover:text-accent-foreground text-foreground flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors duration-100"
+            className="h-auto justify-start gap-3 px-3 py-2.5 text-foreground [&_svg]:text-muted-foreground [&:hover_svg]:text-accent-foreground"
           >
-            {isDark ? (
-              <Sun className="text-muted-foreground h-4 w-4" />
-            ) : (
-              <Moon className="text-muted-foreground h-4 w-4" />
-            )}
+            {isDark ? <Sun /> : <Moon />}
             <span>{isDark ? "Light Mode" : "Dark Mode"}</span>
-          </button>
+          </Button>
 
-          <button
-            type="button"
-            className="hover:bg-accent hover:text-accent-foreground text-foreground flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors duration-100"
+          <Button
+            variant="ghost"
+            className="h-auto justify-start gap-3 px-3 py-2.5 text-foreground [&_svg]:text-muted-foreground [&:hover_svg]:text-accent-foreground"
           >
-            <MessageSquare className="text-muted-foreground h-4 w-4" />
+            <MessageSquare />
             <span>Feedback</span>
-          </button>
+          </Button>
         </nav>
 
         <div className="border-border border-t px-4 py-3">
