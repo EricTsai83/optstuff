@@ -28,6 +28,7 @@ import {
 import Link from "next/link";
 import { useState } from "react";
 import { getProjectColor } from "../../constants";
+import { ProjectListSkeleton } from "./project-list.skeleton";
 import { CreateProjectDialog } from "./create-project-dialog";
 
 type ProjectListProps = {
@@ -71,18 +72,7 @@ export function ProjectList({
     ) ?? [];
 
   if (isLoading || isPinnedLoading) {
-    return (
-      <div className="min-w-0 flex-1">
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-sm font-medium">Projects</h2>
-        </div>
-        <div className="space-y-2">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="bg-muted h-20 animate-pulse rounded-lg" />
-          ))}
-        </div>
-      </div>
-    );
+    return <ProjectListSkeleton />;
   }
 
   return (
@@ -173,16 +163,16 @@ function ProjectItem({
   const { mutate: pinProject, isPending: isPinning } =
     api.project.pin.useMutation({
       onSuccess: () => {
-        utils.project.listPinned.invalidate();
-        utils.project.getPinnedStatus.invalidate();
+        void utils.project.listPinned.invalidate();
+        void utils.project.getPinnedStatus.invalidate();
       },
     });
 
   const { mutate: unpinProject, isPending: isUnpinning } =
     api.project.unpin.useMutation({
       onSuccess: () => {
-        utils.project.listPinned.invalidate();
-        utils.project.getPinnedStatus.invalidate();
+        void utils.project.listPinned.invalidate();
+        void utils.project.getPinnedStatus.invalidate();
       },
     });
 

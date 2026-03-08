@@ -1,10 +1,8 @@
-"use client";
-
 import { UsageProgressBar } from "@/components/usage-progress-bar";
 import { USAGE_LIMITS } from "@/lib/constants";
 import { formatBytes, formatNumber } from "@/lib/format";
 import { StatCard } from "@/modules/project-detail/ui/components/stat-card";
-import { api } from "@/trpc/react";
+import { api } from "@/trpc/server";
 import {
   Card,
   CardContent,
@@ -18,55 +16,52 @@ type TeamUsageProps = {
   readonly teamId: string;
 };
 
-export function TeamUsage({ teamId }: TeamUsageProps) {
-  const { data: teamSummary, isLoading } = api.usage.getTeamSummary.useQuery(
-    { teamId },
-    { enabled: !!teamId },
-  );
+export async function TeamUsage({ teamId }: TeamUsageProps) {
+  const [teamSummary, projects] = await Promise.all([
+    api.usage.getTeamSummary({ teamId }),
+    api.project.list({ teamId }),
+  ]);
 
-  const { data: projects } = api.project.list.useQuery({ teamId });
+  const projectUsages =
+    projects.length > 0
+      ? await Promise.all(
+          projects.map(async (p) => {
+            const summary = await api.usage.getSummary({ projectId: p.id });
+            return {
+              id: p.id,
+              name: p.name,
+              totalRequests: summary.totalRequests,
+              totalBytes: summary.totalBytes,
+            };
+          }),
+        )
+      : [];
 
-  if (isLoading) {
-    return (
-      <div className="space-y-6">
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-          {[1, 2, 3, 4].map((i) => (
-            <Card key={i}>
-              <CardContent className="pt-6">
-                <div className="bg-muted h-8 w-20 animate-pulse rounded" />
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </div>
-    );
-  }
+  const { totalRequests, totalBytes, projectCount } = teamSummary;
 
   return (
     <div className="space-y-6">
-      {/* Summary Cards */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         <StatCard
           title="Total Requests"
-          value={formatNumber(teamSummary?.totalRequests ?? 0)}
+          value={formatNumber(totalRequests)}
           subtitle="Last 30 days"
           icon={<Activity className="text-muted-foreground h-4 w-4" />}
         />
         <StatCard
           title="Total Bandwidth"
-          value={formatBytes(teamSummary?.totalBytes ?? 0)}
+          value={formatBytes(totalBytes)}
           subtitle="Last 30 days"
           icon={<Activity className="text-muted-foreground h-4 w-4" />}
         />
         <StatCard
           title="Projects"
-          value={String(teamSummary?.projectCount ?? 0)}
+          value={String(projectCount)}
           subtitle="Active projects"
         />
         <StatCard title="Plan" value="Free" subtitle="Current plan" />
       </div>
 
-      {/* Usage Progress */}
       <Card>
         <CardHeader>
           <CardTitle>Usage Overview</CardTitle>
@@ -77,23 +72,22 @@ export function TeamUsage({ teamId }: TeamUsageProps) {
         <CardContent className="space-y-6">
           <UsageProgressBar
             label="API Requests"
-            used={teamSummary?.totalRequests ?? 0}
+            used={totalRequests}
             total={USAGE_LIMITS.requests}
-            format={formatNumber}
+            formatType="number"
             showPercentage
           />
           <UsageProgressBar
             label="Bandwidth"
-            used={teamSummary?.totalBytes ?? 0}
+            used={totalBytes}
             total={USAGE_LIMITS.bandwidth}
-            format={formatBytes}
+            formatType="bytes"
             showPercentage
           />
         </CardContent>
       </Card>
 
-      {/* Projects Breakdown */}
-      {projects && projects.length > 0 && (
+      {projectUsages.length > 0 && (
         <Card>
           <CardHeader>
             <CardTitle>Usage by Project</CardTitle>
@@ -103,37 +97,24 @@ export function TeamUsage({ teamId }: TeamUsageProps) {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {projects.map((project) => (
-                <ProjectUsageRow
+              {projectUsages.map((project) => (
+                <div
                   key={project.id}
-                  projectId={project.id}
-                  projectName={project.name}
-                />
+                  className="flex items-center justify-between rounded-lg border p-3"
+                >
+                  <span className="font-medium">{project.name}</span>
+                  <div className="text-muted-foreground flex items-center gap-4 text-sm">
+                    <span>
+                      {formatNumber(project.totalRequests)} requests
+                    </span>
+                    <span>{formatBytes(project.totalBytes)}</span>
+                  </div>
+                </div>
               ))}
             </div>
           </CardContent>
         </Card>
       )}
-    </div>
-  );
-}
-
-function ProjectUsageRow({
-  projectId,
-  projectName,
-}: {
-  projectId: string;
-  projectName: string;
-}) {
-  const { data: summary } = api.usage.getSummary.useQuery({ projectId });
-
-  return (
-    <div className="flex items-center justify-between rounded-lg border p-3">
-      <span className="font-medium">{projectName}</span>
-      <div className="text-muted-foreground flex items-center gap-4 text-sm">
-        <span>{formatNumber(summary?.totalRequests ?? 0)} requests</span>
-        <span>{formatBytes(summary?.totalBytes ?? 0)}</span>
-      </div>
     </div>
   );
 }

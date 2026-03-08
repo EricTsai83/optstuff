@@ -5,7 +5,7 @@ import {
   UsageProgressBarSkeleton,
 } from "@/components/usage-progress-bar";
 import { USAGE_LIMITS } from "@/lib/constants";
-import { formatBytes, formatNumber } from "@/lib/format";
+import { formatNumber } from "@/lib/format";
 import { api } from "@/trpc/react";
 import {
   Tabs,
@@ -13,24 +13,30 @@ import {
   TabsList,
   TabsTrigger,
 } from "@workspace/ui/components/tabs";
-import { Activity, FolderOpen } from "lucide-react";
+import { Activity, BarChart3 } from "lucide-react";
 
 type MobileTabsProps = {
   readonly teamId: string;
 };
 
 const TABS = [
-  {
-    id: "projects",
-    label: "Projects",
-    icon: <FolderOpen className="h-4 w-4" />,
-  },
   { id: "usage", label: "Usage", icon: <Activity className="h-4 w-4" /> },
+  {
+    id: "stats",
+    label: "Quick Stats",
+    icon: <BarChart3 className="h-4 w-4" />,
+  },
 ] as const;
 
 export function MobileTabs({ teamId }: MobileTabsProps) {
+  const {
+    data: teamSummary,
+    isLoading,
+    isError,
+  } = api.usage.getTeamSummary.useQuery({ teamId }, { enabled: !!teamId });
+
   return (
-    <Tabs defaultValue="projects" className="md:hidden">
+    <Tabs defaultValue="usage" className="md:hidden">
       <TabsList className="border-border h-auto w-full justify-start gap-0 rounded-none border-b bg-transparent p-0">
         {TABS.map((tab) => (
           <TabsTrigger
@@ -44,87 +50,77 @@ export function MobileTabs({ teamId }: MobileTabsProps) {
         ))}
       </TabsList>
 
-      <TabsContent value="projects" className="mt-0 py-4">
-        <ProjectsTabContent teamId={teamId} />
-      </TabsContent>
       <TabsContent value="usage" className="mt-0 py-4">
-        <UsageTabContent teamId={teamId} />
+        {isLoading ? (
+          <div className="space-y-4">
+            <UsageProgressBarSkeleton compact />
+            <UsageProgressBarSkeleton compact />
+          </div>
+        ) : isError ? (
+          <div className="text-destructive py-6 text-center text-sm">
+            Failed to load usage data
+          </div>
+        ) : teamSummary ? (
+          <div className="space-y-4">
+            <UsageProgressBar
+              label="API Requests"
+              used={teamSummary.totalRequests}
+              total={USAGE_LIMITS.requests}
+              formatType="number"
+              compact
+            />
+            <UsageProgressBar
+              label="Bandwidth"
+              used={teamSummary.totalBytes}
+              total={USAGE_LIMITS.bandwidth}
+              formatType="bytes"
+              compact
+            />
+          </div>
+        ) : (
+          <div className="text-muted-foreground py-6 text-center text-sm">
+            No usage data available
+          </div>
+        )}
+      </TabsContent>
+
+      <TabsContent value="stats" className="mt-0 py-4">
+        {isLoading ? (
+          <div className="grid grid-cols-2 gap-4">
+            <div className="text-center">
+              <div className="bg-muted mx-auto h-8 w-8 animate-pulse rounded" />
+              <div className="bg-muted mx-auto mt-1 h-4 w-14 animate-pulse rounded" />
+            </div>
+            <div className="text-center">
+              <div className="bg-muted mx-auto h-8 w-10 animate-pulse rounded" />
+              <div className="bg-muted mx-auto mt-1 h-4 w-16 animate-pulse rounded" />
+            </div>
+          </div>
+        ) : isError ? (
+          <div className="text-destructive py-6 text-center text-sm">
+            Failed to load stats
+          </div>
+        ) : teamSummary ? (
+          <div className="grid grid-cols-2 gap-4">
+            <div className="text-center">
+              <div className="text-2xl font-bold">
+                {teamSummary.projectCount}
+              </div>
+              <div className="text-muted-foreground text-xs">Projects</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold">
+                {formatNumber(teamSummary.totalRequests)}
+              </div>
+              <div className="text-muted-foreground text-xs">Requests</div>
+            </div>
+          </div>
+        ) : (
+          <div className="text-muted-foreground py-6 text-center text-sm">
+            No stats available
+          </div>
+        )}
       </TabsContent>
     </Tabs>
-  );
-}
-
-function ProjectsTabContent({ teamId }: { teamId: string }) {
-  const { data: projects, isLoading } = api.project.list.useQuery({ teamId });
-
-  if (isLoading) {
-    return (
-      <div className="space-y-3">
-        {[1, 2, 3].map((i) => (
-          <div key={i} className="bg-muted h-12 animate-pulse rounded-lg" />
-        ))}
-      </div>
-    );
-  }
-
-  if (!projects?.length) {
-    return (
-      <div className="text-muted-foreground flex flex-col items-center py-8 text-center">
-        <FolderOpen className="mb-2 h-8 w-8 opacity-50" />
-        <p className="text-sm">No projects yet</p>
-      </div>
-    );
-  }
-
-  return (
-    <div className="text-muted-foreground text-center text-sm">
-      {projects.length} project{projects.length !== 1 ? "s" : ""} in this team
-    </div>
-  );
-}
-
-function UsageTabContent({ teamId }: { teamId: string }) {
-  const { data: teamSummary, isLoading } = api.usage.getTeamSummary.useQuery(
-    { teamId },
-    { enabled: !!teamId },
-  );
-
-  if (isLoading) {
-    return (
-      <div className="space-y-4">
-        <UsageProgressBarSkeleton />
-        <UsageProgressBarSkeleton />
-      </div>
-    );
-  }
-
-  const usageData = [
-    {
-      name: "API Requests",
-      used: teamSummary?.totalRequests ?? 0,
-      total: USAGE_LIMITS.requests,
-      format: formatNumber,
-    },
-    {
-      name: "Bandwidth",
-      used: teamSummary?.totalBytes ?? 0,
-      total: USAGE_LIMITS.bandwidth,
-      format: formatBytes,
-    },
-  ];
-
-  return (
-    <div className="space-y-4">
-      {usageData.map((item) => (
-        <UsageProgressBar
-          key={item.name}
-          label={item.name}
-          used={item.used}
-          total={item.total}
-          format={item.format}
-          compact
-        />
-      ))}
-    </div>
   );
 }

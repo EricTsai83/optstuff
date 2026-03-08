@@ -14,6 +14,7 @@ import { Check, ChevronDown, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import type { Team } from "../../types";
+import { TeamSwitcherSkeleton } from "./team-switcher.skeleton";
 import { CreateTeamDialog } from "./create-team-dialog";
 
 type TeamSwitcherProps = {
@@ -36,12 +37,7 @@ export function TeamSwitcher({ currentTeamSlug }: TeamSwitcherProps) {
   };
 
   if (isLoading) {
-    return (
-      <div className="flex h-8 items-center gap-2 px-2">
-        <div className="bg-muted h-5 w-5 animate-pulse rounded-full" />
-        <div className="bg-muted h-4 w-24 animate-pulse rounded" />
-      </div>
-    );
+    return <TeamSwitcherSkeleton />;
   }
 
   const teamColor = currentTeam?.isPersonal ? "bg-orange-500" : "bg-blue-500";

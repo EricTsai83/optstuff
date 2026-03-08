@@ -49,7 +49,7 @@ export function TeamSettings({
   const { mutate: updateTeam, isPending: isUpdating } =
     api.team.update.useMutation({
       onSuccess: (updatedTeam) => {
-        utils.team.list.invalidate();
+        void utils.team.list.invalidate();
         if (updatedTeam?.slug && updatedTeam.slug !== teamSlug) {
           router.push(`/${updatedTeam.slug}`);
         }
@@ -59,7 +59,7 @@ export function TeamSettings({
   const { mutate: deleteTeam, isPending: isDeleting } =
     api.team.delete.useMutation({
       onSuccess: () => {
-        utils.team.list.invalidate();
+        void utils.team.list.invalidate();
         router.push("/");
       },
     });

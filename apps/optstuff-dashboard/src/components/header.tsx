@@ -1,6 +1,7 @@
 "use client";
 
 import { AnimatedLogo } from "@/components/animated-logo";
+import { HeaderShell } from "@/components/header-shell";
 import { MobileSidebar } from "@/components/mobile-sidebar";
 import { DOCS_LINKS } from "@/lib/constants";
 import { TeamSwitcher } from "@/modules/team";
@@ -33,52 +34,65 @@ export function Header({ teamSlug }: HeaderProps) {
 
   return (
     <>
-      <header className="border-border bg-background flex h-16 items-center justify-between border-b px-4">
-        {/* Desktop: Logo and Team Selector */}
-        <div className="hidden items-center gap-2 md:flex">
-          <AnimatedLogo />
-          <div className="ml-15 flex items-center gap-2">
-            <span className="text-muted-foreground text-lg">/</span>
-            <TeamSwitcher currentTeamSlug={teamSlug} />
-          </div>
-        </div>
-
-        {/* Mobile: Team Selector only */}
-        <div className="flex items-center md:hidden">
-          <TeamSwitcher currentTeamSlug={teamSlug} />
-        </div>
-
-        {/* Desktop Actions */}
-        <div className="hidden items-center gap-2 md:flex">
-          <SearchInput />
-          <Button
-            variant="ghost"
-            size="sm"
-            className="text-muted-foreground transition-colors duration-200"
-          >
-            Feedback
-          </Button>
-          <IconButton icon={Bell} hasNotification />
-          <IconButton icon={BookOpen} href={DOCS_LINKS.home} />
-          <UserAvatar />
-        </div>
-
-        {/* Mobile Actions */}
-        <div className="flex items-center gap-1 md:hidden">
-          <IconButton icon={Search} size="mobile" />
-          <IconButton icon={Bell} size="mobile" hasNotification />
-          <IconButton
-            icon={isSidebarOpen ? X : Menu}
-            size="mobile"
-            onClick={handleToggleSidebar}
-            ariaLabel={isSidebarOpen ? "Close menu" : "Open menu"}
-          />
-        </div>
-      </header>
+      <HeaderShell
+        desktopLeft={
+          <>
+            <AnimatedLogo />
+            <div className="ml-15 flex items-center gap-2">
+              <span className="text-muted-foreground text-lg" aria-hidden="true">
+                /
+              </span>
+              <TeamSwitcher currentTeamSlug={teamSlug} />
+            </div>
+          </>
+        }
+        mobileLeft={<TeamSwitcher currentTeamSlug={teamSlug} />}
+        desktopRight={
+          <>
+            <SearchInput />
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-muted-foreground transition-colors duration-200"
+              aria-label="Send feedback"
+            >
+              Feedback
+            </Button>
+            <IconButton
+              icon={Bell}
+              hasNotification
+              ariaLabel="Notifications"
+            />
+            <IconButton
+              icon={BookOpen}
+              href={DOCS_LINKS.home}
+              ariaLabel="Documentation"
+            />
+            <UserAvatar />
+          </>
+        }
+        mobileRight={
+          <>
+            <IconButton icon={Search} size="mobile" ariaLabel="Search" />
+            <IconButton
+              icon={Bell}
+              size="mobile"
+              hasNotification
+              ariaLabel="Notifications"
+            />
+            <IconButton
+              icon={isSidebarOpen ? X : Menu}
+              size="mobile"
+              onClick={handleToggleSidebar}
+              ariaLabel={isSidebarOpen ? "Close menu" : "Open menu"}
+            />
+          </>
+        }
+      />
 
       <MobileSidebar
-        isOpen={isSidebarOpen}
-        onClose={() => setIsSidebarOpen(false)}
+        open={isSidebarOpen}
+        onOpenChange={setIsSidebarOpen}
       />
     </>
   );
@@ -91,6 +105,7 @@ function SearchInput() {
       <Input
         placeholder="Find..."
         className="bg-secondary h-8 w-48 border-0 pl-9 pr-8 transition-all duration-200 focus:w-64"
+        aria-label="Search"
       />
       <kbd className="text-muted-foreground bg-background absolute right-2 top-1/2 -translate-y-1/2 rounded border px-1.5 py-0.5 text-xs">
         F
@@ -146,6 +161,7 @@ function IconButton({
         {button}
         <span
           className={`absolute ${dotPosition} h-2 w-2 animate-pulse rounded-full bg-blue-500`}
+          aria-hidden="true"
         />
       </div>
     );
