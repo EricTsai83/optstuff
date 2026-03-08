@@ -3,8 +3,8 @@ import "server-only";
 import { db } from "@/server/db";
 import { teams } from "@/server/db/schema";
 import { auth } from "@workspace/auth/server";
-import { eq } from "drizzle-orm";
-import { notFound, redirect } from "next/navigation";
+import { and, asc, eq } from "drizzle-orm";
+import { redirect } from "next/navigation";
 
 /**
  * Verify the current user owns the team identified by `slug`.
@@ -25,18 +25,24 @@ export async function getVerifiedTeam(teamSlug: string) {
     return team;
   }
 
-  const userTeams = await db.query.teams.findMany({
-    where: eq(teams.ownerId, userId),
+  const personalTeam = await db.query.teams.findFirst({
+    where: and(eq(teams.ownerId, userId), eq(teams.isPersonal, true)),
+    columns: { slug: true },
   });
 
-  if (userTeams.length === 0) {
-    redirect("/onboarding");
+  if (personalTeam) {
+    redirect(`/${personalTeam.slug}`);
   }
 
-  const defaultTeam = userTeams.find((t) => t.isPersonal) ?? userTeams[0];
-  if (defaultTeam) {
-    redirect(`/${defaultTeam.slug}`);
+  const fallbackTeam = await db.query.teams.findFirst({
+    where: eq(teams.ownerId, userId),
+    orderBy: asc(teams.createdAt),
+    columns: { slug: true },
+  });
+
+  if (fallbackTeam) {
+    redirect(`/${fallbackTeam.slug}`);
   }
 
-  notFound();
+  redirect("/onboarding");
 }

@@ -1,7 +1,7 @@
 import { UsageProgressBarSkeleton } from "@/components/usage-progress-bar";
 import { Card, CardContent, CardHeader } from "@workspace/ui/components/card";
 
-function UsageCardSkeleton() {
+export function UsageCardSkeleton() {
   return (
     <div>
       <h3 className="mb-3 text-sm font-medium">Usage</h3>
@@ -23,7 +23,7 @@ function UsageCardSkeleton() {
   );
 }
 
-function QuickStatsSkeleton() {
+export function QuickStatsSkeleton() {
   return (
     <div>
       <h3 className="mb-3 text-sm font-medium">Quick Stats</h3>

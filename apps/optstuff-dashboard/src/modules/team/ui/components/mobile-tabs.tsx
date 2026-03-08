@@ -55,22 +55,26 @@ export function MobileTabs({ teamId }: MobileTabsProps) {
             <UsageProgressBarSkeleton compact />
             <UsageProgressBarSkeleton compact />
           </div>
-        ) : (
+        ) : teamSummary ? (
           <div className="space-y-4">
             <UsageProgressBar
               label="API Requests"
-              used={teamSummary?.totalRequests ?? 0}
+              used={teamSummary.totalRequests}
               total={USAGE_LIMITS.requests}
               formatType="number"
               compact
             />
             <UsageProgressBar
               label="Bandwidth"
-              used={teamSummary?.totalBytes ?? 0}
+              used={teamSummary.totalBytes}
               total={USAGE_LIMITS.bandwidth}
               formatType="bytes"
               compact
             />
+          </div>
+        ) : (
+          <div className="text-muted-foreground py-6 text-center text-sm">
+            No usage data available
           </div>
         )}
       </TabsContent>
@@ -87,20 +91,24 @@ export function MobileTabs({ teamId }: MobileTabsProps) {
               <div className="bg-muted mx-auto mt-1 h-4 w-16 animate-pulse rounded" />
             </div>
           </div>
-        ) : (
+        ) : teamSummary ? (
           <div className="grid grid-cols-2 gap-4">
             <div className="text-center">
               <div className="text-2xl font-bold">
-                {teamSummary?.projectCount ?? 0}
+                {teamSummary.projectCount}
               </div>
               <div className="text-muted-foreground text-xs">Projects</div>
             </div>
             <div className="text-center">
               <div className="text-2xl font-bold">
-                {formatNumber(teamSummary?.totalRequests ?? 0)}
+                {formatNumber(teamSummary.totalRequests)}
               </div>
               <div className="text-muted-foreground text-xs">Requests</div>
             </div>
+          </div>
+        ) : (
+          <div className="text-muted-foreground py-6 text-center text-sm">
+            No stats available
           </div>
         )}
       </TabsContent>

@@ -43,29 +43,39 @@ export function TeamNavigationTabs({ teamSlug }: TeamNavigationTabsProps) {
       value={activeLabel}
       className="border-border bg-background scrollbar-hide sticky top-0 z-50 max-w-full overflow-hidden border-b pt-1"
       data-navigation-tabs="true"
+      asChild
     >
-      <TabsList
-        className="scrollbar-hide h-[46px] w-full justify-start gap-0 overflow-x-auto rounded-none border-none bg-transparent px-2 *:shrink-0 md:px-4"
-        style={
-          translateX
-            ? {
-                transform: `translateX(${translateX}px)`,
-                maxWidth: `calc(100% - ${translateX}px)`,
-              }
-            : undefined
-        }
-      >
-        {TAB_LABELS.map((label) => (
-          <TabsTrigger
-            key={label}
-            value={label}
-            asChild
-            className="data-[state=active]:border-foreground text-muted-foreground data-[state=active]:text-foreground cursor-pointer whitespace-nowrap rounded-none border-b-2 border-transparent px-4 py-3 text-sm shadow-none transition-all duration-200 data-[state=active]:bg-transparent data-[state=active]:font-medium data-[state=active]:shadow-none"
-          >
-            <Link href={getTabHref(teamSlug, label)}>{label}</Link>
-          </TabsTrigger>
-        ))}
-      </TabsList>
+      <nav aria-label="Team navigation">
+        <TabsList
+          className="scrollbar-hide h-[46px] w-full justify-start gap-0 overflow-x-auto rounded-none border-none bg-transparent px-2 *:shrink-0 md:px-4"
+          role="presentation"
+          style={
+            translateX
+              ? {
+                  transform: `translateX(${translateX}px)`,
+                  maxWidth: `calc(100% - ${translateX}px)`,
+                }
+              : undefined
+          }
+        >
+          {TAB_LABELS.map((label) => (
+            <TabsTrigger
+              key={label}
+              value={label}
+              asChild
+              role="none"
+              className="data-[state=active]:border-foreground text-muted-foreground data-[state=active]:text-foreground cursor-pointer whitespace-nowrap rounded-none border-b-2 border-transparent px-4 py-3 text-sm shadow-none transition-all duration-200 data-[state=active]:bg-transparent data-[state=active]:font-medium data-[state=active]:shadow-none"
+            >
+              <Link
+                href={getTabHref(teamSlug, label)}
+                aria-current={activeLabel === label ? "page" : undefined}
+              >
+                {label}
+              </Link>
+            </TabsTrigger>
+          ))}
+        </TabsList>
+      </nav>
     </Tabs>
   );
 }
