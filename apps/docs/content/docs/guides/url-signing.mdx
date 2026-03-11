@@ -16,6 +16,7 @@ There are three actors in the signing system:
 3. **OptStuff Server** — On each request, it recomputes the expected signature and compares it to the one in the URL
 
 The server doesn't maintain a list of valid URLs. A matching signature **is** the authorization proof.
+In production, requests go to your OptStuff deployment origin (for example, `https://images.example.com`), then the `/api/v1/...` path.
 
 ```mermaid
 sequenceDiagram
@@ -30,7 +31,7 @@ sequenceDiagram
   YourServer->>YourServer: sig = HMAC-SHA256(secretKey, path)
   YourServer->>YourServer: Embed sig + publicKey in URL
 
-  YourServer->>OptStuff: GET /api/v1/.../path?key=pk&sig=...
+  YourServer->>OptStuff: GET https://images.example.com/api/v1/.../path?key=pk&sig=...
   OptStuff->>OptStuff: Recompute expected signature
   OptStuff->>OptStuff: Compare signatures (constant-time)
 
@@ -60,6 +61,7 @@ Where `payload` is:
 import { createHmac } from "crypto";
 
 function createSignedUrl(options: {
+  readonly baseUrl: string;
   readonly projectSlug: string;
   readonly publicKey: string;
   readonly secretKey: string;
@@ -83,7 +85,8 @@ function createSignedUrl(options: {
     ...(options.expiresAt && { exp: String(options.expiresAt) }),
   });
 
-  return `/api/v1/${options.projectSlug}/${path}?${params.toString()}`;
+  const baseUrl = options.baseUrl.replace(/\/$/, "");
+  return `${baseUrl}/api/v1/${options.projectSlug}/${path}?${params.toString()}`;
 }
 ```
 
@@ -103,6 +106,7 @@ const expiresAt = effectiveBucket > 0
 const finalExpiresAt = Math.max(now + 1, expiresAt);
 
 const url = createSignedUrl({
+  baseUrl: "https://images.example.com",
   projectSlug: "my-blog",
   publicKey: "pk_abc123",
   secretKey: "sk_your_secret_key",

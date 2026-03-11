@@ -7,6 +7,8 @@ OptStuff exposes a single REST endpoint for image optimization. All transformati
 
 ## Endpoint Format
 
+Requests are sent to your OptStuff deployment origin (for example, `https://images.example.com`). The format below shows only the path + query portion:
+
 ```
 GET /api/v1/{projectSlug}/{operations}/{imageUrl}?key={publicKey}&sig={signature}&exp={expiresAt}
 HEAD /api/v1/{projectSlug}/{operations}/{imageUrl}?key={publicKey}&sig={signature}&exp={expiresAt}
@@ -31,7 +33,7 @@ HEAD /api/v1/{projectSlug}/{operations}/{imageUrl}?key={publicKey}&sig={signatur
 ## Example Request
 
 ```
-GET /api/v1/my-blog/w_800,f_webp/images.example.com/photo.jpg?key=pk_abc123&sig=xyz789&exp=1706500000
+GET https://images.example.com/api/v1/my-blog/w_800,f_webp/images.example.com/photo.jpg?key=pk_abc123&sig=xyz789&exp=1706500000
 ```
 
 ## Response
