@@ -1,0 +1,8 @@
+{
+  "name": "optstuff-url-signer",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "sign:url": "bun run sign-url.ts"
+  }
+}
