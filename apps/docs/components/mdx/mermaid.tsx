@@ -78,6 +78,8 @@ function MermaidContent({ chart }: { readonly chart: string }) {
   const [zoom, setZoom] = useState(1);
   const zoomViewportRef = useRef<HTMLDivElement | null>(null);
   const zoomChartRef = useRef<HTMLDivElement | null>(null);
+  const closeButtonRef = useRef<HTMLButtonElement | null>(null);
+  const previouslyFocusedElementRef = useRef<HTMLElement | null>(null);
   const { default: mermaid } = use(
     cachePromise("mermaid", () => import("mermaid")),
   );
@@ -113,6 +115,15 @@ function MermaidContent({ chart }: { readonly chart: string }) {
       document.body.style.overflow = previousOverflow;
       window.removeEventListener("keydown", onKeyDown);
     };
+  }, [isZoomOpen]);
+
+  useEffect(() => {
+    if (isZoomOpen) {
+      closeButtonRef.current?.focus();
+      return;
+    }
+
+    previouslyFocusedElementRef.current?.focus();
   }, [isZoomOpen]);
 
   useEffect(() => {
@@ -162,6 +173,9 @@ function MermaidContent({ chart }: { readonly chart: string }) {
   };
 
   const openZoomView = () => {
+    const activeElement = document.activeElement;
+    previouslyFocusedElementRef.current =
+      activeElement instanceof HTMLElement ? activeElement : null;
     setZoom(1);
     setIsZoomOpen(true);
   };
@@ -235,6 +249,7 @@ function MermaidContent({ chart }: { readonly chart: string }) {
                 </button>
                 <button
                   type="button"
+                  ref={closeButtonRef}
                   onClick={() => setIsZoomOpen(false)}
                   className="rounded-md border border-fd-border px-3 py-1 text-xs transition hover:bg-fd-muted"
                 >

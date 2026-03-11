@@ -15,6 +15,12 @@ type CliOptions = {
 
 const allowedFormats = new Set<Format>(["webp", "avif", "png", "jpg"]);
 const allowedFits = new Set<Fit>(["cover", "contain", "fill"]);
+const invalidEnvPlaceholders: Record<string, readonly string[]> = {
+  OPTSTUFF_BASE_URL: ["https://your-site-url.com"],
+  OPTSTUFF_PROJECT_SLUG: ["my-project"],
+  OPTSTUFF_PUBLIC_KEY: ["pk_xxx"],
+  OPTSTUFF_SECRET_KEY: ["sk_xxx"],
+};
 
 function printHelp(): void {
   console.log(`OptStuff URL signer (TypeScript)
@@ -42,7 +48,8 @@ Environment (.env):
 
 function requireEnv(name: string): string {
   const value = process.env[name];
-  if (!value || value.includes("xxx") || value.includes("your-")) {
+  const placeholders = invalidEnvPlaceholders[name] ?? [];
+  if (!value?.trim() || placeholders.includes(value)) {
     throw new Error(
       `Missing or invalid environment variable: ${name}. Set it in examples/optstuff-url-signer/.env`,
     );
@@ -162,14 +169,14 @@ function normalizeImageUrl(imageUrl: string): string {
     throw new Error("Invalid --image-url: protocol must be http or https.");
   }
 
-  const pathname = parsed.pathname.replace(/\/+$/, "");
+  const pathname = parsed.pathname;
   const query = parsed.search.startsWith("?")
     ? parsed.search.slice(1)
     : parsed.search;
   const encodedQuery = query ? `%3F${encodeURIComponent(query)}` : "";
   const hostWithPort = `${parsed.hostname}${parsed.port ? `:${parsed.port}` : ""}`;
 
-  return `${hostWithPort}${pathname}${encodedQuery}`;
+  return `${parsed.protocol}//${hostWithPort}${pathname}${encodedQuery}`;
 }
 
 function buildOperations(options: CliOptions): string {

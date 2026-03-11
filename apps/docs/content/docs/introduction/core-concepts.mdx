@@ -111,8 +111,8 @@ Each part answers one question:
 ```text
 Layer 1: User and team ownership
 Layer 2: Project policy (caller/source domain allowlists)
-Layer 3: API key policy (rate limits, expiration)
-Layer 4: Request signature validation
+Layer 3: API key policy (rate limits)
+Layer 4: Request signature validation (sig + exp/TTL checks)
 ```
 
 These layers are designed to fail closed: when validation fails, the request is denied.
