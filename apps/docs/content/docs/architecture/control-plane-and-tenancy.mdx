@@ -7,11 +7,11 @@ This page explains how the **control plane** is built: the data model, ownership
 
 ## Core Tenancy Model
 
-```text
-User (ownerId)
- └── Team (isPersonal = true for default team)
-      └── Project (settings + aggregate metadata)
-           └── API Key(s) (pk/sk pair + limits + lifecycle)
+```mermaid
+flowchart TD
+  User["User (ownerId)"] --> Team["Team (isPersonal = true for default team)"]
+  Team --> Project["Project (settings + aggregate metadata)"]
+  Project --> ApiKeys["API Key(s) (pk/sk pair + limits + lifecycle)"]
 ```
 
 ### Ownership boundary

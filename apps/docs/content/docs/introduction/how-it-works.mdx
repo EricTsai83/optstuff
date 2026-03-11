@@ -60,10 +60,10 @@ Key design decisions:
 
 ## Data Model
 
-```text
-Team
- └── Project (domain security settings)
-      └── API Key (public/secret pair, rate limits, expiry)
+```mermaid
+flowchart TD
+  Team["Team"] --> Project["Project (domain security settings)"]
+  Project --> ApiKey["API Key (public/secret pair, rate limits, expiry)"]
 ```
 
 Each level adds its own access control. For details on the resource hierarchy, see [Core Concepts](/introduction/core-concepts).

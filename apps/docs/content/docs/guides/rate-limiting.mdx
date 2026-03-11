@@ -18,18 +18,21 @@ Every request is checked against two independent limits. Both must pass.
 
 Unlike fixed windows that can allow up to 2× burst at boundaries, the sliding window algorithm produces smooth limits:
 
-```text
-Fixed Window (problem at boundary):
-  Window 1 [11:00 – 11:01]          Window 2 [11:01 – 11:02]
-           ... 0 req ... 59 req  │  60 req ...
-                                 ↑
-                          119 requests in ~1 second
+```mermaid
+flowchart TD
+  subgraph FW["Fixed Window (problem at boundary)"]
+    F1["Window 1: 11:00-11:01"] --> B["Boundary at 11:01:00"]
+    F2["Window 2: 11:01-11:02"] --> B
+    F1 -. "59 req just before boundary" .-> B
+    F2 -. "60 req just after boundary" .-> B
+    B --> F3["Up to 119 requests in ~1 second"]
+  end
 
-Sliding Window (smooth):
-  At 11:01:15 (25% into current window):
-  Previous window count = 42
-  Current window count  = 18
-  Weighted count = 42 × 0.75 + 18 = 49.5 → under limit
+  subgraph SW["Sliding Window (smooth)"]
+    S1["At 11:01:15 (25% into current window)"] --> S2["Previous = 42, Current = 18"]
+    S2 --> S3["Weighted = 42 * 0.75 + 18 = 49.5"]
+    S3 --> S4["Under limit"]
+  end
 ```
 
 ## Configuration

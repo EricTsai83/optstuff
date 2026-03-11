@@ -33,13 +33,17 @@ OptStuff's value is not only "resize images". It combines delivery, control, and
 
 At runtime, OptStuff follows this trust model:
 
-```text
-App Server                              OptStuff
-┌─────────────────────────────────┐     ┌───────────────────────────────────┐
-│ 1) Build transformation payload │     │ 4) Resolve project + key          │
-│ 2) Sign payload with sk_...     │ ──> │ 5) Verify signature and policies  │
-│ 3) Return signed URL to client  │     │ 6) Fetch, transform, return       │
-└─────────────────────────────────┘     └───────────────────────────────────┘
+```mermaid
+flowchart LR
+  subgraph AppServer["App Server"]
+    A1["1) Build transformation payload"] --> A2["2) Sign payload with sk_..."] --> A3["3) Return signed URL to client"]
+  end
+
+  subgraph OptStuff["OptStuff"]
+    B1["4) Resolve project + key"] --> B2["5) Verify signature and policies"] --> B3["6) Fetch, transform, return"]
+  end
+
+  A3 --> B1
 ```
 
 The critical idea is authorization-by-signature:
@@ -51,10 +55,10 @@ The critical idea is authorization-by-signature:
 
 OptStuff resources are organized as:
 
-```text
-Team
- └── Project
-      └── API Key pair (pk_... + sk_...)
+```mermaid
+flowchart TD
+  Team["Team"] --> Project["Project"]
+  Project --> ApiKey["API Key pair (pk_... + sk_...)"]
 ```
 
 ### Team

@@ -9,8 +9,9 @@ This guide walks you through setting up your OptStuff project — from team crea
 
 The setup flow takes about 2 minutes:
 
-```text
-Sign In → Create Team → Create Project → Copy API Keys → Start Integrating
+```mermaid
+flowchart LR
+  A["Sign In"] --> B["Create Team"] --> C["Create Project"] --> D["Copy API Keys"] --> E["Start Integrating"]
 ```
 
 ## Creating a Team
@@ -45,23 +46,12 @@ A **default API key** is generated automatically with your new project.
 
 After project creation, a success dialog displays environment variables in `.env` format with a single copy button:
 
-```text
-┌─────────────────────────────────────────────────────┐
-│              Project Created!                        │
-│                                                      │
-│  ⚠ Copy and add these to your .env file before      │
-│     closing. The secret key is only shown once.      │
-│                                                      │
-│  ENVIRONMENT VARIABLES                      │
-│  ┌────────────────────────────────────────┐ [Copy]   │
-│  │ OPTSTUFF_BASE_URL="https://your-app"    │          │
-│  │ OPTSTUFF_PROJECT_SLUG="my-project"      │          │
-│  │ OPTSTUFF_SECRET_KEY="sk_••••••••••••"   │          │
-│  │ OPTSTUFF_PUBLIC_KEY="pk_abc123def456"   │          │
-│  └────────────────────────────────────────┘         │
-│                                                      │
-│              [Done]                                  │
-└─────────────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+  A["Project Created dialog"] --> B["Warning: copy to .env now<br/>Secret key is shown once"]
+  A --> C["Environment variables block<br/>OPTSTUFF_BASE_URL<br/>OPTSTUFF_PROJECT_SLUG<br/>OPTSTUFF_SECRET_KEY<br/>OPTSTUFF_PUBLIC_KEY"]
+  C --> D["Copy button<br/>Copies full .env payload"]
+  A --> E["Done button"]
 ```
 
 - **One-click copy** — copies the full block with variable names, ready to paste into `.env`

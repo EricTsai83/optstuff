@@ -13,22 +13,14 @@ The service accepts a signed URL containing an image address and a set of transf
 
 At a high level, the architecture has three layers:
 
-```text
-┌─────────────────────────────────────────────────────┐
-│                   API Gateway Layer                  │
-│   Authentication · Rate Limiting · Input Validation  │
-├─────────────────────────────────────────────────────┤
-│                  Validation Layer                    │
-│     Referer check · Source domain allowlist check    │
-├─────────────────────────────────────────────────────┤
-│                  Processing Layer                    │
-│       IPX image engine (fetch + transform)          │
-│              ↓ HTTP request to origin ↓              │
-└─────────────────────────────────────────────────────┘
-                        │
-                   ┌────▼────┐
-                   │ Internet │
-                   └─────────┘
+```mermaid
+flowchart TD
+  A["API Gateway Layer<br/>Authentication · Rate Limiting · Input Validation"]
+  B["Validation Layer<br/>Referer check · Source domain allowlist check"]
+  C["Processing Layer<br/>IPX image engine (fetch + transform)"]
+  D["Internet"]
+
+  A --> B --> C --> D
 ```
 
 The **API Gateway Layer** verifies the cryptographic signature, checks whether the API key is valid and not revoked, and enforces rate limits.
