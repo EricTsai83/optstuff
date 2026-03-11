@@ -1,5 +1,6 @@
 "use client";
 
+import { useTheme } from "next-themes";
 import {
   Suspense,
   use,
@@ -9,7 +10,6 @@ import {
   useState,
   type WheelEvent,
 } from "react";
-import { useTheme } from "next-themes";
 
 const MIN_ZOOM = 0.2;
 const MAX_ZOOM = 3;
@@ -25,7 +25,7 @@ export function Mermaid({ chart }: { readonly chart: string }) {
   if (!mounted) {
     return (
       <div
-        className="h-40 w-full animate-pulse rounded-lg bg-fd-muted"
+        className="bg-fd-muted h-40 w-full animate-pulse rounded-lg"
         role="img"
         aria-label="Loading diagram"
       />
@@ -36,7 +36,7 @@ export function Mermaid({ chart }: { readonly chart: string }) {
     <Suspense
       fallback={
         <div
-          className="h-40 w-full animate-pulse rounded-lg bg-fd-muted"
+          className="bg-fd-muted h-40 w-full animate-pulse rounded-lg"
           role="img"
           aria-label="Loading diagram"
         />
@@ -49,7 +49,10 @@ export function Mermaid({ chart }: { readonly chart: string }) {
 
 const cache = new Map<string, Promise<unknown>>();
 
-function cachePromise<T>(key: string, setPromise: () => Promise<T>): Promise<T> {
+function cachePromise<T>(
+  key: string,
+  setPromise: () => Promise<T>,
+): Promise<T> {
   const cached = cache.get(key);
   if (cached) return cached as Promise<T>;
 
@@ -192,12 +195,12 @@ function MermaidContent({ chart }: { readonly chart: string }) {
 
   return (
     <>
-      <div className="my-6 rounded-xl border border-fd-border bg-fd-card p-4">
+      <div className="border-fd-border bg-fd-card my-6 rounded-xl border p-4">
         <div className="mb-3 flex items-center justify-end">
           <button
             type="button"
             onClick={openZoomView}
-            className="rounded-md border border-fd-border px-3 py-1.5 text-xs font-medium text-fd-muted-foreground transition hover:bg-fd-muted"
+            className="border-fd-border text-fd-muted-foreground hover:bg-fd-muted cursor-pointer rounded-md border px-3 py-1.5 text-xs font-medium transition"
           >
             Open Zoom
           </button>
@@ -213,17 +216,17 @@ function MermaidContent({ chart }: { readonly chart: string }) {
 
       {isZoomOpen ? (
         <div
-          className="fixed inset-0 z-100 bg-black/70 p-4 backdrop-blur-sm"
+          className="z-100 fixed inset-0 bg-black/70 p-4 backdrop-blur-sm"
           role="dialog"
           aria-modal="true"
           aria-labelledby={modalId}
           onClick={() => setIsZoomOpen(false)}
         >
           <div
-            className="mx-auto flex h-full w-full max-w-7xl flex-col rounded-xl border border-fd-border bg-fd-background shadow-2xl"
+            className="border-fd-border bg-fd-background mx-auto flex h-full w-full max-w-7xl flex-col rounded-xl border shadow-2xl"
             onClick={(event) => event.stopPropagation()}
           >
-            <div className="flex items-center justify-between gap-2 border-b border-fd-border px-4 py-3">
+            <div className="border-fd-border flex items-center justify-between gap-2 border-b px-4 py-3">
               <p id={modalId} className="text-sm font-medium">
                 Mermaid Diagram
               </p>
@@ -231,18 +234,18 @@ function MermaidContent({ chart }: { readonly chart: string }) {
                 <button
                   type="button"
                   onClick={decreaseZoom}
-                  className="rounded-md border border-fd-border px-2 py-1 text-sm transition hover:bg-fd-muted"
+                  className="border-fd-border hover:bg-fd-muted cursor-pointer rounded-md border px-2 py-1 text-sm transition"
                   aria-label="Zoom out diagram"
                 >
                   -
                 </button>
-                <span className="w-14 text-center text-xs text-fd-muted-foreground">
+                <span className="text-fd-muted-foreground w-14 text-center text-xs">
                   {Math.round(zoom * 100)}%
                 </span>
                 <button
                   type="button"
                   onClick={increaseZoom}
-                  className="rounded-md border border-fd-border px-2 py-1 text-sm transition hover:bg-fd-muted"
+                  className="border-fd-border hover:bg-fd-muted cursor-pointer rounded-md border px-2 py-1 text-sm transition"
                   aria-label="Zoom in diagram"
                 >
                   +
@@ -251,7 +254,7 @@ function MermaidContent({ chart }: { readonly chart: string }) {
                   type="button"
                   ref={closeButtonRef}
                   onClick={() => setIsZoomOpen(false)}
-                  className="rounded-md border border-fd-border px-3 py-1 text-xs transition hover:bg-fd-muted"
+                  className="border-fd-border hover:bg-fd-muted cursor-pointer rounded-md border px-3 py-1 text-xs transition"
                 >
                   Close
                 </button>
