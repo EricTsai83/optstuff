@@ -103,10 +103,10 @@ sequenceDiagram
 
 ## Data Model & Tenancy
 
-```text
-team
- └── project
-      └── api_key
+```mermaid
+flowchart TD
+  Team["team"] --> Project["project"]
+  Project --> ApiKey["api_key"]
 ```
 
 | Entity | Notes |

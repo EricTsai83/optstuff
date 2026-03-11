@@ -9,11 +9,18 @@ Point your image URLs through OptStuff's API endpoint, and it delivers optimized
 
 ## Quick Example
 
-Turn any image into an optimized, resized WebP — with one signed URL:
+Turn any image into an optimized, resized WebP — with one signed URL.
+Assume your OptStuff deployment is `https://images.example.com` and your project slug is `my-blog`:
 
 ```text
-GET /api/v1/my-blog/w_800,q_80,f_webp/cdn.example.com/photo.jpg?key=pk_...&sig=...
+GET https://images.example.com/api/v1/my-blog/w_800,q_80,f_webp/cdn.example.com/photo.jpg?key=pk_...&sig=...&exp=<future-unix-timestamp>
 ```
+
+In this URL:
+
+- `https://images.example.com` is your OptStuff deployment endpoint
+- `my-blog` is your project slug
+- `cdn.example.com/photo.jpg` is the source image URL without protocol
 
 Generate it server-side in a few lines:
 

@@ -40,25 +40,18 @@ The custom loader approach gives you everything — without the Vercel bill.
 
 ## Architecture
 
-```text
-Browser
-  │
-  │  <img srcSet="/api/optstuff?url=...&w=640 640w,
-  │               /api/optstuff?url=...&w=1080 1080w,
-  │               /api/optstuff?url=...&w=1920 1920w"
-  │       sizes="(min-width: 768px) 50vw, 100vw" />
-  │
-  ▼  (browser picks the best width for viewport + DPR)
-┌─────────────────────────────────────┐
-│  GET /api/optstuff?url=…&w=1080 │  ← Next.js API Route
-│  Signs URL server-side (sk_… safe)  │
-│  Returns 302 → signed OptStuff URL  │
-└──────────────┬──────────────────────┘
-               ▼
-┌──────────────────────────────────────┐
-│  OptStuff: fetch, resize, encode     │
-│  Returns optimized image + 1yr cache │
-└──────────────────────────────────────┘
+```mermaid
+sequenceDiagram
+  participant Browser
+  participant Route as Next.js API Route (/api/optstuff)
+  participant OptStuff
+
+  Note over Browser: next/image renders srcSet and browser picks best width (viewport + DPR)
+  Browser->>Route: GET /api/optstuff?url=...&w=1080&q=80&f=webp&fit=cover
+  Route->>Route: Sign URL server-side (sk_... stays on server)
+  Route-->>Browser: 302 Redirect -> signed OptStuff URL
+  Browser->>OptStuff: GET signed image URL
+  OptStuff-->>Browser: Optimized image + 1yr cache headers
 ```
 
 Key points:
