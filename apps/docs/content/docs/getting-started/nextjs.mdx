@@ -1,0 +1,365 @@
+---
+title: Next.js
+description: Integrate OptStuff into a Next.js App Router project with server-side URL signing.
+---
+
+## How It Works
+
+OptStuff optimizes images through signed URLs. The integration flow is:
+
+1. Your server generates a **signed URL** containing the source image, desired operations (resize, format, etc.), and a cryptographic signature
+2. The browser requests the signed URL from the **OptStuff CDN**
+3. OptStuff validates the signature, fetches and transforms the source image, then returns the optimized result
+
+All signing happens server-side so your secret key is never exposed to the browser. For the full security model, see [Quick Start — Security Principles](/getting-started/quickstart#security-principles).
+
+## Environment Variables
+
+Add to `.env`:
+
+```bash
+OPTSTUFF_BASE_URL="https://your-optstuff-deployment.com"
+OPTSTUFF_PROJECT_SLUG="your-project-slug"
+
+# Safe to appear in URLs (?key=pk_…), but keep in server env for centralized config
+OPTSTUFF_PUBLIC_KEY="pk_abc123..."
+
+# Secret — never expose in browser bundles
+OPTSTUFF_SECRET_KEY="sk_your_secret_key_here"
+```
+
+## Signing Utility
+
+Create `lib/optstuff-core.ts` — this is the core building block that all integration patterns below depend on.
+
+The `"server-only"` import ensures this module can never be bundled into client code:
+
+```typescript
+import "server-only";
+import crypto from "crypto";
+
+function requireEnv(name: string): string {
+  const value = process.env[name];
+  if (!value) throw new Error(`Missing required env var: ${name}`);
+  return value;
+}
+
+const OPTSTUFF_BASE_URL = requireEnv("OPTSTUFF_BASE_URL").replace(/\/+$/, "");
+const OPTSTUFF_PROJECT_SLUG = requireEnv("OPTSTUFF_PROJECT_SLUG");
+const OPTSTUFF_PUBLIC_KEY = requireEnv("OPTSTUFF_PUBLIC_KEY");
+const OPTSTUFF_SECRET_KEY = requireEnv("OPTSTUFF_SECRET_KEY");
+const EXPIRY_BUCKET_SECONDS = 3600;
+
+type ImageOperation = {
+  width?: number;
+  height?: number;
+  quality?: number;
+  format?: "webp" | "avif" | "png" | "jpg";
+  fit?: "cover" | "contain" | "fill";
+};
+
+function buildOperationString(operations: ImageOperation): string {
+  const parts: string[] = [];
+  if (operations.width) parts.push(`w_${operations.width}`);
+  if (operations.height) parts.push(`h_${operations.height}`);
+  if (operations.quality) parts.push(`q_${operations.quality}`);
+  if (operations.format) parts.push(`f_${operations.format}`);
+  if (operations.fit) parts.push(`fit_${operations.fit}`);
+  return parts.length > 0 ? parts.join(",") : "_";
+}
+
+/**
+ * Generates a signed image optimization URL.
+ *
+ * @param imageUrl - Source image URL (e.g., "https://images.example.com/photo.jpg")
+ * @param operations - Image operations object
+ * @param expiresIn - Signature validity in seconds (optional)
+ *
+ * @example
+ * generateOptStuffUrl("https://cdn.example.com/photo.jpg", { width: 800, format: "webp" })
+ *
+ * @example
+ * generateOptStuffUrl("https://cdn.example.com/photo.jpg", { width: 800 }, 3600)
+ */
+export function generateOptStuffUrl(
+  imageUrl: string,
+  operations: ImageOperation = {},
+  expiresIn?: number
+): string {
+  const operationString = buildOperationString(operations);
+  const normalizedImageUrl = imageUrl.replace(/^https?:\/\//, "").replace(/\/$/, "");
+  const path = `${operationString}/${normalizedImageUrl}`;
+
+  const exp = expiresIn != null
+    ? (() => {
+        const nowSeconds = Math.floor(Date.now() / 1000);
+        const ttlSeconds = Math.max(1, Math.floor(expiresIn));
+        const bucketSeconds = Math.min(EXPIRY_BUCKET_SECONDS, ttlSeconds);
+        const rawExpiration = nowSeconds + ttlSeconds;
+        return bucketSeconds > 0 && bucketSeconds < ttlSeconds
+          ? Math.floor(rawExpiration / bucketSeconds) * bucketSeconds
+          : rawExpiration;
+      })()
+    : undefined;
+
+  const payload = exp != null ? `${path}?exp=${exp}` : path;
+  const sig = crypto
+    .createHmac("sha256", OPTSTUFF_SECRET_KEY)
+    .update(payload)
+    .digest("base64url")
+    .substring(0, 32);
+
+  let url = `${OPTSTUFF_BASE_URL}/api/v1/${OPTSTUFF_PROJECT_SLUG}/${path}?key=${OPTSTUFF_PUBLIC_KEY}&sig=${sig}`;
+  if (exp != null) url += `&exp=${exp}`;
+
+  return url;
+}
+```
+
+Bucketed expiration keeps signatures stable within each bucket window, improving CDN cache hit rates while still bounding the TTL.
+
+## Choose Your Integration Pattern
+
+All three options use the same signing utility above. Pick the one that fits your use case:
+
+| Pattern | Best for | How signing works |
+|---------|----------|-------------------|
+| **Option 1: Server Component** | Static or SSR pages | Sign at render time |
+| **Option 2: API Route + Client** | Client-side dynamic images | Client calls your API Route to get a signed URL |
+| **Option 3: `next/image` Loader** | Full `next/image` features without Vercel charges | Loader points to your API Route; replaces Vercel Image Optimization |
+
+### Option 1: Server Component
+
+The simplest approach — `generateOptStuffUrl` runs during server rendering and the signed URL is embedded directly in the HTML:
+
+```tsx
+import { generateOptStuffUrl } from "@/lib/optstuff-core";
+
+export default function HomePage() {
+  const heroImage = generateOptStuffUrl(
+    "https://cdn.example.com/hero.jpg",
+    { width: 1200, format: "webp" },
+    86400
+  );
+
+  return (
+    <main>
+      <img src={heroImage} alt="Hero" width={1200} height={600} />
+    </main>
+  );
+}
+```
+
+### Option 2: API Route + Client Component
+
+When a client component needs to load images dynamically (e.g. user-uploaded content or search results), create an API Route that signs on behalf of the client:
+
+**API Route** — `app/api/image-url/route.ts`:
+
+```typescript
+import { generateOptStuffUrl } from "@/lib/optstuff-core";
+import { NextRequest, NextResponse } from "next/server";
+
+const ALLOWED_SOURCE_HOSTS = ["cdn.example.com", "images.example.com"];
+
+export async function GET(request: NextRequest) {
+  const searchParams = request.nextUrl.searchParams;
+  const src = searchParams.get("src");
+  const width = searchParams.get("w");
+  const height = searchParams.get("h");
+  const format = searchParams.get("f") || "webp";
+
+  if (!src) {
+    return NextResponse.json({ error: "Missing src parameter" }, { status: 400 });
+  }
+
+  const cleanSrc = src.split(/[?#]/)[0];
+
+  const hostname = cleanSrc.includes("/") ? cleanSrc.split("/")[0] : cleanSrc;
+  if (!ALLOWED_SOURCE_HOSTS.includes(hostname)) {
+    return NextResponse.json({ error: "Source domain not allowed" }, { status: 403 });
+  }
+
+  const ALLOWED_FORMATS = ["webp", "png", "jpg", "avif"];
+  const NUMERIC = /^\d+$/;
+
+  if (width && (!NUMERIC.test(width) || +width > 8192)) {
+    return NextResponse.json({ error: "Invalid width" }, { status: 400 });
+  }
+  if (height && (!NUMERIC.test(height) || +height > 8192)) {
+    return NextResponse.json({ error: "Invalid height" }, { status: 400 });
+  }
+  if (!ALLOWED_FORMATS.includes(format)) {
+    return NextResponse.json({ error: "Invalid format" }, { status: 400 });
+  }
+
+  const signedUrl = generateOptStuffUrl(
+    cleanSrc,
+    {
+      width: width ? Number(width) : undefined,
+      height: height ? Number(height) : undefined,
+      format: format as "webp" | "avif" | "png" | "jpg",
+    },
+    3600,
+  );
+
+  return NextResponse.json({ url: signedUrl });
+}
+```
+
+<Callout type="warn">
+This endpoint is **public by default**. In production, add session authentication
+and/or rate-limiting to prevent abuse.
+</Callout>
+
+**Client Component** — calls the API Route to get a signed URL, then renders:
+
+```tsx
+"use client";
+
+import { useState, useEffect } from "react";
+
+type OptimizedImageProps = {
+  readonly src: string;
+  readonly width?: number;
+  readonly alt: string;
+};
+
+export function OptimizedImage({ src, width, alt }: OptimizedImageProps) {
+  const [imageUrl, setImageUrl] = useState<string>("");
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    setError(false);
+    setImageUrl("");
+
+    const controller = new AbortController();
+
+    const fetchUrl = async () => {
+      try {
+        const params = new URLSearchParams({ src });
+        if (width) params.set("w", width.toString());
+
+        const res = await fetch(`/api/image-url?${params}`, {
+          signal: controller.signal,
+        });
+        if (!res.ok) {
+          setError(true);
+          return;
+        }
+        const { url } = await res.json();
+        if (!controller.signal.aborted) {
+          setImageUrl(url);
+        }
+      } catch (err) {
+        if (err instanceof Error && err.name === "AbortError") return;
+        setError(true);
+      }
+    };
+
+    fetchUrl();
+
+    return () => controller.abort();
+  }, [src, width]);
+
+  if (error) return <div>Failed to load image</div>;
+  if (!imageUrl) return <div>Loading...</div>;
+
+  return (
+    <img
+      src={imageUrl}
+      alt={alt}
+      width={width}
+      style={{ aspectRatio: "4 / 3" }}
+    />
+  );
+}
+```
+
+### Option 3: Custom `next/image` Loader (Recommended)
+
+**Background:** By default, Next.js `<Image>` generates URLs like `/_next/image?url=...&w=...&q=...`. When you deploy to Vercel, this endpoint is handled by Vercel's Image Optimization service, which is billed per transformation. On self-hosted setups, it uses Sharp on your server.
+
+With a custom `loader`, you can redirect `<Image>` to use OptStuff instead. The browser never calls `/_next/image` — all image processing is handled by OptStuff's CDN. This means you keep all `next/image` frontend features (responsive `srcSet`, lazy loading, layout shift prevention) **without paying for Vercel Image Optimization**.
+
+**How it works:**
+
+1. `<Image>` calls your custom `loader` function to build each `src` / `srcSet` URL
+2. The loader points to your API Route (`/api/optstuff?url=...&w=...`)
+3. Your API Route signs the request and returns a **302 redirect** to the OptStuff CDN
+4. The browser follows the redirect and loads the optimized image directly from OptStuff
+
+```tsx
+// components/optstuff-image.tsx
+"use client";
+
+import Image, { type ImageProps, type ImageLoaderProps } from "next/image";
+
+type OptStuffImageProps = Omit<ImageProps, "src" | "loader"> & {
+  src: string;
+  format?: "webp" | "avif" | "png" | "jpg";
+  fit?: "cover" | "contain" | "fill";
+  /** When true, src is treated as an already-signed OptStuff URL. */
+  preSigned?: boolean;
+};
+
+export function OptStuffImage({
+  src,
+  alt,
+  format = "webp",
+  fit = "cover",
+  preSigned = false,
+  quality = 80,
+  ...rest
+}: OptStuffImageProps) {
+  if (preSigned) {
+    return <Image {...rest} src={src} alt={alt} quality={quality} unoptimized />;
+  }
+
+  const loader = ({ src: loaderSrc, width, quality: q }: ImageLoaderProps) => {
+    const params = new URLSearchParams({
+      url: loaderSrc,
+      w: String(width),
+      q: String(q ?? 80),
+      f: format,
+      fit,
+    });
+    return `/api/optstuff?${params}`;
+  };
+
+  return (
+    <Image {...rest} src={src} alt={alt} quality={quality} loader={loader} />
+  );
+}
+```
+
+<Callout type="warn">
+Do **not** pass `generateOptStuffUrl` directly as a `loader` — the loader runs
+client-side, which would expose your secret key. Always delegate signing to an API Route.
+</Callout>
+
+For the full implementation (API Route, `srcSet` tuning, FAQ), see [Custom next/image Loader](/guides/nextjs-image-loader).
+
+## Pre-Launch Checklist
+
+<Callout type="info">
+Before going to production, verify the following:
+
+- `secretKey` (`sk_...`) is in a server-only env var — no `NEXT_PUBLIC_` prefix
+- `publicKey` (`pk_...`) is also in an env var for centralized management
+- `.env` is listed in `.gitignore`
+- Signing logic runs only in Server Components or API Routes
+- No client code references the secret key
+- Signed URLs include an appropriate `exp`
+- Domain whitelists are configured in the [dashboard](/guides/domain-whitelisting)
+
+If you still get `403` errors after verifying these items, see [Error Codes](/api-reference/error-codes).
+
+</Callout>
+
+## Further Reading
+
+- [URL Signing](/guides/url-signing) — Signature formula and security properties
+- [Domain Whitelisting](/guides/domain-whitelisting) — Allowed domain configuration
+- [CDN and Caching](/guides/cdn-caching) — CDN integration and caching strategies
+- [Security Best Practices](/guides/security-best-practices) — Production recommendations
