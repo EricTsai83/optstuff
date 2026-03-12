@@ -48,13 +48,19 @@ See [Domain Whitelisting](/guides/domain-whitelisting) for details.
 
 ## Next Steps
 
-<Cards>
-  <Card title="Sign Your First URL" href="/getting-started/sign-your-first-url">
-    Verify your setup in 2 minutes with a standalone CLI tool — no framework needed.
-  </Card>
-  <Card title="Next.js Integration" href="/getting-started/integrate-nextjs">
-    Integrate OptStuff into a Next.js app with Server Components, API Routes, and the next/image loader.
-  </Card>
-</Cards>
+<FrameworkGrid>
+  <FrameworkCard
+    icon="nextjs"
+    title="Next.js"
+    description="Server Components, API Routes, and the next/image loader."
+    href="/getting-started/integrate-nextjs"
+  />
+  <FrameworkCard
+    icon="cli"
+    title="Sign Your First URL"
+    description="Verify your setup in 2 minutes with a standalone CLI tool — no framework needed."
+    href="/getting-started/sign-your-first-url"
+  />
+</FrameworkGrid>
 
 OptStuff is a standard HTTP API — any server-side language that can compute HMAC-SHA256 can generate signed URLs. See [Code Examples](/guides/code-examples) for implementations in Python, Go, Ruby, and PHP.
