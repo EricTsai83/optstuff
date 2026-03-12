@@ -3,7 +3,7 @@ title: Quick Start
 description: Set up your OptStuff project and get your first optimized image in minutes.
 ---
 
-This guide walks you through creating a project and obtaining your API keys. Once set up, you can either verify your configuration with a quick CLI test or jump straight into a framework integration.
+This guide walks you through creating a project and obtaining your API keys. Once set up, you can jump straight into a framework integration.
 
 ## 1. Create a Team and Project
 
@@ -46,6 +46,19 @@ Go to your project's **Settings → Domain Security → Image Sources** and add 
 
 See [Domain Whitelisting](/guides/domain-whitelisting) for details.
 
+## (Optional) Verify Your Setup with the CLI
+
+If you want to confirm your keys and configuration before integrating into your app, you can use the standalone CLI tool at [`examples/optstuff-url-signer`](https://github.com/EricTsai83/optstuff/tree/HEAD/examples/optstuff-url-signer):
+
+```bash
+git clone https://github.com/EricTsai83/optstuff.git
+cd optstuff/examples/optstuff-url-signer
+cp .env.example .env   # paste your keys here
+bun run sign:url
+```
+
+This prints a signed URL to your terminal. Paste it in a browser — if the image loads, your setup is working. For details on what the signing does, see [URL Signing](/guides/url-signing).
+
 ## Next Steps
 
 <FrameworkGrid>
@@ -54,12 +67,6 @@ See [Domain Whitelisting](/guides/domain-whitelisting) for details.
     title="Next.js"
     description="Server Components, API Routes, and the next/image loader."
     href="/getting-started/integrate-nextjs"
-  />
-  <FrameworkCard
-    icon="cli"
-    title="Sign Your First URL"
-    description="Verify your setup in 2 minutes with a standalone CLI tool — no framework needed."
-    href="/getting-started/sign-your-first-url"
   />
 </FrameworkGrid>
 

@@ -1,7 +1,6 @@
 {
   "pages": [
     "quickstart",
-    "sign-your-first-url",
     "integrate-nextjs"
   ]
 }
