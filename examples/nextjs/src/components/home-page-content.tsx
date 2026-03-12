@@ -325,7 +325,7 @@ export function HomePageContent({
                       Signed at render time, embedded in HTML. Zero client
                       JavaScript for image delivery.
                     </p>
-                    <div className="bg-code-bg text-code-text overflow-x-auto rounded-lg border border-zinc-800 p-3">
+                    <div className="bg-code-bg text-code-text min-h-52 overflow-x-auto rounded-lg border border-zinc-800 p-3">
                       <pre className="text-code-text font-mono text-[11px] leading-relaxed">
                         <code>{`const url = generateOptStuffUrl(
   "photo.jpg",
@@ -367,7 +367,7 @@ export function HomePageContent({
                       Client requests a signed URL on demand. Ideal for user
                       uploads, search results, and feeds.
                     </p>
-                    <div className="bg-code-bg text-code-text overflow-x-auto rounded-lg border border-zinc-800 p-3">
+                    <div className="bg-code-bg text-code-text min-h-52 overflow-x-auto rounded-lg border border-zinc-800 p-3">
                       <pre className="text-code-text font-mono text-[11px] leading-relaxed">
                         <code>{`const res = await fetch(
   "/api/optstuff",
@@ -420,7 +420,7 @@ const { url } = await res.json();`}</code>
                       , lazy loading, and blur placeholders — without Vercel
                       Image Optimization charges.
                     </p>
-                    <div className="bg-code-bg text-code-text overflow-x-auto rounded-lg border border-zinc-800 p-3">
+                    <div className="bg-code-bg text-code-text min-h-52 overflow-x-auto rounded-lg border border-zinc-800 p-3">
                       <pre className="text-code-text font-mono text-[11px] leading-relaxed">
                         <code>{`<OptStuffImage
   src="photo.jpg"
