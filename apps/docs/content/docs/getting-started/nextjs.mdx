@@ -3,6 +3,10 @@ title: Next.js
 description: Integrate OptStuff into a Next.js App Router project with server-side URL signing.
 ---
 
+<Callout type="info">
+**Working demo** — The [`examples/nextjs`](https://github.com/EricTsai83/optstuff/tree/HEAD/examples/nextjs) project implements all patterns below in a running app, including blur-to-sharp transitions and server-side caching. Clone it and run `pnpm dev` to see OptStuff in action.
+</Callout>
+
 ## How It Works
 
 OptStuff optimizes images through signed URLs. The integration flow is:
@@ -11,7 +15,7 @@ OptStuff optimizes images through signed URLs. The integration flow is:
 2. The browser requests the signed URL from the **OptStuff CDN**
 3. OptStuff validates the signature, fetches and transforms the source image, then returns the optimized result
 
-All signing happens server-side so your secret key is never exposed to the browser. For the full security model, see [Quick Start — Security Principles](/getting-started/quickstart#security-principles).
+All signing happens server-side so your secret key is never exposed to the browser.
 
 ## Environment Variables
 
@@ -40,7 +44,11 @@ import crypto from "crypto";
 
 function requireEnv(name: string): string {
   const value = process.env[name];
-  if (!value) throw new Error(`Missing required env var: ${name}`);
+  if (!value || value.includes("xxx") || value.includes("your-")) {
+    throw new Error(
+      `Missing or placeholder env var: ${name}. Set it in .env.local`,
+    );
+  }
   return value;
 }
 
@@ -50,7 +58,7 @@ const OPTSTUFF_PUBLIC_KEY = requireEnv("OPTSTUFF_PUBLIC_KEY");
 const OPTSTUFF_SECRET_KEY = requireEnv("OPTSTUFF_SECRET_KEY");
 const EXPIRY_BUCKET_SECONDS = 3600;
 
-type ImageOperation = {
+export type ImageOperation = {
   width?: number;
   height?: number;
   quality?: number;
@@ -68,18 +76,24 @@ function buildOperationString(operations: ImageOperation): string {
   return parts.length > 0 ? parts.join(",") : "_";
 }
 
+function computeBucketedExpiration(expiresInSeconds: number): number {
+  const nowSeconds = Math.floor(Date.now() / 1000);
+  const ttlSeconds = Math.max(1, Math.floor(expiresInSeconds));
+  const bucketSeconds = Math.min(EXPIRY_BUCKET_SECONDS, ttlSeconds);
+  const rawExpiration = nowSeconds + ttlSeconds;
+  const bucketed =
+    bucketSeconds > 0 && bucketSeconds < ttlSeconds
+      ? Math.floor(rawExpiration / bucketSeconds) * bucketSeconds
+      : rawExpiration;
+  return Math.max(nowSeconds + 1, bucketed);
+}
+
 /**
  * Generates a signed image optimization URL.
  *
  * @param imageUrl - Source image URL (e.g., "https://images.example.com/photo.jpg")
- * @param operations - Image operations object
+ * @param operations - Image operations to apply
  * @param expiresIn - Signature validity in seconds (optional)
- *
- * @example
- * generateOptStuffUrl("https://cdn.example.com/photo.jpg", { width: 800, format: "webp" })
- *
- * @example
- * generateOptStuffUrl("https://cdn.example.com/photo.jpg", { width: 800 }, 3600)
  */
 export function generateOptStuffUrl(
   imageUrl: string,
@@ -87,36 +101,38 @@ export function generateOptStuffUrl(
   expiresIn?: number
 ): string {
   const operationString = buildOperationString(operations);
-  const normalizedImageUrl = imageUrl.replace(/^https?:\/\//, "").replace(/\/$/, "");
+
+  const parsed = new URL(imageUrl);
+  if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+    throw new Error("imageUrl must use http or https");
+  }
+  const normalizedImageUrl = `${parsed.hostname}${parsed.port ? `:${parsed.port}` : ""}${parsed.pathname.replace(/\/+$/, "")}`;
+
   const path = `${operationString}/${normalizedImageUrl}`;
 
-  const exp = expiresIn != null
-    ? (() => {
-        const nowSeconds = Math.floor(Date.now() / 1000);
-        const ttlSeconds = Math.max(1, Math.floor(expiresIn));
-        const bucketSeconds = Math.min(EXPIRY_BUCKET_SECONDS, ttlSeconds);
-        const rawExpiration = nowSeconds + ttlSeconds;
-        return bucketSeconds > 0 && bucketSeconds < ttlSeconds
-          ? Math.floor(rawExpiration / bucketSeconds) * bucketSeconds
-          : rawExpiration;
-      })()
-    : undefined;
+  const params = new URLSearchParams();
+  params.set("key", OPTSTUFF_PUBLIC_KEY);
 
-  const payload = exp != null ? `${path}?exp=${exp}` : path;
+  let exp: number | undefined;
+  if (expiresIn != null && expiresIn > 0) {
+    exp = computeBucketedExpiration(expiresIn);
+    params.set("exp", exp.toString());
+  }
+
+  const signPayload = exp != null ? `${path}?exp=${exp}` : path;
   const sig = crypto
     .createHmac("sha256", OPTSTUFF_SECRET_KEY)
-    .update(payload)
+    .update(signPayload)
     .digest("base64url")
     .substring(0, 32);
 
-  let url = `${OPTSTUFF_BASE_URL}/api/v1/${OPTSTUFF_PROJECT_SLUG}/${path}?key=${OPTSTUFF_PUBLIC_KEY}&sig=${sig}`;
-  if (exp != null) url += `&exp=${exp}`;
+  params.set("sig", sig);
 
-  return url;
+  return `${OPTSTUFF_BASE_URL}/api/v1/${OPTSTUFF_PROJECT_SLUG}/${path}?${params.toString()}`;
 }
 ```
 
-Bucketed expiration keeps signatures stable within each bucket window, improving CDN cache hit rates while still bounding the TTL.
+`computeBucketedExpiration` keeps signatures stable within each bucket window, improving CDN cache hit rates while still bounding the TTL. The final `Math.max` ensures the expiration is always in the future, even under edge-case rounding.
 
 ## Choose Your Integration Pattern
 
@@ -154,56 +170,54 @@ export default function HomePage() {
 
 When a client component needs to load images dynamically (e.g. user-uploaded content or search results), create an API Route that signs on behalf of the client:
 
-**API Route** — `app/api/image-url/route.ts`:
+**API Route** — `app/api/optstuff/route.ts` (POST handler):
 
 ```typescript
 import { generateOptStuffUrl } from "@/lib/optstuff-core";
 import { NextRequest, NextResponse } from "next/server";
 
-const ALLOWED_SOURCE_HOSTS = ["cdn.example.com", "images.example.com"];
+const ALLOWED_SOURCE_HOSTS = new Set(["cdn.example.com", "images.example.com"]);
 
-export async function GET(request: NextRequest) {
-  const searchParams = request.nextUrl.searchParams;
-  const src = searchParams.get("src");
-  const width = searchParams.get("w");
-  const height = searchParams.get("h");
-  const format = searchParams.get("f") || "webp";
-
-  if (!src) {
-    return NextResponse.json({ error: "Missing src parameter" }, { status: 400 });
+export async function POST(request: NextRequest) {
+  let body: Record<string, unknown>;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const cleanSrc = src.split(/[?#]/)[0];
-
-  const hostname = cleanSrc.includes("/") ? cleanSrc.split("/")[0] : cleanSrc;
-  if (!ALLOWED_SOURCE_HOSTS.includes(hostname)) {
-    return NextResponse.json({ error: "Source domain not allowed" }, { status: 403 });
+  const imageUrl = body.imageUrl as string | undefined;
+  if (!imageUrl) {
+    return NextResponse.json({ error: "Missing imageUrl" }, { status: 400 });
   }
 
-  const ALLOWED_FORMATS = ["webp", "png", "jpg", "avif"];
-  const NUMERIC = /^\d+$/;
+  let hostname: string;
+  try {
+    hostname = new URL(imageUrl).hostname;
+  } catch {
+    return NextResponse.json({ error: "Invalid imageUrl" }, { status: 400 });
+  }
 
-  if (width && (!NUMERIC.test(width) || +width > 8192)) {
-    return NextResponse.json({ error: "Invalid width" }, { status: 400 });
-  }
-  if (height && (!NUMERIC.test(height) || +height > 8192)) {
-    return NextResponse.json({ error: "Invalid height" }, { status: 400 });
-  }
-  if (!ALLOWED_FORMATS.includes(format)) {
-    return NextResponse.json({ error: "Invalid format" }, { status: 400 });
+  if (!ALLOWED_SOURCE_HOSTS.has(hostname)) {
+    return NextResponse.json({ error: "Domain not allowed" }, { status: 403 });
   }
 
   const signedUrl = generateOptStuffUrl(
-    cleanSrc,
+    imageUrl,
     {
-      width: width ? Number(width) : undefined,
-      height: height ? Number(height) : undefined,
-      format: format as "webp" | "avif" | "png" | "jpg",
+      width: body.width ? Number(body.width) : undefined,
+      height: body.height ? Number(body.height) : undefined,
+      format: (body.format as "webp" | "avif" | "png" | "jpg") ?? "webp",
     },
     3600,
   );
 
-  return NextResponse.json({ url: signedUrl });
+  const response = NextResponse.json({ url: signedUrl });
+  response.headers.set(
+    "Cache-Control",
+    "public, s-maxage=300, stale-while-revalidate=3600",
+  );
+  return response;
 }
 ```
 
@@ -237,10 +251,10 @@ export function OptimizedImage({ src, width, alt }: OptimizedImageProps) {
 
     const fetchUrl = async () => {
       try {
-        const params = new URLSearchParams({ src });
-        if (width) params.set("w", width.toString());
-
-        const res = await fetch(`/api/image-url?${params}`, {
+        const res = await fetch("/api/optstuff", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ imageUrl: src, width }),
           signal: controller.signal,
         });
         if (!res.ok) {
@@ -288,6 +302,59 @@ With a custom `loader`, you can redirect `<Image>` to use OptStuff instead. The 
 2. The loader points to your API Route (`/api/optstuff?url=...&w=...`)
 3. Your API Route signs the request and returns a **302 redirect** to the OptStuff CDN
 4. The browser follows the redirect and loads the optimized image directly from OptStuff
+
+**API Route** — `app/api/optstuff/route.ts` (GET handler — if you also use Option 2, both handlers share this file):
+
+```typescript
+import { generateOptStuffUrl } from "@/lib/optstuff-core";
+import { NextRequest, NextResponse } from "next/server";
+
+const ALLOWED_SOURCE_HOSTS = new Set(["cdn.example.com", "images.example.com"]);
+
+export function GET(request: NextRequest) {
+  const sp = request.nextUrl.searchParams;
+  const url = sp.get("url");
+  const w = sp.get("w");
+  const q = sp.get("q");
+  const f = sp.get("f") || "webp";
+  const fit = sp.get("fit") || "cover";
+
+  if (!url) {
+    return NextResponse.json({ error: "Missing url" }, { status: 400 });
+  }
+
+  let hostname: string;
+  try {
+    hostname = new URL(url).hostname;
+  } catch {
+    return NextResponse.json({ error: "Invalid url" }, { status: 400 });
+  }
+
+  if (!ALLOWED_SOURCE_HOSTS.has(hostname)) {
+    return NextResponse.json({ error: "Domain not allowed" }, { status: 403 });
+  }
+
+  const signedUrl = generateOptStuffUrl(
+    url,
+    {
+      width: w ? Number(w) : undefined,
+      quality: q ? Number(q) : 80,
+      format: f as "webp" | "avif" | "png" | "jpg",
+      fit: fit as "cover" | "contain" | "fill",
+    },
+    3600,
+  );
+
+  const response = NextResponse.redirect(signedUrl, 302);
+  response.headers.set(
+    "Cache-Control",
+    "public, s-maxage=300, stale-while-revalidate=3600",
+  );
+  return response;
+}
+```
+
+**Client Component** — `components/optstuff-image.tsx`:
 
 ```tsx
 // components/optstuff-image.tsx
@@ -338,7 +405,7 @@ Do **not** pass `generateOptStuffUrl` directly as a `loader` — the loader runs
 client-side, which would expose your secret key. Always delegate signing to an API Route.
 </Callout>
 
-For the full implementation (API Route, `srcSet` tuning, FAQ), see [Custom next/image Loader](/guides/nextjs-image-loader).
+For advanced configuration (`srcSet` tuning, production hardening, FAQ), see [Custom next/image Loader](/guides/nextjs-image-loader).
 
 ## Pre-Launch Checklist
 

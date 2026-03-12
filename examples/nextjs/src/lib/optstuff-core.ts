@@ -1,12 +1,10 @@
-import "server-only";
 import crypto from "crypto";
+import "server-only";
 
 function requireEnv(name: string): string {
   const value = process.env[name];
   if (!value || value.includes("xxx") || value.includes("your-")) {
-    throw new Error(
-      `Missing or invalid environment variable: ${name}. Set it in examples/nextjs/.env.local`,
-    );
+    throw new Error(`Missing or placeholder env var: ${name}. Set it in .env`);
   }
   return value;
 }
@@ -101,7 +99,9 @@ function buildOperationString(ops: ImageOperation): string {
 
   if (ops.fit !== undefined) {
     if (typeof ops.fit !== "string" || ops.fit.trim() === "") {
-      throw new Error("Invalid image operation: fit must be a non-empty string");
+      throw new Error(
+        "Invalid image operation: fit must be a non-empty string",
+      );
     }
 
     const fit = ops.fit.trim();
