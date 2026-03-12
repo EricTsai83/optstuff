@@ -20,8 +20,7 @@ export const RATE_LIMITS = {
 export const DOCS_LINKS = {
   home: env.NEXT_PUBLIC_DOCS_URL,
   quickstart: `${env.NEXT_PUBLIC_DOCS_URL}/getting-started/quickstart`,
-  integration: `${env.NEXT_PUBLIC_DOCS_URL}/getting-started/integration-guide`,
-  projectSetup: `${env.NEXT_PUBLIC_DOCS_URL}/getting-started/project-setup`,
+  integration: `${env.NEXT_PUBLIC_DOCS_URL}/getting-started/integrate-nextjs`,
   keyManagement: `${env.NEXT_PUBLIC_DOCS_URL}/guides/key-management`,
   security: `${env.NEXT_PUBLIC_DOCS_URL}/guides/security-best-practices`,
   urlSigning: `${env.NEXT_PUBLIC_DOCS_URL}/guides/url-signing`,

@@ -1,9 +1,7 @@
 {
   "pages": [
     "quickstart",
-    "project-setup",
-    "integration-guide",
-    "integrate-typescript",
+    "sign-your-first-url",
     "integrate-nextjs"
   ]
 }
