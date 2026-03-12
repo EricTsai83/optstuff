@@ -117,6 +117,13 @@ function buildOperationString(ops: ImageOperation): string {
   return parts.length > 0 ? parts.join(",") : "_";
 }
 
+/**
+ * Generates a signed image optimization URL.
+ *
+ * @param imageUrl - Source image URL (e.g., "https://images.example.com/photo.jpg")
+ * @param operations - Image operations to apply
+ * @param expiresIn - Signature validity in seconds (optional)
+ */
 export function generateOptStuffUrl(
   imageUrl: string,
   operations: ImageOperation,
