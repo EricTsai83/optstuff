@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 type DynamicImageProps = {
@@ -8,6 +9,7 @@ type DynamicImageProps = {
   readonly alt: string;
   readonly format?: "webp" | "avif" | "png" | "jpg";
   readonly quality?: number;
+  readonly sizes?: string;
 };
 
 type FetchResult =
@@ -27,6 +29,7 @@ export function DynamicImage({
   alt,
   format = "webp",
   quality = 80,
+  sizes,
 }: DynamicImageProps) {
   const requestKey = useMemo(
     () => `${src}|${width}|${format}|${quality}`,
@@ -110,15 +113,15 @@ export function DynamicImage({
         </div>
       )}
       {effectiveResult.status === "ok" && (
-        /* eslint-disable-next-line @next/next/no-img-element */
-        <img
+        <Image
           src={effectiveResult.url}
           alt={alt}
-          loading="lazy"
-          decoding="async"
+          fill
+          sizes={sizes}
+          unoptimized
           onLoad={handleLoad}
           onError={handleError}
-          className="h-full w-full object-cover transition-opacity duration-500 ease-out"
+          className="object-cover transition-opacity duration-500 ease-out"
           style={{ opacity: imgLoaded ? 1 : 0 }}
         />
       )}

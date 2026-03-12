@@ -302,13 +302,13 @@ export function HomePageContent({
               <ScrollReveal as="li" delay={0}>
                 <div className="border-border bg-card group flex h-full cursor-default flex-col overflow-hidden rounded-2xl border shadow-sm">
                   <div className="aspect-4/3 relative overflow-hidden">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
+                    <OptStuffImage
                       src={serverComponentCardUrl}
+                      fill
+                      sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
                       alt="Portrait — Server Component demo"
-                      loading="lazy"
-                      decoding="async"
-                      className="h-full w-full object-cover"
+                      preSigned
+                      style={{ objectFit: "cover" }}
                     />
                     <div className="bg-linear-to-t pointer-events-none absolute inset-0 from-black/20 via-transparent to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
                   </div>
@@ -332,7 +332,8 @@ export function HomePageContent({
   { width: 800, format: "avif" },
 );
 
-<img src={url} alt="..." />`}</code>
+<Image src={url} alt="..."
+  fill unoptimized />`}</code>
                       </pre>
                     </div>
                   </div>
@@ -349,6 +350,7 @@ export function HomePageContent({
                       alt="Product — API Route + Client demo"
                       format="webp"
                       quality={90}
+                      sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
                     />
                     <div className="bg-linear-to-t pointer-events-none absolute inset-0 from-black/20 via-transparent to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
                   </div>
