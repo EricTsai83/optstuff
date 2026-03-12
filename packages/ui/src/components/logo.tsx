@@ -16,10 +16,12 @@ export const LogoIcon = ({ size = 32 }: LogoIconProps) => {
 
   return (
     <div
-      className="flex items-center justify-center rounded-lg bg-[conic-gradient(from_225deg,#84cc16,#22c55e,#10b981,#0d9488,#10b981,#22c55e,#84cc16)]"
+      className="flex items-center justify-center rounded-lg"
       style={{
         height: `${size}px`,
         width: `${size}px`,
+        background:
+          "conic-gradient(from 225deg, #84cc16, #22c55e, #10b981, #0d9488, #10b981, #22c55e, #84cc16)",
       }}
     >
       <svg
@@ -27,7 +29,7 @@ export const LogoIcon = ({ size = 32 }: LogoIconProps) => {
         height={iconSize}
         viewBox="0 0 24 24"
         fill="none"
-        className="text-white"
+        style={{ color: "white" }}
         aria-hidden="true"
       >
         {/* Outer frame - image border */}
