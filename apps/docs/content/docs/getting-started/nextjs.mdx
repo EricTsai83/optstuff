@@ -66,16 +66,6 @@ export type ImageOperation = {
   fit?: "cover" | "contain" | "fill";
 };
 
-function buildOperationString(operations: ImageOperation): string {
-  const parts: string[] = [];
-  if (operations.width) parts.push(`w_${operations.width}`);
-  if (operations.height) parts.push(`h_${operations.height}`);
-  if (operations.quality) parts.push(`q_${operations.quality}`);
-  if (operations.format) parts.push(`f_${operations.format}`);
-  if (operations.fit) parts.push(`fit_${operations.fit}`);
-  return parts.length > 0 ? parts.join(",") : "_";
-}
-
 function computeBucketedExpiration(expiresInSeconds: number): number {
   const nowSeconds = Math.floor(Date.now() / 1000);
   const ttlSeconds = Math.max(1, Math.floor(expiresInSeconds));
@@ -86,6 +76,16 @@ function computeBucketedExpiration(expiresInSeconds: number): number {
       ? Math.floor(rawExpiration / bucketSeconds) * bucketSeconds
       : rawExpiration;
   return Math.max(nowSeconds + 1, bucketed);
+}
+
+function buildOperationString(operations: ImageOperation): string {
+  const parts: string[] = [];
+  if (operations.width) parts.push(`w_${operations.width}`);
+  if (operations.height) parts.push(`h_${operations.height}`);
+  if (operations.quality) parts.push(`q_${operations.quality}`);
+  if (operations.format) parts.push(`f_${operations.format}`);
+  if (operations.fit) parts.push(`fit_${operations.fit}`);
+  return parts.length > 0 ? parts.join(",") : "_";
 }
 
 /**
@@ -133,6 +133,10 @@ export function generateOptStuffUrl(
 ```
 
 `computeBucketedExpiration` keeps signatures stable within each bucket window, improving CDN cache hit rates while still bounding the TTL. The final `Math.max` ensures the expiration is always in the future, even under edge-case rounding.
+
+<Callout type="info">
+The snippet above is intentionally minimal. The [`examples/nextjs`](https://github.com/EricTsai83/optstuff/tree/HEAD/examples/nextjs) project includes a **hardened version** with input validation, query-string encoding, and allowed-format whitelists — use it as a starting point for production.
+</Callout>
 
 ## Choose Your Integration Pattern
 

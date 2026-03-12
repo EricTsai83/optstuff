@@ -127,7 +127,7 @@ function buildOperationString(ops: ImageOperation): string {
 export function generateOptStuffUrl(
   imageUrl: string,
   operations: ImageOperation,
-  expiresInSeconds?: number,
+  expiresIn?: number,
 ): string {
   const opString = buildOperationString(operations);
 
@@ -161,12 +161,8 @@ export function generateOptStuffUrl(
   params.set("key", OPTSTUFF_PUBLIC_KEY);
 
   let exp: number | undefined;
-  if (
-    expiresInSeconds !== undefined &&
-    Number.isFinite(expiresInSeconds) &&
-    expiresInSeconds > 0
-  ) {
-    exp = computeBucketedExpiration(expiresInSeconds);
+  if (expiresIn !== undefined && Number.isFinite(expiresIn) && expiresIn > 0) {
+    exp = computeBucketedExpiration(expiresIn);
     params.set("exp", exp.toString());
   }
 
