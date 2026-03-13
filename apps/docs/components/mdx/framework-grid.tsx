@@ -1,12 +1,21 @@
 import { ArrowRight, SquareTerminal } from "lucide-react";
 import Link from "next/link";
-import type { ReactNode } from "react";
+import { useId, type ReactNode } from "react";
 
-const icons: Record<string, ReactNode> = {
-  nextjs: (
+type IconRenderer = () => ReactNode;
+
+const warnedMissingIcons = new Set<string>();
+
+function NextJsIcon() {
+  const uniqueId = useId().replace(/:/g, "");
+  const maskId = `nextjs-mask-${uniqueId}`;
+  const grad0Id = `nextjs-grad-0-${uniqueId}`;
+  const grad1Id = `nextjs-grad-1-${uniqueId}`;
+
+  return (
     <svg viewBox="0 0 180 180" fill="none" className="size-full">
       <mask
-        id="nextjs-mask"
+        id={maskId}
         maskUnits="userSpaceOnUse"
         x="0"
         y="0"
@@ -16,23 +25,23 @@ const icons: Record<string, ReactNode> = {
       >
         <circle cx="90" cy="90" r="90" fill="black" />
       </mask>
-      <g mask="url(#nextjs-mask)">
+      <g mask={`url(#${maskId})`}>
         <circle cx="90" cy="90" r="90" className="fill-fd-foreground" />
         <path
           d="M149.508 157.52L69.142 54H54V125.97H66.1136V69.3836L139.999 164.845C143.333 162.614 146.509 160.165 149.508 157.52Z"
-          fill="url(#nextjs-grad-0)"
+          fill={`url(#${grad0Id})`}
         />
         <rect
           x="115"
           y="54"
           width="12"
           height="72"
-          fill="url(#nextjs-grad-1)"
+          fill={`url(#${grad1Id})`}
         />
       </g>
       <defs>
         <linearGradient
-          id="nextjs-grad-0"
+          id={grad0Id}
           x1="109"
           y1="116.5"
           x2="144.5"
@@ -47,7 +56,7 @@ const icons: Record<string, ReactNode> = {
           />
         </linearGradient>
         <linearGradient
-          id="nextjs-grad-1"
+          id={grad1Id}
           x1="121"
           y1="54"
           x2="120.799"
@@ -63,8 +72,20 @@ const icons: Record<string, ReactNode> = {
         </linearGradient>
       </defs>
     </svg>
-  ),
-  cli: (
+  );
+}
+
+function PlaceholderIcon() {
+  return (
+    <div className="flex size-full items-center justify-center rounded-md border border-dashed border-fd-border text-fd-muted-foreground">
+      <span className="text-xs font-semibold">?</span>
+    </div>
+  );
+}
+
+const icons: Record<string, IconRenderer> = {
+  nextjs: NextJsIcon,
+  cli: () => (
     <SquareTerminal
       className="size-full text-fd-foreground"
       strokeWidth={1.5}
@@ -80,9 +101,24 @@ type FrameworkCardProps = {
 };
 
 function FrameworkCard({ icon, title, description, href }: FrameworkCardProps) {
+  const ResolvedIcon = icons[icon] ?? PlaceholderIcon;
+
+  if (
+    process.env.NODE_ENV === "development" &&
+    !icons[icon] &&
+    !warnedMissingIcons.has(icon)
+  ) {
+    warnedMissingIcons.add(icon);
+    console.warn(
+      `[FrameworkCard] Missing icon "${icon}". Falling back to placeholder. Available icons: ${Object.keys(icons).join(", ")}`,
+    );
+  }
+
   return (
     <Link href={href} className="group flex gap-4 p-6">
-      <div className="size-12 shrink-0">{icons[icon]}</div>
+      <div className="size-12 shrink-0">
+        <ResolvedIcon />
+      </div>
       <div className="flex min-w-0 flex-col">
         <p className="text-[0.95rem] font-semibold leading-snug text-fd-foreground">
           {title}

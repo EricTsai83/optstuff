@@ -1,7 +1,8 @@
 "use client";
 
 import Image from "next/image";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useState } from "react";
+import { useSignedImageUrl } from "../hooks/use-signed-image-url";
 
 type DynamicImageProps = {
   readonly src: string;
@@ -11,11 +12,6 @@ type DynamicImageProps = {
   readonly quality?: number;
   readonly sizes?: string;
 };
-
-type FetchResult =
-  | { status: "pending" }
-  | { status: "ok"; url: string }
-  | { status: "error" };
 
 /**
  * Fetches a signed URL from the OptStuff POST API and renders the resulting
@@ -31,65 +27,17 @@ export function DynamicImage({
   quality = 80,
   sizes,
 }: DynamicImageProps) {
-  const requestKey = useMemo(
-    () => `${src}|${width}|${format}|${quality}`,
-    [src, width, format, quality],
-  );
-
-  const [result, setResult] = useState<FetchResult & { key: string }>({
-    status: "pending",
-    key: requestKey,
+  const { requestKey, effectiveResult, markAsError } = useSignedImageUrl({
+    src,
+    width,
+    format,
+    quality,
   });
-  const [imgLoaded, setImgLoaded] = useState(false);
-  const requestIdRef = useRef(0);
+  const [loadedKey, setLoadedKey] = useState<string | null>(null);
+  const imgLoaded = loadedKey === requestKey;
 
-  const stale = result.key !== requestKey;
-  const effectiveResult: FetchResult = stale
-    ? { status: "pending" }
-    : result;
-
-  useEffect(() => {
-    const currentId = ++requestIdRef.current;
-    const controller = new AbortController();
-
-    async function fetchSignedUrl() {
-      try {
-        const res = await fetch("/api/optstuff", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ imageUrl: src, width, format, quality }),
-          signal: controller.signal,
-        });
-
-        if (currentId !== requestIdRef.current) return;
-
-        if (!res.ok) {
-          setResult({ status: "error", key: requestKey });
-          return;
-        }
-
-        const data = (await res.json()) as { url: string };
-
-        if (currentId === requestIdRef.current) {
-          setResult({ status: "ok", url: data.url, key: requestKey });
-        }
-      } catch (err) {
-        if (err instanceof Error && err.name === "AbortError") return;
-        if (currentId === requestIdRef.current) {
-          setResult({ status: "error", key: requestKey });
-        }
-      }
-    }
-
-    fetchSignedUrl();
-    return () => controller.abort();
-  }, [src, width, format, quality, requestKey]);
-
-  const handleLoad = useCallback(() => setImgLoaded(true), []);
-  const handleError = useCallback(
-    () => setResult((prev) => ({ ...prev, status: "error" })),
-    [],
-  );
+  const handleLoad = useCallback(() => setLoadedKey(requestKey), [requestKey]);
+  const handleError = useCallback(() => markAsError(), [markAsError]);
 
   if (effectiveResult.status === "error") {
     return (
