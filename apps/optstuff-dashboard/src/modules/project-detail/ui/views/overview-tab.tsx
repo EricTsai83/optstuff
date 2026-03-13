@@ -106,15 +106,15 @@ function SetupChecklist({
 
 const RESOURCE_LINKS = [
   {
-    href: DOCS_LINKS.projectSetup,
+    href: DOCS_LINKS.quickstart,
     icon: BookOpen,
-    title: "Project Setup Guide",
+    title: "Quick Start",
     description: "Teams, projects, and API keys",
   },
   {
     href: DOCS_LINKS.integration,
     icon: Code,
-    title: "Integration Guide",
+    title: "Next.js Integration",
     description: "Add OptStuff to your application",
   },
 ];

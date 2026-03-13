@@ -1,11 +1,11 @@
-import "server-only";
 import crypto from "crypto";
+import "server-only";
 
 function requireEnv(name: string): string {
   const value = process.env[name];
   if (!value || value.includes("xxx") || value.includes("your-")) {
     throw new Error(
-      `Missing or invalid environment variable: ${name}. Set it in examples/nextjs/.env.local`,
+      `Missing or placeholder env var: ${name}. Set it in the environment or deployment configuration.`,
     );
   }
   return value;
@@ -101,7 +101,9 @@ function buildOperationString(ops: ImageOperation): string {
 
   if (ops.fit !== undefined) {
     if (typeof ops.fit !== "string" || ops.fit.trim() === "") {
-      throw new Error("Invalid image operation: fit must be a non-empty string");
+      throw new Error(
+        "Invalid image operation: fit must be a non-empty string",
+      );
     }
 
     const fit = ops.fit.trim();
@@ -117,10 +119,17 @@ function buildOperationString(ops: ImageOperation): string {
   return parts.length > 0 ? parts.join(",") : "_";
 }
 
+/**
+ * Generates a signed image optimization URL.
+ *
+ * @param imageUrl - Source image URL (e.g., "https://images.example.com/photo.jpg")
+ * @param operations - Image operations to apply
+ * @param expiresIn - Signature validity in seconds (optional)
+ */
 export function generateOptStuffUrl(
   imageUrl: string,
   operations: ImageOperation,
-  expiresInSeconds?: number,
+  expiresIn?: number,
 ): string {
   const opString = buildOperationString(operations);
 
@@ -154,12 +163,18 @@ export function generateOptStuffUrl(
   params.set("key", OPTSTUFF_PUBLIC_KEY);
 
   let exp: number | undefined;
-  if (
-    expiresInSeconds !== undefined &&
-    Number.isFinite(expiresInSeconds) &&
-    expiresInSeconds > 0
-  ) {
-    exp = computeBucketedExpiration(expiresInSeconds);
+  if (expiresIn !== undefined) {
+    if (
+      typeof expiresIn !== "number" ||
+      !Number.isFinite(expiresIn) ||
+      expiresIn <= 0
+    ) {
+      throw new Error(
+        "Invalid expiresIn: must be a finite number greater than 0",
+      );
+    }
+
+    exp = computeBucketedExpiration(expiresIn);
     params.set("exp", exp.toString());
   }
 

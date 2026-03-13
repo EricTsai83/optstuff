@@ -1,4 +1,5 @@
 import { DeferredMount } from "@/components/deferred-mount";
+import { DynamicImage } from "@/components/dynamic-image";
 import { HeroRefreshToggle } from "@/components/hero-refresh-toggle";
 import { HomeHeader } from "@/components/home-header";
 import { OptStuffImage } from "@/components/optstuff-image";
@@ -44,26 +45,10 @@ const OptimizerPlayground = dynamic(
 export const HOME_HERO_IMAGE =
   "https://images.unsplash.com/photo-1506744038136-46273834b3fb";
 
-const SHOWCASE_IMAGES = [
-  {
-    label: "Landscape",
-    src: "https://images.unsplash.com/photo-1506744038136-46273834b3fb",
-    format: "webp" as const,
-    quality: 80,
-  },
-  {
-    label: "Portrait",
-    src: "https://images.unsplash.com/photo-1534528741775-53994a69daeb",
-    format: "avif" as const,
-    quality: 85,
-  },
-  {
-    label: "Product",
-    src: "https://images.unsplash.com/photo-1523275335684-37898b6baf30",
-    format: "webp" as const,
-    quality: 90,
-  },
-];
+const DYNAMIC_CONTENT_IMAGE =
+  "https://images.unsplash.com/photo-1523275335684-37898b6baf30";
+const LOADER_IMAGE =
+  "https://images.unsplash.com/photo-1506744038136-46273834b3fb";
 
 type HomePageContentProps = {
   readonly heroImageUrl: string;
@@ -77,6 +62,7 @@ type HomePageContentProps = {
   readonly heroBlurStatusCode: string | undefined;
   readonly heroBlurContentType: string | undefined;
   readonly heroBlurDuration: string | undefined;
+  readonly serverComponentCardUrl: string;
 };
 
 export function HomePageContent({
@@ -91,6 +77,7 @@ export function HomePageContent({
   heroBlurStatusCode,
   heroBlurContentType,
   heroBlurDuration,
+  serverComponentCardUrl,
 }: HomePageContentProps) {
   const hasHeroBlurPlaceholder = heroBlurDataUrl !== undefined;
   const heroBlurModeLabel =
@@ -297,68 +284,155 @@ export function HomePageContent({
           </div>
         </section>
 
-        {/* ─── Drop-in Replacement ─── */}
-        <section className="py-20 sm:py-28">
+        {/* ─── Integrate Your Way ─── */}
+        <section id="patterns" className="py-20 sm:py-28">
           <div className="mx-auto max-w-6xl px-4 sm:px-6">
             <ScrollReveal as="header" className="mb-12 text-center sm:mb-16">
               <h2 className="text-foreground mb-4 text-3xl font-bold tracking-tight sm:text-4xl lg:text-5xl">
-                Drop-in Replacement
+                Integrate Your Way
               </h2>
-              <p className="text-muted mx-auto max-w-lg text-base leading-relaxed">
-                <code className="rounded-md bg-zinc-100 px-1.5 py-0.5 font-mono text-xs text-emerald-700 dark:bg-zinc-800 dark:text-emerald-400">
-                  {"<OptStuffImage>"}
-                </code>{" "}
-                wraps{" "}
-                <code className="rounded-md bg-zinc-100 px-1.5 py-0.5 font-mono text-xs text-emerald-700 dark:bg-zinc-800 dark:text-emerald-400">
-                  next/image
-                </code>{" "}
-                with server-side URL signing. Full responsive{" "}
-                <code className="rounded-md bg-zinc-100 px-1.5 py-0.5 font-mono text-xs text-emerald-700 dark:bg-zinc-800 dark:text-emerald-400">
-                  srcSet
-                </code>{" "}
-                and lazy loading through OptStuff.
+              <p className="text-muted mx-auto max-w-xl text-base leading-relaxed">
+                Same signing core, three strategies. Each card below is a live
+                demo using a different approach.
               </p>
             </ScrollReveal>
 
             <ul className="grid list-none gap-6 p-0 sm:grid-cols-2 lg:grid-cols-3">
-              {SHOWCASE_IMAGES.map((img, idx) => (
-                <ScrollReveal as="li" key={img.label} delay={idx * 120}>
-                  <div className="border-border bg-card group cursor-default overflow-hidden rounded-2xl border shadow-sm">
-                    <div className="aspect-4/3 relative overflow-hidden">
-                      <OptStuffImage
-                        src={img.src}
-                        fill
-                        sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
-                        alt={img.label}
-                        format={img.format}
-                        quality={img.quality}
-                        style={{ objectFit: "cover" }}
-                      />
-                      <div className="bg-linear-to-t pointer-events-none absolute inset-0 from-black/20 via-transparent to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
+              {/* Card 1 — Server Component */}
+              <ScrollReveal as="li" delay={0}>
+                <div className="border-border bg-card group flex h-full cursor-default flex-col overflow-hidden rounded-2xl border shadow-sm">
+                  <div className="aspect-4/3 relative overflow-hidden">
+                    <OptStuffImage
+                      src={serverComponentCardUrl}
+                      fill
+                      sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+                      alt="Portrait — Server Component demo"
+                      preSigned
+                      style={{ objectFit: "cover" }}
+                    />
+                    <div className="bg-linear-to-t pointer-events-none absolute inset-0 from-black/20 via-transparent to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
+                  </div>
+                  <div className="flex flex-1 flex-col p-5">
+                    <div className="mb-2 flex items-center gap-2">
+                      <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">
+                        Server Component
+                      </span>
                     </div>
-                    <div className="p-5">
-                      <div className="mb-3 flex items-center justify-between">
-                        <span className="text-foreground text-sm font-semibold">
-                          {img.label}
-                        </span>
-                        <span className="rounded-full bg-zinc-100 px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400">
-                          {img.format}
-                        </span>
-                      </div>
-                      <div className="bg-code-bg text-code-text overflow-x-auto rounded-lg border border-zinc-800 p-3">
-                        <pre className="text-code-text font-mono text-[11px] leading-relaxed">
-                          <code>{`<OptStuffImage
-  src=".../${img.src.split("/").pop()}"
-  fill
-  format="${img.format}"
-  quality={${img.quality}}
-/>`}</code>
-                        </pre>
-                      </div>
+                    <h3 className="text-foreground mb-1.5 text-sm font-semibold">
+                      Static &amp; SSR Pages
+                    </h3>
+                    <p className="text-muted mb-4 flex-1 text-xs leading-relaxed">
+                      Signed at render time, embedded in HTML. Zero client
+                      JavaScript for image delivery.
+                    </p>
+                    <div className="bg-code-bg text-code-text min-h-52 overflow-x-auto rounded-lg border border-zinc-800 p-3">
+                      <pre className="text-code-text font-mono text-[11px] leading-relaxed">
+                        <code>{`const url = generateOptStuffUrl(
+  "photo.jpg",
+  { width: 800, format: "avif" },
+);
+
+<Image src={url} alt="..."
+  fill unoptimized />`}</code>
+                      </pre>
                     </div>
                   </div>
-                </ScrollReveal>
-              ))}
+                </div>
+              </ScrollReveal>
+
+              {/* Card 2 — API Route + Client */}
+              <ScrollReveal as="li" delay={120}>
+                <div className="border-border bg-card group flex h-full cursor-default flex-col overflow-hidden rounded-2xl border shadow-sm">
+                  <div className="aspect-4/3 relative overflow-hidden">
+                    <DynamicImage
+                      src={DYNAMIC_CONTENT_IMAGE}
+                      width={800}
+                      alt="Product — API Route + Client demo"
+                      format="webp"
+                      quality={90}
+                      sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+                    />
+                    <div className="bg-linear-to-t pointer-events-none absolute inset-0 from-black/20 via-transparent to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
+                  </div>
+                  <div className="flex flex-1 flex-col p-5">
+                    <div className="mb-2 flex items-center gap-2">
+                      <span className="rounded-full bg-teal-100 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-teal-700 dark:bg-teal-900/40 dark:text-teal-300">
+                        API Route + Client
+                      </span>
+                    </div>
+                    <h3 className="text-foreground mb-1.5 text-sm font-semibold">
+                      Dynamic Content
+                    </h3>
+                    <p className="text-muted mb-4 flex-1 text-xs leading-relaxed">
+                      Client requests a signed URL on demand. Ideal for user
+                      uploads, search results, and feeds.
+                    </p>
+                    <div className="bg-code-bg text-code-text min-h-52 overflow-x-auto rounded-lg border border-zinc-800 p-3">
+                      <pre className="text-code-text font-mono text-[11px] leading-relaxed">
+                        <code>{`const res = await fetch(
+  "/api/optstuff",
+  {
+    method: "POST",
+    body: JSON.stringify({
+      imageUrl: src, width,
+    }),
+  },
+);
+const { url } = await res.json();`}</code>
+                      </pre>
+                    </div>
+                  </div>
+                </div>
+              </ScrollReveal>
+
+              {/* Card 3 — Custom next/image Loader */}
+              <ScrollReveal as="li" delay={240}>
+                <div className="border-border bg-card group flex h-full cursor-default flex-col overflow-hidden rounded-2xl border shadow-sm">
+                  <div className="aspect-4/3 relative overflow-hidden">
+                    <OptStuffImage
+                      src={LOADER_IMAGE}
+                      fill
+                      sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+                      alt="Landscape — Custom Loader demo"
+                      format="webp"
+                      quality={80}
+                      style={{ objectFit: "cover" }}
+                    />
+                    <div className="bg-linear-to-t pointer-events-none absolute inset-0 from-black/20 via-transparent to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
+                  </div>
+                  <div className="flex flex-1 flex-col p-5">
+                    <div className="mb-2 flex items-center gap-2">
+                      <span className="rounded-full bg-cyan-100 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-cyan-700 dark:bg-cyan-900/40 dark:text-cyan-300">
+                        Custom Loader
+                      </span>
+                      <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-medium text-emerald-600 dark:text-emerald-400">
+                        Recommended
+                      </span>
+                    </div>
+                    <h3 className="text-foreground mb-1.5 text-sm font-semibold">
+                      Drop-in next/image
+                    </h3>
+                    <p className="text-muted mb-4 flex-1 text-xs leading-relaxed">
+                      Full{" "}
+                      <code className="rounded bg-zinc-100 px-1 py-px font-mono text-[10px] dark:bg-zinc-800">
+                        srcSet
+                      </code>
+                      , lazy loading, and blur placeholders — without Vercel
+                      Image Optimization charges.
+                    </p>
+                    <div className="bg-code-bg text-code-text min-h-52 overflow-x-auto rounded-lg border border-zinc-800 p-3">
+                      <pre className="text-code-text font-mono text-[11px] leading-relaxed">
+                        <code>{`<OptStuffImage
+  src="photo.jpg"
+  fill
+  format="webp"
+  quality={80}
+/>`}</code>
+                      </pre>
+                    </div>
+                  </div>
+                </div>
+              </ScrollReveal>
             </ul>
           </div>
         </section>

@@ -1,9 +1,3 @@
 {
-  "pages": [
-    "quickstart",
-    "project-setup",
-    "integration-guide",
-    "integrate-typescript",
-    "integrate-nextjs"
-  ]
+  "pages": ["quickstart", "nextjs"]
 }

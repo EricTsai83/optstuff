@@ -36,6 +36,15 @@ const HERO_BLUR_OPTIONS = {
   fit: "cover" as const,
 };
 
+const SERVER_COMPONENT_CARD_IMAGE =
+  "https://images.unsplash.com/photo-1534528741775-53994a69daeb";
+const SERVER_COMPONENT_CARD_OPTIONS = {
+  width: 800,
+  format: "avif" as const,
+  quality: 85,
+  fit: "cover" as const,
+};
+
 /**
  * Get the cached signed hero URL.
  *
@@ -65,6 +74,16 @@ function getForceRefreshHeroImageUrl() {
     HOME_HERO_IMAGE,
     HERO_CACHE_OPTIONS,
     HERO_FORCE_REFRESH_URL_TTL_SECONDS,
+  );
+}
+
+async function getCachedServerComponentCardUrl() {
+  "use cache";
+  cacheLife("hours");
+  return generateOptStuffUrl(
+    SERVER_COMPONENT_CARD_IMAGE,
+    SERVER_COMPONENT_CARD_OPTIONS,
+    HERO_URL_TTL_SECONDS,
   );
 }
 
@@ -172,10 +191,13 @@ async function HomeResolved({ searchParams }: HomePageProps) {
     heroBlurMode === HERO_BLUR_MODE.REALTIME
       ? getRealtimeHeroBlurResult()
       : getBuildCacheHeroBlurResult(heroForceRefresh);
-  const [heroImageUrl, heroBlurResult] = await Promise.all([
-    heroImageUrlPromise,
-    heroBlurResultPromise,
-  ]);
+  const serverComponentCardUrlPromise = getCachedServerComponentCardUrl();
+  const [heroImageUrl, heroBlurResult, serverComponentCardUrl] =
+    await Promise.all([
+      heroImageUrlPromise,
+      heroBlurResultPromise,
+      serverComponentCardUrlPromise,
+    ]);
   const heroBlurDataUrl =
     heroBlurResult.status === "ok" ? heroBlurResult.dataUrl : undefined;
   const heroBlurStatus =
@@ -201,6 +223,7 @@ async function HomeResolved({ searchParams }: HomePageProps) {
       heroBlurStatusCode={heroBlurDebugStatusCode}
       heroBlurContentType={heroBlurDebugContentType}
       heroBlurDuration={heroBlurDebugDuration}
+      serverComponentCardUrl={serverComponentCardUrl}
     />
   );
 }

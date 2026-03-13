@@ -1,3 +1,59 @@
 @import "tailwindcss";
-@import "fumadocs-ui/css/neutral.css";
+@import "fumadocs-ui/css/lib/default-colors.css";
 @import "fumadocs-ui/css/preset.css";
+
+/*
+ * OptStuff custom theme
+ * Low-saturation teal tones derived from the brand's green logo gradient.
+ * Warm backgrounds for comfortable reading; high contrast for body text.
+ */
+
+@theme {
+  --color-fd-background: hsl(150 5% 97.5%);
+  --color-fd-foreground: hsl(160 12% 10%);
+  --color-fd-muted: hsl(150 5% 93%);
+  --color-fd-muted-foreground: hsl(155 4% 44%);
+  --color-fd-popover: hsl(150 6% 99%);
+  --color-fd-popover-foreground: hsl(160 10% 14%);
+  --color-fd-card: hsl(150 6% 95.5%);
+  --color-fd-card-foreground: hsl(160 12% 10%);
+  --color-fd-border: hsl(155 10% 76% / 0.45);
+  --color-fd-primary: hsl(162 55% 32%);
+  --color-fd-primary-foreground: hsl(0 0% 99%);
+  --color-fd-secondary: hsl(150 8% 93%);
+  --color-fd-secondary-foreground: hsl(160 10% 12%);
+  --color-fd-accent: hsl(152 10% 91%);
+  --color-fd-accent-foreground: hsl(160 10% 12%);
+  --color-fd-ring: hsl(162 55% 32%);
+}
+
+.dark {
+  --color-fd-background: hsl(160 10% 5.5%);
+  --color-fd-foreground: hsl(150 8% 90%);
+  --color-fd-muted: hsl(158 8% 11%);
+  --color-fd-muted-foreground: hsl(150 6% 55%);
+  --color-fd-popover: hsl(160 8% 8%);
+  --color-fd-popover-foreground: hsl(150 8% 88%);
+  --color-fd-card: hsl(158 8% 8.5%);
+  --color-fd-card-foreground: hsl(150 8% 90%);
+  --color-fd-border: hsl(160 12% 35% / 0.22);
+  --color-fd-primary: hsl(162 50% 55%);
+  --color-fd-primary-foreground: hsl(160 25% 6%);
+  --color-fd-secondary: hsl(158 8% 14%);
+  --color-fd-secondary-foreground: hsl(150 8% 88%);
+  --color-fd-accent: hsl(155 8% 15%);
+  --color-fd-accent-foreground: hsl(150 8% 88%);
+  --color-fd-ring: hsl(162 50% 55%);
+}
+
+#nd-sidebar {
+  background-color: hsl(150 6% 96%);
+}
+
+.dark #nd-sidebar {
+  background-color: hsl(158 10% 4.5%);
+}
+
+:root {
+  letter-spacing: -0.01em;
+}

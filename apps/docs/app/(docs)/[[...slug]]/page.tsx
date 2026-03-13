@@ -7,6 +7,7 @@ import {
   DocsDescription,
   DocsPage,
   DocsTitle,
+  PageLastUpdate,
 } from "fumadocs-ui/layouts/docs/page";
 import { createRelativeLink } from "fumadocs-ui/mdx";
 import type { Metadata } from "next";
@@ -40,6 +41,11 @@ export default async function Page(props: PageProps<"/[[...slug]]">) {
           })}
         />
       </DocsBody>
+      {page.data.lastModified ? (
+        <div className="flex w-full justify-end">
+          <PageLastUpdate date={page.data.lastModified} />
+        </div>
+      ) : null}
     </DocsPage>
   );
 }

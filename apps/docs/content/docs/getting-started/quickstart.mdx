@@ -1,61 +1,75 @@
 ---
 title: Quick Start
-description: Get your first optimized image with OptStuff in under 5 minutes.
+description: Set up your OptStuff project and get your first optimized image in minutes.
 ---
 
-This guide walks you through getting your first optimized image from OptStuff.
-
-## Prerequisites
-
-- An OptStuff account ([sign up here](https://optstuff.vercel.app))
-- Bun 1.0+ (to run the TypeScript URL signer example)
+This guide walks you through creating a project and obtaining your API keys. Once set up, you can jump straight into a framework integration.
 
 ## 1. Create a Team and Project
 
-After signing in, you'll be guided to create a **personal team**. Then create your first **project** from the dashboard — a default API key is generated automatically.
+After signing in, you'll be guided to create your **personal team**:
 
-> See [Project Setup](/getting-started/project-setup) for detailed UI instructions.
+1. Enter a **team name** (a suggestion is pre-filled from your profile)
+2. Choose a **team slug** — the URL identifier (e.g., `optstuff.com/my-team`)
+3. Click **Create Team**
 
-Before making requests, go to your project's **Settings → Domain Security → Image Sources** and add the domains you want to optimize images from (e.g., `https://images.unsplash.com`). Without at least one allowed source domain, all image requests will be rejected in production.
+From the team dashboard, click **Create Project** and fill in:
+
+- **Project Name** (required)
+- **Description** (optional)
+- **Image Sources** — which domains host your original images (e.g., `https://images.unsplash.com`). Subdomains are included automatically.
+- **Authorized Websites** (optional) — which websites can display optimized images. Leave empty to allow all.
+
+A **default API key** is generated automatically with your new project.
 
 ## 2. Copy Your Keys
 
-After project creation, a success screen displays your keys:
+After project creation, a success dialog displays your environment variables in `.env` format with a single copy button:
 
-- **Public Key** (`pk_...`) — identifies requests in URLs
-- **Secret Key** (`sk_...`) — signs URLs server-side
+```bash
+OPTSTUFF_BASE_URL="https://your-optstuff-deployment.com"
+OPTSTUFF_PROJECT_SLUG="your-project-slug"
+OPTSTUFF_PUBLIC_KEY="pk_abc123..."
+OPTSTUFF_SECRET_KEY="sk_your_secret_key_here"
+```
 
-> **Copy the secret key now.** It is only shown once.
+- **One-click copy** — copies the full block, ready to paste into `.env`
+- **Secret Key** (`sk_...`) — shown masked in the preview, but copied as plaintext
 
-## 3. Sign Your First URL
+> **Copy the secret key now.** It is only shown once. The dialog is locked during this step — you cannot close it accidentally.
 
-Use the standalone TypeScript example at `examples/optstuff-url-signer` ([view on GitHub](https://github.com/EricTsai83/optstuff/tree/HEAD/examples/optstuff-url-signer)):
+For key rotation and revocation, see [Key Management](/guides/key-management).
+
+## 3. Configure Image Sources
+
+Go to your project's **Settings → Domain Security → Image Sources** and add the domains you want to optimize images from (e.g., `https://images.unsplash.com`). Without at least one allowed source domain, all image requests will be rejected in production.
+
+See [Domain Whitelisting](/guides/domain-whitelisting) for details.
+
+## (Optional) Verify Your Setup with the CLI
+
+If you want to confirm your keys and configuration before integrating into your app, you can use the standalone CLI tool at [`examples/optstuff-url-signer`](https://github.com/EricTsai83/optstuff/tree/main/examples/optstuff-url-signer):
+
+Before running the example, make sure the Bun runtime is installed on your machine. This example does not require `bun install`; only the Bun runtime is needed to run `bun run sign:url`.
 
 ```bash
 git clone https://github.com/EricTsai83/optstuff.git
 cd optstuff/examples/optstuff-url-signer
-cp .env.example .env
-# Fill in OPTSTUFF_BASE_URL, OPTSTUFF_PROJECT_SLUG, OPTSTUFF_PUBLIC_KEY, OPTSTUFF_SECRET_KEY
+cp .env.example .env   # paste your keys here
 bun run sign:url
 ```
 
-Optionally, customize output settings:
-
-```bash
-bun run sign:url -- --width 800 --format avif
-```
-
-This prints a signed OptStuff URL to your terminal.
-If you want to understand how signing works internally (payload format, HMAC-SHA256, expiration), read [URL Signing](/guides/url-signing).
-
-## 4. Open the URL
-
-Paste the output URL in your browser. You should see the image transformed based on your options (default: 400px width + WebP).
+This prints a signed URL to your terminal. Paste it in a browser — if the image loads, your setup is working. For details on what the signing does, see [URL Signing](/guides/url-signing).
 
 ## Next Steps
 
-- [Project Setup](/getting-started/project-setup) — Learn how to manage teams, projects, and API keys
-- [Integration Guide](/getting-started/integration-guide) — Add OptStuff to your application ([TypeScript](/getting-started/integrate-typescript) · [Next.js](/getting-started/integrate-nextjs))
-- [URL Signing](/guides/url-signing) — Learn how HMAC payloads, signatures, and expiration are implemented
-- [How It Works](/introduction/how-it-works) — Understand architecture, validation order, and data flow
-- [Image Operations](/api-reference/image-operations) — Full list of supported transformations
+<FrameworkGrid>
+  <FrameworkCard
+    icon="nextjs"
+    title="Next.js"
+    description="Server Components, API Routes, and the next/image loader."
+    href="/getting-started/nextjs"
+  />
+</FrameworkGrid>
+
+OptStuff is a standard HTTP API — any server-side language that can compute HMAC-SHA256 can generate signed URLs. See [Code Examples](/guides/code-examples) for implementations in Python, Go, Ruby, and PHP.
