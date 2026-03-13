@@ -4,7 +4,9 @@ import "server-only";
 function requireEnv(name: string): string {
   const value = process.env[name];
   if (!value || value.includes("xxx") || value.includes("your-")) {
-    throw new Error(`Missing or placeholder env var: ${name}. Set it in .env`);
+    throw new Error(
+      `Missing or placeholder env var: ${name}. Set it in the environment or deployment configuration.`,
+    );
   }
   return value;
 }
