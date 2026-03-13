@@ -161,7 +161,17 @@ export function generateOptStuffUrl(
   params.set("key", OPTSTUFF_PUBLIC_KEY);
 
   let exp: number | undefined;
-  if (expiresIn !== undefined && Number.isFinite(expiresIn) && expiresIn > 0) {
+  if (expiresIn !== undefined) {
+    if (
+      typeof expiresIn !== "number" ||
+      !Number.isFinite(expiresIn) ||
+      expiresIn <= 0
+    ) {
+      throw new Error(
+        "Invalid expiresIn: must be a finite number greater than 0",
+      );
+    }
+
     exp = computeBucketedExpiration(expiresIn);
     params.set("exp", exp.toString());
   }
