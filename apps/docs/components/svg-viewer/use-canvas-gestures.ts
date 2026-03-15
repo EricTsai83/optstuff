@@ -11,23 +11,61 @@ import { MAX_ZOOM, MIN_ZOOM, ZOOM_STEP } from "./constants";
 import { roundZoom } from "./math";
 import type { Point, Size } from "./types";
 
+const DEFAULT_SIZE: Size = { width: 1, height: 1 };
+
+function resetSvgForMeasurement(svgEl: SVGSVGElement) {
+  svgEl.removeAttribute("width");
+  svgEl.removeAttribute("height");
+  svgEl.style.maxWidth = "none";
+  svgEl.style.width = "auto";
+  svgEl.style.height = "auto";
+}
+
+function fillSvgContainer(svgEl: SVGSVGElement) {
+  svgEl.style.width = "100%";
+  svgEl.style.height = "100%";
+  svgEl.style.maxWidth = "none";
+  svgEl.style.margin = "0";
+  svgEl.style.display = "block";
+}
+
+function getSvgSize(svgEl: SVGSVGElement): Size | null {
+  const viewBox = svgEl.viewBox?.baseVal;
+  let width = viewBox?.width && viewBox.width > 0 ? viewBox.width : 0;
+  let height = viewBox?.height && viewBox.height > 0 ? viewBox.height : 0;
+
+  if (!width || !height) {
+    const rect = svgEl.getBoundingClientRect();
+    width = rect.width || svgEl.scrollWidth;
+    height = rect.height || svgEl.scrollHeight;
+  }
+
+  return width && height ? { width, height } : null;
+}
+
+/**
+ * Measures the embedded SVG inside `contentRef` and provides zoom / pan
+ * controls that keep the diagram centered while zooming around the pointer
+ * or viewport center.
+ *
+ * @param viewportRef - Scrollable container element
+ * @param contentRef  - Element wrapping the SVG (used for measurement)
+ * @param onInteraction - Optional callback fired on the first user gesture
+ *                        (useful to skip auto-fit after manual zoom/pan)
+ */
 export function useCanvasGestures(
   viewportRef: RefObject<HTMLDivElement | null>,
   contentRef: RefObject<HTMLDivElement | null>,
   onInteraction?: () => void,
 ) {
   const [zoom, setZoom] = useState(1);
-  const [displayZoom, setDisplayZoom] = useState(100);
-  const [contentSize, setContentSize] = useState<Size>({ width: 1, height: 1 });
-  const [viewportSize, setViewportSize] = useState<Size>({
-    width: 1,
-    height: 1,
-  });
+  const [contentSize, setContentSize] = useState<Size>(DEFAULT_SIZE);
+  const [viewportSize, setViewportSize] = useState<Size>(DEFAULT_SIZE);
 
   const zoomRef = useRef(1);
   const initialZoomRef = useRef(1);
-  const contentSizeRef = useRef<Size>({ width: 1, height: 1 });
-  const viewportSizeRef = useRef<Size>({ width: 1, height: 1 });
+  const contentSizeRef = useRef<Size>(DEFAULT_SIZE);
+  const viewportSizeRef = useRef<Size>(DEFAULT_SIZE);
 
   const clampZoom = useCallback((value: number) => {
     const minZoom = Math.min(MIN_ZOOM, initialZoomRef.current);
@@ -46,20 +84,12 @@ export function useCanvasGestures(
     };
   }, []);
 
-  const syncDisplayZoom = useCallback((nextZoom: number) => {
-    const base = initialZoomRef.current || 1;
-    setDisplayZoom(Math.round((nextZoom / base) * 100));
+  const applyZoom = useCallback((nextZoom: number) => {
+    zoomRef.current = nextZoom;
+    setZoom(nextZoom);
   }, []);
 
-  const applyZoom = useCallback(
-    (nextZoom: number) => {
-      zoomRef.current = nextZoom;
-      setZoom(nextZoom);
-      syncDisplayZoom(nextZoom);
-    },
-    [syncDisplayZoom],
-  );
-
+  /** Measures the SVG's intrinsic size and scales to fit the viewport. */
   const measureAndFit = useCallback(() => {
     const viewport = viewportRef.current;
     const content = contentRef.current;
@@ -72,36 +102,19 @@ export function useCanvasGestures(
     const svgEl = content.querySelector("svg");
     if (!svgEl) return;
 
-    svgEl.removeAttribute("width");
-    svgEl.removeAttribute("height");
-    svgEl.style.maxWidth = "none";
-    svgEl.style.width = "auto";
-    svgEl.style.height = "auto";
+    resetSvgForMeasurement(svgEl);
+    const nextContentSize = getSvgSize(svgEl);
+    if (!nextContentSize) return;
 
-    const vb = svgEl.viewBox?.baseVal;
-    let width = vb && vb.width > 0 ? vb.width : 0;
-    let height = vb && vb.height > 0 ? vb.height : 0;
+    fillSvgContainer(svgEl);
 
-    if (!width || !height) {
-      const rect = svgEl.getBoundingClientRect();
-      width = rect.width || svgEl.scrollWidth;
-      height = rect.height || svgEl.scrollHeight;
-    }
-
-    if (!width || !height) return;
-
-    svgEl.style.width = "100%";
-    svgEl.style.height = "100%";
-    svgEl.style.maxWidth = "none";
-    svgEl.style.margin = "0";
-    svgEl.style.display = "block";
-
-    const nextContentSize = { width, height };
     const nextViewportSize = { width: viewportWidth, height: viewportHeight };
-    const fitZoom = Math.min(
-      MAX_ZOOM,
-      viewportWidth / width,
-      viewportHeight / height,
+    const fitZoom = roundZoom(
+      Math.min(
+        MAX_ZOOM,
+        viewportWidth / nextContentSize.width,
+        viewportHeight / nextContentSize.height,
+      ),
     );
 
     contentSizeRef.current = nextContentSize;
@@ -116,6 +129,7 @@ export function useCanvasGestures(
     viewport.scrollTop = 0;
   }, [applyZoom, contentRef, viewportRef]);
 
+  /** Zooms to `nextRaw` level keeping `focal` (viewport-local) stationary. */
   const zoomAroundPoint = useCallback(
     (nextRaw: number, focal?: Point) => {
       const viewport = viewportRef.current;
@@ -157,6 +171,7 @@ export function useCanvasGestures(
     [applyZoom, clampZoom, getCanvasSize, viewportRef],
   );
 
+  /** Resets zoom to the initial fit-to-viewport level and scrolls to origin. */
   const resetView = useCallback(() => {
     const viewport = viewportRef.current;
     applyZoom(initialZoomRef.current);
@@ -182,7 +197,8 @@ export function useCanvasGestures(
         Math.abs(event.deltaY) >= Math.abs(event.deltaX)
           ? event.deltaY
           : event.deltaX;
-      const factor = dominant < 0 ? 1 + ZOOM_STEP / 2 : 1 / (1 + ZOOM_STEP / 2);
+      const factor =
+        dominant < 0 ? 1 + ZOOM_STEP / 2 : 1 / (1 + ZOOM_STEP / 2);
       const rect = viewport.getBoundingClientRect();
 
       zoomAroundPoint(zoomRef.current * factor, {
@@ -196,6 +212,8 @@ export function useCanvasGestures(
       viewport.removeEventListener("wheel", onWheel);
     };
   }, [onInteraction, viewportRef, zoomAroundPoint]);
+
+  const displayZoom = Math.round((zoom / (initialZoomRef.current || 1)) * 100);
 
   return {
     zoom,
