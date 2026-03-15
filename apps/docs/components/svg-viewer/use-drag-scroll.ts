@@ -17,6 +17,9 @@ import type { ScrollDragState } from "./types";
  * Handles both mouse (via global `mousemove`/`mouseup`) and touch/pointer
  * (via React Pointer Events with pointer capture) input.
  *
+ * Multi-touch is detected automatically: when a second finger touches down
+ * the drag is cancelled so pinch-to-zoom (handled separately) can take over.
+ *
  * @returns `isDragging` for cursor styling and `handlers` to spread onto the
  *          scrollable container element.
  */
@@ -25,6 +28,7 @@ export function useDragScroll(
 ) {
   const [isDragging, setIsDragging] = useState(false);
   const dragRef = useRef<ScrollDragState>(null);
+  const activeTouchCountRef = useRef(0);
 
   const updateScroll = useCallback(
     (clientX: number, clientY: number) => {
@@ -102,6 +106,15 @@ export function useDragScroll(
 
   const onPointerDown = (e: ReactPointerEvent<HTMLDivElement>) => {
     if (e.pointerType === "mouse") return;
+
+    activeTouchCountRef.current++;
+
+    if (activeTouchCountRef.current > 1) {
+      dragRef.current = null;
+      setIsDragging(false);
+      return;
+    }
+
     const container = containerRef.current;
     if (!container) return;
 
@@ -111,6 +124,7 @@ export function useDragScroll(
   };
 
   const onPointerMove = (e: ReactPointerEvent<HTMLDivElement>) => {
+    if (e.pointerType !== "mouse" && activeTouchCountRef.current > 1) return;
     if (!dragRef.current) return;
 
     e.preventDefault();
@@ -118,6 +132,12 @@ export function useDragScroll(
   };
 
   const onPointerEnd = (e: ReactPointerEvent<HTMLDivElement>) => {
+    if (e.pointerType !== "mouse") {
+      activeTouchCountRef.current = Math.max(
+        0,
+        activeTouchCountRef.current - 1,
+      );
+    }
     stopDrag(e.pointerId);
   };
 

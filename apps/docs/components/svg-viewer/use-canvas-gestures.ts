@@ -43,13 +43,24 @@ function getSvgSize(svgEl: SVGSVGElement): Size | null {
   return width && height ? { width, height } : null;
 }
 
+function touchDistance(a: Touch, b: Touch) {
+  return Math.hypot(b.clientX - a.clientX, b.clientY - a.clientY);
+}
+
+function touchMidpoint(a: Touch, b: Touch): Point {
+  return { x: (a.clientX + b.clientX) / 2, y: (a.clientY + b.clientY) / 2 };
+}
+
 /**
  * Measures the embedded SVG inside `contentRef` and provides zoom / pan
  * controls that keep the diagram centered while zooming around the pointer
  * or viewport center.
  *
- * @param viewportRef - Scrollable container element
- * @param contentRef  - Element wrapping the SVG (used for measurement)
+ * Supports both desktop (Cmd/Ctrl + scroll-wheel) and mobile (pinch-to-zoom)
+ * input.
+ *
+ * @param viewportRef   - Scrollable container element
+ * @param contentRef    - Element wrapping the SVG (used for measurement)
  * @param onInteraction - Optional callback fired on the first user gesture
  *                        (useful to skip auto-fit after manual zoom/pan)
  */
@@ -183,6 +194,7 @@ export function useCanvasGestures(
     });
   }, [applyZoom, viewportRef]);
 
+  // Desktop: Cmd/Ctrl + scroll-wheel zoom
   useEffect(() => {
     const viewport = viewportRef.current;
     if (!viewport) return;
@@ -210,6 +222,56 @@ export function useCanvasGestures(
     viewport.addEventListener("wheel", onWheel, { passive: false });
     return () => {
       viewport.removeEventListener("wheel", onWheel);
+    };
+  }, [onInteraction, viewportRef, zoomAroundPoint]);
+
+  // Mobile: pinch-to-zoom via touch events
+  useEffect(() => {
+    const viewport = viewportRef.current;
+    if (!viewport) return;
+
+    let initialDistance = 0;
+    let initialPinchZoom = 1;
+
+    const onTouchStart = (e: TouchEvent) => {
+      if (e.touches.length !== 2) return;
+      e.preventDefault();
+      onInteraction?.();
+      initialDistance = touchDistance(e.touches[0]!, e.touches[1]!);
+      initialPinchZoom = zoomRef.current;
+    };
+
+    const onTouchMove = (e: TouchEvent) => {
+      if (e.touches.length !== 2 || !initialDistance) return;
+      e.preventDefault();
+
+      const currentDistance = touchDistance(e.touches[0]!, e.touches[1]!);
+      const scale = currentDistance / initialDistance;
+      const mid = touchMidpoint(e.touches[0]!, e.touches[1]!);
+      const rect = viewport.getBoundingClientRect();
+
+      zoomAroundPoint(initialPinchZoom * scale, {
+        x: mid.x - rect.left,
+        y: mid.y - rect.top,
+      });
+    };
+
+    const onTouchEnd = (e: TouchEvent) => {
+      if (e.touches.length < 2) {
+        initialDistance = 0;
+      }
+    };
+
+    viewport.addEventListener("touchstart", onTouchStart, { passive: false });
+    viewport.addEventListener("touchmove", onTouchMove, { passive: false });
+    viewport.addEventListener("touchend", onTouchEnd);
+    viewport.addEventListener("touchcancel", onTouchEnd);
+
+    return () => {
+      viewport.removeEventListener("touchstart", onTouchStart);
+      viewport.removeEventListener("touchmove", onTouchMove);
+      viewport.removeEventListener("touchend", onTouchEnd);
+      viewport.removeEventListener("touchcancel", onTouchEnd);
     };
   }, [onInteraction, viewportRef, zoomAroundPoint]);
 

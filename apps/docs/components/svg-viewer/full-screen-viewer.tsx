@@ -13,9 +13,9 @@ import type { BindFunctions } from "./types";
 import { useCanvasGestures } from "./use-canvas-gestures";
 import { useDragScroll } from "./use-drag-scroll";
 
-const ACTION_BUTTON_CLASS =
-  "border-fd-border hover:bg-fd-muted cursor-pointer rounded-lg border px-3 py-2 transition";
-const ZOOM_BUTTON_CLASS = `${ACTION_BUTTON_CLASS} text-lg`;
+const ACTION_BUTTON =
+  "border-fd-border hover:bg-fd-muted active:bg-fd-muted active:scale-95 cursor-pointer rounded-lg border text-sm transition";
+const ZOOM_BUTTON = `${ACTION_BUTTON} flex size-10 items-center justify-center text-base sm:size-auto sm:px-3 sm:py-2 sm:text-lg`;
 
 type FullScreenViewerProps = {
   readonly svgHtml: string;
@@ -37,7 +37,7 @@ function ToolbarButton({
   label,
   onClick,
   ariaLabel,
-  className = ACTION_BUTTON_CLASS,
+  className = `${ACTION_BUTTON} px-3 py-2.5 sm:py-2`,
   autoFocusRef,
 }: ToolbarButtonProps) {
   return (
@@ -135,16 +135,17 @@ function useAutoFitContent(
 
 /**
  * Full-screen SVG viewer with drag-to-pan, Cmd/Ctrl + scroll zoom,
- * keyboard shortcuts (Escape to close), and +/- toolbar buttons.
+ * pinch-to-zoom on touch devices, keyboard shortcuts (Escape to close),
+ * and +/- toolbar buttons.
  *
  * @param title       - Modal heading (defaults to "Diagram")
- * @param description - Subtitle hint (defaults to zoom/pan guidance)
+ * @param description - Subtitle hint (defaults to universal zoom/pan guidance)
  */
 export function FullScreenViewer({
   svgHtml,
   onClose,
   title = "Diagram",
-  description = "Drag to pan. Scroll to move. Cmd/Ctrl + scroll or +/- to zoom.",
+  description = "Drag to pan · Pinch or use +/- to zoom",
   bindFunctions,
 }: FullScreenViewerProps) {
   const modalId = useId();
@@ -188,33 +189,40 @@ export function FullScreenViewer({
 
   return (
     <div
-      className="z-100 fixed inset-0 bg-black/70 p-2 backdrop-blur-sm sm:p-4"
+      className="z-100 fixed inset-0 bg-black/70 backdrop-blur-sm sm:p-4"
       role="dialog"
       aria-modal="true"
       aria-labelledby={modalId}
       onClick={onClose}
     >
       <div
-        className="border-fd-border bg-fd-background mx-auto flex h-full w-full max-w-7xl flex-col overflow-hidden rounded-2xl border shadow-2xl"
+        className="bg-fd-background mx-auto flex h-full w-full max-w-7xl flex-col overflow-hidden shadow-2xl sm:rounded-2xl sm:border sm:border-fd-border"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="border-fd-border flex flex-col gap-3 border-b px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <p id={modalId} className="text-lg font-medium">
+        {/* Toolbar */}
+        <div className="border-fd-border flex flex-col gap-2 border-b px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3 sm:px-4 sm:py-3">
+          <div className="min-w-0">
+            <p
+              id={modalId}
+              className="truncate text-base font-medium sm:text-lg"
+            >
               {title}
             </p>
-            <p className="text-fd-muted-foreground text-md">{description}</p>
+            <p className="text-fd-muted-foreground text-xs sm:text-sm">
+              {description}
+            </p>
           </div>
-          <div className="flex flex-wrap items-center gap-2">
+
+          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
             <ToolbarButton
               label="-"
               onClick={() =>
                 zoomAroundPoint(zoomRef.current / (1 + ZOOM_STEP))
               }
-              className={ZOOM_BUTTON_CLASS}
+              className={ZOOM_BUTTON}
               ariaLabel="Zoom out diagram"
             />
-            <span className="text-fd-muted-foreground w-16 text-center tabular-nums">
+            <span className="text-fd-muted-foreground w-12 text-center text-xs tabular-nums sm:w-16 sm:text-sm">
               {displayZoom}%
             </span>
             <ToolbarButton
@@ -222,7 +230,7 @@ export function FullScreenViewer({
               onClick={() =>
                 zoomAroundPoint(zoomRef.current * (1 + ZOOM_STEP))
               }
-              className={ZOOM_BUTTON_CLASS}
+              className={ZOOM_BUTTON}
               ariaLabel="Zoom in diagram"
             />
             <ToolbarButton label="Reset" onClick={resetView} />
@@ -233,6 +241,8 @@ export function FullScreenViewer({
             />
           </div>
         </div>
+
+        {/* Zoomable viewport */}
         <div
           className={`relative flex-1 touch-none overflow-auto overscroll-contain [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden ${
             isDragging ? "cursor-grabbing" : "cursor-grab"
