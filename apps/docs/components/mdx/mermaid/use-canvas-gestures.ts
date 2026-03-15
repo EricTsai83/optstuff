@@ -5,61 +5,72 @@ import {
   useEffect,
   useRef,
   useState,
-  type MouseEvent as ReactMouseEvent,
-  type PointerEvent as ReactPointerEvent,
   type RefObject,
-  type WheelEvent,
 } from "react";
-import { MAX_ZOOM, MIN_ZOOM, ORIGIN, ZOOM_STEP } from "./constants";
-import { dist, mid, roundZoom } from "./math";
-import type { GestureState, MouseDragState, Point, Size } from "./types";
+import { MAX_ZOOM, MIN_ZOOM, ZOOM_STEP } from "./constants";
+import { roundZoom } from "./math";
+import type { Point, Size } from "./types";
 
 export function useCanvasGestures(
   viewportRef: RefObject<HTMLDivElement | null>,
   contentRef: RefObject<HTMLDivElement | null>,
+  onInteraction?: () => void,
 ) {
   const [zoom, setZoom] = useState(1);
-  const [pan, setPan] = useState<Point>(ORIGIN);
-  const [isDragging, setIsDragging] = useState(false);
+  const [displayZoom, setDisplayZoom] = useState(100);
+  const [contentSize, setContentSize] = useState<Size>({ width: 1, height: 1 });
+  const [viewportSize, setViewportSize] = useState<Size>({
+    width: 1,
+    height: 1,
+  });
 
   const zoomRef = useRef(1);
-  const panRef = useRef<Point>(ORIGIN);
-  const fitZoomRef = useRef(1);
+  const initialZoomRef = useRef(1);
   const contentSizeRef = useRef<Size>({ width: 1, height: 1 });
+  const viewportSizeRef = useRef<Size>({ width: 1, height: 1 });
 
-  const pointersRef = useRef(new Map<number, Point>());
-  const gestureRef = useRef<GestureState>(null);
-  const mouseDragRef = useRef<MouseDragState>(null);
-
-  const clampZoom = useCallback((v: number) => {
-    // Keep zoom controls compatible with very large diagrams where fit can be
-    // below MIN_ZOOM.
-    const minZoom = Math.min(MIN_ZOOM, fitZoomRef.current);
-    return Math.min(MAX_ZOOM, Math.max(minZoom, roundZoom(v)));
+  const clampZoom = useCallback((value: number) => {
+    const minZoom = Math.min(MIN_ZOOM, initialZoomRef.current);
+    return Math.min(MAX_ZOOM, Math.max(minZoom, roundZoom(value)));
   }, []);
 
-  const applyView = useCallback((z: number, p: Point) => {
-    zoomRef.current = z;
-    panRef.current = p;
-    setZoom(z);
-    setPan(p);
+  const getCanvasSize = useCallback((scale: number) => {
+    const scaledWidth = contentSizeRef.current.width * scale;
+    const scaledHeight = contentSizeRef.current.height * scale;
+
+    return {
+      width: Math.max(viewportSizeRef.current.width, scaledWidth),
+      height: Math.max(viewportSizeRef.current.height, scaledHeight),
+      scaledWidth,
+      scaledHeight,
+    };
   }, []);
+
+  const syncDisplayZoom = useCallback((nextZoom: number) => {
+    const base = initialZoomRef.current || 1;
+    setDisplayZoom(Math.round((nextZoom / base) * 100));
+  }, []);
+
+  const applyZoom = useCallback(
+    (nextZoom: number) => {
+      zoomRef.current = nextZoom;
+      setZoom(nextZoom);
+      syncDisplayZoom(nextZoom);
+    },
+    [syncDisplayZoom],
+  );
 
   const measureAndFit = useCallback(() => {
     const viewport = viewportRef.current;
     const content = contentRef.current;
     if (!viewport || !content) return;
 
-    const vw = viewport.clientWidth;
-    const vh = viewport.clientHeight;
-    if (!vw || !vh) return;
+    const viewportWidth = viewport.clientWidth;
+    const viewportHeight = viewport.clientHeight;
+    if (!viewportWidth || !viewportHeight) return;
 
     const svgEl = content.querySelector("svg");
     if (!svgEl) return;
-
-    const transformEl = content.parentElement;
-    const prevTransform = transformEl?.style.transform ?? "";
-    if (transformEl) transformEl.style.transform = "none";
 
     svgEl.removeAttribute("width");
     svgEl.removeAttribute("height");
@@ -68,260 +79,132 @@ export function useCanvasGestures(
     svgEl.style.height = "auto";
 
     const vb = svgEl.viewBox?.baseVal;
-    let cw = vb && vb.width > 0 ? vb.width : 0;
-    let ch = vb && vb.height > 0 ? vb.height : 0;
+    let width = vb && vb.width > 0 ? vb.width : 0;
+    let height = vb && vb.height > 0 ? vb.height : 0;
 
-    if (!cw || !ch) {
+    if (!width || !height) {
       const rect = svgEl.getBoundingClientRect();
-      cw = rect.width || svgEl.scrollWidth;
-      ch = rect.height || svgEl.scrollHeight;
+      width = rect.width || svgEl.scrollWidth;
+      height = rect.height || svgEl.scrollHeight;
     }
 
-    if (transformEl) transformEl.style.transform = prevTransform;
+    if (!width || !height) return;
 
-    if (!cw || !ch) return;
-
-    svgEl.setAttribute("width", String(cw));
-    svgEl.setAttribute("height", String(ch));
-    svgEl.style.width = `${cw}px`;
-    svgEl.style.height = `${ch}px`;
+    svgEl.style.width = "100%";
+    svgEl.style.height = "100%";
     svgEl.style.maxWidth = "none";
     svgEl.style.margin = "0";
     svgEl.style.display = "block";
 
-    contentSizeRef.current = { width: cw, height: ch };
+    const nextContentSize = { width, height };
+    const nextViewportSize = { width: viewportWidth, height: viewportHeight };
+    const fitZoom = Math.min(
+      MAX_ZOOM,
+      viewportWidth / width,
+      viewportHeight / height,
+    );
 
-    const fitRaw = Math.min(vw / cw, vh / ch);
-    const fit = Math.min(MAX_ZOOM, roundZoom(fitRaw));
-    fitZoomRef.current = fit;
+    contentSizeRef.current = nextContentSize;
+    viewportSizeRef.current = nextViewportSize;
+    initialZoomRef.current = fitZoom;
 
-    applyView(fit, ORIGIN);
-  }, [applyView, viewportRef, contentRef]);
+    setContentSize(nextContentSize);
+    setViewportSize(nextViewportSize);
+    applyZoom(fitZoom);
 
-  const resetView = useCallback(() => {
-    measureAndFit();
-  }, [measureAndFit]);
+    viewport.scrollLeft = 0;
+    viewport.scrollTop = 0;
+  }, [applyZoom, contentRef, viewportRef]);
 
   const zoomAroundPoint = useCallback(
     (nextRaw: number, focal?: Point) => {
       const viewport = viewportRef.current;
       if (!viewport) return;
 
-      const next = clampZoom(nextRaw);
-      const center = {
+      const nextZoom = clampZoom(nextRaw);
+      const anchor = focal ?? {
         x: viewport.clientWidth / 2,
         y: viewport.clientHeight / 2,
       };
-      const anchor = focal ?? center;
-      const local = {
-        x: (anchor.x - center.x - panRef.current.x) / zoomRef.current,
-        y: (anchor.y - center.y - panRef.current.y) / zoomRef.current,
-      };
 
-      applyView(next, {
-        x: anchor.x - center.x - local.x * next,
-        y: anchor.y - center.y - local.y * next,
+      const currentCanvas = getCanvasSize(zoomRef.current);
+      const nextCanvas = getCanvasSize(nextZoom);
+      const currentOffsetX =
+        (currentCanvas.width - currentCanvas.scaledWidth) / 2;
+      const currentOffsetY =
+        (currentCanvas.height - currentCanvas.scaledHeight) / 2;
+      const nextOffsetX = (nextCanvas.width - nextCanvas.scaledWidth) / 2;
+      const nextOffsetY = (nextCanvas.height - nextCanvas.scaledHeight) / 2;
+
+      const contentPointX =
+        (viewport.scrollLeft + anchor.x - currentOffsetX) / zoomRef.current;
+      const contentPointY =
+        (viewport.scrollTop + anchor.y - currentOffsetY) / zoomRef.current;
+
+      applyZoom(nextZoom);
+
+      requestAnimationFrame(() => {
+        viewport.scrollLeft = Math.max(
+          0,
+          contentPointX * nextZoom + nextOffsetX - anchor.x,
+        );
+        viewport.scrollTop = Math.max(
+          0,
+          contentPointY * nextZoom + nextOffsetY - anchor.y,
+        );
       });
     },
-    [applyView, clampZoom, viewportRef],
+    [applyZoom, clampZoom, getCanvasSize, viewportRef],
   );
 
-  const displayZoom = Math.round(
-    (zoomRef.current / fitZoomRef.current) * 100,
-  );
+  const resetView = useCallback(() => {
+    const viewport = viewportRef.current;
+    applyZoom(initialZoomRef.current);
 
-  // --- window-level mouse drag for desktop ---
+    if (!viewport) return;
+    requestAnimationFrame(() => {
+      viewport.scrollLeft = 0;
+      viewport.scrollTop = 0;
+    });
+  }, [applyZoom, viewportRef]);
 
   useEffect(() => {
-    const onMove = (e: MouseEvent) => {
-      const md = mouseDragRef.current;
-      if (!md) return;
-      e.preventDefault();
-      applyView(zoomRef.current, {
-        x: md.startPan.x + e.clientX - md.startPoint.x,
-        y: md.startPan.y + e.clientY - md.startPoint.y,
-      });
-    };
-
-    const onUp = () => {
-      if (mouseDragRef.current) {
-        mouseDragRef.current = null;
-        setIsDragging(false);
-      }
-    };
-
-    window.addEventListener("mousemove", onMove);
-    window.addEventListener("mouseup", onUp);
-    return () => {
-      window.removeEventListener("mousemove", onMove);
-      window.removeEventListener("mouseup", onUp);
-    };
-  }, [applyView]);
-
-  // --- helpers ---
-
-  const getViewportPoint = (cx: number, cy: number) => {
-    const vp = viewportRef.current;
-    if (!vp) return null;
-    const r = vp.getBoundingClientRect();
-    return { x: cx - r.left, y: cy - r.top } satisfies Point;
-  };
-
-  const startPan = (point: Point) => {
-    gestureRef.current = {
-      type: "pan",
-      startPoint: point,
-      startPan: panRef.current,
-    };
-  };
-
-  const startPinch = () => {
     const viewport = viewportRef.current;
     if (!viewport) return;
 
-    const [a, b] = Array.from(pointersRef.current.values());
-    if (!a || !b) return;
-    const m = mid(a, b);
-    const center = {
-      x: viewport.clientWidth / 2,
-      y: viewport.clientHeight / 2,
-    };
-    gestureRef.current = {
-      type: "pinch",
-      startDistance: Math.max(dist(a, b), 1),
-      startMidpoint: m,
-      startZoom: zoomRef.current,
-      contentPoint: {
-        x: (m.x - center.x - panRef.current.x) / zoomRef.current,
-        y: (m.y - center.y - panRef.current.y) / zoomRef.current,
-      },
-    };
-  };
+    const onWheel = (event: WheelEvent) => {
+      if (!(event.metaKey || event.ctrlKey)) return;
 
-  // --- event handlers (bind to viewport) ---
+      onInteraction?.();
+      event.preventDefault();
 
-  const onPointerDown = (e: ReactPointerEvent<HTMLDivElement>) => {
-    if (e.pointerType === "mouse") return;
-    const vp = getViewportPoint(e.clientX, e.clientY);
-    const el = viewportRef.current;
-    if (!vp || !el) return;
+      const dominant =
+        Math.abs(event.deltaY) >= Math.abs(event.deltaX)
+          ? event.deltaY
+          : event.deltaX;
+      const factor = dominant < 0 ? 1 + ZOOM_STEP / 2 : 1 / (1 + ZOOM_STEP / 2);
+      const rect = viewport.getBoundingClientRect();
 
-    e.preventDefault();
-    el.setPointerCapture(e.pointerId);
-    pointersRef.current.set(e.pointerId, vp);
-
-    if (pointersRef.current.size === 1) startPan(vp);
-    else if (pointersRef.current.size === 2) startPinch();
-  };
-
-  const onPointerMove = (e: ReactPointerEvent<HTMLDivElement>) => {
-    if (!pointersRef.current.has(e.pointerId)) return;
-    const vp = getViewportPoint(e.clientX, e.clientY);
-    if (!vp) return;
-
-    e.preventDefault();
-    pointersRef.current.set(e.pointerId, vp);
-    const g = gestureRef.current;
-
-    if (pointersRef.current.size === 1 && g?.type === "pan") {
-      applyView(zoomRef.current, {
-        x: g.startPan.x + vp.x - g.startPoint.x,
-        y: g.startPan.y + vp.y - g.startPoint.y,
+      zoomAroundPoint(zoomRef.current * factor, {
+        x: event.clientX - rect.left,
+        y: event.clientY - rect.top,
       });
-      return;
-    }
-
-    if (pointersRef.current.size >= 2) {
-      if (g?.type !== "pinch") startPinch();
-      const ng = gestureRef.current;
-      const [a, b] = Array.from(pointersRef.current.values());
-      if (ng?.type !== "pinch" || !a || !b) return;
-
-      const m = mid(a, b);
-      const viewport = viewportRef.current;
-      if (!viewport) return;
-      const center = {
-        x: viewport.clientWidth / 2,
-        y: viewport.clientHeight / 2,
-      };
-      const nz = clampZoom(
-        ng.startZoom * (Math.max(dist(a, b), 1) / ng.startDistance),
-      );
-      applyView(nz, {
-        x: m.x - center.x - ng.contentPoint.x * nz,
-        y: m.y - center.y - ng.contentPoint.y * nz,
-      });
-    }
-  };
-
-  const onPointerEnd = (e: ReactPointerEvent<HTMLDivElement>) => {
-    const el = viewportRef.current;
-    if (el?.hasPointerCapture(e.pointerId)) {
-      el.releasePointerCapture(e.pointerId);
-    }
-    pointersRef.current.delete(e.pointerId);
-
-    if (pointersRef.current.size >= 2) {
-      startPinch();
-    } else {
-      const remain = Array.from(pointersRef.current.values())[0];
-      if (remain) startPan(remain);
-      else gestureRef.current = null;
-    }
-  };
-
-  const onMouseDown = (e: ReactMouseEvent<HTMLDivElement>) => {
-    if (e.button !== 0) return;
-    e.preventDefault();
-    mouseDragRef.current = {
-      startPoint: { x: e.clientX, y: e.clientY },
-      startPan: panRef.current,
     };
-    setIsDragging(true);
-  };
 
-  const onWheel = (e: WheelEvent<HTMLDivElement>) => {
-    if (e.metaKey || e.ctrlKey) {
-      e.preventDefault();
-      const d =
-        Math.abs(e.deltaY) >= Math.abs(e.deltaX) ? e.deltaY : e.deltaX;
-      const step = d < 0 ? ZOOM_STEP : -ZOOM_STEP;
-      const fp = getViewportPoint(e.clientX, e.clientY);
-      zoomAroundPoint(zoomRef.current + step, fp ?? undefined);
-      return;
-    }
-
-    e.preventDefault();
-    applyView(zoomRef.current, {
-      x: panRef.current.x - e.deltaX,
-      y: panRef.current.y - e.deltaY,
-    });
-  };
-
-  const cleanup = useCallback(() => {
-    pointersRef.current.clear();
-    gestureRef.current = null;
-    mouseDragRef.current = null;
-    setIsDragging(false);
-  }, []);
+    viewport.addEventListener("wheel", onWheel, { passive: false });
+    return () => {
+      viewport.removeEventListener("wheel", onWheel);
+    };
+  }, [onInteraction, viewportRef, zoomAroundPoint]);
 
   return {
     zoom,
-    pan,
-    isDragging,
     displayZoom,
+    contentSize,
+    viewportSize,
     measureAndFit,
     resetView,
     zoomAroundPoint,
     zoomRef,
-    cleanup,
-    handlers: {
-      onWheel,
-      onMouseDownCapture: onMouseDown,
-      onPointerDownCapture: onPointerDown,
-      onPointerMoveCapture: onPointerMove,
-      onPointerUpCapture: onPointerEnd,
-      onPointerCancelCapture: onPointerEnd,
-    },
   } as const;
 }

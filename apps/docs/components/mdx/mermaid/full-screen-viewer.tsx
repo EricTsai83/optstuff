@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useId, useLayoutEffect, useRef } from "react";
+import { useCallback, useEffect, useId, useLayoutEffect, useRef } from "react";
 import { ZOOM_STEP } from "./constants";
 import { useCanvasGestures } from "./use-canvas-gestures";
+import { useDragScroll } from "./use-drag-scroll";
 
 type FullScreenViewerProps = {
   readonly svgHtml: string;
@@ -19,19 +20,26 @@ export function FullScreenViewer({
   const closeRef = useRef<HTMLButtonElement>(null);
   const viewportRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
+  const hasInteractedRef = useRef(false);
+
+  const markInteracted = useCallback(() => {
+    hasInteractedRef.current = true;
+  }, []);
 
   const {
     zoom,
-    pan,
-    isDragging,
     displayZoom,
+    contentSize,
+    viewportSize,
     measureAndFit,
     resetView,
     zoomAroundPoint,
     zoomRef,
-    cleanup,
-    handlers,
-  } = useCanvasGestures(viewportRef, contentRef);
+  } = useCanvasGestures(viewportRef, contentRef, markInteracted);
+  const { isDragging, handlers } = useDragScroll(viewportRef);
+
+  const canvasWidth = Math.max(viewportSize.width, contentSize.width * zoom);
+  const canvasHeight = Math.max(viewportSize.height, contentSize.height * zoom);
 
   useLayoutEffect(() => {
     const prevOverflow = document.body.style.overflow;
@@ -42,11 +50,35 @@ export function FullScreenViewer({
   }, []);
 
   useLayoutEffect(() => {
+    hasInteractedRef.current = false;
     measureAndFit();
-    window.addEventListener("resize", measureAndFit);
+    const safeMeasureAndFit = () => {
+      if (!hasInteractedRef.current) {
+        measureAndFit();
+      }
+    };
+
+    const raf1 = window.requestAnimationFrame(safeMeasureAndFit);
+    const raf2 = window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(safeMeasureAndFit);
+    });
+
+    let cancelled = false;
+    if ("fonts" in document) {
+      void document.fonts.ready.then(() => {
+        if (!cancelled && !hasInteractedRef.current) {
+          measureAndFit();
+        }
+      });
+    }
+
+    window.addEventListener("resize", safeMeasureAndFit);
 
     return () => {
-      window.removeEventListener("resize", measureAndFit);
+      cancelled = true;
+      window.cancelAnimationFrame(raf1);
+      window.cancelAnimationFrame(raf2);
+      window.removeEventListener("resize", safeMeasureAndFit);
     };
   }, [svgHtml, measureAndFit]);
 
@@ -54,14 +86,25 @@ export function FullScreenViewer({
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
     };
+
+    const onWheelCapture = (e: WheelEvent) => {
+      // Prevent browser/page zoom while modal is open; diagram zoom is handled
+      // inside the viewport with a dedicated wheel listener.
+      if (e.metaKey || e.ctrlKey) e.preventDefault();
+    };
+
     window.addEventListener("keydown", onKeyDown);
+    window.addEventListener("wheel", onWheelCapture, {
+      passive: false,
+      capture: true,
+    });
     closeRef.current?.focus();
 
     return () => {
       window.removeEventListener("keydown", onKeyDown);
-      cleanup();
+      window.removeEventListener("wheel", onWheelCapture, true);
     };
-  }, [onClose, cleanup]);
+  }, [onClose]);
 
   return (
     <div
@@ -81,13 +124,13 @@ export function FullScreenViewer({
               Mermaid Diagram
             </p>
             <p className="text-fd-muted-foreground text-md">
-              Drag to pan. Scroll to move. Cmd/Ctrl + scroll to zoom.
+              Drag to pan. Scroll to move. Cmd/Ctrl + scroll or +/- to zoom.
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
-              onClick={() => zoomAroundPoint(zoomRef.current - ZOOM_STEP)}
+              onClick={() => zoomAroundPoint(zoomRef.current / (1 + ZOOM_STEP))}
               className="border-fd-border hover:bg-fd-muted cursor-pointer rounded-lg border px-3 py-2 text-lg transition"
               aria-label="Zoom out diagram"
             >
@@ -98,7 +141,7 @@ export function FullScreenViewer({
             </span>
             <button
               type="button"
-              onClick={() => zoomAroundPoint(zoomRef.current + ZOOM_STEP)}
+              onClick={() => zoomAroundPoint(zoomRef.current * (1 + ZOOM_STEP))}
               className="border-fd-border hover:bg-fd-muted cursor-pointer rounded-lg border px-3 py-2 text-lg transition"
               aria-label="Zoom in diagram"
             >
@@ -122,24 +165,34 @@ export function FullScreenViewer({
           </div>
         </div>
         <div
-          className={`relative flex-1 touch-none overflow-hidden ${
+          className={`relative flex-1 touch-none overflow-auto overscroll-contain [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden ${
             isDragging ? "cursor-grabbing" : "cursor-grab"
           }`}
           ref={viewportRef}
           {...handlers}
         >
-          <div className="relative h-full w-full" onDoubleClick={resetView}>
+          <div
+            className="relative min-h-full min-w-full"
+            onDoubleClick={resetView}
+          >
             <div
-              className="absolute inset-0 flex items-center justify-center"
+              className="flex items-center justify-center"
+              style={{
+                width: `${canvasWidth}px`,
+                height: `${canvasHeight}px`,
+              }}
             >
               <div
-                className="origin-center"
+                className="relative shrink-0 select-none"
                 style={{
-                  transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
+                  width: `${contentSize.width}px`,
+                  height: `${contentSize.height}px`,
+                  transform: `scale(${zoom})`,
+                  transformOrigin: "center center",
                 }}
               >
                 <div
-                  className="w-max select-none"
+                  className="h-full w-full"
                   onDragStart={(e) => e.preventDefault()}
                   ref={(el) => {
                     contentRef.current = el;
