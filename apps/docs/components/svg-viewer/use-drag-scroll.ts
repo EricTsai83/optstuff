@@ -23,9 +23,7 @@ import type { ScrollDragState } from "./types";
  * @returns `isDragging` for cursor styling and `handlers` to spread onto the
  *          scrollable container element.
  */
-export function useDragScroll(
-  containerRef: RefObject<HTMLDivElement | null>,
-) {
+export function useDragScroll(containerRef: RefObject<HTMLDivElement | null>) {
   const [isDragging, setIsDragging] = useState(false);
   const dragRef = useRef<ScrollDragState>(null);
   const activeTouchCountRef = useRef(0);
@@ -62,10 +60,7 @@ export function useDragScroll(
   const stopDrag = useCallback(
     (pointerId?: number) => {
       const container = containerRef.current;
-      if (
-        pointerId !== undefined &&
-        container?.hasPointerCapture(pointerId)
-      ) {
+      if (pointerId !== undefined && container?.hasPointerCapture(pointerId)) {
         container.releasePointerCapture(pointerId);
       }
 
@@ -92,6 +87,9 @@ export function useDragScroll(
     window.addEventListener("mousemove", onMove);
     window.addEventListener("mouseup", onUp);
     return () => {
+      stopDrag();
+      dragRef.current = null;
+      activeTouchCountRef.current = 0;
       window.removeEventListener("mousemove", onMove);
       window.removeEventListener("mouseup", onUp);
     };

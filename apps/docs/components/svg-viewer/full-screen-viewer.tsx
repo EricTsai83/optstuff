@@ -88,7 +88,9 @@ function useViewerShortcuts(
 
     return () => {
       window.removeEventListener("keydown", onKeyDown);
-      window.removeEventListener("wheel", onWheelCapture, true);
+      window.removeEventListener("wheel", onWheelCapture, {
+        capture: true,
+      });
     };
   }, [closeRef, onClose]);
 }
@@ -196,7 +198,7 @@ export function FullScreenViewer({
       onClick={onClose}
     >
       <div
-        className="bg-fd-background mx-auto flex h-full w-full max-w-7xl flex-col overflow-hidden shadow-2xl sm:rounded-2xl sm:border sm:border-fd-border"
+        className="bg-fd-background sm:border-fd-border mx-auto flex h-full w-full max-w-7xl flex-col overflow-hidden shadow-2xl sm:rounded-2xl sm:border"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Toolbar */}
@@ -216,9 +218,7 @@ export function FullScreenViewer({
           <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
             <ToolbarButton
               label="-"
-              onClick={() =>
-                zoomAroundPoint(zoomRef.current / (1 + ZOOM_STEP))
-              }
+              onClick={() => zoomAroundPoint(zoomRef.current / (1 + ZOOM_STEP))}
               className={ZOOM_BUTTON}
               ariaLabel="Zoom out diagram"
             />
@@ -227,9 +227,7 @@ export function FullScreenViewer({
             </span>
             <ToolbarButton
               label="+"
-              onClick={() =>
-                zoomAroundPoint(zoomRef.current * (1 + ZOOM_STEP))
-              }
+              onClick={() => zoomAroundPoint(zoomRef.current * (1 + ZOOM_STEP))}
               className={ZOOM_BUTTON}
               ariaLabel="Zoom in diagram"
             />
@@ -244,7 +242,7 @@ export function FullScreenViewer({
 
         {/* Zoomable viewport */}
         <div
-          className={`relative flex-1 touch-none overflow-auto overscroll-contain [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden ${
+          className={`relative flex-1 touch-none overflow-auto overscroll-contain [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${
             isDragging ? "cursor-grabbing" : "cursor-grab"
           }`}
           ref={viewportRef}

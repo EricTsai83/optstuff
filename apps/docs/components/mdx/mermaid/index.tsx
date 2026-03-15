@@ -75,18 +75,29 @@ function MermaidContent({ chart }: { readonly chart: string }) {
   const { resolvedTheme } = useTheme();
   const mermaid = useMermaidModule();
   const theme = resolvedTheme === "dark" ? "dark" : "default";
+  const [initializedKey, setInitializedKey] = useState<string | null>(null);
+  const normalizedChart = chart.replaceAll("\\n", "\n");
+  const renderKey = `${theme}:${id}`;
+  const cacheKey = `${renderKey}:${normalizedChart}`;
 
-  mermaid.initialize({
-    startOnLoad: false,
-    securityLevel: "loose",
-    fontFamily: "inherit",
-    themeCSS: "margin: 1.5rem auto 0;",
-    theme,
-  });
+  useEffect(() => {
+    mermaid.initialize({
+      startOnLoad: false,
+      securityLevel: "loose",
+      fontFamily: "inherit",
+      themeCSS: "margin: 1.5rem auto 0;",
+      theme,
+    });
+    setInitializedKey(renderKey);
+  }, [mermaid, renderKey, theme]);
+
+  if (initializedKey !== renderKey) {
+    return LOADING_DIAGRAM;
+  }
 
   const { svg, bindFunctions } = use(
-    getCachedPromise(`${theme}:${chart}`, () => {
-      return mermaid.render(id, chart.replaceAll("\\n", "\n"));
+    getCachedPromise(cacheKey, () => {
+      return mermaid.render(id, normalizedChart);
     }),
   );
 
