@@ -12,7 +12,7 @@
   --color-fd-background: hsl(150 5% 97.5%);
   --color-fd-foreground: hsl(160 12% 10%);
   --color-fd-muted: hsl(150 5% 93%);
-  --color-fd-muted-foreground: hsl(155 4% 44%);
+  --color-fd-muted-foreground: hsl(0 0% 42%);
   --color-fd-popover: hsl(150 6% 99%);
   --color-fd-popover-foreground: hsl(160 10% 14%);
   --color-fd-card: hsl(150 6% 95.5%);
@@ -31,7 +31,7 @@
   --color-fd-background: hsl(160 10% 5.5%);
   --color-fd-foreground: hsl(150 8% 90%);
   --color-fd-muted: hsl(158 8% 11%);
-  --color-fd-muted-foreground: hsl(150 6% 55%);
+  --color-fd-muted-foreground: hsl(0 0% 63%);
   --color-fd-popover: hsl(160 8% 8%);
   --color-fd-popover-foreground: hsl(150 8% 88%);
   --color-fd-card: hsl(158 8% 8.5%);
