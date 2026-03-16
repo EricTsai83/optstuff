@@ -12,6 +12,15 @@ export const metadata: Metadata = {
   description:
     "Transform, resize, and optimize your images on-the-fly with our powerful image processing API. Built on sharp and libvips.",
   generator: "v0.app",
+  // This app serves private dashboard routes, so pages should not appear in search results.
+  robots: {
+    index: false,
+    follow: false,
+    googleBot: {
+      index: false,
+      follow: false,
+    },
+  },
 };
 
 const inter = Inter({
