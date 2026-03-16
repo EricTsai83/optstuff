@@ -9,7 +9,7 @@ export default function robots(): MetadataRoute.Robots {
     rules: {
       userAgent: "*",
       allow: ["/$", "/demo-image.png", "/demo-image.webp", "/opengraph-image", "/opengraph-image.png", "/favicon.ico"],
-      disallow: "/",
+      disallow: "/*",
     },
     sitemap: new URL("/sitemap.xml", baseUrl).toString(),
   };
