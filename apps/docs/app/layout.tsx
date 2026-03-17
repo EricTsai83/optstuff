@@ -1,15 +1,15 @@
 import { RootProvider } from "fumadocs-ui/provider/next";
+import { getSiteBaseUrl } from "@/lib/site-url";
 import type { Metadata } from "next";
+import { Inter } from "next/font/google";
 import "./global.css";
 
-const metadataBaseUrl =
-  process.env.NEXT_PUBLIC_SITE_URL ??
-  (process.env.VERCEL_URL
-    ? `https://${process.env.VERCEL_URL}`
-    : "http://localhost:3002");
+const inter = Inter({
+  subsets: ["latin"],
+});
 
 export const metadata: Metadata = {
-  metadataBase: new URL(metadataBaseUrl),
+  metadataBase: getSiteBaseUrl(),
   title: {
     default: "OptStuff Docs",
     template: "%s | OptStuff Docs",
@@ -20,7 +20,7 @@ export const metadata: Metadata = {
 
 export default function Layout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" className={inter.className} suppressHydrationWarning>
       <body className="flex min-h-screen flex-col">
         <RootProvider>{children}</RootProvider>
       </body>
