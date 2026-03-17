@@ -43,11 +43,11 @@ function getSvgSize(svgEl: SVGSVGElement): Size | null {
   return width && height ? { width, height } : null;
 }
 
-function touchDistance(a: Touch, b: Touch) {
+function pointerDistance(a: PointerEvent, b: PointerEvent) {
   return Math.hypot(b.clientX - a.clientX, b.clientY - a.clientY);
 }
 
-function touchMidpoint(a: Touch, b: Touch): Point {
+function pointerMidpoint(a: PointerEvent, b: PointerEvent): Point {
   return { x: (a.clientX + b.clientX) / 2, y: (a.clientY + b.clientY) / 2 };
 }
 
@@ -225,29 +225,45 @@ export function useCanvasGestures(
     };
   }, [onInteraction, viewportRef, zoomAroundPoint]);
 
-  // Mobile: pinch-to-zoom via touch events
+  // Mobile: pinch-to-zoom via pointer events so it works reliably alongside
+  // the drag-to-pan hook that already captures single-touch gestures.
   useEffect(() => {
     const viewport = viewportRef.current;
     if (!viewport) return;
 
     let initialDistance = 0;
     let initialPinchZoom = 1;
+    const activePointers = new Map<number, PointerEvent>();
 
-    const onTouchStart = (e: TouchEvent) => {
-      if (e.touches.length !== 2) return;
-      e.preventDefault();
+    const resetPinch = () => {
+      initialDistance = 0;
+    };
+
+    const onPointerDown = (event: PointerEvent) => {
+      if (event.pointerType !== "touch") return;
+
+      activePointers.set(event.pointerId, event);
+      if (activePointers.size !== 2) return;
+
+      const [a, b] = Array.from(activePointers.values());
       onInteraction?.();
-      initialDistance = touchDistance(e.touches[0]!, e.touches[1]!);
+      initialDistance = pointerDistance(a!, b!);
       initialPinchZoom = zoomRef.current;
     };
 
-    const onTouchMove = (e: TouchEvent) => {
-      if (e.touches.length !== 2 || !initialDistance) return;
-      e.preventDefault();
+    const onPointerMove = (event: PointerEvent) => {
+      if (event.pointerType !== "touch") return;
+      if (!activePointers.has(event.pointerId)) return;
 
-      const currentDistance = touchDistance(e.touches[0]!, e.touches[1]!);
+      activePointers.set(event.pointerId, event);
+      if (activePointers.size !== 2 || !initialDistance) return;
+
+      event.preventDefault();
+
+      const [a, b] = Array.from(activePointers.values());
+      const currentDistance = pointerDistance(a!, b!);
       const scale = currentDistance / initialDistance;
-      const mid = touchMidpoint(e.touches[0]!, e.touches[1]!);
+      const mid = pointerMidpoint(a!, b!);
       const rect = viewport.getBoundingClientRect();
 
       zoomAroundPoint(initialPinchZoom * scale, {
@@ -256,22 +272,32 @@ export function useCanvasGestures(
       });
     };
 
-    const onTouchEnd = (e: TouchEvent) => {
-      if (e.touches.length < 2) {
-        initialDistance = 0;
+    const onPointerEnd = (event: PointerEvent) => {
+      if (event.pointerType !== "touch") return;
+
+      activePointers.delete(event.pointerId);
+      if (activePointers.size === 2) {
+        const [a, b] = Array.from(activePointers.values());
+        initialDistance = pointerDistance(a!, b!);
+        initialPinchZoom = zoomRef.current;
+        return;
       }
+
+      resetPinch();
     };
 
-    viewport.addEventListener("touchstart", onTouchStart, { passive: false });
-    viewport.addEventListener("touchmove", onTouchMove, { passive: false });
-    viewport.addEventListener("touchend", onTouchEnd);
-    viewport.addEventListener("touchcancel", onTouchEnd);
+    viewport.addEventListener("pointerdown", onPointerDown);
+    viewport.addEventListener("pointermove", onPointerMove, { passive: false });
+    viewport.addEventListener("pointerup", onPointerEnd);
+    viewport.addEventListener("pointercancel", onPointerEnd);
 
     return () => {
-      viewport.removeEventListener("touchstart", onTouchStart);
-      viewport.removeEventListener("touchmove", onTouchMove);
-      viewport.removeEventListener("touchend", onTouchEnd);
-      viewport.removeEventListener("touchcancel", onTouchEnd);
+      activePointers.clear();
+      resetPinch();
+      viewport.removeEventListener("pointerdown", onPointerDown);
+      viewport.removeEventListener("pointermove", onPointerMove);
+      viewport.removeEventListener("pointerup", onPointerEnd);
+      viewport.removeEventListener("pointercancel", onPointerEnd);
     };
   }, [onInteraction, viewportRef, zoomAroundPoint]);
 

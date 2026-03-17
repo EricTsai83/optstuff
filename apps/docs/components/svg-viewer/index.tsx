@@ -78,4 +78,5 @@ export { DiagramPreview } from "./diagram-preview";
 export { FullScreenViewer } from "./full-screen-viewer";
 export { useCanvasGestures } from "./use-canvas-gestures";
 export { useDragScroll } from "./use-drag-scroll";
+export { useViewerGestures } from "./use-viewer-gestures";
 export type { BindFunctions, Point, Size } from "./types";

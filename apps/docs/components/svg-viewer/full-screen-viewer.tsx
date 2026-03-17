@@ -10,8 +10,7 @@ import {
 } from "react";
 import { ZOOM_STEP } from "./constants";
 import type { BindFunctions } from "./types";
-import { useCanvasGestures } from "./use-canvas-gestures";
-import { useDragScroll } from "./use-drag-scroll";
+import { useViewerGestures } from "./use-viewer-gestures";
 
 const ACTION_BUTTON =
   "border-fd-border hover:bg-fd-muted active:bg-fd-muted active:scale-95 cursor-pointer rounded-lg border text-sm transition";
@@ -97,6 +96,7 @@ function useViewerShortcuts(
 
 function useAutoFitContent(
   svgHtml: string,
+  viewportRef: RefObject<HTMLDivElement | null>,
   measureAndFit: () => void,
   hasInteractedRef: RefObject<boolean>,
 ) {
@@ -124,21 +124,29 @@ function useAutoFitContent(
       });
     }
 
-    window.addEventListener("resize", measureIfPristine);
+    const viewport = viewportRef.current;
+    let resizeObserver: ResizeObserver | null = null;
+    if (viewport && "ResizeObserver" in window) {
+      resizeObserver = new ResizeObserver(measureIfPristine);
+      resizeObserver.observe(viewport);
+    } else {
+      window.addEventListener("resize", measureIfPristine);
+    }
 
     return () => {
       isCancelled = true;
       window.cancelAnimationFrame(raf1);
       window.cancelAnimationFrame(raf2);
+      resizeObserver?.disconnect();
       window.removeEventListener("resize", measureIfPristine);
     };
-  }, [hasInteractedRef, measureAndFit, svgHtml]);
+  }, [hasInteractedRef, measureAndFit, svgHtml, viewportRef]);
 }
 
 /**
- * Full-screen SVG viewer with drag-to-pan, Cmd/Ctrl + scroll zoom,
- * pinch-to-zoom on touch devices, keyboard shortcuts (Escape to close),
- * and +/- toolbar buttons.
+ * Full-screen SVG viewer with drag-to-pan, pinch-to-zoom, double-click /
+ * double-tap zoom toggling, Cmd/Ctrl + scroll zoom, keyboard shortcuts
+ * (Escape to close), and +/- toolbar buttons.
  *
  * @param title       - Modal heading (defaults to "Diagram")
  * @param description - Subtitle hint (defaults to universal zoom/pan guidance)
@@ -165,18 +173,19 @@ export function FullScreenViewer({
     displayZoom,
     contentSize,
     viewportSize,
+    isDragging,
     measureAndFit,
     resetView,
     zoomAroundPoint,
     zoomRef,
-  } = useCanvasGestures(viewportRef, contentRef, markInteracted);
-  const { isDragging, handlers } = useDragScroll(viewportRef);
+    handlers,
+  } = useViewerGestures(viewportRef, contentRef, markInteracted);
 
   const canvasWidth = Math.max(viewportSize.width, contentSize.width * zoom);
   const canvasHeight = Math.max(viewportSize.height, contentSize.height * zoom);
 
   useLockBodyScroll();
-  useAutoFitContent(svgHtml, measureAndFit, hasInteractedRef);
+  useAutoFitContent(svgHtml, viewportRef, measureAndFit, hasInteractedRef);
   useViewerShortcuts(onClose, closeRef);
 
   const assignContentRef = useCallback(
@@ -250,7 +259,6 @@ export function FullScreenViewer({
         >
           <div
             className="relative min-h-full min-w-full"
-            onDoubleClick={resetView}
           >
             <div
               className="flex items-center justify-center"
