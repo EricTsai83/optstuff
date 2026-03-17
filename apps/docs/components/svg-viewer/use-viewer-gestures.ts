@@ -46,6 +46,11 @@ type PendingTouchPanState = {
   pointerId: number;
 } | null;
 
+type PendingPanState = {
+  pointerId: number;
+  startPoint: Point;
+} | null;
+
 function resetSvgForMeasurement(svgEl: SVGSVGElement) {
   svgEl.removeAttribute("width");
   svgEl.removeAttribute("height");
@@ -131,6 +136,7 @@ export function useViewerGestures(
   const panRef = useRef<PanState>(null);
   const pinchRef = useRef<PinchState>(null);
   const pendingTouchPanRef = useRef<PendingTouchPanState>(null);
+  const pendingPanRef = useRef<PendingPanState>(null);
   const lastTapRef = useRef<{ time: number; point: Point } | null>(null);
   const scrollCommitRafRef = useRef<number | null>(null);
   const pendingScrollRef = useRef<Point | null>(null);
@@ -178,6 +184,7 @@ export function useViewerGestures(
 
         viewport.scrollLeft = pendingScroll.x;
         viewport.scrollTop = pendingScroll.y;
+        pendingScrollRef.current = null;
       });
     },
     [viewportRef],
@@ -332,11 +339,14 @@ export function useViewerGestures(
         (currentCanvas.height - currentCanvas.scaledHeight) / 2;
       const nextOffsetX = (nextCanvas.width - nextCanvas.scaledWidth) / 2;
       const nextOffsetY = (nextCanvas.height - nextCanvas.scaledHeight) / 2;
+      const pendingScroll = pendingScrollRef.current;
+      const scrollLeft = pendingScroll?.x ?? viewport.scrollLeft;
+      const scrollTop = pendingScroll?.y ?? viewport.scrollTop;
 
       const contentPointX =
-        (viewport.scrollLeft + anchor.x - currentOffsetX) / zoomRef.current;
+        (scrollLeft + anchor.x - currentOffsetX) / zoomRef.current;
       const contentPointY =
-        (viewport.scrollTop + anchor.y - currentOffsetY) / zoomRef.current;
+        (scrollTop + anchor.y - currentOffsetY) / zoomRef.current;
 
       applyZoom(nextZoom);
 
@@ -420,6 +430,7 @@ export function useViewerGestures(
       panRef.current = null;
       pinchRef.current = null;
       pendingTouchPanRef.current = null;
+      pendingPanRef.current = null;
       lastTapRef.current = null;
       pendingScrollRef.current = null;
       scrollCommitRafRef.current = null;
@@ -458,10 +469,10 @@ export function useViewerGestures(
       return;
     }
 
-    onInteraction?.();
-    event.preventDefault();
-    event.currentTarget.setPointerCapture(event.pointerId);
-    startPan(event.pointerId, event.clientX, event.clientY);
+    pendingPanRef.current = {
+      pointerId: event.pointerId,
+      startPoint: { x: event.clientX, y: event.clientY },
+    };
   };
 
   const onPointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
@@ -512,6 +523,25 @@ export function useViewerGestures(
       return;
     }
 
+    const pendingPan = pendingPanRef.current;
+    if (pendingPan?.pointerId === event.pointerId) {
+      if (
+        pointDistance(pendingPan.startPoint, {
+          x: event.clientX,
+          y: event.clientY,
+        }) < PAN_START_THRESHOLD_PX
+      ) {
+        return;
+      }
+
+      onInteraction?.();
+      event.preventDefault();
+      pendingPanRef.current = null;
+      event.currentTarget.setPointerCapture(event.pointerId);
+      startPan(event.pointerId, event.clientX, event.clientY);
+      return;
+    }
+
     const pan = panRef.current;
     if (!pan || pan.pointerId !== event.pointerId) return;
 
@@ -532,10 +562,14 @@ export function useViewerGestures(
     const wasPinchPointer = pinch?.pointerIds.includes(event.pointerId) ?? false;
     const wasPendingTouchPan =
       pendingTouchPanRef.current?.pointerId === event.pointerId;
+    const wasPendingPan = pendingPanRef.current?.pointerId === event.pointerId;
 
     activePointersRef.current.delete(event.pointerId);
     if (wasPendingTouchPan) {
       pendingTouchPanRef.current = null;
+    }
+    if (wasPendingPan) {
+      pendingPanRef.current = null;
     }
 
     const pan = panRef.current;
