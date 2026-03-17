@@ -190,6 +190,21 @@ export function useViewerGestures(
     [viewportRef],
   );
 
+  const flushPendingScroll = useCallback(() => {
+    const pendingScroll = pendingScrollRef.current;
+    const viewport = viewportRef.current;
+    if (!pendingScroll || !viewport) return;
+
+    if (scrollCommitRafRef.current !== null) {
+      window.cancelAnimationFrame(scrollCommitRafRef.current);
+      scrollCommitRafRef.current = null;
+    }
+
+    viewport.scrollLeft = pendingScroll.x;
+    viewport.scrollTop = pendingScroll.y;
+    pendingScrollRef.current = null;
+  }, [viewportRef]);
+
   const releasePointerCapture = useCallback(
     (pointerId: number) => {
       const viewport = viewportRef.current;
@@ -234,6 +249,8 @@ export function useViewerGestures(
       const viewport = viewportRef.current;
       if (!viewport) return;
 
+      flushPendingScroll();
+
       panRef.current = {
         pointerId,
         startPoint: { x: clientX, y: clientY },
@@ -242,7 +259,7 @@ export function useViewerGestures(
       };
       setIsDragging(true);
     },
-    [viewportRef],
+    [flushPendingScroll, viewportRef],
   );
 
   const getTouchPointers = useCallback(() => {
@@ -553,11 +570,7 @@ export function useViewerGestures(
     const pointer = activePointersRef.current.get(event.pointerId);
     if (!pointer) return;
 
-    const endPoint = { x: event.clientX, y: event.clientY };
-    const wasTap =
-      event.pointerType === "touch" &&
-      event.timeStamp - pointer.startedAt <= TAP_MAX_DURATION_MS &&
-      pointDistance(pointer.startPoint, endPoint) <= TAP_MAX_MOVEMENT_PX;
+    const wasCancelled = event.type === "pointercancel";
     const pinch = pinchRef.current;
     const wasPinchPointer = pinch?.pointerIds.includes(event.pointerId) ?? false;
     const wasPendingTouchPan =
@@ -577,6 +590,14 @@ export function useViewerGestures(
       stopPan(event.pointerId);
     } else {
       releasePointerCapture(event.pointerId);
+    }
+
+    if (wasCancelled) {
+      if (wasPinchPointer) {
+        pinchRef.current = null;
+      }
+      lastTapRef.current = null;
+      return;
     }
 
     if (wasPinchPointer) {
@@ -601,6 +622,12 @@ export function useViewerGestures(
 
       return;
     }
+
+    const endPoint = { x: event.clientX, y: event.clientY };
+    const wasTap =
+      event.pointerType === "touch" &&
+      event.timeStamp - pointer.startedAt <= TAP_MAX_DURATION_MS &&
+      pointDistance(pointer.startPoint, endPoint) <= TAP_MAX_MOVEMENT_PX;
 
     if (!wasTap) {
       lastTapRef.current = null;
