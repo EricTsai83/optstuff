@@ -195,9 +195,15 @@ export default async function TeamTabsLayout({ children, params }) {
 概念上會改成：
 
 ```tsx
+import { notFound } from "next/navigation";
+
 export default async function TeamTabsLayout({ children, params }) {
   const { team: teamSlug } = await params;
   const team = await getVerifiedTeam(teamSlug);
+
+  if (!team) {
+    notFound();
+  }
 
   return (
     <>
@@ -209,16 +215,22 @@ export default async function TeamTabsLayout({ children, params }) {
 }
 ```
 
+重點不是一定要用 `notFound()`，而是 **invalid-team branch 必須先發生**。你也可以選擇在 `getVerifiedTeam()` 內部直接 `redirect()`，讓 caller 永遠只拿到已驗證的 team。以這個 repo 目前的實作來說，`getVerifiedTeam()` 就是把未登入、slug 不存在、或 team 不屬於目前使用者的情況先攔掉，之後 `TeamTabsLayout` 才會 render `Header` 和 `TeamNavigationTabs`。
+
 這一刀直接切掉 amplification source。只要這個點修掉，bot 就算仍然能拿到某個 fake slug，也不會再從你的頁面裡拿到下一批 `~/usage`、`~/settings` 連結。
 
 ### 次要修補：把驗證做乾淨
 
 如果把 team 驗證提前到 layout，實作上我還會順手做兩件事：
 
-1. 把 team 驗證做成 request-scope cache，避免 layout 和 page 重複 hit DB
+1. 把 team 驗證做成 request-scope cache，避免 layout 和 page 在同一個 request 內重複 hit DB
 2. 在 proxy 或 edge 層對明顯不可能的 slug 做更早的拒絕或 `404`
 
 第一個是效能整理，第二個是 defense in depth。
+
+這裡也有一個容易混淆的細節要講清楚：如果你用的是像 React `cache()` 這種 **per-request dedupe**，而且 verifier 會在函式內重新讀一次 auth context，那它只會在同一個 request tree 內共用結果，不會把某個使用者的 team 驗證結果跨 request 重用給另一個使用者。這也是這個 repo 目前 `getVerifiedTeam()` 採用的方式。
+
+但如果你不是用 `React.cache()`，而是自己做 key-based request store、process-level `Map`、LRU，或任何可能跨呼叫重用條目的快取，那 cache key 就不能只放 `teamSlug`，而應該至少包含 auth context，例如 `userId:teamSlug` 或 `sessionId:teamSlug`。
 
 ### 哪些做法只能算緩解，不算真正修復？
 
