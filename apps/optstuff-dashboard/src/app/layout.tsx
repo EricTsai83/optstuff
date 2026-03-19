@@ -1,5 +1,6 @@
 import "@/styles/globals.css";
 import { TRPCReactProvider } from "@/trpc/react";
+import { Analytics } from "@vercel/analytics/next";
 import { AuthProvider } from "@workspace/auth/provider";
 import { Toaster } from "@workspace/ui/components/sonner";
 import { ThemeProvider } from "@workspace/ui/components/theme-provider";
@@ -53,6 +54,7 @@ export default function RootLayout({
             </TRPCReactProvider>
           </AuthProvider>
         </ThemeProvider>
+        <Analytics />
       </body>
     </html>
   );

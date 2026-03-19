@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@t3-oss/env-nextjs": "^0.13.10",
+    "@vercel/analytics": "^2.0.1",
     "@vercel/microfrontends": "^2.2.1",
     "@workspace/auth": "workspace:*",
     "@workspace/hooks": "workspace:*",
