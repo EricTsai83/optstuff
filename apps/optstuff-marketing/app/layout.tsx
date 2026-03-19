@@ -1,7 +1,9 @@
+import { getProjectBaseUrl } from "@/lib/utils";
 import "@/styles/globals.css";
+import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import { AuthProvider } from "@workspace/auth/provider";
 import { ThemeProvider } from "@workspace/ui/components/theme-provider";
-import { getProjectBaseUrl } from "@/lib/utils";
 import { type Metadata } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
 
@@ -47,7 +49,7 @@ export default function RootLayout({
       >
         <a
           href="#main-content"
-          className="sr-only focus:not-sr-only focus-visible:ring-ring focus-visible:ring-offset-background fixed left-4 top-4 z-120 rounded-md bg-background px-3 py-2 text-sm font-medium text-foreground shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+          className="focus-visible:ring-ring focus-visible:ring-offset-background z-120 bg-background text-foreground sr-only fixed left-4 top-4 rounded-md px-3 py-2 text-sm font-medium shadow-md focus:not-sr-only focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
         >
           Skip to main content
         </a>
@@ -59,6 +61,8 @@ export default function RootLayout({
         >
           <AuthProvider>{children}</AuthProvider>
         </ThemeProvider>
+        <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );
