@@ -42,6 +42,7 @@
     "@upstash/redis": "^1.36.2",
     "@vercel/analytics": "^2.0.1",
     "@vercel/microfrontends": "^2.2.1",
+    "@vercel/speed-insights": "^2.0.0",
     "@workspace/auth": "workspace:*",
     "@workspace/hooks": "workspace:*",
     "@workspace/ui": "workspace:*",
