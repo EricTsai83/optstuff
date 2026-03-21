@@ -20,6 +20,19 @@ OptStuff returns:
 
 In short, OptStuff turns image delivery into a controllable backend capability instead of ad-hoc frontend logic.
 
+**What teams often did before:** the frontend (or shared UI code) decided image sizes and formats directly—hardcoded `src` URLs, query strings on a public image CDN or proxy, or `next/image` loaders that only rewrite paths without a server trust boundary. Sometimes signing secrets or “resize tokens” ended up in client bundles to avoid a backend round-trip.
+
+**Why that hurts:** parameters are easy to tamper with or enumerate, behavior drifts across apps, and you cannot consistently enforce “who may request which source from where.” Auditing usage and revoking access is painful when the contract lives in scattered frontend logic.
+
+**How OptStuff addresses it:** transformations are expressed in a signed URL contract; only your server holds `sk_...` and emits authorized URLs. Project policy (domains, keys, limits) applies to every request, so delivery stays predictable and governable.
+
+**Compared to frontend-direct delivery:**
+
+| | Frontend-direct | OptStuff (signed, backend-issued URLs) |
+|---|-----------------|----------------------------------------|
+| **Pros** | Simple to ship first; no signing service in the hot path for prototypes | Tamper-resistant params; centralized policy; consistent transforms; better auditability |
+| **Cons** | Weak or duplicated governance; secret-in-client risks; inconsistent behavior across surfaces | Requires a signing step and safe storage of `sk_...`; slightly more moving parts than a bare CDN URL |
+
 ## What Value It Provides
 
 OptStuff's value is not only "resize images". It combines delivery, control, and governance:
@@ -34,12 +47,14 @@ OptStuff's value is not only "resize images". It combines delivery, control, and
 At runtime, OptStuff follows this trust model:
 
 ```mermaid
-flowchart LR
+flowchart TB
   subgraph AppServer["App Server"]
+    direction TB
     A1["1) Build transformation payload"] --> A2["2) Sign payload with sk_..."] --> A3["3) Deliver authorized OptStuff URL to client"]
   end
 
   subgraph OptStuff["OptStuff"]
+    direction TB
     B1["4) Resolve project + key"] --> B2["5) Verify signature and policies"] --> B3["6) Fetch, transform, return"]
   end
 

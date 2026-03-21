@@ -15,13 +15,19 @@ OptStuff has two major planes:
    Signed request validation, source fetch, image transform, rate limiting, logging, and usage tracking.
 
 ```mermaid
-flowchart LR
-  User["Developer / Team Owner"] --> Dashboard["Dashboard (Control Plane)"]
-  Dashboard --> TRPC["tRPC Routers"]
+flowchart TB
+  subgraph ControlPlane["Control Plane"]
+    direction TB
+    User["Developer / Team Owner"] --> Dashboard["Dashboard"]
+    Dashboard --> TRPC["tRPC Routers"]
+  end
   TRPC --> Pg["PostgreSQL\nteam/project/api_key/usage/request_log"]
   TRPC --> Redis["Redis\ncache + rate limit + write throttle"]
 
-  Client["Browser / App / CDN"] --> API["Image API /api/v1/{projectSlug}/{operations}/{imageUrl}"]
+  subgraph DataPlane["Data Plane"]
+    direction TB
+    Client["Browser / App / CDN"] --> API["Image API /api/v1/{projectSlug}/{operations}/{imageUrl}"]
+  end
   API --> Redis
   API --> Pg
   API --> Origin["Source image origin"]

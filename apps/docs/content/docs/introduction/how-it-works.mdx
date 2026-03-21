@@ -10,11 +10,17 @@ For product-level concepts, see [What is OptStuff?](/docs). For the full impleme
 ## Architecture At A Glance
 
 ```mermaid
-flowchart LR
+flowchart TB
   Client["Browser / App / CDN"] --> Api["/api/v1/{projectSlug}/{operations}/{imageUrl}"]
-  Api --> Cache["Redis (config cache + rate limits)"]
-  Api --> Db["PostgreSQL (projects, keys, logs)"]
-  Api --> Origin["Source Image Origin"]
+  subgraph Backing["Backing services"]
+    direction TB
+    Cache["Redis (config cache + rate limits)"]
+    Db["PostgreSQL (projects, keys, logs)"]
+    Origin["Source Image Origin"]
+  end
+  Api --> Cache
+  Api --> Db
+  Api --> Origin
   Api --> Client
 ```
 
