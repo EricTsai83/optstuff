@@ -36,7 +36,7 @@ At runtime, OptStuff follows this trust model:
 ```mermaid
 flowchart LR
   subgraph AppServer["App Server"]
-    A1["1) Build transformation payload"] --> A2["2) Sign payload with sk_..."] --> A3["3) Return signed URL to client"]
+    A1["1) Build transformation payload"] --> A2["2) Sign payload with sk_..."] --> A3["3) Deliver authorized OptStuff URL to client"]
   end
 
   subgraph OptStuff["OptStuff"]
@@ -46,10 +46,12 @@ flowchart LR
   A3 --> B1
 ```
 
-The critical idea is authorization-by-signature:
+Step 3—how the signed URL reaches the browser—is an integration choice:
 
-- OptStuff does not trust raw transformation parameters from clients.
-- OptStuff trusts requests only when `sig` proves the URL was signed with the correct secret key.
+- **Direct**: embed the full URL in HTML, JSON, or similar responses.
+- **Via your backend**: a route signs and returns a **redirect** or a URL string; the browser then issues an ordinary **GET** to OptStuff's `/api/v1/...` URL with `key` and `sig` (and optional `exp`).
+
+**Authorization-by-signature** is the invariant: OptStuff never honors transformation parameters unless `sig` verifies for the given `key`—unsigned or tampered requests are rejected.
 
 ## Core Concepts and Why They Exist
 
@@ -86,7 +88,7 @@ To use OptStuff in production, users need four things in place:
 1. **A policy boundary**: a project with domain rules (`allowedRefererDomains`, `allowedSourceDomains`).
 2. **A trust boundary**: an API key pair where `sk_...` is stored only on the server.
 3. **A signing step**: backend code that creates signed URLs.
-4. **A delivery path**: client/app code that requests images through those signed URLs.
+4. **A delivery path**: the client must end up fetching a signed `/api/v1/...` URL—embedded in the page, returned from your API, or reached after a redirect from your signing route.
 
 If any one of these is missing, requests are either rejected or insecure.
 
@@ -119,7 +121,8 @@ These layers are designed to fail closed: when validation fails, the request is 
 
 ## Next Steps
 
-- [How It Works](/introduction/how-it-works) — Detailed request lifecycle and validation order
-- [URL Signing](/guides/url-signing) — Signature payload and HMAC details
+- [How It Works](/introduction/how-it-works) — Request lifecycle and validation order
+- [URL Signing](/guides/url-signing) — Payload and HMAC details
 - [Domain Whitelisting](/guides/domain-whitelisting) — Policy configuration patterns
-- [Quick Start](/getting-started/quickstart) — End-to-end first implementation
+- [Custom next/image Loader](/guides/nextjs-image-loader) — `next/image` with signing and redirect
+- [Quick Start](/getting-started/quickstart) — End-to-end implementation walkthrough
