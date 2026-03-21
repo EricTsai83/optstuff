@@ -1,5 +1,4 @@
-const NEXTJS_DOCS_URL =
-  "https://docs-optstuff.vercel.app/getting-started/integrate-nextjs";
+const NEXTJS_DOCS_URL = "https://docs-optstuff.vercel.app";
 
 export const NAV_LINKS = [
   {
