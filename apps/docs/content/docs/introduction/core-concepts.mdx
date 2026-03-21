@@ -11,7 +11,7 @@ OptStuff is a **secure image transformation service**.
 
 You provide:
 
-- A **source image URL** (where the original bytes live)
+- A **source image URL**
 - A set of **transformation operations** (for example width, format, quality)
 
 OptStuff returns:
@@ -20,22 +20,40 @@ OptStuff returns:
 
 The design centers on one idea: **transformations are not an open API**. They are expressed as a **signed URL** that only your backend can mint. OptStuff validates that contract on every request before it fetches or transforms anything.
 
-## Why This Architecture Exists
+## The Problem OptStuff Addresses
 
-**What teams often did before:** the frontend (or shared UI code) chose sizes and formats directly — hardcoded `src` URLs, query strings on a public CDN or proxy, or `next/image` loaders that rewrite paths without a server trust boundary. Sometimes signing secrets or “resize tokens” ended up in client bundles to skip a backend round-trip.
+Production images usually live on a **CDN** as **remote URLs** (`img`, `srcset`, framework loaders). **Without a signed realtime optimizer**, the browser typically calls the CDN or an **open transform URL** whose width/format knobs are visible in the path or query—often assembled in the **frontend** to ship faster.
 
-**Why that hurts:** parameters are easy to tamper with or enumerate, behavior drifts across apps, and you cannot consistently enforce who may request which source from where. Auditing usage and revoking access is painful when the contract lives in scattered frontend logic.
+```mermaid
+flowchart LR
+  subgraph Typical["Typical flow"]
+    direction LR
+    B[Browser] -->|GET| U["CDN or open proxy\n(public params)"]
+    U --> I[Image bytes]
+  end
+```
 
-**How OptStuff addresses it:** your server holds **`sk_...`** and issues **authorized URLs**. **Project policy** (allowed caller/source domains, keys, limits) applies to every request, so delivery stays predictable and governable.
+**Why that hurts:** anyone can **replay or tweak** those URLs; there is no stable server trust boundary, so **governance drifts**, **abuse is hard to cap**, and **audit/revoke** is painful when rules live in UI code.
 
-**Compared to frontend-direct delivery:**
+**With OptStuff**, the **canonical file stays on the CDN**. Your **app server** mints a **signed URL** (`sk_...` never ships to the client); OptStuff **verifies and applies policy**, then **fetches the remote source** and returns an optimized response.
 
-| | Frontend-direct | OptStuff (signed, backend-issued URLs) |
-|---|-----------------|----------------------------------------|
-| **Pros** | Simple to ship first; no signing in the hot path for prototypes | Tamper-resistant params; centralized policy; consistent transforms; better auditability |
-| **Cons** | Weak or duplicated governance; secret-in-client risks; inconsistent behavior across surfaces | Requires a signing step and safe storage of `sk_...`; slightly more moving parts than a bare CDN URL |
+```mermaid
+flowchart TB
+  subgraph Signed["With OptStuff"]
+    direction TB
+    A["App server\nmints signed URL (sk_...)"] --> Br[Browser]
+    Br -->|GET signed URL| O[OptStuff\nverify · policy · transform]
+    O -->|fetch if allowed| C[CDN / origin\nremote source]
+    O -->|bytes| Br
+  end
+```
 
-**What value that bundles:** not only smaller images (performance), but also **one transformation model** across apps (product), **only server-signed requests accepted** (security), and **visibility and control** at project/key level (operations).
+**You gain:** **smaller payloads** (right format/size at request time), **one transform contract** across apps, and **project-level control** (domains, keys, limits)—optimization is **not** an open API.
+
+| | Open / client-built URLs | OptStuff |
+|---|--------------------------|----------|
+| **Tradeoff** | Fast to prototype; familiar CDN habits | Signing + `sk_...` custody; a few more moving parts |
+| **Risk** | Tampering, inconsistent behavior, secrets in bundles | Mitigated: params are signed; policy is centralized |
 
 ## Teams, Projects, and API Keys
 
