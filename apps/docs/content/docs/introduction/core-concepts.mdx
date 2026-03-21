@@ -1,6 +1,6 @@
 ---
 title: Core Concepts
-description: The key building blocks of OptStuff — Teams, Projects, API Keys, signed URLs, and domain whitelisting.
+description: The key building blocks of OptStuff (Teams, Projects, API Keys, signed URLs, and domain whitelisting).
 ---
 
 This page explains the core service model of OptStuff: what value it provides, how it works, and what conditions must be in place for it to operate safely.
@@ -20,7 +20,7 @@ OptStuff returns:
 
 In short, OptStuff turns image delivery into a controllable backend capability instead of ad-hoc frontend logic.
 
-**What teams often did before:** the frontend (or shared UI code) decided image sizes and formats directly—hardcoded `src` URLs, query strings on a public image CDN or proxy, or `next/image` loaders that only rewrite paths without a server trust boundary. Sometimes signing secrets or “resize tokens” ended up in client bundles to avoid a backend round-trip.
+**What teams often did before:** the frontend (or shared UI code) decided image sizes and formats directly, for example hardcoded `src` URLs, query strings on a public image CDN or proxy, or `next/image` loaders that only rewrite paths without a server trust boundary. Sometimes signing secrets or “resize tokens” ended up in client bundles to avoid a backend round-trip.
 
 **Why that hurts:** parameters are easy to tamper with or enumerate, behavior drifts across apps, and you cannot consistently enforce “who may request which source from where.” Auditing usage and revoking access is painful when the contract lives in scattered frontend logic.
 
@@ -61,12 +61,12 @@ flowchart TB
   A3 --> B1
 ```
 
-Step 3—how the signed URL reaches the browser—is an integration choice:
+In the flowchart above, **step 3** is the box labeled "3) Deliver authorized OptStuff URL to client." How that URL actually reaches the browser is an integration choice:
 
 - **Direct**: embed the full URL in HTML, JSON, or similar responses.
 - **Via your backend**: a route signs and returns a **redirect** or a URL string; the browser then issues an ordinary **GET** to OptStuff's `/api/v1/...` URL with `key` and `sig` (and optional `exp`).
 
-**Authorization-by-signature** is the invariant: OptStuff never honors transformation parameters unless `sig` verifies for the given `key`—unsigned or tampered requests are rejected.
+**Authorization-by-signature** is the invariant: OptStuff never honors transformation parameters unless `sig` verifies for the given `key`. Unsigned or tampered requests are rejected.
 
 ## Core Concepts and Why They Exist
 
@@ -103,7 +103,7 @@ To use OptStuff in production, users need four things in place:
 1. **A policy boundary**: a project with domain rules (`allowedRefererDomains`, `allowedSourceDomains`).
 2. **A trust boundary**: an API key pair where `sk_...` is stored only on the server.
 3. **A signing step**: backend code that creates signed URLs.
-4. **A delivery path**: the client must end up fetching a signed `/api/v1/...` URL—embedded in the page, returned from your API, or reached after a redirect from your signing route.
+4. **A delivery path**: the client must end up fetching a signed `/api/v1/...` URL, whether embedded in the page, returned from your API, or reached after a redirect from your signing route.
 
 If any one of these is missing, requests are either rejected or insecure.
 
@@ -136,8 +136,8 @@ These layers are designed to fail closed: when validation fails, the request is 
 
 ## Next Steps
 
-- [How It Works](/introduction/how-it-works) — Request lifecycle and validation order
-- [URL Signing](/guides/url-signing) — Payload and HMAC details
-- [Domain Whitelisting](/guides/domain-whitelisting) — Policy configuration patterns
-- [Custom next/image Loader](/guides/nextjs-image-loader) — `next/image` with signing and redirect
-- [Quick Start](/getting-started/quickstart) — End-to-end implementation walkthrough
+- [How It Works](/introduction/how-it-works): Request lifecycle and validation order
+- [URL Signing](/guides/url-signing): Payload and HMAC details
+- [Domain Whitelisting](/guides/domain-whitelisting): Policy configuration patterns
+- [Custom next/image Loader](/guides/nextjs-image-loader): `next/image` with signing and redirect
+- [Quick Start](/getting-started/quickstart): End-to-end implementation walkthrough
