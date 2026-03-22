@@ -77,7 +77,7 @@ sequenceDiagram
 
 `HEAD` skips image transform and performs an upstream `HEAD` probe after validation.
 
-```mermaid title="HEAD lifecycle (fast path)"
+```mermaid title="HEAD: validate then upstream HEAD"
 flowchart TD
   A["Shared validation pipeline"] --> B["Upstream HEAD probe (3s timeout, redirect:error)"]
   B -->|Status 404/410| C["Pass through status"]

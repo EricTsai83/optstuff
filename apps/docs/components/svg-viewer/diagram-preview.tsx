@@ -3,9 +3,9 @@
 import { cn } from "@workspace/ui/lib/utils";
 import { useCallback, useRef } from "react";
 import {
+  DIAGRAM_TOOLBAR_ACTION_BUTTON,
   DiagramToolbarButton,
   DiagramViewerToolbar,
-  DIAGRAM_TOOLBAR_ACTION_BUTTON,
 } from "./diagram-viewer-toolbar";
 import type { BindFunctions } from "./types";
 import { useDragScroll } from "./use-drag-scroll";
@@ -13,7 +13,9 @@ import { useDragScroll } from "./use-drag-scroll";
 type DiagramPreviewProps = {
   readonly svgHtml: string;
   readonly onOpenFullScreen: () => void;
+  /** Short label for this figure (not the doc page title). */
   readonly title?: string;
+  /** Optional note on how to read the diagram; interaction hints belong in full-screen mode. */
   readonly description?: string;
   readonly bindFunctions?: BindFunctions | undefined;
 };
@@ -21,15 +23,12 @@ type DiagramPreviewProps = {
 /**
  * Inline SVG preview card with drag-to-scroll and a button that opens
  * the full-screen viewer.
- *
- * @param title       - Header text (defaults to "Diagram")
- * @param description - Subtitle hint (defaults to scroll/zoom guidance)
  */
 export function DiagramPreview({
   svgHtml,
   onOpenFullScreen,
   title = "Diagram",
-  description = "Scroll to explore · Open full screen for zoom",
+  description,
   bindFunctions,
 }: DiagramPreviewProps) {
   const containerRef = useRef<HTMLDivElement>(null);

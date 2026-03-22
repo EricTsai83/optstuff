@@ -18,11 +18,11 @@ function visitNodes(node: RemarkNode, visitor: (n: RemarkNode) => void): void {
 }
 
 /**
- * Like `remarkMdxMermaid` from fumadocs-core, but forwards optional
- * `title="..."` from the fenced code block meta to `<Mermaid title="..." />`.
+ * Like `remarkMdxMermaid` from fumadocs-core, but forwards optional meta:
+ * `title="..."` (short figure title) and `caption="..."` (optional reading note for the preview toolbar).
  *
  * @example
- * ```mermaid title="Request pipeline"
+ * ```mermaid title="Request pipeline" caption="Arrows follow request order."
  * flowchart TD ...
  * ```
  */
@@ -34,8 +34,9 @@ export function remarkMdxMermaidWithTitle(options: { lang?: string } = {}) {
       if (node.lang !== lang || !node.value) return;
 
       const meta = typeof node.meta === "string" ? node.meta : "";
-      const { attributes } = parseCodeBlockAttributes(meta, ["title"]);
+      const { attributes } = parseCodeBlockAttributes(meta, ["title", "caption"]);
       const title = attributes.title;
+      const caption = attributes.caption;
 
       const jsxAttrs: Array<{
         type: "mdxJsxAttribute";
@@ -53,6 +54,13 @@ export function remarkMdxMermaidWithTitle(options: { lang?: string } = {}) {
           type: "mdxJsxAttribute",
           name: "title",
           value: title,
+        });
+      }
+      if (typeof caption === "string" && caption.length > 0) {
+        jsxAttrs.push({
+          type: "mdxJsxAttribute",
+          name: "caption",
+          value: caption,
         });
       }
 

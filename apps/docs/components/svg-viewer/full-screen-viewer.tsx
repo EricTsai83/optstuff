@@ -121,14 +121,14 @@ function useAutoFitContent(
  * double-tap zoom toggling, Cmd/Ctrl + scroll zoom, keyboard shortcuts
  * (Escape to close), and +/- toolbar buttons.
  *
- * @param title       - Modal heading (defaults to "Diagram")
- * @param description - Subtitle hint (defaults to universal zoom/pan guidance)
+ * @param title       - Short figure title in the modal (defaults to "Diagram")
+ * @param description - Interaction hint (defaults to universal zoom/pan guidance)
  */
 export function FullScreenViewer({
   svgHtml,
   onClose,
   title = "Diagram",
-  description = "Drag to pan · Pinch or use +/- to zoom",
+  description = "Drag to pan · Pinch, ⌘/Ctrl + scroll, or +/- to zoom",
   bindFunctions,
 }: FullScreenViewerProps) {
   const modalId = useId();

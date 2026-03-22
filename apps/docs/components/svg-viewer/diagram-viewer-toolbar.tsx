@@ -26,7 +26,8 @@ const ACTIONS_ROW_PREVIEW =
 
 type DiagramViewerToolbarProps = {
   readonly title: string;
-  readonly description: string;
+  /** Optional subtitle (e.g. how to read the figure); omit to hide the row. */
+  readonly description?: string;
   /** When set, applied to the title element (e.g. dialog `aria-labelledby`). */
   readonly titleId?: string;
   readonly actions: ReactNode;
@@ -55,7 +56,9 @@ export function DiagramViewerToolbar({
         <p id={titleId} className={TITLE_CLASS}>
           {title}
         </p>
-        <p className={DESCRIPTION_CLASS}>{description}</p>
+        {description ? (
+          <p className={DESCRIPTION_CLASS}>{description}</p>
+        ) : null}
       </div>
       <div
         className={cn(

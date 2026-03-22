@@ -39,15 +39,19 @@ function useMermaidModule() {
  *
  * @example
  * ```mdx
- * <Mermaid chart="graph TD; A-->B; B-->C;" title="My diagram" />
+ * <Mermaid chart="graph TD; A-->B; B-->C;" title="My diagram" caption="How to read this figure." />
  * ```
  */
 export function Mermaid({
   chart,
   title,
+  caption,
 }: {
   readonly chart: string;
+  /** Short figure title (code fence `title="..."`), not the page frontmatter title. */
   readonly title?: string;
+  /** Optional reading note for the preview toolbar (code fence `caption="..."`). */
+  readonly caption?: string;
 }) {
   const [mounted, setMounted] = useState(false);
 
@@ -59,7 +63,7 @@ export function Mermaid({
 
   return (
     <Suspense fallback={LOADING_DIAGRAM}>
-      <MermaidContent chart={chart} title={title} />
+      <MermaidContent chart={chart} title={title} caption={caption} />
     </Suspense>
   );
 }
@@ -79,9 +83,11 @@ export function Mermaid({
 function MermaidContent({
   chart,
   title,
+  caption,
 }: {
   readonly chart: string;
   readonly title?: string;
+  readonly caption?: string;
 }) {
   const id = useId();
   const { resolvedTheme } = useTheme();
@@ -117,6 +123,7 @@ function MermaidContent({
     <SvgViewer
       svgHtml={svg}
       title={title}
+      previewDescription={caption}
       bindFunctions={bindFunctions}
     />
   );

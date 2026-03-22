@@ -8,9 +8,9 @@ import type { BindFunctions } from "./types";
 export type SvgViewerProps = {
   /** Raw SVG markup to render. */
   readonly svgHtml: string;
-  /** Header text shown in both the inline preview and the full-screen modal. */
+  /** Short figure title in the toolbar (not the MDX page `title` in frontmatter). */
   readonly title?: string;
-  /** Preview subtitle (defaults to drag/scroll guidance). */
+  /** Optional preview subtitle: how to read this figure; omit if the prose already explains it. */
   readonly previewDescription?: string;
   /** Full-screen subtitle (defaults to zoom/pan guidance). */
   readonly fullScreenDescription?: string;
