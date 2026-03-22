@@ -9,9 +9,7 @@ For product-level concepts, see [What is OptStuff?](/docs). For the full impleme
 
 ## Architecture At A Glance
 
-A request hits the **image gateway** (the `/api/v1/...` HTTP handler). The gateway talks to Redis and PostgreSQL for auth, settings, and limits, fetches the source image from the URL you signed, runs transforms, then **returns the bytes in the HTTP response** (the diagram’s arrow back to the client means “response”, not a separate outbound connection).
-
-**Who is the HTTP client?** Any HTTP client can call the signed URL: **browsers**, **native or desktop apps**, or **your own backend** (for example generating Open Graph images, PDFs, or thumbnails in a job). If you put a **CDN in front of OptStuff**, visitors still hit the CDN first; on a **cache miss** the CDN edge **forwards** the same GET to OptStuff—so from the gateway’s perspective the inbound TCP connection can be the CDN, not the end user’s device. See [CDN and Caching](/guides/cdn-caching).
+A signed image URL is fetched with **one HTTPS round trip**: the client sends a `GET`, and the **same connection** carries back optimized bytes (or an error). The diagram is the **map** (which boxes exist and who calls whom). The subsections **below the diagram follow that map in reading order**—use them as the legend. For the **ordered validation pipeline** (not shown as separate boxes here), see [Request Flow](#request-flow).
 
 ```mermaid
 flowchart TB
@@ -29,14 +27,28 @@ flowchart TB
   Gateway -->|"HTTPS response<br/>(optimized image)"| Client
 ```
 
-The table is the same system as the diagram: the gateway is the box in the middle; Redis covers both **config cache** and **rate limiter**; fetching and transforming happen inside the gateway after checks pass (Sharp / IPX).
+### Client (both sides of the client node)
 
-| Component | In the diagram | What it does |
-|-----------|----------------|--------------|
-| **Image gateway** | Center box | Validates auth, signature, operations, rate limits, and domain rules; fetches source, transforms, returns the image |
-| **Config cache** | Redis | Caches API key and project settings for fast lookups |
-| **Rate limiter** | Redis (same store) | Enforces sliding-window per-day and per-minute limits per API key |
-| **Image engine** | Inside gateway (+ line to origin) | Fetches the source image and applies transformations (IPX / Sharp) |
+Whoever opens TLS to your deployment: a **browser**, **app**, **your backend**, or a **CDN edge** that forwards on cache miss ([CDN and Caching](/guides/cdn-caching)). They issue the signed `GET` and read the response—not a separate OptStuff-hosted “client” service.
+
+### Image gateway (center box)
+
+The `/api/v1/...` **handler** ties the diagram together: it consults Redis and Postgres for **policy and limits**, and only when checks pass does it **fetch** the embedded source URL and run **IPX / Sharp** in the **same process**. The arrow back to the client is the **HTTP response** on that request, not a new outbound connection to the browser.
+
+### Redis (one box, two jobs)
+
+Redis appears once in the figure but covers **two concerns**:
+
+- **Config cache (cache-aside):** Hot **project** and **API key** rows (domains, key metadata, **encrypted** secret material as stored in Redis, expiry/revocation, rate-limit **settings**). Typical positive TTL **~60s**, plus a short **negative cache** for unknown keys. Key names, invalidation, and serialization: [Redis Schema](/architecture/redis-schema).
+- **Rate limits:** **Sliding-window** counters per **public key** (minute + day buckets). Over limit → **`429`**. These use **different Redis keys** than the config JSON blobs.
+
+### PostgreSQL (backing box)
+
+**Source of truth** for teams, projects, API keys, and related operational data. The gateway reads through the **config cache** first; **misses** and **writes** hit Postgres.
+
+### Source URL and transforms (arrow to origin; execution inside the gateway)
+
+The signed path carries a **remote image URL** (often your **CDN or origin**). The gateway **HTTP(S)-fetches** it **only after** signature, limits, and domain rules succeed. Decoding, **width / format / quality**, and re-encoding happen **in that handler**—there is no second OptStuff hop for “the image engine.”
 
 ## Request Flow
 
