@@ -7,11 +7,11 @@ This page gives you a high-level understanding of how OptStuff processes request
 
 For product-level concepts, see [What is OptStuff?](/docs). For the full implementation deep-dive, see [Architecture Overview](/architecture/overview).
 
-## Architecture At A Glance
+## Who calls whom on one GET
 
 A signed image URL is fetched with **one HTTPS round trip**: the client sends a `GET`, and the **same connection** carries back optimized bytes or an error. The diagram is the **map**: it shows which boxes exist and who calls whom. The subsections **below the diagram** follow that map in reading order; use them as the legend. This figure does not break out the **ordered validation pipeline** as separate boxes; for that, see [Request Flow](#request-flow).
 
-```mermaid title="Architecture at a glance"
+```mermaid title="Image request path (system view)"
 flowchart TB
   Frontend["<b>Frontend</b><br/>Browser / backend / app<br/>or CDN edge"]
   Frontend -->|"HTTPS request"| Gateway["<b>Image gateway</b><br/>/api/v1/{projectSlug}/{operations}/{imageUrl}"]
