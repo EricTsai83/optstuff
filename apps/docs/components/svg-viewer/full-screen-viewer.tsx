@@ -13,7 +13,7 @@ import {
   DiagramViewerToolbar,
   DIAGRAM_TOOLBAR_ZOOM_BUTTON,
 } from "./diagram-viewer-toolbar";
-import { ZOOM_STEP } from "./constants";
+import { FULL_SCREEN_CONTROLS_HINT, ZOOM_STEP } from "./constants";
 import type { BindFunctions } from "./types";
 import { useViewerGestures } from "./use-viewer-gestures";
 
@@ -128,7 +128,7 @@ export function FullScreenViewer({
   svgHtml,
   onClose,
   title = "Diagram",
-  description = "Drag to pan · Pinch, ⌘/Ctrl + scroll, or +/- to zoom",
+  description = FULL_SCREEN_CONTROLS_HINT,
   bindFunctions,
 }: FullScreenViewerProps) {
   const modalId = useId();

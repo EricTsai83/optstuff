@@ -1,6 +1,7 @@
 {
   "pages": [
     "url-signing",
+    "hmac-introduction",
     "code-examples",
     "nextjs-image-loader",
     "usage-scenarios",

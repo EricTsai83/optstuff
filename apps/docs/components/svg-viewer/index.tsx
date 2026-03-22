@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { FULL_SCREEN_CONTROLS_HINT } from "./constants";
 import { DiagramPreview } from "./diagram-preview";
 import { FullScreenViewer } from "./full-screen-viewer";
 import type { BindFunctions } from "./types";
@@ -51,6 +52,12 @@ export function SvgViewer({
     prevFocusRef.current?.focus();
   };
 
+  const fullScreenToolbarDescription =
+    fullScreenDescription ??
+    (previewDescription
+      ? `${previewDescription} · ${FULL_SCREEN_CONTROLS_HINT}`
+      : undefined);
+
   return (
     <>
       <DiagramPreview
@@ -65,7 +72,7 @@ export function SvgViewer({
         <FullScreenViewer
           svgHtml={svgHtml}
           title={title}
-          description={fullScreenDescription}
+          description={fullScreenToolbarDescription}
           onClose={closeFullScreen}
           bindFunctions={bindFunctions}
         />

@@ -99,7 +99,7 @@ https://<base>/api/v1/<projectSlug>/<operations>/<source>?key=<pk_...>&exp=<opti
 | `exp` | Optional **time bound** so old links can expire without rotating `sk_...` |
 | `sig` | Cryptographic proof that a holder of **`sk_...`** approved the signing input for this `key` |
 
-Under the hood, `sig` is an **HMAC** over a defined signing string that binds path, operations, source, expiry, and key identity. The exact string, encoding, and edge cases are in [URL Signing](/guides/url-signing) — you do not need those bytes on this page to understand the model: **if `sig` does not verify, OptStuff does not treat the request as authorized.**
+Under the hood, `sig` is an [**HMAC**](/guides/hmac-introduction) over a defined signing string that binds path, operations, source, expiry, and key identity. The exact string, encoding, and edge cases are in [URL Signing](/guides/url-signing) — you do not need those bytes on this page to understand the model: **if `sig` does not verify, OptStuff does not treat the request as authorized.**
 
 ## Runtime Trust Model
 
@@ -154,6 +154,7 @@ If any one is missing, requests are either rejected or you have accidentally rem
 ## Next Steps
 
 - [How It Works](/introduction/how-it-works): Request lifecycle and validation order
+- [What Is HMAC?](/guides/hmac-introduction): MAC versus hashing, encryption, and how `sig` fits in
 - [URL Signing](/guides/url-signing): Payload, `exp`, and HMAC details
 - [Domain Whitelisting](/guides/domain-whitelisting): Policy configuration patterns
 - [Custom next/image Loader](/guides/nextjs-image-loader): `next/image` with signing and redirect

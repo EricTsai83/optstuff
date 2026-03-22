@@ -1,9 +1,9 @@
 "use client";
 
-import { cn } from "@workspace/ui/lib/utils";
 import { useCallback, useRef } from "react";
+import { Maximize2 } from "lucide-react";
 import {
-  DIAGRAM_TOOLBAR_ACTION_BUTTON,
+  DIAGRAM_TOOLBAR_PREVIEW_FULLSCREEN_ICON_BUTTON,
   DiagramToolbarButton,
   DiagramViewerToolbar,
 } from "./diagram-viewer-toolbar";
@@ -50,17 +50,21 @@ export function DiagramPreview({
         description={description}
         actions={
           <DiagramToolbarButton
-            label="Open Full Screen"
+            label="Open full screen"
+            iconOnly
             onClick={onOpenFullScreen}
-            className={cn(
-              DIAGRAM_TOOLBAR_ACTION_BUTTON,
-              "w-full whitespace-nowrap md:w-auto",
-            )}
+            icon={
+              <Maximize2
+                className="size-5 shrink-0 md:size-[18px]"
+                aria-hidden
+              />
+            }
+            className={DIAGRAM_TOOLBAR_PREVIEW_FULLSCREEN_ICON_BUTTON}
           />
         }
       />
       <div
-        className={`bg-fd-background/70 touch-pan-x touch-pan-y overflow-auto p-2 md:p-4 ${
+        className={`bg-fd-background/70 touch-pan-x touch-pan-y overflow-auto p-3 md:p-4 ${
           isDragging ? "cursor-grabbing" : "cursor-grab"
         }`}
         ref={containerRef}
