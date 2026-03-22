@@ -9,27 +9,32 @@ For product-level concepts, see [What is OptStuff?](/docs). For the full impleme
 
 ## Architecture At A Glance
 
+A request hits the **image gateway** (the `/api/v1/...` HTTP handler). The gateway talks to Redis and PostgreSQL for auth, settings, and limits, fetches the source image from the URL you signed, runs transforms, then **returns the bytes in the HTTP response** (the diagram’s arrow back to the client means “response”, not a separate outbound connection).
+
 ```mermaid
 flowchart TB
-  Client["Browser / App / CDN"] --> Api["/api/v1/{projectSlug}/{operations}/{imageUrl}"]
-  subgraph Backing["Backing services"]
+  Client["Browser / app / CDN"]
+  Client -->|"HTTPS request"| Gateway["Image gateway<br/>/api/v1/{projectSlug}/{operations}/{imageUrl}"]
+  subgraph Backing["Backing services (gateway calls these)"]
     direction TB
-    Cache["Redis (config cache + rate limits)"]
-    Db["PostgreSQL (projects, keys, logs)"]
-    Origin["Source Image Origin"]
+    Redis["Redis — API key & project cache,<br/>sliding-window rate limits"]
+    PG["PostgreSQL — teams, projects,<br/>keys, usage logs"]
+    Origin["Source image URL<br/>(your signed origin)"]
   end
-  Api --> Cache
-  Api --> Db
-  Api --> Origin
-  Api --> Client
+  Gateway --> Redis
+  Gateway --> PG
+  Gateway --> Origin
+  Gateway -->|"HTTPS response<br/>(optimized image)"| Client
 ```
 
-| Component | What It Does |
-|-----------|-------------|
-| **Image Gateway** | Validates auth, signature, operations, rate limits, and domain rules; returns optimized image |
-| **Config Cache** | Caches API key and project settings in Redis for fast lookups |
-| **Rate Limiter** | Sliding-window per-day and per-minute limits per API key |
-| **Image Engine** | Fetches source image and applies transformations (IPX/Sharp) |
+The table is the same system as the diagram: the gateway is the box in the middle; Redis covers both **config cache** and **rate limiter**; fetching and transforming happen inside the gateway after checks pass (Sharp / IPX).
+
+| Component | In the diagram | What it does |
+|-----------|----------------|--------------|
+| **Image gateway** | Center box | Validates auth, signature, operations, rate limits, and domain rules; fetches source, transforms, returns the image |
+| **Config cache** | Redis | Caches API key and project settings for fast lookups |
+| **Rate limiter** | Redis (same store) | Enforces sliding-window per-day and per-minute limits per API key |
+| **Image engine** | Inside gateway (+ line to origin) | Fetches the source image and applies transformations (IPX / Sharp) |
 
 ## Request Flow
 
