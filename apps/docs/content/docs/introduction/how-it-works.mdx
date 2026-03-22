@@ -11,9 +11,11 @@ For product-level concepts, see [What is OptStuff?](/docs). For the full impleme
 
 A request hits the **image gateway** (the `/api/v1/...` HTTP handler). The gateway talks to Redis and PostgreSQL for auth, settings, and limits, fetches the source image from the URL you signed, runs transforms, then **returns the bytes in the HTTP response** (the diagram’s arrow back to the client means “response”, not a separate outbound connection).
 
+**Who is the HTTP client?** Any HTTP client can call the signed URL: **browsers**, **native or desktop apps**, or **your own backend** (for example generating Open Graph images, PDFs, or thumbnails in a job). If you put a **CDN in front of OptStuff**, visitors still hit the CDN first; on a **cache miss** the CDN edge **forwards** the same GET to OptStuff—so from the gateway’s perspective the inbound TCP connection can be the CDN, not the end user’s device. See [CDN and Caching](/guides/cdn-caching).
+
 ```mermaid
 flowchart TB
-  Client["Browser / app / CDN"]
+  Client["Browser / backend / app<br/>or CDN edge (forward on miss)"]
   Client -->|"HTTPS request"| Gateway["Image gateway<br/>/api/v1/{projectSlug}/{operations}/{imageUrl}"]
   subgraph Backing["Backing services (gateway calls these)"]
     direction TB
