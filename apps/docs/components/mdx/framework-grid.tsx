@@ -142,7 +142,7 @@ type FrameworkGridProps = {
 function FrameworkGrid({ children }: FrameworkGridProps) {
   return (
     <div className="not-prose mt-2 overflow-hidden rounded-xl border border-fd-border">
-      <div className="grid grid-cols-1 max-sm:divide-y sm:grid-cols-2 sm:divide-x divide-fd-border">
+      <div className="grid grid-cols-1 max-md:divide-y md:grid-cols-2 md:divide-x divide-fd-border">
         {children}
       </div>
     </div>

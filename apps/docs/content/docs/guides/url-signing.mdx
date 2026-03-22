@@ -18,7 +18,7 @@ There are three actors in the signing system:
 The server doesn't maintain a list of valid URLs. A matching signature **is** the authorization proof.
 In production, requests go to your OptStuff deployment origin (for example, `https://images.example.com`), then the `/api/v1/...` path.
 
-```mermaid
+```mermaid title="URL signing actors"
 sequenceDiagram
   participant Dashboard
   participant YourServer as Your Server

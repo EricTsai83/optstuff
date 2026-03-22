@@ -8,13 +8,14 @@ import {
   useRef,
   type RefObject,
 } from "react";
+import {
+  DiagramToolbarButton,
+  DiagramViewerToolbar,
+  DIAGRAM_TOOLBAR_ZOOM_BUTTON,
+} from "./diagram-viewer-toolbar";
 import { ZOOM_STEP } from "./constants";
 import type { BindFunctions } from "./types";
 import { useViewerGestures } from "./use-viewer-gestures";
-
-const ACTION_BUTTON =
-  "border-fd-border hover:bg-fd-muted active:bg-fd-muted active:scale-95 cursor-pointer rounded-lg border text-sm transition";
-const ZOOM_BUTTON = `${ACTION_BUTTON} flex size-10 items-center justify-center text-base sm:size-auto sm:px-3 sm:py-2 sm:text-lg`;
 
 type FullScreenViewerProps = {
   readonly svgHtml: string;
@@ -23,34 +24,6 @@ type FullScreenViewerProps = {
   readonly description?: string;
   readonly bindFunctions?: BindFunctions | undefined;
 };
-
-type ToolbarButtonProps = {
-  readonly label: string;
-  readonly onClick: () => void;
-  readonly ariaLabel?: string;
-  readonly className?: string;
-  readonly autoFocusRef?: RefObject<HTMLButtonElement | null>;
-};
-
-function ToolbarButton({
-  label,
-  onClick,
-  ariaLabel,
-  className = `${ACTION_BUTTON} px-3 py-2.5 sm:py-2`,
-  autoFocusRef,
-}: ToolbarButtonProps) {
-  return (
-    <button
-      type="button"
-      ref={autoFocusRef}
-      onClick={onClick}
-      className={className}
-      aria-label={ariaLabel}
-    >
-      {label}
-    </button>
-  );
-}
 
 function useLockBodyScroll() {
   useLayoutEffect(() => {
@@ -200,54 +173,50 @@ export function FullScreenViewer({
 
   return (
     <div
-      className="z-100 fixed inset-0 bg-black/70 backdrop-blur-sm sm:p-4"
+      className="z-100 fixed inset-0 bg-black/70 backdrop-blur-sm md:p-4"
       role="dialog"
       aria-modal="true"
       aria-labelledby={modalId}
       onClick={onClose}
     >
       <div
-        className="bg-fd-background sm:border-fd-border mx-auto flex h-full w-full max-w-7xl flex-col overflow-hidden shadow-2xl sm:rounded-2xl sm:border"
+        className="not-prose bg-fd-background md:border-fd-border mx-auto flex h-full w-full max-w-7xl flex-col overflow-hidden shadow-2xl md:rounded-2xl md:border"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Toolbar */}
-        <div className="border-fd-border flex flex-col gap-2 border-b px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3 sm:px-4 sm:py-3">
-          <div className="min-w-0">
-            <p
-              id={modalId}
-              className="truncate text-base font-medium sm:text-lg"
-            >
-              {title}
-            </p>
-            <p className="text-fd-muted-foreground text-xs sm:text-sm">
-              {description}
-            </p>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-            <ToolbarButton
-              label="-"
-              onClick={() => zoomAroundPoint(zoomRef.current / (1 + ZOOM_STEP))}
-              className={ZOOM_BUTTON}
-              ariaLabel="Zoom out diagram"
-            />
-            <span className="text-fd-muted-foreground w-12 text-center text-xs tabular-nums sm:w-16 sm:text-sm">
-              {displayZoom}%
-            </span>
-            <ToolbarButton
-              label="+"
-              onClick={() => zoomAroundPoint(zoomRef.current * (1 + ZOOM_STEP))}
-              className={ZOOM_BUTTON}
-              ariaLabel="Zoom in diagram"
-            />
-            <ToolbarButton label="Reset" onClick={resetView} />
-            <ToolbarButton
-              label="Close"
-              onClick={onClose}
-              autoFocusRef={closeRef}
-            />
-          </div>
-        </div>
+        <DiagramViewerToolbar
+          titleId={modalId}
+          title={title}
+          description={description}
+          actions={
+            <>
+              <DiagramToolbarButton
+                label="-"
+                onClick={() =>
+                  zoomAroundPoint(zoomRef.current / (1 + ZOOM_STEP))
+                }
+                className={DIAGRAM_TOOLBAR_ZOOM_BUTTON}
+                ariaLabel="Zoom out diagram"
+              />
+              <span className="text-fd-muted-foreground w-12 text-center text-xs tabular-nums md:w-16 md:text-sm">
+                {displayZoom}%
+              </span>
+              <DiagramToolbarButton
+                label="+"
+                onClick={() =>
+                  zoomAroundPoint(zoomRef.current * (1 + ZOOM_STEP))
+                }
+                className={DIAGRAM_TOOLBAR_ZOOM_BUTTON}
+                ariaLabel="Zoom in diagram"
+              />
+              <DiagramToolbarButton label="Reset" onClick={resetView} />
+              <DiagramToolbarButton
+                label="Close"
+                onClick={onClose}
+                autoFocusRef={closeRef}
+              />
+            </>
+          }
+        />
 
         {/* Zoomable viewport */}
         <div

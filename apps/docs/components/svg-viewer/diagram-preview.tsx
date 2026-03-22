@@ -1,6 +1,12 @@
 "use client";
 
+import { cn } from "@workspace/ui/lib/utils";
 import { useCallback, useRef } from "react";
+import {
+  DiagramToolbarButton,
+  DiagramViewerToolbar,
+  DIAGRAM_TOOLBAR_ACTION_BUTTON,
+} from "./diagram-viewer-toolbar";
 import type { BindFunctions } from "./types";
 import { useDragScroll } from "./use-drag-scroll";
 
@@ -38,22 +44,21 @@ export function DiagramPreview({
   );
 
   return (
-    <div className="border-fd-border bg-fd-card/95 my-4 overflow-hidden rounded-xl border shadow-sm sm:my-6 sm:rounded-2xl">
-      <div className="border-fd-border flex flex-col gap-2 border-b px-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-3 sm:px-4 sm:py-4">
-        <div className="min-w-0 space-y-0.5">
-          <p className="truncate text-sm font-medium">{title}</p>
-          <p className="text-fd-muted-foreground text-xs">{description}</p>
-        </div>
-        <button
-          type="button"
-          onClick={onOpenFullScreen}
-          className="border-fd-border bg-fd-background text-fd-foreground hover:bg-fd-muted active:bg-fd-muted active:scale-95 cursor-pointer rounded-lg border px-3 py-2.5 text-sm font-medium transition sm:w-auto sm:py-2"
-        >
-          Open Full Screen
-        </button>
-      </div>
+    <div className="not-prose border-fd-border bg-fd-card/95 my-4 overflow-hidden rounded-xl border shadow-sm md:my-6 md:rounded-2xl">
+      <DiagramViewerToolbar
+        layout="preview"
+        title={title}
+        description={description}
+        actions={
+          <DiagramToolbarButton
+            label="Open Full Screen"
+            onClick={onOpenFullScreen}
+            className={cn(DIAGRAM_TOOLBAR_ACTION_BUTTON, "w-full md:w-auto")}
+          />
+        }
+      />
       <div
-        className={`bg-fd-background/70 touch-pan-x touch-pan-y overflow-auto p-2 sm:p-4 ${
+        className={`bg-fd-background/70 touch-pan-x touch-pan-y overflow-auto p-2 md:p-4 ${
           isDragging ? "cursor-grabbing" : "cursor-grab"
         }`}
         ref={containerRef}

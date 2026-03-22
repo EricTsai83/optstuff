@@ -7,7 +7,7 @@ This page explains how the **control plane** is built: the data model, ownership
 
 ## Core Tenancy Model
 
-```mermaid
+```mermaid title="Core tenancy model"
 flowchart TD
   User["User (ownerId)"] --> Team["Team (isPersonal = true for default team)"]
   Team --> Project["Project (settings + aggregate metadata)"]

@@ -103,7 +103,7 @@ For the full error reference, see [Error Codes](/api-reference/error-codes).
 
 When a request arrives, the server validates it in this order:
 
-```mermaid
+```mermaid title="Authentication flow"
 flowchart TD
   A["Parse key, sig, exp"] -->|Invalid| E1["401"]
   A -->|OK| B["Lookup API key\nCheck not revoked/expired"]

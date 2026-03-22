@@ -11,7 +11,7 @@ For product-level concepts, see [What is OptStuff?](/docs). For the full impleme
 
 A signed image URL is fetched with **one HTTPS round trip**: the client sends a `GET`, and the **same connection** carries back optimized bytes (or an error). The diagram is the **map** (which boxes exist and who calls whom). The subsections **below the diagram follow that map in reading order**—use them as the legend. For the **ordered validation pipeline** (not shown as separate boxes here), see [Request Flow](#request-flow).
 
-```mermaid
+```mermaid title="Architecture at a glance"
 flowchart TB
   Client["Browser / backend / app<br/>or CDN edge (forward on miss)"]
   Client -->|"HTTPS request"| Gateway["Image gateway<br/>/api/v1/{projectSlug}/{operations}/{imageUrl}"]
@@ -54,7 +54,7 @@ The signed path carries a **remote image URL** (often your **CDN or origin**). T
 
 Every image request goes through a strict validation pipeline before the image is processed:
 
-```mermaid
+```mermaid title="Request validation pipeline"
 flowchart TD
   A["Parse key / sig / exp"] -->|Invalid| E1["401"]
   A -->|OK| B["Load API key"]
@@ -85,7 +85,7 @@ Key design decisions:
 
 ## Data Model
 
-```mermaid
+```mermaid title="Team, project, and API key"
 flowchart TD
   Team["Team"] --> Project["Project (domain security settings)"]
   Project --> ApiKey["API Key (public/secret pair, rate limits, expiry)"]

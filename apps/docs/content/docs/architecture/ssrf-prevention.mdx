@@ -13,7 +13,7 @@ The service accepts a signed URL containing an image address and a set of transf
 
 At a high level, the architecture has three layers:
 
-```mermaid
+```mermaid title="Image API layers"
 flowchart TD
   A["API Gateway Layer<br/>Authentication · Rate Limiting · Input Validation"]
   B["Validation Layer<br/>Referer check · Source domain allowlist check"]
@@ -75,7 +75,7 @@ GET /api/v1/my-project/w_800/cdn.example.com/go?url=http://169.254.169.254/lates
 
 Here is what happens at each layer:
 
-```mermaid
+```mermaid title="SSRF via open redirect"
 flowchart TD
   A["API Gateway Layer"] -->|"Signature valid, API key active, Rate limit OK"| B["Validation Layer"]
   B -->|"cdn.example.com in allowlist"| C["Processing Layer (IPX)"]
@@ -147,7 +147,7 @@ Note that `allowAllDomains: true` is intentionally set here because IPX's built-
 
 After the fix, the system enforces a strict invariant: **the URL that passes domain validation is precisely the URL that the server contacts**. No transformation happens between validation and execution.
 
-```mermaid
+```mermaid title="Redirects blocked at fetch"
 flowchart TD
   A["Validation Layer"] -->|"cdn.example.com in allowlist"| B["Processing Layer (IPX)"]
   B --> C["fetch cdn.example.com/go?url=..."]

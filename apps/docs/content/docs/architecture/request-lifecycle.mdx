@@ -20,7 +20,7 @@ Understanding this lifecycle lets you reason about:
 
 Both methods run through the same validation pipeline before any upstream image fetch:
 
-```mermaid
+```mermaid title="Shared validation pipeline"
 flowchart TD
   A["Parse query params: key/sig/exp"] -->|Missing| E1["401"]
   A -->|OK| B["Load API key config"]
@@ -43,7 +43,7 @@ flowchart TD
 
 ## `GET` Lifecycle (transform path)
 
-```mermaid
+```mermaid title="GET lifecycle (transform path)"
 sequenceDiagram
   participant C as Client
   participant R as API Route
@@ -77,7 +77,7 @@ sequenceDiagram
 
 `HEAD` skips image transform and performs an upstream `HEAD` probe after validation.
 
-```mermaid
+```mermaid title="HEAD lifecycle (fast path)"
 flowchart TD
   A["Shared validation pipeline"] --> B["Upstream HEAD probe (3s timeout, redirect:error)"]
   B -->|Status 404/410| C["Pass through status"]

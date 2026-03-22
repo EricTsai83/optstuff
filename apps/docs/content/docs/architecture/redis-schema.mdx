@@ -51,7 +51,7 @@ Every image request requires two database lookups before processing:
 
 ### Read Flow
 
-```mermaid
+```mermaid title="Configuration cache read flow"
 flowchart TD
   A["getProjectConfigById(id)\nor getApiKeyConfig(pk)"] --> B["Redis GET cache key"]
   B -->|HIT config| C["Return cached config"]
@@ -126,7 +126,7 @@ Active invalidation via `invalidateApiKeyCache` remains the primary revocation m
 
 ### Implementation Flow
 
-```mermaid
+```mermaid title="Rate limit check flow"
 flowchart TD
   A["checkRateLimit(publicKey, limitPerMinute, limitPerDay)"] --> B["1. Per-day check\n(wider window, checked first)"]
   B -->|Exceeded| C["Denied\nreason: day\nretryAfter: Ns"]
@@ -195,7 +195,7 @@ Rate limit instances are created with `analytics: true`, which sends usage metri
 
 ### Implementation Flow
 
-```mermaid
+```mermaid title="Usage activity throttle (SET NX)"
 flowchart TD
   A["updateApiKeyLastUsed(apiKeyId, projectId)"] --> B["Redis SET usage:apikey:id\n'1' NX EX 30"]
   B -->|"OK (key didn't exist)"| C["UPDATE apiKeys\nSET lastUsedAt = now()"]

@@ -14,7 +14,7 @@ OptStuff has two major planes:
 2. **Data Plane (Image API `/api/v1/...`)**
    Signed request validation, source fetch, image transform, rate limiting, logging, and usage tracking.
 
-```mermaid
+```mermaid title="Control plane and data plane"
 flowchart TB
   subgraph ControlPlane["Control Plane"]
     direction TB
@@ -50,7 +50,7 @@ flowchart TB
 
 ## Validation Pipeline
 
-```mermaid
+```mermaid title="Validation pipeline"
 flowchart TD
   A["Parse key/sig/exp"] -->|Invalid| E1["401"]
   A -->|OK| B["Load API key config"]
@@ -82,7 +82,7 @@ flowchart TD
 
 ### GET Flow
 
-```mermaid
+```mermaid title="GET request sequence"
 sequenceDiagram
   participant C as Client
   participant A as API Route
@@ -109,7 +109,7 @@ sequenceDiagram
 
 ## Data Model & Tenancy
 
-```mermaid
+```mermaid title="Data model and tenancy"
 flowchart TD
   Team["team"] --> Project["project"]
   Project --> ApiKey["api_key"]

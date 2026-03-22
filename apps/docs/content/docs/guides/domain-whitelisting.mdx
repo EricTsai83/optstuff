@@ -7,7 +7,7 @@ OptStuff provides two layers of domain whitelisting at the project level, each s
 
 ## Two-Layer Architecture
 
-```mermaid
+```mermaid title="Referer and source domain checks"
 flowchart TD
   A["Incoming Request"] --> B{"Layer 1: Project\nallowedRefererDomains"}
   B -->|"Referer not allowed"| X1["403 Forbidden"]

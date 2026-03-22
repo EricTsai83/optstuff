@@ -39,10 +39,16 @@ function useMermaidModule() {
  *
  * @example
  * ```mdx
- * <Mermaid chart="graph TD; A-->B; B-->C;" />
+ * <Mermaid chart="graph TD; A-->B; B-->C;" title="My diagram" />
  * ```
  */
-export function Mermaid({ chart }: { readonly chart: string }) {
+export function Mermaid({
+  chart,
+  title,
+}: {
+  readonly chart: string;
+  readonly title?: string;
+}) {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -53,7 +59,7 @@ export function Mermaid({ chart }: { readonly chart: string }) {
 
   return (
     <Suspense fallback={LOADING_DIAGRAM}>
-      <MermaidContent chart={chart} />
+      <MermaidContent chart={chart} title={title} />
     </Suspense>
   );
 }
@@ -70,7 +76,13 @@ export function Mermaid({ chart }: { readonly chart: string }) {
  *  2. Remove `dangerouslySetInnerHTML` and use a sandboxed iframe or DOMPurify.
  *  3. Validate / sanitize the Mermaid markup before rendering.
  */
-function MermaidContent({ chart }: { readonly chart: string }) {
+function MermaidContent({
+  chart,
+  title,
+}: {
+  readonly chart: string;
+  readonly title?: string;
+}) {
   const id = useId();
   const { resolvedTheme } = useTheme();
   const mermaid = useMermaidModule();
@@ -104,7 +116,7 @@ function MermaidContent({ chart }: { readonly chart: string }) {
   return (
     <SvgViewer
       svgHtml={svg}
-      title="Mermaid Diagram"
+      title={title}
       bindFunctions={bindFunctions}
     />
   );

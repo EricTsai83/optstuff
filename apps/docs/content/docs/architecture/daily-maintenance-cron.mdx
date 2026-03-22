@@ -28,7 +28,7 @@ For low-frequency environments, operators can also trigger a protected manual us
 
 ## End-to-end pipeline
 
-```mermaid
+```mermaid title="Daily maintenance pipeline"
 flowchart TD
   A["Cron trigger"] --> B["Authorize request"]
   B -->|OK| C["runDailyMaintenance()"]

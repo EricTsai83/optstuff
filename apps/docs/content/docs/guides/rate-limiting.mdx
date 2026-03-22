@@ -18,7 +18,7 @@ Every request is checked against two independent limits. Both must pass.
 
 Unlike fixed windows that can allow up to 2× burst at boundaries, the sliding window algorithm produces smooth limits:
 
-```mermaid
+```mermaid title="Fixed window vs sliding window"
 flowchart TD
   subgraph FW["Fixed Window (problem at boundary)"]
     F1["Window 1: 11:00-11:01"] --> B["Boundary at 11:01:00"]

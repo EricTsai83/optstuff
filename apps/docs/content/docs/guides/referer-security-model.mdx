@@ -73,7 +73,7 @@ These are all legitimate, non-malicious scenarios. Blocking them would create fa
 
 OptStuff uses defense-in-depth with distinct layers, each protecting against a specific threat:
 
-```mermaid
+```mermaid title="Layered security model"
 flowchart TD
   A["Incoming Request"] --> B{"HMAC-SHA256\nSignature Valid?"}
   B -->|"Invalid/Expired"| X1["401/403 Rejected"]

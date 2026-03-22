@@ -24,7 +24,7 @@ The design centers on one idea: **transformations are not an open API**. They ar
 
 Production images usually live on a **CDN** as **remote URLs** (`img`, `srcset`, framework loaders). **Without a signed realtime optimizer**, the browser typically calls the CDN or an **open transform URL** whose width/format knobs are visible in the path or query—often assembled in the **frontend** to ship faster.
 
-```mermaid
+```mermaid title="Typical open or CDN transform flow"
 flowchart LR
   subgraph Typical["Typical flow"]
     direction LR
@@ -37,7 +37,7 @@ flowchart LR
 
 **With OptStuff**, the **canonical file stays on the CDN**. Your **app server** mints a **signed URL** (`sk_...` never ships to the client); OptStuff **verifies and applies policy**, then **fetches the remote source** and returns an optimized response.
 
-```mermaid
+```mermaid title="Signed URL flow with OptStuff"
 flowchart TB
   subgraph Signed["With OptStuff"]
     direction TB
@@ -59,7 +59,7 @@ flowchart TB
 
 OptStuff separates **who owns configuration** from **what each HTTP request is allowed to do**.
 
-```mermaid
+```mermaid title="Teams, projects, and API keys"
 flowchart TD
   Team["Team"] --> Project["Project"]
   Project --> ApiKey["API Key pair (pk_... + sk_...)"]
@@ -105,7 +105,7 @@ Under the hood, `sig` is an **HMAC** over a defined signing string that binds pa
 
 At runtime, **your app server** and **OptStuff** play distinct roles: one **mints** authority, the other **verifies** it and enforces policy.
 
-```mermaid
+```mermaid title="Runtime trust model"
 flowchart TB
   subgraph AppServer["App Server"]
     direction TB

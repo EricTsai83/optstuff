@@ -31,7 +31,7 @@ Because of this property, long-lived caching is safe when your URL shape remains
 
 ## Decision Flow
 
-```mermaid
+```mermaid title="Usage scenario decision flow"
 flowchart TD
   A["Start: which image request scenario is this?"] --> B{"Triggered directly by user interaction?"}
   B -->|Yes| C["Scenario C: user-triggered dynamic block"]
@@ -103,7 +103,7 @@ Security baseline:
 
 ## End-to-End Request Flow
 
-```mermaid
+```mermaid title="End-to-end request and CDN flow"
 sequenceDiagram
   participant U as Browser
   participant A as App API Route
