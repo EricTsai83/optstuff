@@ -13,42 +13,39 @@ A signed image URL is fetched with **one HTTPS round trip**: the client sends a 
 
 ```mermaid title="Architecture at a glance"
 flowchart TB
-  Client["Browser / backend / app<br/>or CDN edge on cache miss"]
+  Client["Browser / backend / app<br/>or CDN edge in front of OptStuff"]
   Client -->|"HTTPS request"| Gateway["Image gateway<br/>/api/v1/{projectSlug}/{operations}/{imageUrl}"]
-  subgraph Backing["Backing services the gateway calls"]
-    direction TB
-    Redis["Redis — API key & project cache,<br/>sliding-window rate limits"]
-    PG["PostgreSQL — teams, projects,<br/>keys, usage logs"]
-    Origin["Source image URL<br/>your signed origin"]
-  end
+  Redis["Redis — API key & project cache,<br/>sliding-window rate limits"]
+  PG["PostgreSQL — teams, projects,<br/>keys, usage logs"]
+  Origin["Image origin — S3, GCS, R2,<br/>UploadThing, …"]
   Gateway --> Redis
   Gateway --> PG
   Gateway --> Origin
   Gateway -->|"HTTPS response,<br/>optimized image"| Client
 ```
 
-### Client: ingress and response
+### Client
 
-Whoever opens TLS to your deployment: a **browser**, **app**, **your backend**, or a **CDN edge** that forwards on cache miss. See [CDN and Caching](/guides/cdn-caching). They issue the signed `GET` and read the response—not a separate OptStuff-hosted “client” service.
+Whoever opens TLS to your deployment: a **browser**, **app**, **your backend**, or a **CDN edge** in front of OptStuff (return cached optimized bytes or forward the signed `GET` on miss). That tier is **not Image origin**—the infrastructure that serves the **original** bytes (see the figure). See [CDN and Caching](/guides/cdn-caching). There is no separate OptStuff-hosted “client” service—these are just callers that consume the HTTP response.
 
-### Image gateway: center of the diagram
+### Image gateway
 
 The `/api/v1/...` **handler** ties the diagram together: it consults Redis and Postgres for **policy and limits**, and only when checks pass does it **fetch** the embedded source URL and run **IPX / Sharp** in the **same process**. The arrow back to the client is the **HTTP response** on that request, not a new outbound connection to the browser.
 
-### Redis: one box, two jobs
+### Redis
 
 Redis appears once in the figure but covers **two concerns**:
 
 - **Config cache, cache-aside:** Hot **project** and **API key** rows: domains, key metadata, **encrypted** secret material as stored in Redis, expiry and revocation, and rate-limit **settings**. Typical positive TTL **~60s**, plus a short **negative cache** for unknown keys. Key names, invalidation, and serialization: [Redis Schema](/architecture/redis-schema).
 - **Rate limits:** **Sliding-window** counters per **public key** in minute and day buckets. Over limit → **`429`**. These use **different Redis keys** than the config JSON blobs.
 
-### PostgreSQL: backing store
+### PostgreSQL
 
 **Source of truth** for teams, projects, API keys, and related operational data. The gateway reads through the **config cache** first; **misses** and **writes** hit Postgres.
 
-### Source URL and transforms
+### Image origin
 
-The **Origin** arrow is the gateway’s outbound fetch to your image. The signed path embeds that **remote URL**, usually on your **CDN** or **origin** server.
+**Image origin** is **your** storage or delivery stack—not OptStuff. The gateway reaches it with an outbound `GET` to the **remote URL embedded in the signed OptStuff path**—typically **object storage** (for example S3, GCS, or R2), a **hostname that delivers the original file** (often **CloudFront**, **Cloudflare**, or another **CDN** layered on the bucket), or an **upload host** (for example UploadThing). That URL may be public, presigned, or otherwise reachable over HTTP or HTTPS; it is not the OptStuff image URL itself.
 
 The gateway starts that fetch **only after** the **signature**, **rate limits**, and **domain rules** succeed. It loads the image over **HTTP or HTTPS**, decodes it, applies **width**, **format**, and **quality** from the path, and re-encodes the result **in the same handler** as the rest of the work. There is no second hop through OptStuff for a separate “image engine”; one client request yields one gateway response with the optimized bytes.
 
