@@ -13,15 +13,15 @@ A signed image URL is fetched with **one HTTPS round trip**: the client sends a 
 
 ```mermaid title="Architecture at a glance"
 flowchart TB
-  Client["Browser / backend / app<br/>or CDN edge in front of OptStuff"]
-  Client -->|"HTTPS request"| Gateway["Image gateway<br/>/api/v1/{projectSlug}/{operations}/{imageUrl}"]
-  Redis["Redis — API key & project cache,<br/>sliding-window rate limits"]
-  PG["PostgreSQL — teams, projects,<br/>keys, usage logs"]
-  Origin["Image origin — S3, GCS, R2,<br/>UploadThing, …"]
+  Frontend["<b>Frontend</b><br/>Browser / backend / app<br/>or CDN edge"]
+  Frontend -->|"HTTPS request"| Gateway["<b>Image gateway</b><br/>/api/v1/{projectSlug}/{operations}/{imageUrl}"]
+  Redis["<b>Redis</b><br/>API key & project cache,<br/>sliding-window rate limits"]
+  PG["<b>PostgreSQL</b><br/>teams, projects,<br/>keys, usage logs"]
+  Origin["<b>Image origin</b><br/>S3, GCS, R2,<br/>UploadThing, …"]
   Gateway --> Redis
   Gateway --> PG
   Gateway --> Origin
-  Gateway -->|"HTTPS response,<br/>optimized image"| Client
+  Gateway -->|"HTTPS response,<br/>optimized image"| Frontend
 ```
 
 ### Client
