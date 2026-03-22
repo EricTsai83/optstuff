@@ -9,46 +9,48 @@ For product-level concepts, see [What is OptStuff?](/docs). For the full impleme
 
 ## Architecture At A Glance
 
-A signed image URL is fetched with **one HTTPS round trip**: the client sends a `GET`, and the **same connection** carries back optimized bytes (or an error). The diagram is the **map** (which boxes exist and who calls whom). The subsections **below the diagram follow that map in reading order**—use them as the legend. For the **ordered validation pipeline** (not shown as separate boxes here), see [Request Flow](#request-flow).
+A signed image URL is fetched with **one HTTPS round trip**: the client sends a `GET`, and the **same connection** carries back optimized bytes or an error. The diagram is the **map**: it shows which boxes exist and who calls whom. The subsections **below the diagram** follow that map in reading order; use them as the legend. This figure does not break out the **ordered validation pipeline** as separate boxes; for that, see [Request Flow](#request-flow).
 
 ```mermaid title="Architecture at a glance"
 flowchart TB
-  Client["Browser / backend / app<br/>or CDN edge (forward on miss)"]
+  Client["Browser / backend / app<br/>or CDN edge on cache miss"]
   Client -->|"HTTPS request"| Gateway["Image gateway<br/>/api/v1/{projectSlug}/{operations}/{imageUrl}"]
-  subgraph Backing["Backing services (gateway calls these)"]
+  subgraph Backing["Backing services the gateway calls"]
     direction TB
     Redis["Redis — API key & project cache,<br/>sliding-window rate limits"]
     PG["PostgreSQL — teams, projects,<br/>keys, usage logs"]
-    Origin["Source image URL<br/>(your signed origin)"]
+    Origin["Source image URL<br/>your signed origin"]
   end
   Gateway --> Redis
   Gateway --> PG
   Gateway --> Origin
-  Gateway -->|"HTTPS response<br/>(optimized image)"| Client
+  Gateway -->|"HTTPS response,<br/>optimized image"| Client
 ```
 
-### Client (both sides of the client node)
+### Client: ingress and response
 
-Whoever opens TLS to your deployment: a **browser**, **app**, **your backend**, or a **CDN edge** that forwards on cache miss ([CDN and Caching](/guides/cdn-caching)). They issue the signed `GET` and read the response—not a separate OptStuff-hosted “client” service.
+Whoever opens TLS to your deployment: a **browser**, **app**, **your backend**, or a **CDN edge** that forwards on cache miss. See [CDN and Caching](/guides/cdn-caching). They issue the signed `GET` and read the response—not a separate OptStuff-hosted “client” service.
 
-### Image gateway (center box)
+### Image gateway: center of the diagram
 
 The `/api/v1/...` **handler** ties the diagram together: it consults Redis and Postgres for **policy and limits**, and only when checks pass does it **fetch** the embedded source URL and run **IPX / Sharp** in the **same process**. The arrow back to the client is the **HTTP response** on that request, not a new outbound connection to the browser.
 
-### Redis (one box, two jobs)
+### Redis: one box, two jobs
 
 Redis appears once in the figure but covers **two concerns**:
 
-- **Config cache (cache-aside):** Hot **project** and **API key** rows (domains, key metadata, **encrypted** secret material as stored in Redis, expiry/revocation, rate-limit **settings**). Typical positive TTL **~60s**, plus a short **negative cache** for unknown keys. Key names, invalidation, and serialization: [Redis Schema](/architecture/redis-schema).
-- **Rate limits:** **Sliding-window** counters per **public key** (minute + day buckets). Over limit → **`429`**. These use **different Redis keys** than the config JSON blobs.
+- **Config cache, cache-aside:** Hot **project** and **API key** rows: domains, key metadata, **encrypted** secret material as stored in Redis, expiry and revocation, and rate-limit **settings**. Typical positive TTL **~60s**, plus a short **negative cache** for unknown keys. Key names, invalidation, and serialization: [Redis Schema](/architecture/redis-schema).
+- **Rate limits:** **Sliding-window** counters per **public key** in minute and day buckets. Over limit → **`429`**. These use **different Redis keys** than the config JSON blobs.
 
-### PostgreSQL (backing box)
+### PostgreSQL: backing store
 
 **Source of truth** for teams, projects, API keys, and related operational data. The gateway reads through the **config cache** first; **misses** and **writes** hit Postgres.
 
-### Source URL and transforms (arrow to origin; execution inside the gateway)
+### Source URL and transforms
 
-The signed path carries a **remote image URL** (often your **CDN or origin**). The gateway **HTTP(S)-fetches** it **only after** signature, limits, and domain rules succeed. Decoding, **width / format / quality**, and re-encoding happen **in that handler**—there is no second OptStuff hop for “the image engine.”
+The **Origin** arrow is the gateway’s outbound fetch to your image. The signed path embeds that **remote URL**, usually on your **CDN** or **origin** server.
+
+The gateway starts that fetch **only after** the **signature**, **rate limits**, and **domain rules** succeed. It loads the image over **HTTP or HTTPS**, decodes it, applies **width**, **format**, and **quality** from the path, and re-encodes the result **in the same handler** as the rest of the work. There is no second hop through OptStuff for a separate “image engine”; one client request yields one gateway response with the optimized bytes.
 
 ## Request Flow
 
@@ -77,7 +79,7 @@ Key design decisions:
 
 | Layer | What It Protects |
 |-------|------------------|
-| **Signed URLs (HMAC-SHA256)** | Prevents unauthorized URL forging |
+| **Signed URLs, HMAC-SHA256** | Prevents unauthorized URL forging |
 | **Source domain allowlist** | Controls which image origins can be fetched |
 | **Referer allowlist** | Mitigates browser hotlinking |
 | **Key expiry / revocation** | Invalidates stale or compromised credentials |
@@ -87,8 +89,8 @@ Key design decisions:
 
 ```mermaid title="Team, project, and API key"
 flowchart TD
-  Team["Team"] --> Project["Project (domain security settings)"]
-  Project --> ApiKey["API Key (public/secret pair, rate limits, expiry)"]
+  Team["Team"] --> Project["Project<br/>domain security settings"]
+  Project --> ApiKey["API Key<br/>public/secret pair, rate limits, expiry"]
 ```
 
 Each level adds its own access control. For details on the resource hierarchy, see [Core Concepts](/introduction/core-concepts).
@@ -97,7 +99,7 @@ Each level adds its own access control. For details on the resource hierarchy, s
 
 | Scenario | Behavior |
 |----------|----------|
-| **Redis unavailable** | Rate limiter fails open (requests allowed), prioritizing availability |
+| **Redis unavailable** | Rate limiter fails open so requests are still allowed, prioritizing availability |
 | **Setting changes** | Propagate within ~60s via cache TTL |
 | **Source URL logging** | Query strings and hashes are sanitized for privacy |
 
