@@ -1,9 +1,38 @@
 ---
 title: Rate Limiting
-description: How OptStuff rate limiting works — sliding window algorithm, dual-layer limits, configuration, response format, and tuning recommendations.
+description: "How OptStuff rate limiting works: design rationale vs other algorithms, dual-layer limits, Upstash floating-window (approximated sliding), configuration, 429 responses, and tuning."
 ---
 
-Rate limiting protects your account from abuse and unexpected costs. Each API key has independent rate limits, enforced globally across all server instances.
+Rate limiting caps how fast a single API key can consume OptStuff. That reduces abuse, avoids surprise bills from runaway traffic, and keeps capacity fair when many clients share the service. Limits are enforced **per API key**, in **Redis**, and are visible to every instance so counts stay consistent globally.
+
+## Why OptStuff uses this approach
+
+There is no single algorithm that is “best” for every product. The choice depends on how quota should refill, how much compliant traffic is allowed to bunch up at window edges, and what it costs to run at scale. OptStuff’s constraints are:
+
+- **Multiple app instances** → counts must live in a **shared store** (Redis via Upstash), not only in process memory.
+- **Image workloads** → need both **short-horizon** control (sudden spikes) and **long-horizon** control (sustained overuse and cost).
+- **Fair, predictable abuse bounds** → prefer limiting the classic **fixed-window boundary burst** (two back-to-back compliant bursts can briefly approach ~2× the nominal rate in real time).
+- **Global API** → avoid **calendar-day fixed buckets** tied to a single timezone’s midnight where possible; rolling windows sidestep that class of edge case.
+- **Availability** → if Redis is down, the limiter **fails open** so serving stays up; rate limiting is protective, not the only line of defense (see [Design Notes](#design-notes)).
+
+### How common families compare
+
+| Family | How quota behaves | Boundary / burst shape | Cost at scale |
+|--------|---------------------|------------------------|---------------|
+| **Fixed window** | Counter resets on each clock bucket | Compliant traffic can **pile up near edges** and briefly approach ~**2×** the limit across a boundary | Cheap; very easy to explain (“resets at :00”) |
+| **True sliding window** | Count every request whose timestamp falls in the last *N* seconds | Smooth; matches “last minute / last 24h” literally | Expensive: many writes or large per-key state at high queries per second (QPS) |
+| **Approximated sliding window** (“floating window”) | **Weight** the previous fixed bucket + full current bucket to estimate the sliding count | Nearly as smooth as true sliding; **blocks the worst boundary doubling** with far less state | **Moderate** — a small, fixed number of Redis operations per check |
+| **Token bucket** | Bucket size = burst; refill rate = long-term average | Explicit **burst vs steady** in one mechanism | Different knobs and docs; great when that model matches your product language |
+
+**What OptStuff chose.** Per API key we use **approximated sliding windows** via [`Ratelimit.slidingWindow`](/guides/rate-limiting#approximated-sliding-window-in-optstuff) in the dashboard app (`rate-limiter.ts`) — the same *family* of approach used by many production edge limiters, without storing every request timestamp.
+
+**Why not fixed windows here?** They are simpler to describe but allow the boundary burst above; for per-minute and rolling-day protection we want smoother enforcement.
+
+**Why not a strict per-request sliding list?** Correctness would be marginally tighter, but Redis and CPU cost would not match OptStuff’s scale goals; the floating-window approximation is the usual trade-off.
+
+**Why not a token bucket (for these limits)?** Token buckets are an excellent pattern when you want one mechanism with separate **burst capacity** and **refill interval**. OptStuff instead uses **two independent sliding limits** (per minute and per rolling day). That maps directly to “spike vs all-day volume,” stays easy to reason about in docs and headers, and does not require customers to learn bucket refill semantics.
+
+The sections below cover **defaults for those two layers**, then the **exact floating-window math** and a worked example.
 
 ## Dual-Layer Limits
 
@@ -11,31 +40,64 @@ Every request is checked against two independent limits. Both must pass.
 
 | Layer | Default | Window | Purpose |
 |-------|---------|--------|---------|
-| Per-day | 10,000 requests | 24 hours | Catch sustained overuse |
-| Per-minute | 60 requests | 1 minute | Catch sudden bursts |
+| Per-day | 10,000 requests | 24 hours (rolling) | Catch sustained overuse |
+| Per-minute | 60 requests | 1 minute (rolling) | Catch sudden bursts |
 
-## Algorithm: Sliding Window
+Each layer uses the same **approximated sliding window** (often called a **floating window**): counts are blended across two adjacent time buckets instead of resetting all capacity on a sharp clock tick. Implementation is `Ratelimit.slidingWindow` from the Upstash Rate Limit SDK in the dashboard app (`rate-limiter.ts`).
 
-Unlike fixed windows that can allow up to 2× burst at boundaries, the sliding window algorithm produces smooth limits:
 
-```mermaid title="Fixed window vs sliding window"
-flowchart TD
-  subgraph FW["Fixed Window (problem at boundary)"]
-    F1["Window 1: 11:00-11:01"] --> B["Boundary at 11:01:00"]
-    F2["Window 2: 11:01-11:02"] --> B
-    F1 -. "59 req just before boundary" .-> B
-    F2 -. "60 req just after boundary" .-> B
-    B --> F3["Up to 119 requests in ~1 second"]
-  end
+## Approximated sliding window in OptStuff
 
-  subgraph SW["Sliding Window (smooth)"]
-    S1["At 11:01:15 (25% into current window)"] --> S2["Previous = 42, Current = 18"]
-    S2 --> S3["Weighted = 42 * 0.75 + 18 = 49.5"]
-    S3 --> S4["Under limit"]
-  end
+**Sliding window (floating window)** builds on the **fixed window**: time is still sliced into buckets of the window length (for per-minute limits, each bucket is one clock minute, e.g. `00:00:00`–`00:01:00`). Instead of treating only the current bucket as “the count,” the limiter **blends** the previous bucket and the current bucket so enforcement behaves like a **rolling** lookback, without storing every request timestamp.
+
+At any instant the limiter:
+
+1. Reads the count in the **previous** fixed window (e.g. the last full minute).
+2. Reads the count in the **current** fixed window (the minute in progress).
+3. **Weights** the previous window’s count by how much that window still overlaps a “true” sliding lookback ending at *now*.
+4. Adds **(weighted previous) + (unweighted current)** and compares that estimate to your limit.
+
+### Worked example (per-minute limit)
+
+Suppose the limit is **10 requests per 1 minute**. Buckets align to clock minutes: window 1 is `00:00:00`–`00:01:00`, window 2 is `00:01:00`–`00:02:00`, and so on.
+
+At **`00:01:15`** (15 seconds into the current minute), say **4** requests were counted in the **previous** minute and **5** requests so far in the **current** minute. The usual **approximation** is:
+
+```text
+limit = 10
+
+# Weighted contribution from the old bucket + full count in the current bucket
+rate = 4 × ((60 − 15) / 60) + 5
+     = 4 × (45 / 60) + 5
+     = 8
+
+allow ⇔ rate < limit   # here 8 < 10 → allow
 ```
 
-## Configuration
+The factor `(60 − 15) / 60` is the fraction of a true **last-60-seconds** window that still lies inside the **previous** clock minute when `now` is 15 s past the boundary (45 s of the last minute of real time overlap the old bucket → weight `45/60`).
+
+In one line (same shape as common floating-window docs):
+
+```text
+approximation = (prevWindowCount × prevWindowWeight) + currentWindowCount
+```
+
+`prevWindowWeight` is between `0` and `1` and moves smoothly as time advances within the current bucket, so there is no single instant where the previous bucket’s contribution drops to zero “all at once” the way a fixed window resets.
+
+**Intuition.** Ask: “How much of the *previous* clock minute still falls inside my last-60-seconds lookback?” That fraction scales the old bucket’s count. The *current* minute’s count is added at full weight. Compare the sum to the limit—no sharp reset at `hh:mm:00`.
+
+**Pros**
+
+- **Smoother than fixed window:** reduces the classic **boundary burst** where two compliant bursts back-to-back can briefly approach ~**2×** the nominal rate across a bucket edge.
+
+**Cons**
+
+- **More work than a single counter:** needs two bucket counts (and the blend) per check—**moderate** Redis and CPU cost compared to one fixed-window key, but far less than a true sliding window that retains every timestamp.
+- **Only an approximation:** it assumes requests in the previous bucket were **spread evenly** across that minute. If traffic was bunched at the end of the old window, the estimate can be **optimistic** compared to a strict sliding count.
+
+OptStuff applies this same family of logic **per API key** via `Ratelimit.slidingWindow` in the dashboard (`rate-limiter.ts`) for both **1 minute** and **1 day** windows—the numbers above illustrate the minute case; the day layer uses the same idea with 24 h buckets.
+
+## Default Configuration
 
 Rate limits are stored per API key in the database:
 
@@ -44,12 +106,12 @@ Rate limits are stored per API key in the database:
 | `rateLimitPerMinute` | 1 – 10,000 | 60 |
 | `rateLimitPerDay` | 1 – 1,000,000 | 10,000 |
 
-New API keys are created with the default limits. Custom per-key rate limits are not yet configurable through the dashboard UI — this feature is planned for a future release. If you need to adjust limits, update the `api_key` table directly:
+New API keys are created with the default limits. Custom per-key rate limits are not yet configurable through the dashboard UI; this feature is planned for a future release. If you need to adjust limits, update the `api_key` table directly:
 
-- **`rateLimitPerMinute`** — valid range: 1 – 10,000
-- **`rateLimitPerDay`** — valid range: 1 – 1,000,000
+- **`rateLimitPerMinute`**: valid range: 1 – 10,000
+- **`rateLimitPerDay`**: valid range: 1 – 1,000,000
 
-> **Before modifying:** back up the `api_key` table and validate that your values fall within the ranges above (the schema enforces integer type but not range — out-of-range values may cause unexpected behaviour). If you are unsure about the correct limits for your use case, contact support.
+> **Before modifying:** back up the `api_key` table and validate that your values fall within the ranges above (the schema enforces integer type but not range; out-of-range values may cause unexpected behaviour). If you are unsure about the correct limits for your use case, contact support.
 
 Changes take effect within 60 seconds (cache TTL).
 
@@ -115,9 +177,9 @@ async function fetchWithRetry(
 
 Key principles:
 
-- **Respect `Retry-After`** — always prefer the server-provided delay over your own backoff
-- **Add jitter** — prevents multiple clients from retrying in sync (thundering herd)
-- **Limit retries** — 3 retries is usually sufficient; more indicates a capacity problem
+- **Respect `Retry-After`**: always prefer the server-provided delay over your own backoff
+- **Add jitter**: prevents multiple clients from retrying in sync (thundering herd)
+- **Limit retries**: 3 retries is usually sufficient; more indicates a capacity problem
 
 ## CDN and Rate Limiting Interaction
 
@@ -125,8 +187,8 @@ If you place a CDN (Cloudflare, CloudFront, Vercel Edge) in front of OptStuff:
 
 | Scenario | Rate Limit Impact |
 |----------|------------------|
-| CDN cache **hit** | No request reaches OptStuff — rate limit is **not consumed** |
-| CDN cache **miss** | Request reaches OptStuff — rate limit is consumed |
+| CDN cache **hit** | No request reaches OptStuff, so the rate limit is **not consumed** |
+| CDN cache **miss** | Request reaches OptStuff and the rate limit is consumed |
 | First request for a URL | Always consumes quota (cache is cold) |
 
 This means rate limits primarily affect unique or uncached requests. For high-traffic sites with good CDN cache hit ratios, rate limits are rarely a concern.
@@ -152,7 +214,8 @@ When the rate limiter fails open (Redis unavailable), monitor for abnormal traff
 
 ## Related Documentation
 
-- [Key Management](/guides/key-management) — Managing API keys (per-key rate limits not configurable in dashboard yet)
-- [CDN and Caching](/guides/cdn-caching) — Cache strategies that reduce rate limit pressure
-- [Error Codes](/api-reference/error-codes) — Rate limit error details
-- [Security Best Practices](/guides/security-best-practices) — Broader security context
+- [Key Management](/guides/key-management): Managing API keys (per-key rate limits not configurable in dashboard yet)
+- [CDN and Caching](/guides/cdn-caching): Cache strategies that reduce rate limit pressure
+- [Error Codes](/api-reference/error-codes): Rate limit error details
+- [Security Best Practices](/guides/security-best-practices): Broader security context
+
