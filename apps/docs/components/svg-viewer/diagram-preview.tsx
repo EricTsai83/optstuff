@@ -53,7 +53,10 @@ export function DiagramPreview({
           <DiagramToolbarButton
             label="Open Full Screen"
             onClick={onOpenFullScreen}
-            className={cn(DIAGRAM_TOOLBAR_ACTION_BUTTON, "w-full md:w-auto")}
+            className={cn(
+              DIAGRAM_TOOLBAR_ACTION_BUTTON,
+              "w-full whitespace-nowrap md:w-auto",
+            )}
           />
         }
       />
