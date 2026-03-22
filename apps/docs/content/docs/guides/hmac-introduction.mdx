@@ -20,18 +20,37 @@ Put more simply:
 
 That is the core idea behind HMAC-based message authentication.
 
-```mermaid title="HMAC"
+Start with **how the authentication tag is computed**. Signer and verifier both use the same operation: feed the **message** and **secret key** into HMAC; the output is the **tag** (also called the MAC or signature).
+
+```mermaid title="Computing the authentication tag"
 flowchart LR
   M["Message\n(data to authenticate)"] --> H["HMAC-SHA256"]
   K["Secret key"] --> H
   H --> T["Authentication tag\n(MAC / signature)"]
 ```
 
-In this diagram:
+**Reading the block diagram:**
 
-- **Message** — The exact bytes or string both sides feed into HMAC. Signer and verifier must use the same content in the same order and encoding; if anything changes, the tag will not match.
-- **Secret key** — A shared secret known only to parties that are allowed to sign or verify.
-- **Authentication tag** — The fixed-length output of HMAC. It acts as proof that someone with the key approved this message and that the message was not tampered with afterward.
+- **Message:** The exact bytes or string both sides feed into HMAC. Signer and verifier must use the same content in the same order and encoding; if anything changes, the tag will not match.
+- **Secret key:** A shared secret known only to parties that are allowed to sign or verify.
+- **Authentication tag:** The fixed-length output of HMAC. It acts as proof that someone with the key approved this message and that the message was not tampered with afterward.
+
+The tag does **not** embed or encode the message itself: HMAC output length is fixed no matter how long the message is, and you cannot recover the message from the tag alone. What the tag provides is a **binding** under the secret: any change to the message changes the tag. Protocols therefore pass **message and tag together** (or the verifier rebuilds the same message from context and compares against the tag).
+
+**Then**, in a typical integration, one party **signs** by running that computation once and sends the **message plus tag** to another party that **verifies** by running the same HMAC again and comparing:
+
+```mermaid title="Sign and verify data flow"
+sequenceDiagram
+  participant Signer
+  participant Verifier
+  Note over Signer: tag = HMAC with secret over message
+  Signer->Verifier: message + tag
+  rect rgba(96, 112, 160, 0.14)
+    Note over Verifier: expected = HMAC with secret over message
+    Verifier->Verifier: constant-time compare expected vs tag
+    Note over Verifier: accept if equal · reject if not
+  end
+```
 
 For OptStuff signed URLs, which fields make up the message and how the tag is represented in the URL are defined in [URL Signing](/guides/url-signing).
 
@@ -47,13 +66,7 @@ Why:
 
 For example, if an attacker can guess or construct possible messages, they can compute hashes for them on their own. A plain hash only says “this data hashes to this value.” It does not say “a trusted signer approved this data.”
 
-HMAC fixes that by adding a secret key to the process.
-
-With HMAC:
-
-- a valid tag can be created only by someone who knows the secret key
-- anyone without the secret cannot forge tags for new messages they choose
-- changing the message breaks the tag
+HMAC fixes that by adding a secret key to the process: only someone with the secret can produce a valid tag for a chosen message, and any change to the message breaks the tag.
 
 ## HMAC is not encryption
 
@@ -70,12 +83,10 @@ So an observer can read the message. What they cannot practically do is recover 
 
 Using HMAC gives you two main guarantees:
 
-1. **Authenticity** — The message was approved by someone who knows the secret key.
-2. **Integrity** — The message has not been changed since it was signed.
+1. **Authenticity:** The message was approved by someone who knows the secret key.
+2. **Integrity:** The message has not been changed since it was signed.
 
-This does not give you confidentiality. Anyone who has the message and a valid tag can see the same content the signer saw.
-
-For capability-style URLs (including OptStuff), possession of the full URL may be enough to use it until it expires or the key is rotated.
+There is still **no confidentiality** (see [HMAC is not encryption](#hmac-is-not-encryption) above). For capability-style URLs (including OptStuff), possession of the full URL may be enough to use it until it expires or the key is rotated.
 
 ## What OptStuff does with HMAC
 
@@ -89,11 +100,7 @@ OptStuff uses HMAC-SHA256 with your secret key over a defined signing payload de
 - optional expiry
 - other fields included by the signing spec
 
-When a request arrives, OptStuff recomputes the expected HMAC from the same payload and compares it with the provided `sig`.
-
-If the values match, the URL is accepted.
-
-If they do not match, the request is rejected.
+On each request, OptStuff recomputes the expected HMAC from the same payload and accepts the URL only when it matches `sig`; otherwise the request is rejected.
 
 This page explains the concept only. For details such as base64url encoding, truncation to 32 characters, and exact payload construction, see URL Signing.
 
@@ -101,27 +108,17 @@ This page explains the concept only. For details such as base64url encoding, tru
 
 | Topic | What to remember |
 | --- | --- |
-| Secret custody | Keep `sk_...` on your server only. Never expose it to browsers, mobile apps, or client-side code. If it leaks, an attacker can mint valid URLs until you rotate the key. See Key Management. |
-| Replay | A valid signed URL can usually be reused as-is for the same request. Optional `exp` limits how long that is possible. See URL Signing § Signature expiration. |
-| Verification | Signature checks should use constant-time comparison to reduce timing side channels. OptStuff does this on its side; follow the same practice in your own security-sensitive code. See Security Best Practices. |
+| Secret custody | Keep `sk_...` on your server only. Never expose it to browsers, mobile apps, or client-side code. If it leaks, an attacker can mint valid URLs until you rotate the key. See [Key Management](/guides/key-management). |
+| Replay | A valid signed URL can usually be reused as-is for the same request. Optional `exp` limits how long that is possible. See [URL Signing](/guides/url-signing) § Signature expiration. |
+| Verification | Signature checks should use constant-time comparison to reduce timing side channels. OptStuff does this on its side; follow the same practice in your own security-sensitive code. See [Security Best Practices](/guides/security-best-practices). |
 | Algorithm | The product standard is HMAC-SHA256. Do not replace it with plain hashes or custom signing schemes. |
 
 ## A simple mental model
 
-You can think of HMAC like a tamper-evident seal created with a secret stamp.
-
-- the URL is the package
-- the secret key is the stamp only trusted systems own
-- the signature is the seal on the package
-
-If the package is changed, the seal no longer matches.
-
-If someone does not have the stamp, they cannot make a valid seal for a new package.
-
-That is essentially what `sig` does for an OptStuff URL.
+Treat **`sig` as a tamper-evident seal** pressed with a stamp only trusted systems hold: the signed URL is the sealed package. Change the payload and the seal no longer fits; without the stamp, nobody can forge a valid seal for a new package.
 
 ## Related reading
 
-- [Core Concepts](/introduction/core-concepts) — How sig fits the signed-URL contract
-- [Referer Security Model](/guides/referer-security-model) — Why Referer is not a replacement for signing
-- [URL Signing](/guides/url-signing) — Authoritative signing specification for OptStuff
+- [Core Concepts](/introduction/core-concepts): how `sig` fits the signed-URL contract
+- [Referer Security Model](/guides/referer-security-model): why Referer is not a replacement for signing
+- [URL Signing](/guides/url-signing): authoritative signing specification for OptStuff

@@ -9,7 +9,7 @@ export const DIAGRAM_TOOLBAR_ACTION_BUTTON =
 
 /** Compact primary icon control for inline preview — opens full-screen diagram viewer. */
 export const DIAGRAM_TOOLBAR_PREVIEW_FULLSCREEN_ICON_BUTTON =
-  "inline-flex size-10 shrink-0 items-center justify-center rounded-lg border border-transparent bg-fd-primary text-fd-primary-foreground shadow-sm shadow-fd-primary/15 hover:bg-fd-primary/92 hover:shadow-md active:scale-95 cursor-pointer transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fd-ring focus-visible:ring-offset-2 focus-visible:ring-offset-fd-card md:size-9";
+  "inline-flex size-10 shrink-0 items-center justify-center rounded-lg border border-fd-border bg-fd-popover text-fd-primary hover:bg-fd-primary/10 active:scale-95 cursor-pointer transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fd-ring focus-visible:ring-offset-2 focus-visible:ring-offset-fd-card md:size-9 dark:border-transparent dark:bg-fd-primary dark:text-fd-primary-foreground dark:hover:bg-fd-primary/92";
 
 export const DIAGRAM_TOOLBAR_ZOOM_BUTTON = `${DIAGRAM_TOOLBAR_ACTION_BUTTON} flex size-10 items-center justify-center text-base md:size-auto md:px-3 md:py-2 md:text-lg`;
 
