@@ -74,13 +74,13 @@ Key design decisions:
 
 ## Security Boundaries
 
-| Layer | What It Protects | Read more |
-|-------|------------------|-----------|
-| **Signed URLs, HMAC-SHA256** | Prevents unauthorized URL forging | [Read more](/guides/url-signing) |
-| **Source domain allowlist** | Controls which image origins can be fetched | [Read more](/guides/domain-whitelisting) |
-| **Referer allowlist** | Mitigates browser hotlinking | [Read more](/guides/referer-security-model) |
-| **Key expiry / revocation** | Invalidates stale or compromised credentials | [Read more](/guides/key-management) |
-| **Rate limiting** | Limits abuse and accidental bursts | [Read more](/guides/rate-limiting) |
+| Layer | What It Protects |
+|-------|------------------|
+| [**Signed URLs, HMAC-SHA256**](/guides/url-signing) | Prevents unauthorized URL forging |
+| [**Source domain allowlist**](/guides/domain-whitelisting) | Controls which image origins can be fetched |
+| [**Referer allowlist**](/guides/referer-security-model) | Mitigates browser hotlinking |
+| [**Key expiry / revocation**](/guides/key-management) | Invalidates stale or compromised credentials |
+| [**Rate limiting**](/guides/rate-limiting) | Limits abuse and accidental bursts |
 
 ## Data Model
 
