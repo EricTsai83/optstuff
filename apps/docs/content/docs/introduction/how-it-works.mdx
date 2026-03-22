@@ -11,7 +11,7 @@ For product-level concepts, see [What is OptStuff?](/docs). For the full impleme
 
 A signed image URL is fetched with **one HTTPS round trip**: the client sends a `GET`, and the **same connection** carries back optimized bytes or an error. The diagram is the **map**: it shows which boxes exist and who calls whom. The subsections **below the diagram** follow that map in reading order; use them as the legend. This figure does not break out the **ordered validation pipeline** as separate boxes; for that, see [Request Flow](#request-flow).
 
-```mermaid title="Image request path (system view)"
+```mermaid title="Image request path"
 flowchart TB
   Frontend["<b>Frontend</b><br/>Browser / backend / app<br/>or CDN edge"]
   Frontend -->|"HTTPS request"| Gateway["<b>Image gateway</b><br/>/api/v1/{projectSlug}/{operations}/{imageUrl}"]
@@ -74,13 +74,13 @@ Key design decisions:
 
 ## Security Boundaries
 
-| Layer | What It Protects |
-|-------|------------------|
-| **Signed URLs, HMAC-SHA256** | Prevents unauthorized URL forging |
-| **Source domain allowlist** | Controls which image origins can be fetched |
-| **Referer allowlist** | Mitigates browser hotlinking |
-| **Key expiry / revocation** | Invalidates stale or compromised credentials |
-| **Rate limiting** | Limits abuse and accidental bursts |
+| Layer | What It Protects | Read more |
+|-------|------------------|-----------|
+| **Signed URLs, HMAC-SHA256** | Prevents unauthorized URL forging | [Read more](/guides/url-signing) |
+| **Source domain allowlist** | Controls which image origins can be fetched | [Read more](/guides/domain-whitelisting) |
+| **Referer allowlist** | Mitigates browser hotlinking | [Read more](/guides/referer-security-model) |
+| **Key expiry / revocation** | Invalidates stale or compromised credentials | [Read more](/guides/key-management) |
+| **Rate limiting** | Limits abuse and accidental bursts | [Read more](/guides/rate-limiting) |
 
 ## Data Model
 
