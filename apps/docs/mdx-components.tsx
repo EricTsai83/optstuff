@@ -1,5 +1,5 @@
 import defaultMdxComponents from "fumadocs-ui/mdx";
-import { Mermaid } from "@/components/mdx/mermaid";
+import { Mermaid } from "@/components/fumadocs-mermaid";
 import {
   FrameworkGrid,
   FrameworkCard,

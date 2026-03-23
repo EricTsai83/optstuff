@@ -1,5 +1,5 @@
 import { metaSchema, pageSchema } from "fumadocs-core/source/schema";
-import { remarkMdxMermaidWithTitle } from "./remark-mdx-mermaid-title";
+import { remarkMdxMermaidWithTitle } from "./components/fumadocs-mermaid/remark-mdx-mermaid-with-title";
 import { defineConfig, defineDocs } from "fumadocs-mdx/config";
 import lastModified from "fumadocs-mdx/plugins/last-modified";
 

@@ -17,9 +17,19 @@ function visitNodes(node: RemarkNode, visitor: (n: RemarkNode) => void): void {
   }
 }
 
+type MdxJsxAttribute = {
+  type: "mdxJsxAttribute";
+  name: string;
+  value: string | null;
+};
+
+function jsxStringAttr(name: string, value: string): MdxJsxAttribute {
+  return { type: "mdxJsxAttribute", name, value };
+}
+
 /**
- * Like `remarkMdxMermaid` from fumadocs-core, but forwards optional meta:
- * `title="..."` (short figure title) and `caption="..."` (optional reading note for the preview toolbar).
+ * Like `remarkMdxMermaid` from `fumadocs-mermaid`, but forwards optional meta:
+ * `title="..."` and `caption="..."` for the diagram block.
  *
  * @example
  * ```mermaid title="Request pipeline" caption="Arrows follow request order."
@@ -35,33 +45,15 @@ export function remarkMdxMermaidWithTitle(options: { lang?: string } = {}) {
 
       const meta = typeof node.meta === "string" ? node.meta : "";
       const { attributes } = parseCodeBlockAttributes(meta, ["title", "caption"]);
-      const title = attributes.title;
-      const caption = attributes.caption;
 
-      const jsxAttrs: Array<{
-        type: "mdxJsxAttribute";
-        name: string;
-        value: string | null;
-      }> = [
-        {
-          type: "mdxJsxAttribute",
-          name: "chart",
-          value: node.value.trim(),
-        },
+      const jsxAttrs: MdxJsxAttribute[] = [
+        jsxStringAttr("chart", node.value.trim()),
       ];
-      if (typeof title === "string" && title.length > 0) {
-        jsxAttrs.push({
-          type: "mdxJsxAttribute",
-          name: "title",
-          value: title,
-        });
-      }
-      if (typeof caption === "string" && caption.length > 0) {
-        jsxAttrs.push({
-          type: "mdxJsxAttribute",
-          name: "caption",
-          value: caption,
-        });
+      for (const key of ["title", "caption"] as const) {
+        const v = attributes[key];
+        if (typeof v === "string" && v.length > 0) {
+          jsxAttrs.push(jsxStringAttr(key, v));
+        }
       }
 
       Object.assign(node, {
