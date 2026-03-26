@@ -81,6 +81,10 @@ function ZoomableViewport({
   showFrame = true,
   /** Fill the viewport height and flex-center the SVG (fullscreen). Inline preview keeps content-height. */
   centerInViewport = false,
+  /** Allow single-pointer panning. Touch input can disable drag while keeping pinch zoom. */
+  panEnabled = true,
+  /** Allow two-finger pinch zoom. Inline preview can disable it to stay read-only. */
+  pinchZoomEnabled = true,
 }: {
   readonly children: ReactNode;
   readonly actionsRef: RefObject<ZoomActions | null>;
@@ -90,6 +94,8 @@ function ZoomableViewport({
   /** When false, omit border/radius so a parent card can wrap header + viewport as one unit. */
   readonly showFrame?: boolean;
   readonly centerInViewport?: boolean;
+  readonly panEnabled?: boolean;
+  readonly pinchZoomEnabled?: boolean;
 }) {
   const outerRef = useRef<HTMLDivElement>(null);
   const innerRef = useRef<HTMLDivElement>(null);
@@ -219,6 +225,11 @@ function ZoomableViewport({
     const outer = outerRef.current;
     if (!outer) return;
 
+    if (!panEnabled && !pinchZoomEnabled) {
+      outer.style.cursor = "default";
+      return;
+    }
+
     activePointersRef.current.set(e.pointerId, {
       cx: e.clientX,
       cy: e.clientY,
@@ -227,17 +238,23 @@ function ZoomableViewport({
 
     if (activePointersRef.current.size >= 2) {
       draggingRef.current = false;
+      if (!pinchZoomEnabled) {
+        pinchLastDistRef.current = null;
+        outer.style.cursor = panEnabled ? "grab" : "default";
+        return;
+      }
       const rect = outer.getBoundingClientRect();
       const pinch = pinchMetricsFromMap(activePointersRef.current, rect);
       pinchLastDistRef.current = pinch && pinch.dist >= 8 ? pinch.dist : null;
-      outer.style.cursor = "grab";
+      outer.style.cursor = panEnabled ? "grab" : "default";
       return;
     }
 
-    draggingRef.current = true;
+    const allowSinglePointerPan = panEnabled && e.pointerType !== "touch";
+    draggingRef.current = allowSinglePointerPan;
     lastPointerRef.current = { x: e.clientX, y: e.clientY };
-    outer.style.cursor = "grabbing";
-  }, []);
+    outer.style.cursor = allowSinglePointerPan ? "grabbing" : "default";
+  }, [panEnabled, pinchZoomEnabled]);
 
   const handlePointerMove = useCallback(
     (e: PointerEvent<HTMLDivElement>) => {
@@ -252,7 +269,7 @@ function ZoomableViewport({
       }
 
       const rect = outer.getBoundingClientRect();
-      if (activePointersRef.current.size >= 2) {
+      if (pinchZoomEnabled && activePointersRef.current.size >= 2) {
         const pinch = pinchMetricsFromMap(activePointersRef.current, rect);
         if (!pinch || pinch.dist < 8) return;
         const lastDist = pinchLastDistRef.current;
@@ -283,7 +300,7 @@ function ZoomableViewport({
       stateRef.current.translateY += dy;
       applyTransform();
     },
-    [applyTransform, clampScale],
+    [applyTransform, clampScale, pinchZoomEnabled],
   );
 
   const handlePointerUp = useCallback((e: PointerEvent<HTMLDivElement>) => {
@@ -295,8 +312,8 @@ function ZoomableViewport({
     }
 
     const outer = outerRef.current;
-    if (outer) outer.style.cursor = "grab";
-  }, []);
+    if (outer) outer.style.cursor = panEnabled ? "grab" : "default";
+  }, [panEnabled]);
 
   const zoomIn = useCallback(() => {
     const outer = outerRef.current;
@@ -362,7 +379,7 @@ function ZoomableViewport({
               border: "1px solid var(--fd-border, #e5e7eb)",
             }
           : {}),
-        cursor: "grab",
+        cursor: panEnabled ? "grab" : "default",
         touchAction: "none",
       }}
       onPointerDown={handlePointerDown}
@@ -404,8 +421,12 @@ function SvgMount({
 
     bindFunctions?.(node);
 
-    if (!useIntrinsicSize) return;
     const svg = node.querySelector("svg");
+    if (svg instanceof SVGSVGElement) {
+      svg.setAttribute("draggable", "false");
+    }
+
+    if (!useIntrinsicSize) return;
     if (!(svg instanceof SVGSVGElement)) return;
 
     const intrinsicSize = getSvgIntrinsicSize(svg);
@@ -487,6 +508,7 @@ export function SvgViewer({
   const renderToolbar = (
     actionsRef: RefObject<ZoomActions | null>,
     showFullscreenToggle: boolean,
+    showZoomControls = true,
   ) => (
     <div className="flex flex-wrap items-center gap-1" data-diagram-toolbar>
       {previewDescription?.trim() ? (
@@ -499,24 +521,28 @@ export function SvgViewer({
           <Info style={{ width: 14, height: 14 }} aria-hidden />
         </button>
       ) : null}
-      <ToolbarButton
-        label="Zoom in"
-        onClick={() => actionsRef.current?.zoomIn()}
-      >
-        <ZoomIn style={{ width: 14, height: 14 }} />
-      </ToolbarButton>
-      <ToolbarButton
-        label="Zoom out"
-        onClick={() => actionsRef.current?.zoomOut()}
-      >
-        <ZoomOut style={{ width: 14, height: 14 }} />
-      </ToolbarButton>
-      <ToolbarButton
-        label="Reset zoom"
-        onClick={() => actionsRef.current?.reset()}
-      >
-        <RotateCcw style={{ width: 14, height: 14 }} />
-      </ToolbarButton>
+      {showZoomControls ? (
+        <>
+          <ToolbarButton
+            label="Zoom in"
+            onClick={() => actionsRef.current?.zoomIn()}
+          >
+            <ZoomIn style={{ width: 14, height: 14 }} />
+          </ToolbarButton>
+          <ToolbarButton
+            label="Zoom out"
+            onClick={() => actionsRef.current?.zoomOut()}
+          >
+            <ZoomOut style={{ width: 14, height: 14 }} />
+          </ToolbarButton>
+          <ToolbarButton
+            label="Reset zoom"
+            onClick={() => actionsRef.current?.reset()}
+          >
+            <RotateCcw style={{ width: 14, height: 14 }} />
+          </ToolbarButton>
+        </>
+      ) : null}
       {showFullscreenToggle ? (
         <ToolbarButton label="Full screen" onClick={() => setFullscreen(true)}>
           <Maximize2 style={{ width: 14, height: 14 }} />
@@ -532,12 +558,16 @@ export function SvgViewer({
     showFrame: boolean,
     centerInViewport = false,
     useIntrinsicSize = false,
+    panEnabled = true,
+    pinchZoomEnabled = true,
   ) => (
     <ZoomableViewport
       actionsRef={actionsRef}
       wheelZoomEnabled={wheelZoomEnabled}
       showFrame={showFrame}
       centerInViewport={centerInViewport}
+      panEnabled={panEnabled}
+      pinchZoomEnabled={pinchZoomEnabled}
       className={`bg-fd-background w-full ${sizeClass}`}
     >
       <SvgMount
@@ -576,7 +606,7 @@ export function SvgViewer({
               </div>
             </div>
             <div className="relative min-h-0 flex-1">
-              {diagram(fsActionsRef, "h-full min-h-0", true, false, true)}
+              {diagram(fsActionsRef, "h-full min-h-0", true, false, true, true)}
             </div>
           </div>
         </div>
@@ -596,10 +626,19 @@ export function SvgViewer({
             </div>
           ) : null}
           <div className="flex shrink-0 flex-wrap items-center gap-1">
-            {renderToolbar(inlineActionsRef, true)}
+            {renderToolbar(inlineActionsRef, true, false)}
           </div>
         </div>
-        {diagram(inlineActionsRef, "min-h-[12rem]", false, false)}
+        {diagram(
+          inlineActionsRef,
+          "min-h-[12rem]",
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+        )}
       </div>
       {overlay}
     </figure>
