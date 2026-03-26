@@ -23,14 +23,37 @@ const FULLSCREEN_FIT_HEADROOM = 0.88;
 /** Client-space coords for multi-touch pinch + pan. */
 type PointerClient = { readonly cx: number; readonly cy: number };
 
+function parseSvgLength(value: string | null): number | null {
+  if (!value) return null;
+  const normalized = value.trim();
+  if (!normalized || normalized.endsWith("%")) return null;
+  const match = normalized.match(/^([0-9]*\.?[0-9]+)(px)?$/i);
+  if (!match) return null;
+  const parsed = Number.parseFloat(match[1] ?? "");
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+}
+
+function getSvgIntrinsicSize(
+  svg: SVGSVGElement,
+): { width: number; height: number } | null {
+  const viewBox = svg.viewBox?.baseVal;
+  if (viewBox && viewBox.width > 0 && viewBox.height > 0) {
+    return { width: viewBox.width, height: viewBox.height };
+  }
+
+  const width = parseSvgLength(svg.getAttribute("width"));
+  const height = parseSvgLength(svg.getAttribute("height"));
+  if (width && height) return { width, height };
+
+  return null;
+}
+
 function pinchMetricsFromMap(
   map: Map<number, PointerClient>,
   rect: DOMRectReadOnly,
 ): { dist: number; midX: number; midY: number } | null {
   if (map.size < 2) return null;
-  const values = [...map.values()].slice(0, 2);
-  const a = values[0];
-  const b = values[1];
+  const [a, b] = [...map.values()];
   if (!a || !b) return null;
   const x1 = a.cx - rect.left;
   const y1 = a.cy - rect.top;
@@ -129,9 +152,10 @@ function ZoomableViewport({
     applyTransform();
 
     const rect = outer.getBoundingClientRect();
+    const intrinsicSize = getSvgIntrinsicSize(svg);
     const svgRect = svg.getBoundingClientRect();
-    const svgW = svgRect.width;
-    const svgH = svgRect.height;
+    const svgW = intrinsicSize?.width ?? svgRect.width;
+    const svgH = intrinsicSize?.height ?? svgRect.height;
     if (svgW < 4 || svgH < 4) return;
 
     const availW = Math.max(1, rect.width - FULLSCREEN_FIT_PADDING);
@@ -365,17 +389,35 @@ function SvgMount({
   svgHtml,
   bindFunctions,
   className,
+  useIntrinsicSize = false,
 }: {
   readonly svgHtml: string;
   readonly bindFunctions?: (element: Element) => void;
   readonly className?: string;
+  readonly useIntrinsicSize?: boolean;
 }) {
   const ref = useRef<HTMLDivElement>(null);
 
   useLayoutEffect(() => {
     const node = ref.current;
-    if (node) bindFunctions?.(node);
-  }, [svgHtml, bindFunctions]);
+    if (!node) return;
+
+    bindFunctions?.(node);
+
+    if (!useIntrinsicSize) return;
+    const svg = node.querySelector("svg");
+    if (!(svg instanceof SVGSVGElement)) return;
+
+    const intrinsicSize = getSvgIntrinsicSize(svg);
+    if (!intrinsicSize) return;
+
+    // Mermaid commonly injects width="100%" + max-width, which prevents
+    // fullscreen auto-fit from using the diagram's actual aspect box.
+    svg.style.width = `${intrinsicSize.width}px`;
+    svg.style.height = `${intrinsicSize.height}px`;
+    svg.style.maxWidth = "none";
+    svg.style.maxHeight = "none";
+  }, [svgHtml, bindFunctions, useIntrinsicSize]);
 
   return (
     <div
@@ -489,6 +531,7 @@ export function SvgViewer({
     wheelZoomEnabled: boolean,
     showFrame: boolean,
     centerInViewport = false,
+    useIntrinsicSize = false,
   ) => (
     <ZoomableViewport
       actionsRef={actionsRef}
@@ -500,6 +543,7 @@ export function SvgViewer({
       <SvgMount
         svgHtml={svgHtml}
         bindFunctions={bindFunctions}
+        useIntrinsicSize={useIntrinsicSize}
         className="flex select-none justify-center p-2 [&_svg]:max-h-none [&_svg]:max-w-none [&_svg_*]:select-none"
       />
     </ZoomableViewport>
@@ -516,8 +560,8 @@ export function SvgViewer({
         aria-label={title?.trim() || "Diagram"}
       >
         <div className="flex min-h-0 flex-1 flex-col p-3 sm:p-4">
-          <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border border-fd-border bg-fd-background shadow-sm">
-            <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-fd-border bg-fd-muted/25 px-2.5 py-2 sm:px-3 sm:py-2.5">
+          <div className="border-fd-border bg-fd-background flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border shadow-sm">
+            <div className="border-fd-border bg-fd-muted/25 flex shrink-0 flex-wrap items-center justify-between gap-2 border-b px-2.5 py-2 sm:px-3 sm:py-2.5">
               <div className="min-w-0 flex-1 pr-2">
                 {trimmedTitle ? <DiagramTitle title={trimmedTitle} /> : null}
               </div>
@@ -542,9 +586,9 @@ export function SvgViewer({
 
   return (
     <figure className="my-0">
-      <div className="overflow-hidden rounded-lg border border-fd-border bg-fd-background shadow-sm">
+      <div className="border-fd-border bg-fd-background overflow-hidden rounded-lg border shadow-sm">
         <div
-          className={`flex flex-wrap items-center gap-2 border-b border-fd-border bg-fd-muted/25 px-2.5 py-2 sm:px-3 sm:py-2.5 ${trimmedTitle ? "justify-between" : "justify-end"}`}
+          className={`border-fd-border bg-fd-muted/25 flex flex-wrap items-center gap-2 border-b px-2.5 py-2 sm:px-3 sm:py-2.5 ${trimmedTitle ? "justify-between" : "justify-end"}`}
         >
           {trimmedTitle ? (
             <div className="min-w-0 flex-1">
