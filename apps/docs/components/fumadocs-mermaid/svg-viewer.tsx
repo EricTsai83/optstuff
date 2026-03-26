@@ -250,7 +250,7 @@ function ZoomableViewport({
       return;
     }
 
-    const allowSinglePointerPan = panEnabled && e.pointerType !== "touch";
+    const allowSinglePointerPan = panEnabled;
     draggingRef.current = allowSinglePointerPan;
     lastPointerRef.current = { x: e.clientX, y: e.clientY };
     outer.style.cursor = allowSinglePointerPan ? "grabbing" : "default";
@@ -380,7 +380,7 @@ function ZoomableViewport({
             }
           : {}),
         cursor: panEnabled ? "grab" : "default",
-        touchAction: "none",
+        touchAction: panEnabled || pinchZoomEnabled ? "none" : "auto",
       }}
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
@@ -474,7 +474,7 @@ function DiagramTitle({ title }: { readonly title: string }) {
   const text = title.trim();
   if (!text) return null;
   return (
-    <span className="text-fd-foreground block max-w-full truncate font-semibold leading-snug tracking-tight sm:text-base md:text-lg">
+    <span className="text-fd-foreground wrap-break-word block max-w-full whitespace-normal font-semibold leading-snug tracking-tight sm:text-base md:text-lg">
       {text}
     </span>
   );
