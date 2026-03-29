@@ -234,7 +234,7 @@ export function ApiDemoSection() {
         </div>
 
         <div className="border-b border-white/10 px-4 pb-4 pt-5 sm:px-6 sm:pb-5 sm:pt-6">
-          <div className="flex h-52 flex-col justify-between gap-4 sm:h-44 lg:h-40">
+          <div className="flex min-h-52 flex-col gap-4 sm:min-h-44 lg:h-40 lg:justify-between">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
               <div className="min-w-0 flex-1 space-y-2">
                 <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-sky-100/70">
