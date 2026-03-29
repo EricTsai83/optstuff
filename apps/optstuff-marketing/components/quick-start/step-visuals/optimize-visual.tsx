@@ -40,19 +40,19 @@ function ArrowRight({ active, color }: { active: boolean; color: string }) {
             <animate
               attributeName="cx"
               values="0;24"
-              dur="0.8s"
+              dur="1.1s"
               repeatCount="indefinite"
             />
             <animate
               attributeName="cy"
               values="6;6"
-              dur="0.8s"
+              dur="1.1s"
               repeatCount="indefinite"
             />
             <animate
               attributeName="opacity"
               values="0;0.4;0.4;0"
-              dur="0.8s"
+              dur="1.1s"
               repeatCount="indefinite"
             />
           </circle>
@@ -61,19 +61,19 @@ function ArrowRight({ active, color }: { active: boolean; color: string }) {
             <animate
               attributeName="cx"
               values="0;24"
-              dur="0.8s"
+              dur="1.1s"
               repeatCount="indefinite"
             />
             <animate
               attributeName="cy"
               values="6;6"
-              dur="0.8s"
+              dur="1.1s"
               repeatCount="indefinite"
             />
             <animate
               attributeName="opacity"
               values="0;1;1;0"
-              dur="0.8s"
+              dur="1.1s"
               repeatCount="indefinite"
             />
           </circle>
@@ -119,19 +119,19 @@ function ArrowLeft({ active, color }: { active: boolean; color: string }) {
             <animate
               attributeName="cx"
               values="32;8"
-              dur="0.8s"
+              dur="1.1s"
               repeatCount="indefinite"
             />
             <animate
               attributeName="cy"
               values="6;6"
-              dur="0.8s"
+              dur="1.1s"
               repeatCount="indefinite"
             />
             <animate
               attributeName="opacity"
               values="0;0.4;0.4;0"
-              dur="0.8s"
+              dur="1.1s"
               repeatCount="indefinite"
             />
           </circle>
@@ -140,19 +140,19 @@ function ArrowLeft({ active, color }: { active: boolean; color: string }) {
             <animate
               attributeName="cx"
               values="32;8"
-              dur="0.8s"
+              dur="1.1s"
               repeatCount="indefinite"
             />
             <animate
               attributeName="cy"
               values="6;6"
-              dur="0.8s"
+              dur="1.1s"
               repeatCount="indefinite"
             />
             <animate
               attributeName="opacity"
               values="0;1;1;0"
-              dur="0.8s"
+              dur="1.1s"
               repeatCount="indefinite"
             />
           </circle>
@@ -167,22 +167,22 @@ export function OptimizeVisual() {
   const [step, setStep] = useState(0);
 
   useEffect(() => {
-    const delays = [1200, 1000, 1500, 1000, 2500];
+    const delays = [1800, 1500, 2200, 1500, 3200];
     const timeout = setTimeout(() => {
       setStep((prev) => (prev >= 4 ? 0 : prev + 1));
     }, delays[step]);
     return () => clearTimeout(timeout);
   }, [step]);
 
-  const isWebsiteActive = step === 1;
+  const isSigningActive = step === 1;
   const isOptStuffActive = step === 2;
   const isRequestArrowActive = step === 1;
   const isResponseArrowActive = step === 3;
-  const isWebsiteShowingResult = step === 4;
+  const isShowingResult = step === 4;
 
   return (
     <div className="flex h-full flex-row items-stretch gap-2 sm:gap-3">
-      {/* Left: Website */}
+      {/* Left: App server signs the URL */}
       <div className="border-border/50 bg-card flex flex-[1.2] flex-col overflow-hidden rounded-lg border sm:flex-[1.5] sm:rounded-xl">
         {/* Mac window header */}
         <div className="border-border/50 bg-muted/50 flex items-center justify-center gap-1 border-b px-2 py-1.5 sm:justify-start sm:gap-1.5 sm:px-4 sm:py-2">
@@ -190,49 +190,98 @@ export function OptimizeVisual() {
           <div className="hidden h-2.5 w-2.5 rounded-full bg-[#febc2e] sm:block" />
           <div className="hidden h-2.5 w-2.5 rounded-full bg-[#28c840] sm:block" />
           <span className="text-muted-foreground text-xs font-medium sm:ml-2">
-            yoursite.com
+            app.yoursite.com
           </span>
         </div>
 
-        {/* Code view */}
+        {/* Signing flow */}
         <div className="flex-1 p-2 sm:p-3">
           <div
             className={cn(
               "flex h-full flex-col items-center justify-center overflow-hidden rounded-md border px-2 py-1.5 font-mono transition-all duration-300 sm:rounded-lg sm:px-4 sm:py-3",
-              isWebsiteActive
+              isSigningActive
                 ? "border-accent/40 bg-accent/5"
-                : isWebsiteShowingResult
+                : isShowingResult
                   ? "border-green-500/40 bg-green-500/5"
                   : "border-border/50 bg-muted/30",
             )}
           >
-            {!isWebsiteShowingResult && (
-              <div className="flex flex-wrap items-center justify-center text-sm leading-relaxed sm:text-base">
-                <span className="text-purple-500 dark:text-purple-400">
-                  {`<img`}
-                </span>
-                {"\u00A0"}
-                <span className="text-muted-foreground">{"src="}</span>
-                <span
+            {!isShowingResult && (
+              <div className="flex w-full max-w-60 flex-col gap-2 text-[10px] leading-relaxed sm:max-w-[18rem] sm:text-xs">
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground uppercase tracking-[0.18em]">
+                    server
+                  </span>
+                  <span
+                    className={cn(
+                      "rounded-full px-2 py-0.5 text-[9px] font-semibold transition-colors sm:text-[10px]",
+                      isSigningActive
+                        ? "bg-accent/15 text-accent"
+                        : "bg-muted text-muted-foreground",
+                    )}
+                  >
+                    sk_... stays private
+                  </span>
+                </div>
+
+                <div className="space-y-1.5">
+                  <div className="rounded-md border border-border/50 bg-background/70 px-2 py-1.5">
+                    <span className="text-muted-foreground">const src = </span>
+                    <span className="text-foreground">
+                      &quot;cdn.example.com/hero.jpg&quot;
+                    </span>
+                  </div>
+
+                  <div
+                    className={cn(
+                      "rounded-md border px-2 py-1.5 transition-colors duration-300",
+                      isSigningActive
+                        ? "border-accent/40 bg-accent/10"
+                        : "border-border/50 bg-background/70",
+                    )}
+                  >
+                    <span className="text-muted-foreground">const signed = </span>
+                    <span className="text-accent">signImageUrl(src)</span>
+                  </div>
+
+                  <div className="rounded-md border border-border/50 bg-background/70 px-2 py-1.5">
+                    <span className="text-purple-500 dark:text-purple-400">
+                      {`<img`}
+                    </span>
+                    {" "}
+                    <span className="text-muted-foreground">src=</span>
+                    <span className="text-foreground">&quot;signed&quot;</span>
+                    <span className="text-purple-500 dark:text-purple-400">
+                      {" />"}
+                    </span>
+                  </div>
+                </div>
+
+                <div
                   className={cn(
-                    "transition-colors duration-300",
-                    isWebsiteActive
-                      ? "text-accent"
-                      : "text-emerald-600 dark:text-green-400",
+                    "truncate rounded-md border px-2 py-1.5 text-[9px] transition-colors duration-300 sm:text-[10px]",
+                    isSigningActive
+                      ? "border-accent/40 bg-accent/10 text-accent"
+                      : "border-border/50 bg-background/60 text-muted-foreground",
                   )}
                 >
-                  &quot;...&quot;
-                </span>
-                <span className="text-purple-500 dark:text-purple-400">
-                  /&gt;
-                </span>
+                  /api/v1/... ?key=pk_...&sig=...
+                </div>
               </div>
             )}
 
-            {isWebsiteShowingResult && (
-              <div className="flex flex-col items-center gap-1.5 sm:flex-row sm:gap-3">
+            {isShowingResult && (
+              <div className="flex flex-col items-center gap-2 text-center sm:gap-3">
                 <div className="flex size-14 items-center justify-center rounded-lg bg-green-500/20">
                   <span className="text-2xl sm:text-3xl">🖼️</span>
+                </div>
+                <div className="space-y-1">
+                  <div className="text-sm font-semibold text-emerald-600 dark:text-green-400 sm:text-base">
+                    Browser receives optimized bytes
+                  </div>
+                  <div className="text-muted-foreground text-[10px] sm:text-xs">
+                    Same URL contract, smaller payload.
+                  </div>
                 </div>
               </div>
             )}
@@ -242,10 +291,10 @@ export function OptimizeVisual() {
 
       {/* Middle: Arrows - always horizontal */}
       <div className="flex flex-col items-center justify-center gap-2 px-1 sm:gap-3 sm:px-2">
-        {/* Request arrow (Website → OptStuff) - uses accent color */}
+        {/* Request arrow (App server → OptStuff) - uses accent color */}
         <ArrowRight active={isRequestArrowActive} color="hsl(160, 84%, 39%)" />
 
-        {/* Response arrow (OptStuff → Website) - uses green */}
+        {/* Response arrow (OptStuff → browser) - uses green */}
         <ArrowLeft active={isResponseArrowActive} color="rgb(16, 185, 129)" />
       </div>
 

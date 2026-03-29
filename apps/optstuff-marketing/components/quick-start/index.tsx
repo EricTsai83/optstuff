@@ -18,7 +18,7 @@ export function QuickStart() {
     <SectionWrapper id="quickstart">
       <SectionHeader
         title="Two steps to faster images"
-        description="Get started in minutes with a simple integration."
+        description="Set up a project, sign URLs on your server, and ship optimized images in minutes."
         className="mb-12 sm:mb-20"
       />
 
@@ -99,7 +99,7 @@ export function QuickStart() {
                       "border-border/50 bg-card/50 overflow-hidden rounded-xl border backdrop-blur-sm transition-all duration-500 sm:rounded-2xl",
                       // Each step needs different height to fit its content
                       index === 1
-                        ? "h-[200px] sm:h-[180px] md:h-[220px]"
+                        ? "h-[268px] sm:h-[284px] md:h-[300px]"
                         : "h-[260px] sm:h-[320px] md:h-[370px]",
                       isVisible
                         ? "translate-x-0 opacity-100"

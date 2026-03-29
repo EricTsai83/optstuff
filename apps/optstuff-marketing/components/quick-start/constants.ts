@@ -3,15 +3,15 @@ import type { Step } from "./types";
 export const STEPS: readonly Step[] = [
   {
     number: "1",
-    title: "Create a Project & Get API Keys",
+    title: "Create a Project, Copy Keys, Allow Sources",
     description:
-      "Sign up, create a project, and get your secret and public keys.",
+      "Create your project, copy the API keys, and allow the image source domains you want to optimize.",
   },
   {
     number: "2",
-    title: "Start Optimizing",
+    title: "Sign Image URLs in Your App",
     description:
-      "Prefix the remote image URL (no protocol) with our optimization endpoint to get the optimized URL.",
+      "Keep `sk_...` on the server, sign each image URL, and let OptStuff return the optimized result on request.",
   },
 ] as const;
 

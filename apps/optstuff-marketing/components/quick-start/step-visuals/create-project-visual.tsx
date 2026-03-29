@@ -31,27 +31,27 @@ export function CreateProjectVisual() {
   const isFirstRenderRef = useRef(true);
 
   // Animation loop:
-  // step 0: dashboard idle (2s first render for DOM entrance, 1.5s on loops)
-  // step 1: cursor on "New Project" button (1.5s)
-  // step 2: click → dialog open, typing begins (2s)
-  // step 3: name typed, cursor on "Create Project" submit (1.2s)
-  // step 4: click → "Project Created!" dialog with sk(hidden)/pk(visible) (1.5s)
-  // step 5: cursor on eye icon (1s)
-  // step 6: click eye → SK revealed (1.2s)
-  // step 7: cursor on copy button (1s)
-  // step 8: click copy → "Copied!" feedback (2.5s, then reset)
+  // step 0: dashboard idle (2.6s first render for DOM entrance, 2.1s on loops)
+  // step 1: cursor on "New Project" button (2s)
+  // step 2: click → dialog open, typing begins (2.6s)
+  // step 3: name typed, cursor on "Create Project" submit (1.6s)
+  // step 4: click → "Project Created!" dialog with sk(hidden)/pk(visible) (2s)
+  // step 5: cursor on eye icon (1.4s)
+  // step 6: click eye → SK revealed (1.6s)
+  // step 7: cursor on copy button (1.4s)
+  // step 8: click copy → "Copied!" feedback (3s, then reset)
   useEffect(() => {
-    const initialDelay = isFirstRenderRef.current ? 2000 : 1500;
+    const initialDelay = isFirstRenderRef.current ? 2600 : 2100;
     const delays = [
       initialDelay,
-      1500,
       2000,
-      1200,
-      1500,
-      1000,
-      1200,
-      1000,
-      2500,
+      2600,
+      1600,
+      2000,
+      1400,
+      1600,
+      1400,
+      3000,
     ];
 
     const timeout = setTimeout(() => {
@@ -74,7 +74,7 @@ export function CreateProjectVisual() {
     if (step === 2 && typedName.length < PROJECT_NAME.length) {
       const timeout = setTimeout(() => {
         setTypedName(PROJECT_NAME.slice(0, typedName.length + 1));
-      }, 150);
+      }, 200);
       return () => clearTimeout(timeout);
     }
   }, [step, typedName]);
