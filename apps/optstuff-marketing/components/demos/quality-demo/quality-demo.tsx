@@ -5,7 +5,7 @@ import { Label } from "@workspace/ui/components/label";
 import { Slider } from "@workspace/ui/components/slider";
 import { ImageIcon, Sparkles, TrendingDown } from "lucide-react";
 import Image from "next/image";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ORIGINAL_SIZE_KB, QUALITY_DEMO_IMAGE } from "../constants";
 import { ControlCard, DemoHeader, DemoLayout, PreviewCard } from "../layouts";
 import { ComparisonMagnifier } from "./comparison-magnifier";
@@ -14,11 +14,17 @@ import { StatCard } from "./stat-card";
 
 export function QualityDemo() {
   const [quality, setQuality] = useState(80);
+  const [appliedQuality, setAppliedQuality] = useState(80);
   const [imageCount, setImageCount] = useState(100);
   const [isHovering, setIsHovering] = useState(false);
   const [imagePos, setImagePos] = useState({ x: 0.5, y: 0.5 });
   const originalImageRef = useRef<HTMLImageElement | null>(null);
   const optimizedImageRef = useRef<HTMLImageElement | null>(null);
+  const pendingPointerFrameRef = useRef<number | null>(null);
+  const pendingPointerStateRef = useRef({
+    isHovering: false,
+    imagePos: { x: 0.5, y: 0.5 },
+  });
 
   const baseSize = ORIGINAL_SIZE_KB;
   const estimatedSize =
@@ -26,14 +32,32 @@ export function QualityDemo() {
   const savedPercentage = Math.round((1 - estimatedSize / baseSize) * 100);
 
   const optimizedImageUrl = useMemo(() => {
-    return `/api/optimize/q_${quality},f_webp,w_800/${QUALITY_DEMO_IMAGE}`;
-  }, [quality]);
+    return `/api/optimize/q_${appliedQuality},f_webp,w_800/${QUALITY_DEMO_IMAGE}`;
+  }, [appliedQuality]);
 
   const ipxSyntax = useMemo(() => `/q_${quality}/image.webp`, [quality]);
 
   const originalImageUrl = useMemo(
     () => `/api/optimize/q_100,f_webp,w_800/${QUALITY_DEMO_IMAGE}`,
     [],
+  );
+
+  const flushPointerState = useCallback(() => {
+    pendingPointerFrameRef.current = null;
+    const nextState = pendingPointerStateRef.current;
+    setIsHovering(nextState.isHovering);
+    setImagePos(nextState.imagePos);
+  }, []);
+
+  const queuePointerState = useCallback(
+    (nextState: { isHovering: boolean; imagePos: { x: number; y: number } }) => {
+      pendingPointerStateRef.current = nextState;
+      if (pendingPointerFrameRef.current !== null) {
+        return;
+      }
+      pendingPointerFrameRef.current = requestAnimationFrame(flushPointerState);
+    },
+    [flushPointerState],
   );
 
   const updatePositionFromClient = useCallback(
@@ -52,11 +76,13 @@ export function QualityDemo() {
       if (naturalWidth === 0 || naturalHeight === 0) {
         const imgX = (clientX - imgRect.left) / imgRect.width;
         const imgY = (clientY - imgRect.top) / imgRect.height;
-        setImagePos({
-          x: Math.max(0, Math.min(1, imgX)),
-          y: Math.max(0, Math.min(1, imgY)),
+        queuePointerState({
+          isHovering: true,
+          imagePos: {
+            x: Math.max(0, Math.min(1, imgX)),
+            y: Math.max(0, Math.min(1, imgY)),
+          },
         });
-        setIsHovering(true);
         return;
       }
 
@@ -89,17 +115,22 @@ export function QualityDemo() {
         pointerY < offsetY ||
         pointerY > offsetY + displayedHeight
       ) {
-        setIsHovering(false);
+        queuePointerState({
+          isHovering: false,
+          imagePos: pendingPointerStateRef.current.imagePos,
+        });
         return;
       }
 
-      setIsHovering(true);
-      setImagePos({
-        x: Math.max(0, Math.min(1, (pointerX - offsetX) / displayedWidth)),
-        y: Math.max(0, Math.min(1, (pointerY - offsetY) / displayedHeight)),
+      queuePointerState({
+        isHovering: true,
+        imagePos: {
+          x: Math.max(0, Math.min(1, (pointerX - offsetX) / displayedWidth)),
+          y: Math.max(0, Math.min(1, (pointerY - offsetY) / displayedHeight)),
+        },
       });
     },
-    [],
+    [queuePointerState],
   );
 
   const handleMouseMove = useCallback(
@@ -126,9 +157,20 @@ export function QualityDemo() {
   );
 
   const handlePointerLeave = useCallback(() => {
-    setIsHovering(false);
-    setImagePos({ x: 0.5, y: 0.5 });
-  }, []);
+    queuePointerState({
+      isHovering: false,
+      imagePos: { x: 0.5, y: 0.5 },
+    });
+  }, [queuePointerState]);
+
+  useEffect(
+    () => () => {
+      if (pendingPointerFrameRef.current !== null) {
+        cancelAnimationFrame(pendingPointerFrameRef.current);
+      }
+    },
+    [],
+  );
 
   return (
     <div className="space-y-4">
@@ -152,6 +194,7 @@ export function QualityDemo() {
             <Slider
               value={[quality]}
               onValueChange={(v) => setQuality(v[0] ?? 80)}
+              onValueCommit={(v) => setAppliedQuality(v[0] ?? 80)}
               min={10}
               max={100}
               step={5}
@@ -310,6 +353,7 @@ function ImageContainer({
         alt={label}
         fill
         unoptimized
+        sizes="(max-width: 1024px) 50vw, 320px"
         className="h-full w-full cursor-crosshair object-contain transition-transform duration-300"
         draggable={false}
         loading="lazy"

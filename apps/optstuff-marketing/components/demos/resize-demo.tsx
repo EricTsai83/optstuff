@@ -68,6 +68,8 @@ const FIT_MODE_OPTIONS = [
 export function ResizeDemo() {
   const [width, setWidth] = useState(400);
   const [height, setHeight] = useState(300);
+  const [appliedWidth, setAppliedWidth] = useState(400);
+  const [appliedHeight, setAppliedHeight] = useState(300);
   const [fit, setFit] = useState<FitMode>("cover");
   const previewRef = useRef<HTMLDivElement>(null);
   const [containerSize, setContainerSize] = useState({
@@ -110,9 +112,9 @@ export function ResizeDemo() {
   // Build image URL with resize parameters
   const resizedImageUrl = useMemo(() => {
     const fitMode = FIT_MODES[fit];
-    const operations = [`s_${width}x${height}`, `fit_${fitMode}`];
+    const operations = [`s_${appliedWidth}x${appliedHeight}`, `fit_${fitMode}`];
     return `/api/optimize/${operations.join(",")}/${DEMO_IMAGE}`;
-  }, [width, height, fit]);
+  }, [appliedWidth, appliedHeight, fit]);
 
   const getObjectFit = (mode: FitMode): string => {
     return FIT_MODES[mode];
@@ -163,6 +165,7 @@ export function ResizeDemo() {
               <Slider
                 value={[width]}
                 onValueChange={(v) => setWidth(v[0] ?? 400)}
+                onValueCommit={(v) => setAppliedWidth(v[0] ?? 400)}
                 min={100}
                 max={800}
                 step={10}
@@ -182,6 +185,7 @@ export function ResizeDemo() {
               <Slider
                 value={[height]}
                 onValueChange={(v) => setHeight(v[0] ?? 300)}
+                onValueCommit={(v) => setAppliedHeight(v[0] ?? 300)}
                 min={100}
                 max={600}
                 step={10}
@@ -232,6 +236,7 @@ export function ResizeDemo() {
                   alt="Sample resized image"
                   fill
                   unoptimized
+                  sizes="(max-width: 1024px) 100vw, 320px"
                   className="pointer-events-none select-none transition-all duration-300"
                   style={{
                     objectFit: getObjectFit(

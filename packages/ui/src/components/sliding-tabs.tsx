@@ -46,6 +46,7 @@ export type SlidingTabsProps<TValue extends string> = {
   value?: TValue;
   defaultValue?: TValue;
   onValueChange?: (value: TValue) => void;
+  onTriggerPrefetch?: (value: TValue) => void;
   className?: string;
   listWrapperClassName?: string;
   listClassName?: string;
@@ -94,6 +95,7 @@ export function SlidingTabs<TValue extends string>({
   value: controlledValue,
   defaultValue,
   onValueChange,
+  onTriggerPrefetch,
   className,
   listWrapperClassName,
   listClassName,
@@ -407,6 +409,8 @@ export function SlidingTabs<TValue extends string>({
               key={item.value}
               value={item.value}
               disabled={item.disabled}
+              onMouseEnter={() => onTriggerPrefetch?.(item.value)}
+              onFocus={() => onTriggerPrefetch?.(item.value)}
               ref={(el) => {
                 triggerRefs.current.set(item.value, el);
               }}

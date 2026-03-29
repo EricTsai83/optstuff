@@ -48,10 +48,17 @@ function calculateSizeReductionPercent(currentSize: number): number {
  * - File size reduction display
  */
 export function HeroAnimation() {
-  const { scanProgress, isOptimized, shouldStartDecode, hasStarted, restart } =
-    useHeroScanAnimation(true);
+  const {
+    scanProgress,
+    isOptimized,
+    shouldStartDecode,
+    hasStarted,
+    cycleStartTimeMs,
+    animationRunId,
+    restart,
+  } = useHeroScanAnimation(true);
 
-  const currentFormat = useFormatCycle(isOptimized);
+  const currentFormat = useFormatCycle(scanProgress, isOptimized);
 
   const handleRestart = useCallback((): void => {
     restart();
@@ -82,7 +89,8 @@ export function HeroAnimation() {
         {/* Image area with pixel decode effect */}
         <ImageArea>
           <PixelDecodeGrid
-            scanProgress={scanProgress}
+            animationRunId={animationRunId}
+            cycleStartTimeMs={cycleStartTimeMs}
             isOptimized={isOptimized}
             hasStarted={hasStarted}
           />

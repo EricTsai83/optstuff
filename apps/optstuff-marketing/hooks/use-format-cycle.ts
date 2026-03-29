@@ -1,6 +1,4 @@
-"use client";
-
-import { useEffect, useState } from "react";
+import { BEAM_EXIT_PROGRESS } from "@/hooks/use-hero-scan-animation";
 
 /** Image formats to cycle through before optimization */
 const IMAGE_FORMATS = [
@@ -14,8 +12,8 @@ const IMAGE_FORMATS = [
 
 type ImageFormat = (typeof IMAGE_FORMATS)[number];
 
-/** Interval in ms between format switches */
-const FORMAT_CYCLE_INTERVAL_MS = 120;
+/** Number of full loops shown before optimization completes */
+const FORMAT_CYCLE_COUNT = 4;
 
 /** Final optimized format */
 const OPTIMIZED_FORMAT = ".webp" as const;
@@ -23,38 +21,26 @@ const OPTIMIZED_FORMAT = ".webp" as const;
 /**
  * Cycles through image formats until optimization completes.
  *
+ * @param scanProgress - Current scan progress for the active run
  * @param isOptimized - Whether optimization is complete
  * @returns Current format string (e.g., ".jpeg", ".webp")
  */
-export function useFormatCycle(isOptimized: boolean) {
-  const [formatIndex, setFormatIndex] = useState(0);
-
-  // Cycle through formats while not optimized
-  useEffect(() => {
-    if (isOptimized) return;
-
-    const intervalId = setInterval(() => {
-      setFormatIndex((prev) => (prev + 1) % IMAGE_FORMATS.length);
-    }, FORMAT_CYCLE_INTERVAL_MS);
-
-    return () => clearInterval(intervalId);
-  }, [isOptimized]);
-
-  // Reset index when restarting
-  useEffect(() => {
-    if (!isOptimized) {
-      setFormatIndex(0);
-    }
-  }, [isOptimized]);
-
+export function useFormatCycle(scanProgress: number, isOptimized: boolean) {
   if (isOptimized) {
     return OPTIMIZED_FORMAT;
   }
 
+  const progress01 = Math.max(
+    0,
+    Math.min(scanProgress / BEAM_EXIT_PROGRESS, 0.999),
+  );
+  const totalSteps = IMAGE_FORMATS.length * FORMAT_CYCLE_COUNT;
+  const formatIndex = Math.floor(progress01 * totalSteps) % IMAGE_FORMATS.length;
+
   return getFormatAtIndex(formatIndex);
 }
 
-function getFormatAtIndex(index: number) {
+function getFormatAtIndex(index: number): ImageFormat {
   const format = IMAGE_FORMATS[index];
   // Fallback to first format if index is out of bounds
   return format ?? IMAGE_FORMATS[0];

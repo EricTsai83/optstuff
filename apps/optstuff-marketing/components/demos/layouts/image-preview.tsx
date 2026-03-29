@@ -59,6 +59,8 @@ export function ImagePreview({
               alt={imageAlt}
               fill
               unoptimized
+              loading="lazy"
+              sizes="(max-width: 1024px) 100vw, 320px"
               className={cn(
                 "object-cover transition-all duration-300",
                 imageClassName,

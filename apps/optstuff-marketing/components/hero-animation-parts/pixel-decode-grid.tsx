@@ -1,6 +1,10 @@
 import { useCallback, useEffect, useLayoutEffect, useRef } from "react";
 
 import { useFlashAnimation } from "@/hooks/use-flash-animation";
+import {
+  BEAM_EXIT_PROGRESS,
+  getHeroProgressFromElapsedMs,
+} from "@/hooks/use-hero-scan-animation";
 
 import type { CanvasLayout, TextRowBounds } from "./canvas-utils";
 import {
@@ -27,7 +31,8 @@ import { PIXEL_BLOCKS } from "./pixel-blocks";
 // ============================================================================
 
 type PixelDecodeGridProps = {
-  readonly scanProgress: number;
+  readonly animationRunId: number;
+  readonly cycleStartTimeMs: number | null;
   readonly isOptimized: boolean;
   readonly hasStarted: boolean;
 };
@@ -258,16 +263,18 @@ function drawWebpCell(
  * Uses Canvas rendering to avoid 448+ DOM nodes.
  */
 export function PixelDecodeGrid({
-  scanProgress,
+  animationRunId,
+  cycleStartTimeMs,
   isOptimized,
   hasStarted,
 }: PixelDecodeGridProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const animationFrameRef = useRef<number | null>(null);
 
   // State refs for stable draw function access
   const stateRef = useRef<DrawState>({
-    scanProgress,
+    scanProgress: 0,
     isOptimized,
     hasStarted,
     flashIntensity: 0,
@@ -277,11 +284,10 @@ export function PixelDecodeGrid({
   useEffect(() => {
     stateRef.current = {
       ...stateRef.current,
-      scanProgress,
       isOptimized,
       hasStarted,
     };
-  }, [scanProgress, isOptimized, hasStarted]);
+  }, [isOptimized, hasStarted]);
 
   // Draw function (stable reference)
   const draw = useCallback((): void => {
@@ -350,10 +356,45 @@ export function PixelDecodeGrid({
     onFrame: handleFlashFrame,
   });
 
-  // Redraw on state changes
+  useEffect(() => {
+    if (!hasStarted || cycleStartTimeMs === null) {
+      stateRef.current = { ...stateRef.current, scanProgress: 0 };
+      draw();
+      return;
+    }
+
+    const animate = (now: number) => {
+      const elapsed = now - cycleStartTimeMs;
+      const progress = getHeroProgressFromElapsedMs(elapsed);
+
+      stateRef.current = {
+        ...stateRef.current,
+        scanProgress: progress,
+        isOptimized: progress >= 100,
+      };
+      draw();
+
+      if (progress < BEAM_EXIT_PROGRESS) {
+        animationFrameRef.current = requestAnimationFrame(animate);
+      } else {
+        animationFrameRef.current = null;
+      }
+    };
+
+    animationFrameRef.current = requestAnimationFrame(animate);
+
+    return () => {
+      if (animationFrameRef.current !== null) {
+        cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
+      }
+    };
+  }, [animationRunId, cycleStartTimeMs, draw, hasStarted]);
+
+  // Redraw on coarse state changes
   useLayoutEffect(() => {
     draw();
-  }, [draw, scanProgress, isOptimized, hasStarted]);
+  }, [draw, isOptimized, hasStarted]);
 
   // Handle resize
   useEffect(() => {
@@ -367,6 +408,15 @@ export function PixelDecodeGrid({
     resizeObserver.observe(container);
     return () => resizeObserver.disconnect();
   }, [draw]);
+
+  useEffect(
+    () => () => {
+      if (animationFrameRef.current !== null) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+    },
+    [],
+  );
 
   return (
     <div ref={containerRef} className="absolute inset-0">
