@@ -15,27 +15,38 @@ export const STEPS: readonly Step[] = [
   },
 ] as const;
 
-export const CODE_EXAMPLES: Record<"curl" | "js" | "response", string> = {
-  curl: `curl "https://api.optstuff.dev/v1/optimize?\\
-  url=https://example.com/hero.png&\\
-  width=800&format=webp" \\
-  -H "Authorization: Bearer sk_live_xxx"`,
-  js: `const response = await fetch(
-  "https://api.optstuff.dev/v1/optimize?" +
-  new URLSearchParams({
-    url: "https://example.com/hero.png",
-    width: "800",
-    format: "webp"
-  }),
-  { headers: { Authorization: "Bearer sk_live_xxx" } }
-);`,
-  response: `{
-  "success": true,
-  "data": {
-    "url": "https://cdn.optstuff.dev/optimized/abc123.webp",
-    "originalSize": 2457600,
-    "optimizedSize": 190464,
-    "savings": "92%"
-  }
-}`,
-};
+export const CODE_EXAMPLES: Record<"signedUrl" | "server" | "headers", string> =
+  {
+    signedUrl: `https://images.example.com/api/v1/my-blog/
+w_800,q_80,f_webp/
+cdn.example.com/photo.jpg?
+key=pk_demo_123&sig=Jm3zQvY8n2C4sM6aK9pLxTw0Rb7HfNc1&exp=1735689600`,
+    server: `import { createHmac } from "crypto";
+
+const path = "w_800,q_80,f_webp/cdn.example.com/photo.jpg";
+const exp = 1735689600;
+const payload = \`\${path}?exp=\${exp}\`;
+
+const sig = createHmac("sha256", process.env.OPTSTUFF_SECRET_KEY!)
+  .update(payload)
+  .digest("base64url")
+  .substring(0, 32);
+
+const url = new URL(
+  \`/api/v1/my-blog/\${path}\`,
+  "https://images.example.com",
+);
+
+url.search = new URLSearchParams({
+  key: "pk_demo_123",
+  sig,
+  exp: String(exp),
+}).toString();`,
+    headers: `HTTP/1.1 200 OK
+Content-Type: image/webp
+Cache-Control: public, s-maxage=31536000, max-age=31536000, immutable
+Vary: Accept
+X-Processing-Time: 42ms
+X-Head-Fast-Path: 0
+Server-Timing: auth;dur=7, transform;dur=35, total;dur=42`,
+  };

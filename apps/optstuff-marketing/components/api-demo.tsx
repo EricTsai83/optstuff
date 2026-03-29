@@ -3,10 +3,10 @@ import { ApiDemoSection } from "./quick-start/api-demo";
 
 export function ApiDemo() {
   return (
-    <SectionWrapper id="api">
+    <SectionWrapper id="api" maxWidth="5xl">
       <SectionHeader
-        title="Simple API, Powerful Results"
-        description="Transform your images with a single API call."
+        title="Sign once. Deliver everywhere."
+        description="The request stays readable: define the transform, sign it on your server, and let OptStuff return a cacheable optimized image."
       />
 
       {/* API Demo Section */}
