@@ -1,7 +1,6 @@
 "use client";
 
 import { cn } from "@workspace/ui/lib/utils";
-import { Terminal } from "lucide-react";
 
 import { SectionHeader, SectionWrapper } from "@/components/ui/section";
 import { useIntersectionVisibility } from "@/hooks/use-intersection-visibility";
@@ -18,8 +17,6 @@ export function QuickStart() {
   return (
     <SectionWrapper id="quickstart">
       <SectionHeader
-        icon={Terminal}
-        badge="Quick Start"
         title="Two steps to faster images"
         description="Get started in minutes with a simple integration."
         className="mb-12 sm:mb-20"

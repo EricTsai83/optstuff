@@ -1,13 +1,10 @@
 import { SectionHeader, SectionWrapper } from "@/components/ui/section";
-import { Code2 } from "lucide-react";
 import { ApiDemoSection } from "./quick-start/api-demo";
 
 export function ApiDemo() {
   return (
     <SectionWrapper id="api">
       <SectionHeader
-        icon={Code2}
-        badge="API Reference"
         title="Simple API, Powerful Results"
         description="Transform your images with a single API call."
       />

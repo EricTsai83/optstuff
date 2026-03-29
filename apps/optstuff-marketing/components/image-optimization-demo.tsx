@@ -7,7 +7,6 @@ import { ResizeDemo } from "@/components/demos/resize-demo";
 import { SectionHeader, SectionWrapper } from "@/components/ui/section";
 import type { SlidingTabItem } from "@workspace/ui/components/sliding-tabs";
 import { SlidingTabs } from "@workspace/ui/components/sliding-tabs";
-import { TvMinimal } from "lucide-react";
 
 const DEMO_ITEMS: SlidingTabItem<string>[] = [
   { value: "resize", label: "resize", content: <ResizeDemo /> },
@@ -20,8 +19,6 @@ export function ImageOptimizationDemo() {
   return (
     <SectionWrapper id="demo" allowOverflow>
       <SectionHeader
-        icon={TvMinimal}
-        badge="Live Demo"
         title="See it in action"
         description="Try different optimization options and see real-time results."
       />

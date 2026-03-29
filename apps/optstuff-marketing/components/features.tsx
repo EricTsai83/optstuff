@@ -4,15 +4,7 @@ import { SectionHeader, SectionWrapper } from "@/components/ui/section";
 import { useIntersectionVisibility } from "@/hooks/use-intersection-visibility";
 import { cn } from "@workspace/ui/lib/utils";
 import type { LucideIcon } from "lucide-react";
-import {
-  Code,
-  Globe,
-  ImageIcon,
-  Layers,
-  Shield,
-  Sparkles,
-  Zap,
-} from "lucide-react";
+import { Code, Globe, ImageIcon, Layers, Shield, Zap } from "lucide-react";
 import { useCallback, useState } from "react";
 
 type Feature = {
@@ -84,8 +76,6 @@ export function Features() {
   return (
     <SectionWrapper id="features" maxWidth="5xl">
       <SectionHeader
-        icon={Sparkles}
-        badge="Features"
         title="Everything you need"
         description="Powerful features for developers who care about performance."
         className="mb-10 sm:mb-16"
