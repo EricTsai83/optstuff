@@ -20,7 +20,6 @@
             "/demo-image.webp",
             "/opengraph-image",
             "/opengraph-image.png",
-            "/favicon.ico",
             "/api/optimize/:path*"
           ]
         }
