@@ -1,7 +1,12 @@
 {
   "permissions": {
     "allow": [
-      "Bash(grep -r \"href\\\\|to\\\\|Link\" /Users/eric/personal-project/optstuff/apps/optstuff-marketing --include=*.tsx --include=*.ts)"
+      "Bash(grep -r \"href\\\\|to\\\\|Link\" /Users/eric/personal-project/optstuff/apps/optstuff-marketing --include=*.tsx --include=*.ts)",
+      "Bash(ls:*)",
+      "Bash(cat:*)",
+      "Bash(find /Users/eric/personal-project/optstuff/apps/optstuff-dashboard/src -name *redirect* -o -name *router*)",
+      "Bash(grep:*)",
+      "Bash(find /Users/eric/personal-project/optstuff/apps/optstuff-dashboard/src/app -path *dashboard* -type f)"
     ]
   }
 }
