@@ -24,14 +24,13 @@ type FooterNavigation = {
 
 const FOOTER_NAVIGATION: FooterNavigation = {
   product: [
-    { href: "/blog", label: "Blog", external: false },
     {
       href: process.env.NEXT_PUBLIC_DOCS_URL ?? "#",
       label: "Docs",
       external: true,
     },
     {
-      href: "https://optstuff-nextjs.vercel.app/",
+      href: "https://optstuff-nextjs.vercel.app",
       label: "Live Demo",
       external: true,
       showExternalIndicator: true,
@@ -55,7 +54,7 @@ export function Footer() {
           {/* Logo */}
           <Link
             href="/"
-            className="group flex items-center gap-2.5 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+            className="focus-visible:ring-ring focus-visible:ring-offset-background group flex items-center gap-2.5 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
             aria-label="OptStuff Home"
           >
             <Logo size={28} />
@@ -73,11 +72,14 @@ export function Footer() {
                 <a
                   key={item.href}
                   href={item.href}
-                  className="hover:text-foreground after:bg-foreground focus-visible:ring-ring focus-visible:ring-offset-background relative rounded-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 after:absolute after:bottom-0 after:left-0 after:h-px after:w-0 after:transition-all after:duration-300 hover:after:w-full"
+                  className="hover:text-foreground after:bg-foreground focus-visible:ring-ring focus-visible:ring-offset-background relative rounded-sm transition-colors after:absolute after:bottom-0 after:left-0 after:h-px after:w-0 after:transition-all after:duration-300 hover:after:w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
                   {...(item.external
                     ? { target: "_blank", rel: "noopener noreferrer" }
                     : {})}
-                  aria-label={getExternalLinkAriaLabel(item.label, item.external)}
+                  aria-label={getExternalLinkAriaLabel(
+                    item.label,
+                    item.external,
+                  )}
                 >
                   <span className="inline-flex items-center gap-1.5">
                     <span>{item.label}</span>
@@ -104,7 +106,10 @@ export function Footer() {
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-muted-foreground hover:text-foreground dark:text-foreground hover:bg-muted focus-visible:ring-ring focus-visible:ring-offset-background flex h-9 w-9 items-center justify-center rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
-                  aria-label={getExternalLinkAriaLabel(item.label, item.external)}
+                  aria-label={getExternalLinkAriaLabel(
+                    item.label,
+                    item.external,
+                  )}
                 >
                   <Icon className="h-5 w-5" aria-hidden="true" />
                 </a>

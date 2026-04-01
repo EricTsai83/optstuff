@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep -r \"href\\\\|to\\\\|Link\" /Users/eric/personal-project/optstuff/apps/optstuff-marketing --include=*.tsx --include=*.ts)"
+    ]
+  }
+}

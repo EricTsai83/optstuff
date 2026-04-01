@@ -31,7 +31,6 @@ type NavigationItem = {
 };
 
 const NAVIGATION: readonly NavigationItem[] = [
-  { href: "/blog", label: "Blog", external: false },
   {
     href: process.env.NEXT_PUBLIC_DOCS_URL ?? "#",
     label: "Docs",
