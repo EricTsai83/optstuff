@@ -22,12 +22,65 @@ import {
  * /api/optimize/f_webp,q_80/images/photo.jpg
  */
 
-export const dynamic = "force-dynamic";
+/**
+ * Checks whether the request originates from the same host by comparing the
+ * `Referer` or `Origin` header against the request's `Host` header.
+ *
+ * This prevents external crawlers and scanners from hitting the endpoint
+ * directly while allowing legitimate same-origin requests from the marketing
+ * page (which shares a domain with the dashboard via microfrontends).
+ *
+ * Always returns `true` in development so local testing is unaffected.
+ *
+ * @param request - The incoming HTTP request.
+ * @returns `true` if the request comes from the same host, `false` otherwise.
+ */
+function isSameOrigin(request: Request): boolean {
+  if (process.env.NODE_ENV === "development") return true;
 
+  const requestHost = request.headers.get("host");
+  if (!requestHost) return false;
+
+  const referer = request.headers.get("referer");
+  if (referer) {
+    try {
+      return new URL(referer).host === requestHost;
+    } catch {
+      return false;
+    }
+  }
+
+  const origin = request.headers.get("origin");
+  if (origin) {
+    try {
+      return new URL(origin).host === requestHost;
+    } catch {
+      return false;
+    }
+  }
+
+  return false;
+}
+
+/**
+ * Handles GET requests to serve IPX-optimized images for the marketing demo.
+ *
+ * Rejects cross-origin requests via {@link isSameOrigin}, then parses the
+ * IPX path, applies the requested operations, and returns the processed image
+ * with immutable cache headers so repeated requests are served from the CDN edge.
+ *
+ * @param _request - The incoming HTTP request (used for origin validation).
+ * @param params - Route parameters containing the IPX operations and image path segments.
+ * @returns The optimized image on success, or a JSON error response on failure.
+ */
 export async function GET(
-  _: unknown,
+  _request: Request,
   { params }: { params: Promise<{ path: string[] }> },
 ) {
+  if (!isSameOrigin(_request)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   try {
     const resolvedParams = await params;
     const parsed = parseIpxPath(resolvedParams.path);
