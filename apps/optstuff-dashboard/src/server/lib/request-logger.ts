@@ -1,14 +1,18 @@
 import { lt } from "drizzle-orm";
 
 import { db } from "@/server/db";
-import { requestLogs } from "@/server/db/schema";
+import { requestLogs, requestLogStatusEnum } from "@/server/db/schema";
+
+export type RequestLogStatus = (typeof requestLogStatusEnum.enumValues)[number];
 
 /**
  * Request log entry data
  */
 export type RequestLogData = {
   sourceUrl: string;
-  status: "success" | "error" | "forbidden" | "rate_limited";
+  operations?: string;
+  status: RequestLogStatus;
+  errorDetail?: string;
   processingTimeMs?: number;
   originalSize?: number;
   optimizedSize?: number;
@@ -75,7 +79,9 @@ export async function logRequest(projectId: string, data: RequestLogData) {
     await db.insert(requestLogs).values({
       projectId,
       sourceUrl: sanitizedUrl,
+      operations: data.operations ?? null,
       status: data.status,
+      errorDetail: data.errorDetail ?? null,
       processingTimeMs: data.processingTimeMs ?? null,
       originalSize: data.originalSize ?? null,
       optimizedSize: data.optimizedSize ?? null,

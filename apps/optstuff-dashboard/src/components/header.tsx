@@ -39,7 +39,10 @@ export function Header({ teamSlug }: HeaderProps) {
           <>
             <AnimatedLogo />
             <div className="ml-15 flex items-center gap-2">
-              <span className="text-muted-foreground text-lg" aria-hidden="true">
+              <span
+                className="text-muted-foreground text-lg"
+                aria-hidden="true"
+              >
                 /
               </span>
               <TeamSwitcher currentTeamSlug={teamSlug} />
@@ -58,11 +61,7 @@ export function Header({ teamSlug }: HeaderProps) {
             >
               Feedback
             </Button>
-            <IconButton
-              icon={Bell}
-              hasNotification
-              ariaLabel="Notifications"
-            />
+            <IconButton icon={Bell} hasNotification ariaLabel="Notifications" />
             <IconButton
               icon={BookOpen}
               href={DOCS_LINKS.home}
@@ -90,10 +89,7 @@ export function Header({ teamSlug }: HeaderProps) {
         }
       />
 
-      <MobileSidebar
-        open={isSidebarOpen}
-        onOpenChange={setIsSidebarOpen}
-      />
+      <MobileSidebar open={isSidebarOpen} onOpenChange={setIsSidebarOpen} />
     </>
   );
 }

@@ -93,7 +93,7 @@ export function UsageProgressBarSkeleton({
       </div>
       <div
         className={cn(
-          "bg-muted overflow-hidden animate-pulse rounded-full",
+          "bg-muted animate-pulse overflow-hidden rounded-full",
           compact ? "h-1.5" : "h-2",
         )}
       />

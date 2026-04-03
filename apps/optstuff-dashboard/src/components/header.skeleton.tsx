@@ -6,14 +6,14 @@ export function HeaderSkeleton() {
     <HeaderShell
       desktopLeft={
         <>
-          <div className="relative md:fixed z-9999 left-10 -translate-x-1/2 md:-translate-y-1/2" style={{ top: "32px" }}>
+          <div
+            className="z-9999 relative left-10 -translate-x-1/2 md:fixed md:-translate-y-1/2"
+            style={{ top: "32px" }}
+          >
             <div className="bg-muted h-7 w-7 animate-pulse rounded" />
           </div>
           <div className="ml-15 flex items-center gap-2">
-            <span
-              className="text-muted-foreground text-lg"
-              aria-hidden="true"
-            >
+            <span className="text-muted-foreground text-lg" aria-hidden="true">
               /
             </span>
             <TeamSwitcherSkeleton />

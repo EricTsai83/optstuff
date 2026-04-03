@@ -28,8 +28,8 @@ import {
 import Link from "next/link";
 import { useState } from "react";
 import { getProjectColor } from "../../constants";
-import { ProjectListSkeleton } from "./project-list.skeleton";
 import { CreateProjectDialog } from "./create-project-dialog";
+import { ProjectListSkeleton } from "./project-list.skeleton";
 
 type ProjectListProps = {
   readonly teamId: string;

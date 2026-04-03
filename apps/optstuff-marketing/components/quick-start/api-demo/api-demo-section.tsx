@@ -158,11 +158,7 @@ export function ApiDemoSection() {
 
         <StepDescription meta={activeMeta} activeIndex={activeIndex} />
 
-        <CodePanel
-          activeTab={activeTab}
-          copied={copied}
-          onCopy={handleCopy}
-        />
+        <CodePanel activeTab={activeTab} copied={copied} onCopy={handleCopy} />
 
         <p className="sr-only" aria-live="polite">
           {copied

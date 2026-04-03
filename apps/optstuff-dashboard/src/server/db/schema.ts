@@ -1,6 +1,7 @@
 import { relations, sql } from "drizzle-orm";
 import {
   index,
+  pgEnum,
   pgTable,
   unique,
   uniqueIndex,
@@ -228,6 +229,29 @@ export const usageBufferFlushLedger = pgTable(
 // ============================================================================
 
 /**
+ * Status categories for image optimization request logs.
+ *
+ * - `success`        — Image processed and returned successfully.
+ * - `error`          — Processing failed (upstream fetch error, transform error, etc.).
+ * - `forbidden`      — Legacy: generic 403 before status granularity was added. Retained for backward compatibility with historical data.
+ * - `sig_expired`    — HMAC signature was valid but the `exp` timestamp has passed.
+ * - `sig_invalid`    — HMAC signature does not match the expected value (wrong secret key, tampered payload, etc.).
+ * - `referer_blocked`— Request Referer header does not match the project's allowed referer domains.
+ * - `source_blocked` — Source image domain is not in the project's allowed source domains.
+ * - `rate_limited`   — Per-minute or daily rate limit exceeded for the API key.
+ */
+export const requestLogStatusEnum = pgEnum("request_log_status", [
+  "success",
+  "error",
+  "forbidden",
+  "sig_expired",
+  "sig_invalid",
+  "referer_blocked",
+  "source_blocked",
+  "rate_limited",
+]);
+
+/**
  * Request Logs table - stores individual IPX request logs.
  * Used for:
  * - Real-time request log display (last 20 requests)
@@ -243,7 +267,11 @@ export const requestLogs = pgTable(
       .notNull()
       .references(() => projects.id, { onDelete: "cascade" }),
     sourceUrl: d.text().notNull(),
-    status: d.varchar({ length: 20 }).notNull(), // success, error, forbidden
+    /** IPX operations string (e.g. "w_800,f_webp,q_80"). Null for early validation failures. */
+    operations: d.text(),
+    status: requestLogStatusEnum().notNull(),
+    /** Human-readable failure reason (e.g. "Referer blocked: evil.com"). Null on success. */
+    errorDetail: d.text(),
     processingTimeMs: d.integer(),
     originalSize: d.bigint({ mode: "number" }),
     optimizedSize: d.bigint({ mode: "number" }),

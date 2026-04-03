@@ -31,7 +31,9 @@ import {
 type RequestLog = {
   id: string;
   sourceUrl: string;
+  operations: string | null;
   status: string;
+  errorDetail: string | null;
   processingTimeMs: number | null;
   originalSize: number | null;
   optimizedSize: number | null;
@@ -62,6 +64,34 @@ function getStatusConfig(status: string) {
         variant: "secondary" as const,
         icon: ShieldOff,
         label: "Forbidden",
+        dotClass: "bg-amber-500",
+      };
+    case "sig_expired":
+      return {
+        variant: "secondary" as const,
+        icon: Clock,
+        label: "Sig Expired",
+        dotClass: "bg-amber-500",
+      };
+    case "sig_invalid":
+      return {
+        variant: "secondary" as const,
+        icon: ShieldOff,
+        label: "Sig Invalid",
+        dotClass: "bg-amber-500",
+      };
+    case "referer_blocked":
+      return {
+        variant: "secondary" as const,
+        icon: ShieldOff,
+        label: "Referer Blocked",
+        dotClass: "bg-amber-500",
+      };
+    case "source_blocked":
+      return {
+        variant: "secondary" as const,
+        icon: ShieldOff,
+        label: "Source Blocked",
         dotClass: "bg-amber-500",
       };
     case "rate_limited":
@@ -105,25 +135,44 @@ function getSavingsPercent(
 
 type StatusBadgeProps = {
   readonly status: string;
+  readonly errorDetail?: string | null;
   readonly className?: string;
 };
 
 /**
- * Renders a standardized status badge for both mobile and desktop layouts.
+ * Renders a standardized status badge, optionally wrapped in a tooltip
+ * showing the error detail when present.
  */
-function StatusBadge({ status, className }: StatusBadgeProps) {
+function StatusBadge({ status, errorDetail, className }: StatusBadgeProps) {
   const statusConfig = getStatusConfig(status);
   const StatusIcon = statusConfig.icon;
 
-  return (
+  const badge = (
     <Badge
       variant={statusConfig.variant}
-      className={["gap-1", className].filter(Boolean).join(" ")}
+      className={["gap-1", errorDetail ? "cursor-help" : "", className]
+        .filter(Boolean)
+        .join(" ")}
     >
       <StatusIcon className="h-3 w-3" />
       {statusConfig.label}
     </Badge>
   );
+
+  if (errorDetail) {
+    return (
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span>{badge}</span>
+        </TooltipTrigger>
+        <TooltipContent side="bottom" className="max-w-xs">
+          <p className="text-xs">{errorDetail}</p>
+        </TooltipContent>
+      </Tooltip>
+    );
+  }
+
+  return badge;
 }
 
 type RelativeTimeProps = {
@@ -314,6 +363,9 @@ function SkeletonRow() {
       <td className="px-4 py-3">
         <Skeleton className="h-4 w-52" />
       </td>
+      <td className="hidden px-4 py-3 xl:table-cell">
+        <Skeleton className="h-4 w-24" />
+      </td>
       <td className="px-4 py-3">
         <Skeleton className="h-5 w-16" />
       </td>
@@ -370,8 +422,17 @@ function MobileLogCard({ log }: { readonly log: RequestLog }) {
             <p className="break-all font-mono text-xs">{log.sourceUrl}</p>
           </TooltipContent>
         </Tooltip>
-        <StatusBadge status={log.status} className="shrink-0" />
+        <StatusBadge
+          status={log.status}
+          errorDetail={log.errorDetail}
+          className="shrink-0"
+        />
       </div>
+      {log.operations && (
+        <p className="text-muted-foreground mt-1 truncate font-mono text-xs">
+          {log.operations}
+        </p>
+      )}
       <div className="text-muted-foreground mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
         <SizeSavingsDisplay
           originalSize={log.originalSize}
@@ -396,6 +457,9 @@ export function RequestLogsTable({ logs, isLoading }: RequestLogsTableProps) {
     <tr className="border-border/50 border-b text-left">
       <th className="text-muted-foreground px-4 py-2.5 text-xs font-medium tracking-wide">
         Source URL
+      </th>
+      <th className="text-muted-foreground hidden w-36 whitespace-nowrap px-4 py-2.5 text-xs font-medium tracking-wide xl:table-cell">
+        Operations
       </th>
       <th className="text-muted-foreground w-28 whitespace-nowrap px-4 py-2.5 text-xs font-medium tracking-wide lg:w-32">
         Status
@@ -493,9 +557,31 @@ export function RequestLogsTable({ logs, isLoading }: RequestLogsTableProps) {
                           </Tooltip>
                         </td>
 
+                        <td className="hidden w-36 px-4 py-2.5 xl:table-cell">
+                          {log.operations ? (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <span className="text-muted-foreground block truncate font-mono text-sm">
+                                  {log.operations}
+                                </span>
+                              </TooltipTrigger>
+                              <TooltipContent side="bottom">
+                                <p className="font-mono text-xs">
+                                  {log.operations}
+                                </p>
+                              </TooltipContent>
+                            </Tooltip>
+                          ) : (
+                            <span className="text-muted-foreground/50 text-sm">
+                              —
+                            </span>
+                          )}
+                        </td>
+
                         <td className="w-28 whitespace-nowrap px-4 py-2.5 lg:w-32">
                           <StatusBadge
                             status={log.status}
+                            errorDetail={log.errorDetail}
                             className="whitespace-nowrap"
                           />
                         </td>

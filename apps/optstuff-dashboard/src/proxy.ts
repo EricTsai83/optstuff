@@ -1,5 +1,9 @@
 import { authMiddleware, createRouteMatcher } from "@workspace/auth/proxy";
-import { type NextFetchEvent, type NextRequest, NextResponse } from "next/server";
+import {
+  type NextFetchEvent,
+  type NextRequest,
+  NextResponse,
+} from "next/server";
 
 const isPublicRoute = createRouteMatcher(["/sign-in(.*)", "/sign-up(.*)"]);
 

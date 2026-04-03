@@ -48,7 +48,9 @@ export function BandwidthSavingsCard({
   }
 
   const isPositiveSavings = bandwidthSaved >= 0;
-  const savingsClassName = isPositiveSavings ? "text-green-500" : "text-orange-500";
+  const savingsClassName = isPositiveSavings
+    ? "text-green-500"
+    : "text-orange-500";
   const percentLabel = isPositiveSavings
     ? `${Math.max(0, savingsPercentage)}%`
     : `+${Math.abs(savingsPercentage)}%`;
@@ -88,7 +90,9 @@ export function BandwidthSavingsCard({
             <p className="text-muted-foreground text-xs">
               {isPositiveSavings ? "Total Saved" : "Total Increase"}
             </p>
-            <p className={`text-xl font-bold tabular-nums sm:text-2xl ${savingsClassName}`}>
+            <p
+              className={`text-xl font-bold tabular-nums sm:text-2xl ${savingsClassName}`}
+            >
               {formatBytes(Math.abs(bandwidthSaved))}
             </p>
           </div>
@@ -96,17 +100,19 @@ export function BandwidthSavingsCard({
             <p className="text-muted-foreground text-xs">
               {isPositiveSavings ? "Reduction" : "Increase"}
             </p>
-            <p className={`text-xl font-bold tabular-nums sm:text-2xl ${savingsClassName}`}>
+            <p
+              className={`text-xl font-bold tabular-nums sm:text-2xl ${savingsClassName}`}
+            >
               {percentLabel}
             </p>
           </div>
         </div>
         {isEstimated && (
           <p className="text-muted-foreground mt-3 text-xs">
-            Coverage: {sampleCoveragePercentage}% ({pairedSizeSamples.toLocaleString()} /
-            {" "}
-            {successfulRequests.toLocaleString()} sampled successes include both original
-            and optimized sizes)
+            Coverage: {sampleCoveragePercentage}% (
+            {pairedSizeSamples.toLocaleString()} /{" "}
+            {successfulRequests.toLocaleString()} sampled successes include both
+            original and optimized sizes)
           </p>
         )}
       </CardContent>

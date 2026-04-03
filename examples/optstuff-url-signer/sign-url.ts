@@ -176,7 +176,9 @@ function normalizeImageUrl(imageUrl: string): string {
   const encodedQuery = query ? `%3F${encodeURIComponent(query)}` : "";
   const hostWithPort = `${parsed.hostname}${parsed.port ? `:${parsed.port}` : ""}`;
 
-  return `${parsed.protocol}//${hostWithPort}${pathname}${encodedQuery}`;
+  // Strip protocol — the server's parseIpxPath reconstructs it via ensureProtocol.
+  // Must match the Next.js example (examples/nextjs/src/lib/optstuff-core.ts).
+  return `${hostWithPort}${pathname}${encodedQuery}`;
 }
 
 function buildOperations(options: CliOptions): string {

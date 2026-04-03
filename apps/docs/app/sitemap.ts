@@ -13,7 +13,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
     .map((page) => ({
       url: new URL(page.url, baseUrl).toString(),
       lastModified,
-      changeFrequency: page.url === "/" ? ("weekly" as const) : ("monthly" as const),
+      changeFrequency:
+        page.url === "/" ? ("weekly" as const) : ("monthly" as const),
       priority: page.url === "/" ? 1 : 0.7,
     }));
 }

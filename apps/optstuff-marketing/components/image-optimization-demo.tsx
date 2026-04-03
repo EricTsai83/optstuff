@@ -2,35 +2,35 @@
 
 import { ResizeDemo } from "@/components/demos/resize-demo";
 import { SectionHeader, SectionWrapper } from "@/components/ui/section";
-import dynamic from "next/dynamic";
-import { useCallback, useMemo, useRef } from "react";
 import type { SlidingTabItem } from "@workspace/ui/components/sliding-tabs";
 import { SlidingTabs } from "@workspace/ui/components/sliding-tabs";
+import dynamic from "next/dynamic";
+import { useCallback, useMemo, useRef } from "react";
 
 type DemoTabValue = "resize" | "format" | "quality" | "effects";
 
 function DemoPanelSkeleton() {
   return (
     <div className="flex min-h-[360px] items-center justify-center lg:h-[520px]">
-      <div className="w-full animate-pulse rounded-[28px] border border-border/70 bg-linear-to-br from-background via-muted/20 to-background p-4 shadow-sm sm:p-5">
+      <div className="border-border/70 bg-linear-to-br from-background via-muted/20 to-background w-full animate-pulse rounded-[28px] border p-4 shadow-sm sm:p-5">
         <div className="space-y-4">
           <div className="flex items-start justify-between gap-4">
             <div className="flex items-start gap-3">
-              <div className="bg-muted/80 mt-0.5 h-10 w-10 rounded-2xl ring-1 ring-border/60" />
+              <div className="bg-muted/80 ring-border/60 mt-0.5 h-10 w-10 rounded-2xl ring-1" />
               <div className="space-y-2 pt-0.5">
                 <div className="bg-muted h-4 w-32 rounded-full" />
                 <div className="bg-muted/70 h-3 w-52 max-w-[60vw] rounded-full" />
               </div>
             </div>
-            <div className="hidden rounded-xl border border-border/50 bg-background/60 px-3 py-2 sm:block">
-              <div className="bg-muted/80 h-3 w-18 rounded-full" />
+            <div className="border-border/50 bg-background/60 hidden rounded-xl border px-3 py-2 sm:block">
+              <div className="bg-muted/80 w-18 h-3 rounded-full" />
               <div className="bg-muted mt-2 h-4 w-20 rounded-full" />
             </div>
           </div>
 
           <div className="grid gap-4 lg:grid-cols-5">
             <div className="space-y-3 lg:col-span-2">
-              <div className="rounded-2xl border border-border/60 bg-background/80 p-4">
+              <div className="border-border/60 bg-background/80 rounded-2xl border p-4">
                 <div className="mb-3 flex items-center justify-between">
                   <div className="bg-muted h-3.5 w-24 rounded-full" />
                   <div className="bg-muted/80 h-7 w-14 rounded-lg" />
@@ -42,10 +42,10 @@ function DemoPanelSkeleton() {
                 </div>
               </div>
 
-              <div className="rounded-2xl border border-border/60 bg-background/70 p-4">
+              <div className="border-border/60 bg-background/70 rounded-2xl border p-4">
                 <div className="mb-3 flex items-center justify-between">
                   <div className="bg-muted h-3.5 w-28 rounded-full" />
-                  <div className="bg-muted/75 h-7 w-18 rounded-lg" />
+                  <div className="bg-muted/75 w-18 h-7 rounded-lg" />
                 </div>
                 <div className="bg-muted/75 h-2.5 w-full rounded-full" />
                 <div className="mt-3 flex justify-between">
@@ -54,7 +54,7 @@ function DemoPanelSkeleton() {
                 </div>
               </div>
 
-              <div className="rounded-2xl border border-border/60 bg-background/60 p-4">
+              <div className="border-border/60 bg-background/60 rounded-2xl border p-4">
                 <div className="bg-muted mb-3 h-3.5 w-20 rounded-full" />
                 <div className="grid grid-cols-3 gap-2">
                   <div className="bg-muted/80 h-8 rounded-xl" />
@@ -66,7 +66,7 @@ function DemoPanelSkeleton() {
 
             <div className="space-y-3 lg:col-span-3">
               <div className="grid grid-cols-2 gap-2.5">
-                <div className="rounded-2xl border border-border/60 bg-muted/35 p-3">
+                <div className="border-border/60 bg-muted/35 rounded-2xl border p-3">
                   <div className="mb-3 flex items-center justify-between">
                     <div className="bg-muted h-3 w-14 rounded-full" />
                     <div className="bg-muted/70 h-5 w-12 rounded-full" />
@@ -79,24 +79,24 @@ function DemoPanelSkeleton() {
                     <div className="bg-muted h-3 w-16 rounded-full" />
                     <div className="h-5 w-14 rounded-full bg-emerald-500/20" />
                   </div>
-                  <div className="aspect-4/3 rounded-xl bg-linear-to-br from-muted/80 via-muted/60 to-emerald-500/15" />
+                  <div className="aspect-4/3 bg-linear-to-br from-muted/80 via-muted/60 rounded-xl to-emerald-500/15" />
                 </div>
               </div>
 
               <div className="bg-muted/60 mx-auto h-3 w-44 rounded-full" />
 
               <div className="grid grid-cols-3 gap-2.5">
-                <div className="rounded-2xl border border-border/60 bg-background/75 p-3">
+                <div className="border-border/60 bg-background/75 rounded-2xl border p-3">
                   <div className="bg-muted/70 mb-2 h-3 w-10 rounded-full" />
                   <div className="bg-muted h-5 w-16 rounded-full" />
                 </div>
-                <div className="rounded-2xl border border-border/60 bg-background/75 p-3">
+                <div className="border-border/60 bg-background/75 rounded-2xl border p-3">
                   <div className="bg-muted/70 mb-2 h-3 w-12 rounded-full" />
                   <div className="bg-muted h-5 w-14 rounded-full" />
                 </div>
-                <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/8 p-3">
+                <div className="bg-emerald-500/8 rounded-2xl border border-emerald-500/20 p-3">
                   <div className="bg-muted/70 mb-2 h-3 w-10 rounded-full" />
-                  <div className="h-5 w-18 rounded-full bg-emerald-500/25" />
+                  <div className="w-18 h-5 rounded-full bg-emerald-500/25" />
                 </div>
               </div>
             </div>
@@ -128,7 +128,9 @@ const EffectsDemoLazy = dynamic(loadEffectsDemo, {
 });
 
 export function ImageOptimizationDemo() {
-  const prefetchedTabsRef = useRef<ReadonlySet<DemoTabValue>>(new Set(["resize"]));
+  const prefetchedTabsRef = useRef<ReadonlySet<DemoTabValue>>(
+    new Set(["resize"]),
+  );
 
   const handleTriggerPrefetch = useCallback((value: DemoTabValue) => {
     if (prefetchedTabsRef.current.has(value)) {

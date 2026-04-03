@@ -1,7 +1,7 @@
 "use client";
 
-import { DOCS_LINKS } from "@/lib/constants";
 import { env } from "@/env";
+import { DOCS_LINKS } from "@/lib/constants";
 import { formatBytes, formatNumber } from "@/lib/format";
 import { api } from "@/trpc/react";
 import {
@@ -50,9 +50,7 @@ function SetupChecklist({
       done: hasSourceDomains,
       label: "Configure image sources",
       icon: ImageIcon,
-      href: teamSlug
-        ? `/${teamSlug}/${projectSlug}?tab=settings`
-        : undefined,
+      href: teamSlug ? `/${teamSlug}/${projectSlug}?tab=settings` : undefined,
       hrefLabel: "Go to Settings",
     },
     { done: hasApiKeys, label: "API key ready", icon: Key },
@@ -204,7 +202,7 @@ export function OverviewTab({ project, teamSlug }: OverviewTabProps) {
             href={link.href}
             target="_blank"
             rel="noopener noreferrer"
-            className="group border-border hover:border-primary/30 hover:bg-muted/50 flex items-center gap-3 rounded-lg border p-4 transition-colors"
+            className="border-border hover:border-primary/30 hover:bg-muted/50 group flex items-center gap-3 rounded-lg border p-4 transition-colors"
           >
             <div className="bg-muted text-muted-foreground group-hover:text-primary flex h-9 w-9 shrink-0 items-center justify-center rounded-md transition-colors">
               <link.icon className="h-4 w-4" />

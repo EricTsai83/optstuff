@@ -1,5 +1,5 @@
-import { ScrollHeader } from "@/components/scroll-header";
 import { NAV_LINKS, RESOURCE_LINKS } from "@/components/home-header-links";
+import { ScrollHeader } from "@/components/scroll-header";
 import Link from "next/link";
 
 function renderNavLinks(variant: "desktop" | "mobile") {
@@ -56,7 +56,11 @@ function renderResourceLinks(variant: "desktop" | "mobile") {
         <span
           className={`flex size-7 shrink-0 items-center justify-center rounded-md ${link.mobileIconClassName}`}
         >
-          <svg viewBox={link.iconViewBox} fill="currentColor" className="size-3.5">
+          <svg
+            viewBox={link.iconViewBox}
+            fill="currentColor"
+            className="size-3.5"
+          >
             {link.iconPaths.map((path) => (
               <path key={path} d={path} />
             ))}
@@ -77,7 +81,7 @@ function renderResourceLinks(variant: "desktop" | "mobile") {
 export function HomeHeader() {
   return (
     <ScrollHeader>
-      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:h-18 sm:px-6">
+      <div className="sm:h-18 mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
         {/* Logo */}
         <Link
           href="/"

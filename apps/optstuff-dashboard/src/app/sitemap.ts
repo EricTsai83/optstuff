@@ -5,7 +5,9 @@ import type { MetadataRoute } from "next";
 // Dashboard-only routes such as `/sign-in` or `/:team` should stay out of the sitemap.
 const publicRoutes: Array<{
   path: string;
-  changeFrequency: NonNullable<MetadataRoute.Sitemap[number]["changeFrequency"]>;
+  changeFrequency: NonNullable<
+    MetadataRoute.Sitemap[number]["changeFrequency"]
+  >;
   priority: number;
 }> = [
   {

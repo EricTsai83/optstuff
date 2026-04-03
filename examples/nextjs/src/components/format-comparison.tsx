@@ -1,7 +1,6 @@
 import { buildOptStuffProxyPath } from "@/lib/next-image-optstuff-loader";
 
-const DEMO_SRC =
-  "https://images.unsplash.com/photo-1506744038136-46273834b3fb";
+const DEMO_SRC = "https://images.unsplash.com/photo-1506744038136-46273834b3fb";
 
 const FORMATS = [
   {
@@ -68,7 +67,7 @@ export function FormatComparison() {
             key={fmt.id}
             className="border-border bg-card group cursor-default overflow-hidden rounded-2xl border shadow-sm"
           >
-            <div className="relative aspect-4/3 overflow-hidden">
+            <div className="aspect-4/3 relative overflow-hidden">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={previewUrl}
@@ -85,7 +84,7 @@ export function FormatComparison() {
                   .{fmt.id}
                 </span>
               </div>
-              <div className="pointer-events-none absolute inset-0 bg-linear-to-t from-black/15 via-transparent to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
+              <div className="bg-linear-to-t pointer-events-none absolute inset-0 from-black/15 via-transparent to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
             </div>
             <div className="p-4 sm:p-5">
               <div className="mb-2.5 flex items-center justify-between">

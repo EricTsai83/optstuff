@@ -68,7 +68,8 @@ function parseOptionalNumber(
   name: string,
   { min, max }: NumberParseOptions = {},
 ): { value: number | undefined } | { error: string } {
-  if (value === undefined || value === null || value === "") return { value: undefined };
+  if (value === undefined || value === null || value === "")
+    return { value: undefined };
   const n = Number(value);
   if (Number.isNaN(n) || !Number.isFinite(n)) {
     return { error: `${name} must be a valid number` };
@@ -84,17 +85,28 @@ function parseOptionalNumber(
   return { value: rounded };
 }
 
-function validatePayload(payload: Record<string, unknown>): ValidatedPayload | { error: string } {
+function validatePayload(
+  payload: Record<string, unknown>,
+): ValidatedPayload | { error: string } {
   const parsedUrl = parseImageUrl(payload.imageUrl);
   if ("error" in parsedUrl) return parsedUrl;
 
-  const parsedWidth = parseOptionalNumber(payload.width, "width", { min: 1, max: 8192 });
+  const parsedWidth = parseOptionalNumber(payload.width, "width", {
+    min: 1,
+    max: 8192,
+  });
   if ("error" in parsedWidth) return parsedWidth;
 
-  const parsedHeight = parseOptionalNumber(payload.height, "height", { min: 1, max: 8192 });
+  const parsedHeight = parseOptionalNumber(payload.height, "height", {
+    min: 1,
+    max: 8192,
+  });
   if ("error" in parsedHeight) return parsedHeight;
 
-  const parsedQuality = parseOptionalNumber(payload.quality, "quality", { min: 1, max: 100 });
+  const parsedQuality = parseOptionalNumber(payload.quality, "quality", {
+    min: 1,
+    max: 100,
+  });
   if ("error" in parsedQuality) return parsedQuality;
 
   const format = payload.format ?? "webp";
@@ -119,7 +131,11 @@ function validatePayload(payload: Record<string, unknown>): ValidatedPayload | {
   };
 }
 
-function applyCacheHeaders(response: NextResponse, maxAgeSeconds: number, swrSeconds: number) {
+function applyCacheHeaders(
+  response: NextResponse,
+  maxAgeSeconds: number,
+  swrSeconds: number,
+) {
   response.headers.set(
     "Cache-Control",
     `public, s-maxage=${maxAgeSeconds}, max-age=${maxAgeSeconds}, stale-while-revalidate=${swrSeconds}`,
@@ -148,7 +164,11 @@ export function GET(request: NextRequest) {
     SIGNED_URL_TTL_SECONDS,
   );
   const response = NextResponse.redirect(signedUrl, 302);
-  return applyCacheHeaders(response, REDIRECT_CACHE_SECONDS, REDIRECT_SWR_SECONDS);
+  return applyCacheHeaders(
+    response,
+    REDIRECT_CACHE_SECONDS,
+    REDIRECT_SWR_SECONDS,
+  );
 }
 
 export async function POST(request: NextRequest) {

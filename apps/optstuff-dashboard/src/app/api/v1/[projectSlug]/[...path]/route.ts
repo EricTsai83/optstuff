@@ -1,5 +1,6 @@
 import { after, NextResponse } from "next/server";
 
+import { env } from "@/env";
 import {
   ensureProtocol,
   ensureUint8Array,
@@ -7,8 +8,10 @@ import {
   parseOperationsString,
   resolveContentType,
 } from "@/lib/ipx-utils";
-import { env } from "@/env";
-import { verifyUrlSignature } from "@/server/lib/api-key";
+import {
+  verifyUrlSignature,
+  type SignatureVerificationResult,
+} from "@/server/lib/api-key";
 import {
   getApiKeyConfig,
   getProjectConfigById,
@@ -42,8 +45,7 @@ const PASSTHROUGH_STATUS_CODES = new Set([404, 410]);
 const CACHE_CONTROL_HEADER =
   "public, s-maxage=31536000, max-age=31536000, immutable";
 const ORIGINAL_SIZE_SAMPLE_RATE = 0.1;
-const DEFAULT_SUCCESS_LOG_SAMPLE_RATE =
-  env.NODE_ENV === "production" ? 0.2 : 1;
+const DEFAULT_SUCCESS_LOG_SAMPLE_RATE = env.NODE_ENV === "production" ? 0.2 : 1;
 
 function resolveSuccessLogSampleRate(): number {
   return env.REQUEST_LOG_SUCCESS_SAMPLE_RATE ?? DEFAULT_SUCCESS_LOG_SAMPLE_RATE;
@@ -63,16 +65,12 @@ function mapUpstreamErrorStatus(error: unknown): number {
 }
 
 type RouteParams = { projectSlug: string; path: string[] };
-type RequestLogPayload = {
-  sourceUrl: string;
-  status: "success" | "error" | "forbidden" | "rate_limited";
-  processingTimeMs?: number;
-  originalSize?: number;
-  optimizedSize?: number;
-};
+type RequestLogPayload = import("@/server/lib/request-logger").RequestLogData;
 type ValidatedRequestContext = {
   readonly apiKey: NonNullable<Awaited<ReturnType<typeof getApiKeyConfig>>>;
-  readonly project: NonNullable<Awaited<ReturnType<typeof getProjectConfigById>>>;
+  readonly project: NonNullable<
+    Awaited<ReturnType<typeof getProjectConfigById>>
+  >;
   readonly imageUrl: string;
   readonly parsed: NonNullable<ReturnType<typeof parseIpxPath>>;
   readonly operations: ReturnType<typeof parseOperationsString>;
@@ -84,8 +82,12 @@ const importRequestLogger = () => import("@/server/lib/request-logger");
 const importUsageTracker = () => import("@/server/lib/usage-tracker");
 
 let ipxFactoryModulePromise: ReturnType<typeof importIpxFactory> | undefined;
-let requestLoggerModulePromise: ReturnType<typeof importRequestLogger> | undefined;
-let usageTrackerModulePromise: ReturnType<typeof importUsageTracker> | undefined;
+let requestLoggerModulePromise:
+  | ReturnType<typeof importRequestLogger>
+  | undefined;
+let usageTrackerModulePromise:
+  | ReturnType<typeof importUsageTracker>
+  | undefined;
 
 function getIpxFactoryModule() {
   ipxFactoryModulePromise ??= importIpxFactory();
@@ -107,7 +109,10 @@ async function getProjectIpxInstance() {
   return getProjectIPX();
 }
 
-function logRequestInBackground(projectId: string, data: RequestLogPayload): void {
+function logRequestInBackground(
+  projectId: string,
+  data: RequestLogPayload,
+): void {
   void getRequestLoggerModule()
     .then(({ logRequest }) => logRequest(projectId, data))
     .catch(() => undefined);
@@ -134,6 +139,15 @@ function updateUsageInBackground(
       });
     })
     .catch(() => undefined);
+}
+
+const FORBIDDEN_HEADERS = { "Cache-Control": "no-store" };
+
+function forbiddenResponse(error: string): Response {
+  return NextResponse.json(
+    { error },
+    { status: 403, headers: FORBIDDEN_HEADERS },
+  );
 }
 
 function buildVaryHeader(
@@ -185,7 +199,9 @@ function isNonTransformableContentType(contentType: string): boolean {
   );
 }
 
-async function probeUpstreamSource(imageUrl: string): Promise<UpstreamProbeResult> {
+async function probeUpstreamSource(
+  imageUrl: string,
+): Promise<UpstreamProbeResult> {
   const probeStart = Date.now();
   try {
     const response = await fetch(imageUrl, {
@@ -227,7 +243,6 @@ async function validateRequest(
 > {
   const { projectSlug, path } = resolvedParams;
   const url = new URL(request.url);
-  const sourcePath = path.join("/");
 
   // 1. Parse and validate signature parameters
   const sigParams = parseSignatureParams(url.searchParams);
@@ -250,7 +265,10 @@ async function validateRequest(
   if (!apiKey) {
     return {
       ok: false,
-      response: NextResponse.json({ error: "Invalid API key" }, { status: 401 }),
+      response: NextResponse.json(
+        { error: "Invalid API key" },
+        { status: 401 },
+      ),
     };
   }
 
@@ -299,7 +317,10 @@ async function validateRequest(
   if (!operationValidation.ok) {
     return {
       ok: false,
-      response: NextResponse.json({ error: operationValidation.error }, { status: 400 }),
+      response: NextResponse.json(
+        { error: operationValidation.error },
+        { status: 400 },
+      ),
     };
   }
 
@@ -308,23 +329,24 @@ async function validateRequest(
   //    - avoids unnecessary cache/DB work for bad signatures
   //    - prevents quota exhaustion by unauthenticated requests
   const signaturePath = `${parsed.operations}/${parsed.imagePath}`;
-  if (
-    !verifyUrlSignature(
-      apiKey.secretKey,
-      signaturePath,
-      sigParams.signature,
-      sigParams.expiresAt,
-    )
-  ) {
+  const sigResult: SignatureVerificationResult = verifyUrlSignature(
+    apiKey.secretKey,
+    signaturePath,
+    sigParams.signature,
+    sigParams.expiresAt,
+  );
+  if (sigResult !== "valid") {
+    const isExpired = sigResult === "expired";
     logRequestInBackground(apiKey.projectId, {
-      sourceUrl: sourcePath,
-      status: "forbidden",
+      sourceUrl: ensureProtocol(parsed.imagePath),
+      operations: parsed.operations,
+      status: isExpired ? "sig_expired" : "sig_invalid",
+      errorDetail: isExpired ? "Signature has expired" : "Invalid signature",
     });
     return {
       ok: false,
-      response: NextResponse.json(
-        { error: "Invalid or expired signature" },
-        { status: 403 },
+      response: forbiddenResponse(
+        isExpired ? "Signature has expired" : "Invalid signature",
       ),
     };
   }
@@ -336,7 +358,10 @@ async function validateRequest(
   if (!project) {
     return {
       ok: false,
-      response: NextResponse.json({ error: "Project not found" }, { status: 404 }),
+      response: NextResponse.json(
+        { error: "Project not found" },
+        { status: 404 },
+      ),
     };
   }
 
@@ -362,8 +387,10 @@ async function validateRequest(
 
   if (!rateLimitResult.allowed) {
     logRequestInBackground(project.id, {
-      sourceUrl: sourcePath,
+      sourceUrl: ensureProtocol(parsed.imagePath),
+      operations: parsed.operations,
       status: "rate_limited",
+      errorDetail: `Rate limit exceeded: ${rateLimitResult.reason === "minute" ? "per-minute" : "daily"} limit (${rateLimitResult.limit})`,
     });
     return {
       ok: false,
@@ -393,15 +420,14 @@ async function validateRequest(
   const referer = request.headers.get("referer");
   if (!validateReferer(referer, project.allowedRefererDomains)) {
     logRequestInBackground(project.id, {
-      sourceUrl: sourcePath,
-      status: "forbidden",
+      sourceUrl: ensureProtocol(parsed.imagePath),
+      operations: parsed.operations,
+      status: "referer_blocked",
+      errorDetail: `Referer blocked: ${referer ?? "(no referer header)"}`,
     });
     return {
       ok: false,
-      response: NextResponse.json(
-        { error: "Forbidden: Invalid referer" },
-        { status: 403 },
-      ),
+      response: forbiddenResponse("Forbidden: Invalid referer"),
     };
   }
 
@@ -441,14 +467,13 @@ async function validateRequest(
   if (!validateSourceDomain(sourceHost, project.allowedSourceDomains)) {
     logRequestInBackground(project.id, {
       sourceUrl: imageUrl,
-      status: "forbidden",
+      operations: parsed.operations,
+      status: "source_blocked",
+      errorDetail: `Source domain not allowed: ${sourceHost}`,
     });
     return {
       ok: false,
-      response: NextResponse.json(
-        { error: "Forbidden: Source domain not allowed" },
-        { status: 403 },
-      ),
+      response: forbiddenResponse("Forbidden: Source domain not allowed"),
     };
   }
 
@@ -526,6 +551,7 @@ export async function GET(
       if (logSuccessfulRequest) {
         await logRequestAwait(project.id, {
           sourceUrl: imageUrl,
+          operations: validation.context.parsed.operations,
           status: "success",
           processingTimeMs,
           originalSize,
@@ -560,7 +586,10 @@ export async function GET(
 
     logRequestInBackground(project.id, {
       sourceUrl: imageUrl,
+      operations: validation.context.parsed.operations,
       status: "error",
+      errorDetail:
+        error instanceof Error ? error.message : "Unknown processing error",
     });
 
     return NextResponse.json(

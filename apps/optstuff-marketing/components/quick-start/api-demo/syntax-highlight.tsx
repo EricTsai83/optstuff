@@ -18,26 +18,14 @@ function highlightUrl(code: string): string {
       /\b(w_\d+|q_\d+|f_[a-z0-9]+)\b/g,
       '<span class="text-amber-300">$1</span>',
     )
-    .replace(
-      /\b(key|sig|exp)(=)/g,
-      '<span class="text-sky-200">$1</span>$2',
-    )
-    .replace(
-      /\b(pk_[A-Za-z0-9_]+)\b/g,
-      '<span class="text-cyan-300">$1</span>',
-    )
-    .replace(
-      /\b(xyz789)\b/g,
-      '<span class="text-blue-300">$1</span>',
-    );
+    .replace(/\b(key|sig|exp)(=)/g, '<span class="text-sky-200">$1</span>$2')
+    .replace(/\b(pk_[A-Za-z0-9_]+)\b/g, '<span class="text-cyan-300">$1</span>')
+    .replace(/\b(xyz789)\b/g, '<span class="text-blue-300">$1</span>');
 }
 
 function highlightServer(code: string): string {
   return code
-    .replace(
-      /(".*?"|`.*?`)/g,
-      '<span class="text-emerald-300">$1</span>',
-    )
+    .replace(/(".*?"|`.*?`)/g, '<span class="text-emerald-300">$1</span>')
     .replace(
       /\b(import|const|new|return)\b/g,
       '<span class="text-sky-300">$1</span>',
@@ -62,18 +50,12 @@ function highlightHeaders(code: string): string {
       /^(HTTP\/1\.1 200 OK)$/g,
       '<span class="text-emerald-300">$1</span>',
     )
-    .replace(
-      /^([A-Za-z-]+)(:)/g,
-      '<span class="text-sky-300">$1</span>$2',
-    )
+    .replace(/^([A-Za-z-]+)(:)/g, '<span class="text-sky-300">$1</span>$2')
     .replace(
       /\b(image\/webp|Accept|immutable)\b/g,
       '<span class="text-cyan-300">$1</span>',
     )
-    .replace(
-      /\b(\d+ms|dur=\d+)\b/g,
-      '<span class="text-amber-300">$1</span>',
-    );
+    .replace(/\b(\d+ms|dur=\d+)\b/g, '<span class="text-amber-300">$1</span>');
 }
 
 export function SyntaxHighlight({ code, variant }: SyntaxHighlightProps) {

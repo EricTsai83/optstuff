@@ -81,7 +81,7 @@ export function MobileSidebar({ open, onOpenChange }: MobileSidebarProps) {
                 key={item.href}
                 variant="ghost"
                 asChild
-                className="h-auto justify-start gap-3 px-3 py-2.5 text-foreground [&_svg]:text-muted-foreground [&:hover_svg]:text-accent-foreground"
+                className="text-foreground [&_svg]:text-muted-foreground [&:hover_svg]:text-accent-foreground h-auto justify-start gap-3 px-3 py-2.5"
               >
                 <a
                   href={item.href}
@@ -109,7 +109,7 @@ export function MobileSidebar({ open, onOpenChange }: MobileSidebarProps) {
           <Button
             variant="ghost"
             onClick={() => setTheme(isDark ? "light" : "dark")}
-            className="h-auto justify-start gap-3 px-3 py-2.5 text-foreground [&_svg]:text-muted-foreground [&:hover_svg]:text-accent-foreground"
+            className="text-foreground [&_svg]:text-muted-foreground [&:hover_svg]:text-accent-foreground h-auto justify-start gap-3 px-3 py-2.5"
           >
             {isDark ? <Sun /> : <Moon />}
             <span>{isDark ? "Light Mode" : "Dark Mode"}</span>
@@ -117,7 +117,7 @@ export function MobileSidebar({ open, onOpenChange }: MobileSidebarProps) {
 
           <Button
             variant="ghost"
-            className="h-auto justify-start gap-3 px-3 py-2.5 text-foreground [&_svg]:text-muted-foreground [&:hover_svg]:text-accent-foreground"
+            className="text-foreground [&_svg]:text-muted-foreground [&:hover_svg]:text-accent-foreground h-auto justify-start gap-3 px-3 py-2.5"
           >
             <MessageSquare />
             <span>Feedback</span>

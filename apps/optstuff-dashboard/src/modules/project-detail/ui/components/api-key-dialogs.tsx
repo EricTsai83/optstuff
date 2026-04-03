@@ -160,8 +160,8 @@ export function EditApiKeyDialog({
         <DialogHeader>
           <DialogTitle>Edit API Key</DialogTitle>
           <DialogDescription>
-            Update the settings for <strong>{editingKey?.name}</strong>.
-            Image source restrictions are managed in project Settings.
+            Update the settings for <strong>{editingKey?.name}</strong>. Image
+            source restrictions are managed in project Settings.
           </DialogDescription>
         </DialogHeader>
 

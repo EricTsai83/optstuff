@@ -35,7 +35,8 @@ export function useFormatCycle(scanProgress: number, isOptimized: boolean) {
     Math.min(scanProgress / BEAM_EXIT_PROGRESS, 0.999),
   );
   const totalSteps = IMAGE_FORMATS.length * FORMAT_CYCLE_COUNT;
-  const formatIndex = Math.floor(progress01 * totalSteps) % IMAGE_FORMATS.length;
+  const formatIndex =
+    Math.floor(progress01 * totalSteps) % IMAGE_FORMATS.length;
 
   return getFormatAtIndex(formatIndex);
 }

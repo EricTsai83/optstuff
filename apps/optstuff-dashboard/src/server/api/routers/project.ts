@@ -3,10 +3,7 @@ import { and, desc, eq, inArray } from "drizzle-orm";
 import { z } from "zod";
 
 import { generateSlug, generateUniqueSlug } from "@/lib/slug";
-import {
-  verifyProjectAccess,
-  verifyTeamAccess,
-} from "@/server/api/lib/access";
+import { verifyProjectAccess, verifyTeamAccess } from "@/server/api/lib/access";
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
 import { apiKeys, pinnedProjects, projects, teams } from "@/server/db/schema";
 import { encryptApiKey, generateApiKey } from "@/server/lib/api-key";
@@ -44,9 +41,7 @@ const sourceDomainEntrySchema = z
   .regex(DOMAIN_PATTERN, "Invalid domain")
   .transform((s) => s.toLowerCase());
 
-const allowedSourceDomainsSchema = z
-  .array(sourceDomainEntrySchema)
-  .optional();
+const allowedSourceDomainsSchema = z.array(sourceDomainEntrySchema).optional();
 
 /**
  * Checks if an error is a Postgres unique-constraint violation for the given constraint name.
@@ -117,7 +112,8 @@ export const projectRouter = createTRPCRouter({
             slug: slugToUse,
             description: input.description,
             allowedSourceDomains:
-              input.allowedSourceDomains && input.allowedSourceDomains.length > 0
+              input.allowedSourceDomains &&
+              input.allowedSourceDomains.length > 0
                 ? input.allowedSourceDomains
                 : null,
             allowedRefererDomains:

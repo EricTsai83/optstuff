@@ -50,7 +50,10 @@ export function QualityDemo() {
   }, []);
 
   const queuePointerState = useCallback(
-    (nextState: { isHovering: boolean; imagePos: { x: number; y: number } }) => {
+    (nextState: {
+      isHovering: boolean;
+      imagePos: { x: number; y: number };
+    }) => {
       pendingPointerStateRef.current = nextState;
       if (pendingPointerFrameRef.current !== null) {
         return;

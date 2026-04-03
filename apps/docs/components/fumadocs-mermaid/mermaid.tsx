@@ -35,7 +35,11 @@ const subscribeToNothing = () => () => {};
 
 /** SSR / hydration-safe client gate without `useEffect` + `setState`. */
 function useIsClient() {
-  return useSyncExternalStore(subscribeToNothing, () => true, () => false);
+  return useSyncExternalStore(
+    subscribeToNothing,
+    () => true,
+    () => false,
+  );
 }
 
 export type MermaidProps = {

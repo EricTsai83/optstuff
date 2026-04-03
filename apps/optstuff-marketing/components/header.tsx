@@ -91,14 +91,17 @@ export function Header() {
           {/* Left: Logo */}
           <Link
             href="/"
-            className="group flex items-center gap-2.5 justify-self-start rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+            className="focus-visible:ring-ring focus-visible:ring-offset-background group flex items-center gap-2.5 justify-self-start rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
             aria-label="OptStuff Home"
           >
             <Logo size={HEADER_CONFIG.logo.size} />
           </Link>
 
           {/* Center: Navigation - Desktop only */}
-          <nav className="hidden items-center gap-6 md:flex" aria-label="Primary navigation">
+          <nav
+            className="hidden items-center gap-6 md:flex"
+            aria-label="Primary navigation"
+          >
             {NAVIGATION.map((item) => (
               <Link
                 key={item.href}
@@ -107,7 +110,7 @@ export function Header() {
                   ? { target: "_blank", rel: "noopener noreferrer" }
                   : {})}
                 aria-label={getExternalLinkAriaLabel(item.label, item.external)}
-                className="text-muted-foreground hover:text-foreground dark:text-foreground after:bg-foreground focus-visible:ring-ring focus-visible:ring-offset-background relative rounded-sm text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 after:absolute after:bottom-0 after:left-0 after:h-px after:w-0 after:transition-all after:duration-300 hover:after:w-full"
+                className="text-muted-foreground hover:text-foreground dark:text-foreground after:bg-foreground focus-visible:ring-ring focus-visible:ring-offset-background relative rounded-sm text-sm font-medium transition-colors after:absolute after:bottom-0 after:left-0 after:h-px after:w-0 after:transition-all after:duration-300 hover:after:w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
               >
                 <span className="inline-flex items-center gap-1">
                   <span>{item.label}</span>

@@ -74,7 +74,7 @@ export function UsageChart({ data, days = 30, isLoading }: UsageChartProps) {
             <button
               key={key}
               data-active={activeMetric === key}
-              className="relative z-30 flex flex-1 cursor-pointer flex-col justify-center gap-1 border-t px-6 py-4 text-left transition-colors even:border-l sm:border-l sm:border-t-0 sm:px-8 sm:py-6 data-[active=false]:text-muted-foreground data-[active=false]:hover:bg-muted/30 data-[active=true]:bg-muted/50 data-[active=true]:shadow-[inset_0_-2px_0_0_var(--color-primary)]"
+              className="data-[active=false]:text-muted-foreground data-[active=false]:hover:bg-muted/30 data-[active=true]:bg-muted/50 relative z-30 flex flex-1 cursor-pointer flex-col justify-center gap-1 border-t px-6 py-4 text-left transition-colors even:border-l data-[active=true]:shadow-[inset_0_-2px_0_0_var(--color-primary)] sm:border-l sm:border-t-0 sm:px-8 sm:py-6"
               onClick={() => setActiveMetric(key)}
             >
               <span className="text-muted-foreground text-xs">

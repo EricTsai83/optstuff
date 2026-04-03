@@ -3,16 +3,13 @@ import { and, desc, eq, gte, inArray, lte, sql } from "drizzle-orm";
 import { z } from "zod";
 
 import { getDateRange, getToday } from "@/lib/format";
-import {
-  verifyProjectAccess,
-  verifyTeamAccess,
-} from "@/server/api/lib/access";
+import { verifyProjectAccess, verifyTeamAccess } from "@/server/api/lib/access";
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
 import { apiKeys, projects, teams, usageRecords } from "@/server/db/schema";
 import { getRedis } from "@/server/lib/redis";
 import {
-  getUsageBufferFlushStatus,
   flushUsageBufferToDatabase,
+  getUsageBufferFlushStatus,
 } from "@/server/lib/usage-tracker";
 
 const MANUAL_USAGE_FLUSH_COOLDOWN_SECONDS = 60;
@@ -67,7 +64,11 @@ export const usageRouter = createTRPCRouter({
           })
           .onConflictDoUpdate({
             target: input.apiKeyId
-              ? [usageRecords.projectId, usageRecords.apiKeyId, usageRecords.date]
+              ? [
+                  usageRecords.projectId,
+                  usageRecords.apiKeyId,
+                  usageRecords.date,
+                ]
               : [usageRecords.projectId, usageRecords.date],
             targetWhere: input.apiKeyId
               ? sql`${usageRecords.apiKeyId} IS NOT NULL`
@@ -212,12 +213,8 @@ export const usageRouter = createTRPCRouter({
       }
 
       const msPerDay = 1000 * 60 * 60 * 24;
-      const prevEndDay = new Date(
-        new Date(startDate).getTime() - msPerDay,
-      );
-      const prevStartDay = new Date(
-        prevEndDay.getTime() - days * msPerDay,
-      );
+      const prevEndDay = new Date(new Date(startDate).getTime() - msPerDay);
+      const prevStartDay = new Date(prevEndDay.getTime() - days * msPerDay);
       const prevStartDate = prevStartDay.toISOString().split("T")[0]!;
       const prevEndDate = prevEndDay.toISOString().split("T")[0]!;
 

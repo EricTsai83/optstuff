@@ -1,7 +1,7 @@
 "use client";
 
-import { createElement, useEffect, useMemo, useRef, useState } from "react";
 import type { ComponentPropsWithoutRef, CSSProperties, RefObject } from "react";
+import { createElement, useEffect, useMemo, useRef, useState } from "react";
 
 const DEFAULT_THRESHOLD = 0.08;
 const DEFAULT_ROOT_MARGIN = "0px 0px -60px 0px";
@@ -96,11 +96,15 @@ export function useScrollReveal<T extends HTMLElement = HTMLDivElement>({
 
 type ScrollRevealTag = keyof HTMLElementTagNameMap;
 
-export type ScrollRevealProps<TTag extends ScrollRevealTag = "div"> = ScrollRevealOptions &
-  Omit<ComponentPropsWithoutRef<TTag>, keyof ScrollRevealOptions | "as" | "style"> & {
-    readonly as?: TTag;
-  readonly style?: CSSProperties;
-};
+export type ScrollRevealProps<TTag extends ScrollRevealTag = "div"> =
+  ScrollRevealOptions &
+    Omit<
+      ComponentPropsWithoutRef<TTag>,
+      keyof ScrollRevealOptions | "as" | "style"
+    > & {
+      readonly as?: TTag;
+      readonly style?: CSSProperties;
+    };
 
 export function ScrollReveal<TTag extends ScrollRevealTag = "div">({
   as,

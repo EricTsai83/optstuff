@@ -44,7 +44,10 @@ export function remarkMdxMermaidWithTitle(options: { lang?: string } = {}) {
       if (node.lang !== lang || !node.value) return;
 
       const meta = typeof node.meta === "string" ? node.meta : "";
-      const { attributes } = parseCodeBlockAttributes(meta, ["title", "caption"]);
+      const { attributes } = parseCodeBlockAttributes(meta, [
+        "title",
+        "caption",
+      ]);
 
       const jsxAttrs: MdxJsxAttribute[] = [
         jsxStringAttr("chart", node.value.trim()),

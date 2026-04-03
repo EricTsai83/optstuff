@@ -12,7 +12,8 @@ import path from "path";
 const projectBaseUrl = getProjectBaseUrl();
 const projectDomain = projectBaseUrl.hostname;
 const isLocalhostFallback =
-  projectDomain === "localhost" || projectBaseUrl.origin === "http://localhost:3000";
+  projectDomain === "localhost" ||
+  projectBaseUrl.origin === "http://localhost:3000";
 
 if (process.env.NODE_ENV !== "development" && isLocalhostFallback) {
   throw new Error(

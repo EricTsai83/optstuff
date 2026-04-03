@@ -199,9 +199,11 @@ async function acquireFlushLock(): Promise<string | null> {
 
 async function releaseFlushLock(token: string): Promise<void> {
   const redis = getRedis();
-  await redis.eval(RELEASE_FLUSH_LOCK_SCRIPT, [USAGE_BUFFER_FLUSH_LOCK_KEY], [
-    token,
-  ]);
+  await redis.eval(
+    RELEASE_FLUSH_LOCK_SCRIPT,
+    [USAGE_BUFFER_FLUSH_LOCK_KEY],
+    [token],
+  );
 }
 
 function parseTimestamp(value: string | null | undefined): Date | null {
@@ -238,7 +240,11 @@ export async function getUsageBufferFlushStatus(): Promise<UsageBufferFlushStatu
 async function flushSingleBufferKey(
   redisKey: string,
   bucket: string,
-): Promise<{ upsertedRows: number; totalRequests: number; totalBytes: number }> {
+): Promise<{
+  upsertedRows: number;
+  totalRequests: number;
+  totalBytes: number;
+}> {
   const redis = getRedis();
   const hash = await redis.hgetall<Record<string, string>>(redisKey);
   if (!hash || Object.keys(hash).length === 0) {
@@ -283,7 +289,10 @@ async function flushSingleBufferKey(
     (sum, row) => sum + row.requestCount,
     0,
   );
-  const totalBytes = filteredRows.reduce((sum, row) => sum + row.bytesProcessed, 0);
+  const totalBytes = filteredRows.reduce(
+    (sum, row) => sum + row.bytesProcessed,
+    0,
+  );
   let shouldApplyRows = false;
 
   await db.transaction(async (tx) => {
@@ -314,7 +323,11 @@ async function flushSingleBufferKey(
           bytesProcessed: row.bytesProcessed,
         })
         .onConflictDoUpdate({
-          target: [usageRecords.projectId, usageRecords.apiKeyId, usageRecords.date],
+          target: [
+            usageRecords.projectId,
+            usageRecords.apiKeyId,
+            usageRecords.date,
+          ],
           targetWhere: sql`${usageRecords.apiKeyId} IS NOT NULL`,
           set: {
             requestCount: sql`${usageRecords.requestCount} + ${row.requestCount}`,
@@ -351,13 +364,17 @@ export function bufferUsageIncrement(input: UsageBufferInput): void {
   const key = getUsageBufferKey(bucket);
 
   void redis
-    .eval(BUFFER_USAGE_INCREMENT_SCRIPT, [key], [
-      String(USAGE_BUFFER_TTL_SECONDS),
-      String(requestCount),
-      String(bytesProcessed),
-      encodeUsageField(input.projectId, input.apiKeyId, FIELD_REQUESTS),
-      encodeUsageField(input.projectId, input.apiKeyId, FIELD_BYTES),
-    ])
+    .eval(
+      BUFFER_USAGE_INCREMENT_SCRIPT,
+      [key],
+      [
+        String(USAGE_BUFFER_TTL_SECONDS),
+        String(requestCount),
+        String(bytesProcessed),
+        encodeUsageField(input.projectId, input.apiKeyId, FIELD_REQUESTS),
+        encodeUsageField(input.projectId, input.apiKeyId, FIELD_BYTES),
+      ],
+    )
     .catch((error: unknown) => {
       console.error(
         `Failed to buffer usage increment (project=${input.projectId}, key=${input.apiKeyId}):`,
@@ -448,7 +465,10 @@ export async function flushUsageBufferToDatabase(
       durationMs: Date.now() - startedAt,
     };
     await persistFlushTimestamps(result.ok).catch((error: unknown) => {
-      console.warn("[UsageBufferFlush] Failed to persist flush timestamps:", error);
+      console.warn(
+        "[UsageBufferFlush] Failed to persist flush timestamps:",
+        error,
+      );
     });
     return result;
   } catch (error) {

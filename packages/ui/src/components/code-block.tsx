@@ -1,9 +1,9 @@
 "use client";
 
-import type { ReactNode } from "react";
 import { CopyButton } from "@workspace/ui/components/copy-button";
 import { RevealButton } from "@workspace/ui/components/reveal-button";
 import { cn } from "@workspace/ui/lib/utils";
+import type { ReactNode } from "react";
 import { useState } from "react";
 
 /* ---------------------------------------------------------------------------

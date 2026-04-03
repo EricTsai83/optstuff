@@ -102,8 +102,8 @@ export function CreateApiKeyDialog({
             <DialogHeader>
               <DialogTitle>Create API Key</DialogTitle>
               <DialogDescription>
-                Create a new API key for this project. Image source
-                restrictions are managed in project Settings.
+                Create a new API key for this project. Image source restrictions
+                are managed in project Settings.
               </DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
@@ -134,10 +134,7 @@ export function CreateApiKeyDialog({
               >
                 Cancel
               </Button>
-              <Button
-                type="submit"
-                disabled={isPending || !name.trim()}
-              >
+              <Button type="submit" disabled={isPending || !name.trim()}>
                 Create Key
               </Button>
             </DialogFooter>
