@@ -99,7 +99,7 @@ export function UsageChart({ data, days = 30, isLoading }: UsageChartProps) {
                   </span>
                 );
               })()}
-              <span className="text-muted-foreground absolute bottom-1.5 right-2 text-[10px] sm:bottom-2 sm:right-3">
+              <span className="text-muted-foreground absolute bottom-1 right-2 text-xs sm:bottom-1.5 sm:right-3">
                 {chartConfig[key].label}
               </span>
             </button>
