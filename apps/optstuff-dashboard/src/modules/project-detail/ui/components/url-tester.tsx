@@ -23,6 +23,7 @@ import {
 import { Slider } from "@workspace/ui/components/slider";
 import { ExternalLink, ImageIcon, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { getExpirationStatus } from "./api-key-types";
 
 type UrlTesterProps = {
   readonly projectId: string;
@@ -47,16 +48,21 @@ export function UrlTester({
   const { data: apiKeys } = api.apiKey.list.useQuery({ projectId });
   const signUrlMutation = api.apiKey.signUrl.useMutation();
 
-  // Clear selection if the selected key no longer exists
+  // Clear selection if the selected key no longer exists or is expired
   useEffect(() => {
     if (!apiKeys || selectedApiKeyId === "") return;
-    if (!apiKeys.some((k) => k.id === selectedApiKeyId)) {
+    const selected = apiKeys.find((k) => k.id === selectedApiKeyId);
+    if (!selected || getExpirationStatus(selected.expiresAt).isExpired) {
       setSelectedApiKeyId("");
     }
   }, [apiKeys, selectedApiKeyId]);
 
-  const effectiveApiKeyId =
-    apiKeys?.some((k) => k.id === selectedApiKeyId) ? selectedApiKeyId : "";
+  const effectiveApiKeyId = apiKeys?.some(
+    (k) =>
+      k.id === selectedApiKeyId && !getExpirationStatus(k.expiresAt).isExpired,
+  )
+    ? selectedApiKeyId
+    : "";
 
   const buildOperationsString = () => {
     const operations = [];
@@ -155,11 +161,21 @@ export function UrlTester({
                     <SelectValue placeholder="Select API key" />
                   </SelectTrigger>
                   <SelectContent>
-                    {apiKeys.map((key) => (
-                      <SelectItem key={key.id} value={key.id}>
-                        {key.name}
-                      </SelectItem>
-                    ))}
+                    {apiKeys.map((key) => {
+                      const expired = getExpirationStatus(
+                        key.expiresAt,
+                      ).isExpired;
+                      return (
+                        <SelectItem
+                          key={key.id}
+                          value={key.id}
+                          disabled={expired}
+                        >
+                          {key.name}
+                          {expired ? " (expired)" : ""}
+                        </SelectItem>
+                      );
+                    })}
                   </SelectContent>
                 </Select>
               </div>

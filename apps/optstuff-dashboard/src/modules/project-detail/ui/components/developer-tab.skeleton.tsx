@@ -7,7 +7,7 @@ export function DeveloperTabSkeleton() {
       <div className="flex overflow-hidden rounded-xl border border-black/[0.08] bg-white shadow-lg dark:border-white/[0.08] dark:bg-[#0a0a0a] dark:shadow-2xl">
         {/* Sidebar */}
         <div className="flex w-[140px] shrink-0 flex-col border-r border-black/[0.06] bg-[#f0f0f0] dark:border-white/[0.06] dark:bg-[#0e0e0e]">
-          <div className="px-3 pt-3 pb-2">
+          <div className="px-3 pb-2 pt-3">
             <div className="bg-muted h-3 w-12 animate-pulse rounded" />
           </div>
           <div className="flex flex-col gap-0.5 px-2 pb-2">
@@ -42,15 +42,13 @@ export function DeveloperTabSkeleton() {
 
           {/* Code area */}
           <div className="h-[420px] space-y-2 bg-white p-4 dark:bg-[#0a0a0a]">
-            {[0.85, 0.6, 0.3, 1, 0.7, 0.5, 0.9, 0.4, 0.75, 0.55].map(
-              (w, i) => (
-                <div
-                  key={i}
-                  className="bg-muted h-4 animate-pulse rounded"
-                  style={{ width: `${w * 100}%` }}
-                />
-              ),
-            )}
+            {[0.85, 0.6, 0.3, 1, 0.7, 0.5, 0.9, 0.4, 0.75, 0.55].map((w, i) => (
+              <div
+                key={i}
+                className="bg-muted h-4 animate-pulse rounded"
+                style={{ width: `${w * 100}%` }}
+              />
+            ))}
           </div>
         </div>
       </div>

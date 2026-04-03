@@ -105,7 +105,7 @@ function StackSidebar({
 }) {
   return (
     <div className="flex w-[140px] shrink-0 flex-col border-r border-black/[0.06] bg-[#f0f0f0] dark:border-white/[0.06] dark:bg-[#0e0e0e]">
-      <div className="px-3 pt-3 pb-2">
+      <div className="px-3 pb-2 pt-3">
         <span className="text-[11px] font-semibold uppercase tracking-wider text-[#999] dark:text-[#555]">
           Stack
         </span>

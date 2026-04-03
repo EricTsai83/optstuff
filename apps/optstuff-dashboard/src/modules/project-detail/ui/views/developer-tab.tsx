@@ -1,7 +1,10 @@
 import { env } from "@/env";
 import { highlightCode } from "@/lib/highlight-code";
 import type { Project } from "../../types";
-import { DeveloperSnippets, type Framework } from "../components/developer-snippets";
+import {
+  DeveloperSnippets,
+  type Framework,
+} from "../components/developer-snippets";
 import { UrlTester } from "../components/url-tester";
 
 type DeveloperTabProps = {
