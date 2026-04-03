@@ -35,7 +35,7 @@ export default async function ProjectTabsLayout({
             className="text-muted-foreground hover:text-foreground mb-4 inline-flex items-center gap-1.5 text-sm transition-colors"
           >
             <ArrowLeft className="h-4 w-4" />
-            Back to home page
+            Back to {team.name}
           </Link>
 
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">

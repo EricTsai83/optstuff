@@ -43,14 +43,17 @@ export function formatBytesParts(bytes: number): {
   unit: string;
 } {
   if (bytes === 0) return { value: "0", unit: "B" };
+  const negative = bytes < 0;
+  const abs = Math.abs(bytes);
   const k = 1024;
   const sizes = ["B", "KB", "MB", "GB", "TB", "PB"];
   const i = Math.min(
-    Math.floor(Math.log(bytes) / Math.log(k)),
+    Math.floor(Math.log(abs) / Math.log(k)),
     sizes.length - 1,
   );
+  const formatted = parseFloat((abs / Math.pow(k, i)).toFixed(1)).toString();
   return {
-    value: parseFloat((bytes / Math.pow(k, i)).toFixed(1)).toString(),
+    value: negative ? `-${formatted}` : formatted,
     unit: sizes[i]!,
   };
 }
