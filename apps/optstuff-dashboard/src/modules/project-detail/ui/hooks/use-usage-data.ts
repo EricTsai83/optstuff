@@ -49,7 +49,7 @@ export function useUsageData({
   const selectedStatuses = useMemo((): RequestLogStatus[] | undefined => {
     if (allStatusesSelected) return undefined;
     return STATUS_OPTIONS.filter((opt) => statusFilters.has(opt.value)).flatMap(
-      (opt) => [...opt.dbStatuses] as RequestLogStatus[],
+      (opt): RequestLogStatus[] => [...opt.dbStatuses],
     );
   }, [allStatusesSelected, statusFilters]);
 

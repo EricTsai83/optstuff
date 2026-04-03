@@ -10,7 +10,10 @@
       "Bash(npx tsc:*)",
       "Bash(pnpm format:*)",
       "Bash(pnpm lint:*)",
-      "Bash(pnpm typecheck:*)"
+      "Bash(pnpm typecheck:*)",
+      "Bash(pnpm --filter optstuff-dashboard lint)",
+      "Bash(pnpm --filter optstuff-dashboard exec tsc --noEmit)",
+      "Bash(pnpm format:check)"
     ]
   }
 }
