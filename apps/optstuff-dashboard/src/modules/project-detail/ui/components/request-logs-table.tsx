@@ -480,7 +480,10 @@ export function RequestLogsTable({ logs, isLoading }: RequestLogsTableProps) {
     return (
       <Card className="gap-4 py-4">
         <CardHeader className="[.border-b]:pb-4 gap-1.5 border-b">
-          <CardTitle>Recent Requests</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <Clock className="h-5 w-5" />
+            Recent Requests
+          </CardTitle>
           <CardDescription>Last 20 API requests</CardDescription>
         </CardHeader>
         <CardContent className="px-0 pb-2">

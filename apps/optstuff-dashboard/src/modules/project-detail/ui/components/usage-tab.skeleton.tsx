@@ -6,6 +6,7 @@ import {
   CardTitle,
 } from "@workspace/ui/components/card";
 import { Skeleton } from "@workspace/ui/components/skeleton";
+import { BarChart3, Clock, ImageIcon, PiggyBank } from "lucide-react";
 
 export function StatCardsSkeleton() {
   return (
@@ -54,12 +55,13 @@ export function UsageTabSkeleton() {
 
       {/* Usage chart */}
       <Card className="py-0 pb-4">
-        <CardHeader className="p-0! flex flex-col items-stretch border-b sm:flex-row">
-          <div className="flex flex-1 flex-col justify-center gap-1 px-6 py-5">
-            <CardTitle>Usage</CardTitle>
-            <CardDescription>
-              <div className="bg-muted h-4 w-20 animate-pulse rounded" />
-            </CardDescription>
+        <CardHeader className="[.border-b]:pb-0 flex flex-col items-stretch gap-1.5 border-b p-0 sm:flex-row">
+          <div className="flex flex-1 flex-col justify-center gap-2 px-6 py-4">
+            <CardTitle className="flex items-center gap-2">
+              <BarChart3 className="h-5 w-5" />
+              Usage
+            </CardTitle>
+            <div className="bg-muted h-3.5 w-16 animate-pulse rounded" />
           </div>
         </CardHeader>
         <CardContent className="p-6">
@@ -70,7 +72,10 @@ export function UsageTabSkeleton() {
       {/* Bandwidth savings */}
       <Card className="gap-4 py-4">
         <CardHeader className="[.border-b]:pb-4 gap-1.5 border-b">
-          <CardTitle>Bandwidth Savings</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <PiggyBank className="h-5 w-5" />
+            Bandwidth Savings
+          </CardTitle>
           <CardDescription>Original vs Optimized</CardDescription>
         </CardHeader>
         <CardContent>
@@ -81,7 +86,10 @@ export function UsageTabSkeleton() {
       {/* Top images */}
       <Card className="gap-4 py-4">
         <CardHeader className="[.border-b]:pb-4 gap-1.5 border-b">
-          <CardTitle>Top Images</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <ImageIcon className="h-5 w-5" />
+            Top Images
+          </CardTitle>
           <CardDescription>Most requested images</CardDescription>
         </CardHeader>
         <CardContent className="px-0 pb-2">
@@ -103,7 +111,10 @@ export function UsageTabSkeleton() {
       {/* Recent requests */}
       <Card className="gap-4 py-4">
         <CardHeader className="[.border-b]:pb-4 gap-1.5 border-b">
-          <CardTitle>Recent Requests</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <Clock className="h-5 w-5" />
+            Recent Requests
+          </CardTitle>
           <CardDescription>Last 20 API requests</CardDescription>
         </CardHeader>
         <CardContent className="px-0 pb-2">

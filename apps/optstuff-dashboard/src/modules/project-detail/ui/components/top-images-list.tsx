@@ -51,7 +51,10 @@ export function TopImagesList({ images, isLoading }: TopImagesListProps) {
     return (
       <Card className="gap-4 py-4">
         <CardHeader className="[.border-b]:pb-4 gap-1.5 border-b">
-          <CardTitle>Top Images</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <ImageIcon className="h-5 w-5" />
+            Top Images
+          </CardTitle>
           <CardDescription>Most requested images</CardDescription>
         </CardHeader>
         <CardContent className="px-0 pb-2">

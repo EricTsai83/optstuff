@@ -14,6 +14,7 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@workspace/ui/components/chart";
+import { BarChart3 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Bar, BarChart, CartesianGrid, XAxis } from "recharts";
 
@@ -63,9 +64,12 @@ export function UsageChart({ data, days = 30, isLoading }: UsageChartProps) {
   );
 
   const headerContent = (
-    <CardHeader className="p-0! flex flex-col items-stretch border-b sm:flex-row">
-      <div className="sm:py-0! flex flex-1 flex-col justify-center gap-1 px-6 py-5">
-        <CardTitle>Usage</CardTitle>
+    <CardHeader className="[.border-b]:pb-0 flex flex-col items-stretch gap-1.5 border-b p-0 sm:flex-row">
+      <div className="flex flex-1 flex-col justify-center gap-1.5 px-6 py-4">
+        <CardTitle className="flex items-center gap-2">
+          <BarChart3 className="h-5 w-5" />
+          Usage
+        </CardTitle>
         <CardDescription>{periodLabel}</CardDescription>
       </div>
       {!isLoading && chartData.length > 0 && (
@@ -74,7 +78,7 @@ export function UsageChart({ data, days = 30, isLoading }: UsageChartProps) {
             <button
               key={key}
               data-active={activeMetric === key}
-              className="data-[active=false]:text-muted-foreground data-[active=false]:hover:bg-muted/30 data-[active=true]:bg-muted/50 relative z-30 flex flex-1 cursor-pointer flex-col justify-center gap-0.5 border-t px-6 py-3 text-left transition-colors even:border-l data-[active=true]:shadow-[inset_0_-2px_0_0_var(--color-primary)] sm:border-l sm:border-t-0 sm:px-8 sm:py-4"
+              className="data-[active=false]:text-muted-foreground data-[active=false]:hover:bg-muted/30 data-[active=true]:bg-muted/50 relative z-30 flex flex-1 cursor-pointer items-center justify-center border-t px-6 py-3 transition-colors even:border-l data-[active=true]:shadow-[inset_0_-2px_0_0_var(--color-primary)] sm:border-l sm:border-t-0 sm:px-8 sm:py-4"
               onClick={() => setActiveMetric(key)}
             >
               {(() => {
@@ -84,18 +88,18 @@ export function UsageChart({ data, days = 30, isLoading }: UsageChartProps) {
                     : formatNumberParts(totals[key]);
                 return (
                   <span className="flex items-baseline gap-1">
-                    <span className="text-lg font-bold leading-none sm:text-2xl">
+                    <span className="text-2xl font-bold leading-none sm:text-3xl">
                       {parts.value}
                     </span>
                     {parts.unit && (
-                      <span className="text-xs font-medium sm:text-sm">
+                      <span className="text-sm font-medium sm:text-base">
                         {parts.unit}
                       </span>
                     )}
                   </span>
                 );
               })()}
-              <span className="text-muted-foreground text-xs">
+              <span className="text-muted-foreground absolute bottom-1.5 right-2 text-[10px] sm:bottom-2 sm:right-3">
                 {chartConfig[key].label}
               </span>
             </button>
