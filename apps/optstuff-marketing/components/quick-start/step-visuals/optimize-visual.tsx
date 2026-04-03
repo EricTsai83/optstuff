@@ -225,7 +225,7 @@ export function OptimizeVisual() {
                 </div>
 
                 <div className="space-y-1.5">
-                  <div className="rounded-md border border-border/50 bg-background/70 px-2 py-1.5">
+                  <div className="border-border/50 bg-background/70 rounded-md border px-2 py-1.5">
                     <span className="text-muted-foreground">const src = </span>
                     <span className="text-foreground">
                       &quot;cdn.example.com/hero.jpg&quot;
@@ -240,15 +240,16 @@ export function OptimizeVisual() {
                         : "border-border/50 bg-background/70",
                     )}
                   >
-                    <span className="text-muted-foreground">const signed = </span>
+                    <span className="text-muted-foreground">
+                      const signed ={" "}
+                    </span>
                     <span className="text-accent">signImageUrl(src)</span>
                   </div>
 
-                  <div className="rounded-md border border-border/50 bg-background/70 px-2 py-1.5">
+                  <div className="border-border/50 bg-background/70 rounded-md border px-2 py-1.5">
                     <span className="text-purple-500 dark:text-purple-400">
                       {`<img`}
-                    </span>
-                    {" "}
+                    </span>{" "}
                     <span className="text-muted-foreground">src=</span>
                     <span className="text-foreground">&quot;signed&quot;</span>
                     <span className="text-purple-500 dark:text-purple-400">
@@ -276,7 +277,7 @@ export function OptimizeVisual() {
                   <span className="text-2xl sm:text-3xl">🖼️</span>
                 </div>
                 <div className="space-y-1">
-                  <div className="text-sm font-semibold text-emerald-600 dark:text-green-400 sm:text-base">
+                  <div className="text-sm font-semibold text-emerald-600 sm:text-base dark:text-green-400">
                     Browser receives optimized bytes
                   </div>
                   <div className="text-muted-foreground text-[10px] sm:text-xs">

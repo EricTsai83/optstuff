@@ -1,9 +1,13 @@
 import { env } from "@/env";
 
-function parseSiteUrl(rawValue: string, source: "NEXT_PUBLIC_APP_URL" | "VERCEL_URL"): URL {
+function parseSiteUrl(
+  rawValue: string,
+  source: "NEXT_PUBLIC_APP_URL" | "VERCEL_URL",
+): URL {
   const trimmedValue = rawValue.trim();
   const normalizedValue =
-    /^[a-zA-Z][a-zA-Z\d+.-]*:\/\//.test(trimmedValue) || trimmedValue.startsWith("/")
+    /^[a-zA-Z][a-zA-Z\d+.-]*:\/\//.test(trimmedValue) ||
+    trimmedValue.startsWith("/")
       ? trimmedValue
       : `https://${trimmedValue}`;
 

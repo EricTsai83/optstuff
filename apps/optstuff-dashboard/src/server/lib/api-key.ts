@@ -151,6 +151,8 @@ function createUrlSignature(
     .substring(0, 32);
 }
 
+export type SignatureVerificationResult = "valid" | "expired" | "invalid";
+
 /**
  * Verifies a URL signature.
  * Uses constant-time comparison to prevent timing attacks.
@@ -158,18 +160,17 @@ function createUrlSignature(
  * @param secretKey - The secret key used for signing
  * @param path - The path that was signed
  * @param signature - The signature to verify
- * @param expiresAt - Optional expiration timestamp
- * @returns true if signature is valid
+ * @param expiresAt - Optional expiration timestamp (seconds)
+ * @returns "valid", "expired", or "invalid"
  */
 export function verifyUrlSignature(
   secretKey: string,
   path: string,
   signature: string,
   expiresAt?: number,
-) {
-  // Check expiration first
+): SignatureVerificationResult {
   if (expiresAt && Date.now() > expiresAt * 1000) {
-    return false;
+    return "expired";
   }
 
   const expectedSignature = createUrlSignature(secretKey, path, expiresAt);
@@ -179,8 +180,8 @@ export function verifyUrlSignature(
   const expectedBuffer = Buffer.from(expectedSignature);
 
   if (sigBuffer.length !== expectedBuffer.length) {
-    return false;
+    return "invalid";
   }
 
-  return timingSafeEqual(sigBuffer, expectedBuffer);
+  return timingSafeEqual(sigBuffer, expectedBuffer) ? "valid" : "invalid";
 }

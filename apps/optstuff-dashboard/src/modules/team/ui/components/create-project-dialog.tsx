@@ -169,7 +169,7 @@ function CreateProjectFormStep({
 }) {
   return (
     <form onSubmit={onSubmit} className="flex max-h-[85vh] flex-col">
-      <div className="from-primary/6 via-primary/2 to-background shrink-0 border-b bg-linear-to-b px-6 pb-5 pt-6">
+      <div className="from-primary/6 via-primary/2 to-background bg-linear-to-b shrink-0 border-b px-6 pb-5 pt-6">
         <DialogHeader className="space-y-2.5">
           <div className="flex items-center gap-3">
             <div className="bg-primary/10 flex h-10 w-10 items-center justify-center rounded-xl">
@@ -298,7 +298,7 @@ function ProjectCreatedStep({
 
   return (
     <div className="flex max-h-[85vh] min-w-0 flex-col">
-      <div className="from-green-500/6 via-green-500/2 to-background shrink-0 border-b bg-linear-to-b px-6 pb-5 pt-6">
+      <div className="from-green-500/6 via-green-500/2 to-background bg-linear-to-b shrink-0 border-b px-6 pb-5 pt-6">
         <DialogHeader className="space-y-2.5">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-green-500/15">
@@ -432,7 +432,7 @@ export function CreateProjectDialog({
       )}
 
       <DialogContent
-        className="max-h-[85vh] gap-0 overflow-hidden p-0 transition-[max-width] duration-350 ease-out"
+        className="duration-350 max-h-[85vh] gap-0 overflow-hidden p-0 transition-[max-width] ease-out"
         style={{ maxWidth: isSuccess ? 680 : 560 }}
         hideCloseButton={isSuccess}
         onInteractOutside={(e) => {
@@ -446,7 +446,7 @@ export function CreateProjectDialog({
           key={step}
           className={cn(
             "animate-in fade-in-0 duration-300",
-            isSuccess && "[animation-delay:350ms] fill-mode-[backwards]",
+            isSuccess && "fill-mode-[backwards] [animation-delay:350ms]",
           )}
         >
           {step === "form" ? (

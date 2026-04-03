@@ -138,14 +138,10 @@ export function SlidingTabs<TValue extends string>({
 
   const measure = useCallback((): void => {
     const container = listRef.current;
-    const trigger = activeValue
-      ? triggerRefs.current.get(activeValue)
-      : null;
+    const trigger = activeValue ? triggerRefs.current.get(activeValue) : null;
 
     if (!container || !trigger) {
-      setIndicator((prev) =>
-        prev.ready ? { ...prev, ready: false } : prev,
-      );
+      setIndicator((prev) => (prev.ready ? { ...prev, ready: false } : prev));
       return;
     }
 
@@ -281,7 +277,10 @@ export function SlidingTabs<TValue extends string>({
   }, [scheduleMeasure]);
 
   useEffect(() => {
-    if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
+    if (
+      typeof window === "undefined" ||
+      typeof window.matchMedia !== "function"
+    ) {
       return;
     }
     const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -382,9 +381,9 @@ export function SlidingTabs<TValue extends string>({
           <div
             aria-hidden="true"
             className={cn(
-              "pointer-events-none absolute top-1 bottom-1 left-0",
+              "pointer-events-none absolute bottom-1 left-0 top-1",
               prefersReducedMotion
-                ? "will-change-transform transition-none"
+                ? "transition-none will-change-transform"
                 : "transition-[transform,width,opacity] duration-300 ease-out will-change-transform motion-reduce:transition-none",
               indicator.ready ? "opacity-100" : "opacity-0",
             )}
@@ -416,7 +415,7 @@ export function SlidingTabs<TValue extends string>({
               }}
               className={cn(
                 "relative z-10 cursor-pointer rounded-full bg-transparent",
-                "px-3 py-1.5 text-xs font-medium whitespace-nowrap",
+                "whitespace-nowrap px-3 py-1.5 text-xs font-medium",
                 "border-none shadow-none",
                 "transition-colors duration-200",
                 "data-[state=active]:bg-transparent data-[state=active]:shadow-none",
@@ -432,16 +431,12 @@ export function SlidingTabs<TValue extends string>({
       </div>
 
       {items.map((item) => (
-        <TabsContent
-          key={item.value}
-          value={item.value}
-        >
+        <TabsContent key={item.value} value={item.value}>
           <div className={contentWrapperClassName}>
             <div className={contentCardClassName}>
               <div
                 className={cn(
-                  !prefersReducedMotion &&
-                    item.value === animation.displayedTab
+                  !prefersReducedMotion && item.value === animation.displayedTab
                     ? getSlideClass(animation)
                     : "",
                   contentClassName,

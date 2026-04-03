@@ -18,11 +18,7 @@ export function GetStartedCard() {
             images.
           </p>
           <Button variant="outline" className="w-full bg-transparent" asChild>
-            <a
-              href={DOCS_LINKS.home}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
+            <a href={DOCS_LINKS.home} target="_blank" rel="noopener noreferrer">
               View Documentation
             </a>
           </Button>

@@ -310,8 +310,7 @@ function BlurToSharpImage({
       transition.blurFadeOutMs > 0
         ? transition.blurFadeOutDelayMs + transition.blurFadeOutMs
         : 0;
-    const totalMs =
-      transition.sharpFadeInMs + blurFadeTailMs;
+    const totalMs = transition.sharpFadeInMs + blurFadeTailMs;
     cleanupTimer.current = setTimeout(() => setPhase("done"), totalMs + 60);
 
     return () => clearTimeout(cleanupTimer.current);

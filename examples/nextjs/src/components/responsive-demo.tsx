@@ -3,8 +3,7 @@
 import { buildOptStuffProxyPath } from "@/lib/next-image-optstuff-loader";
 import { useState } from "react";
 
-const DEMO_SRC =
-  "https://images.unsplash.com/photo-1534528741775-53994a69daeb";
+const DEMO_SRC = "https://images.unsplash.com/photo-1534528741775-53994a69daeb";
 
 const VARIANTS = [
   {
@@ -113,7 +112,7 @@ export function ResponsiveDemo() {
               type="button"
               onClick={() => setSelected(i)}
               aria-label={`${v.device} preview at ${v.label}`}
-              className={`flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium whitespace-nowrap transition-all sm:px-4 ${
+              className={`flex items-center gap-2 whitespace-nowrap rounded-lg px-3 py-2.5 text-sm font-medium transition-all sm:px-4 ${
                 selected === i
                   ? "bg-emerald-500 text-white shadow-lg shadow-emerald-500/25"
                   : "bg-card-hover text-muted hover:text-foreground hover:bg-card-hover/80"
@@ -167,7 +166,7 @@ export function ResponsiveDemo() {
       </div>
 
       {/* Code snippet */}
-      <div className="mx-auto max-w-2xl overflow-x-auto rounded-xl border border-zinc-800 bg-code-bg p-4 text-code-text sm:p-5">
+      <div className="bg-code-bg text-code-text mx-auto max-w-2xl overflow-x-auto rounded-xl border border-zinc-800 p-4 sm:p-5">
         <pre className="text-code-text font-mono text-xs leading-relaxed">
           <code>{`<OptStuffImage
   src="photo.jpg"

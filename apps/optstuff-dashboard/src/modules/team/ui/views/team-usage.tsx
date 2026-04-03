@@ -104,9 +104,7 @@ export async function TeamUsage({ teamId }: TeamUsageProps) {
                 >
                   <span className="font-medium">{project.name}</span>
                   <div className="text-muted-foreground flex items-center gap-4 text-sm">
-                    <span>
-                      {formatNumber(project.totalRequests)} requests
-                    </span>
+                    <span>{formatNumber(project.totalRequests)} requests</span>
                     <span>{formatBytes(project.totalBytes)}</span>
                   </div>
                 </div>

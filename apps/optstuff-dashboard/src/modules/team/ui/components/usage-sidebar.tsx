@@ -5,8 +5,8 @@ import { GetStartedCard } from "./get-started-card";
 import { QuickStatsCard } from "./quick-stats-card";
 import { UsageCard } from "./usage-card";
 import {
-  UsageCardSkeleton,
   QuickStatsSkeleton,
+  UsageCardSkeleton,
 } from "./usage-sidebar.skeleton";
 
 type UsageSidebarProps = {

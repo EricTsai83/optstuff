@@ -31,8 +31,8 @@ function DeferredSectionSkeleton({ className }: { className?: string }) {
       className={`relative px-4 py-16 sm:px-6 sm:py-24 md:px-8 ${className ?? ""}`}
     >
       <div className="relative mx-auto max-w-5xl animate-pulse">
-        <div className="mx-auto mb-12 h-10 w-64 rounded-full bg-white/8" />
-        <div className="mx-auto h-72 rounded-3xl border border-white/8 bg-white/5" />
+        <div className="bg-white/8 mx-auto mb-12 h-10 w-64 rounded-full" />
+        <div className="border-white/8 mx-auto h-72 rounded-3xl border bg-white/5" />
       </div>
     </section>
   );

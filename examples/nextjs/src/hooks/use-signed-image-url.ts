@@ -66,9 +66,7 @@ export function useSignedImageUrl({
   const requestIdRef = useRef(0);
 
   const stale = result.key !== requestKey;
-  const effectiveResult: FetchResult = stale
-    ? { status: "pending" }
-    : result;
+  const effectiveResult: FetchResult = stale ? { status: "pending" } : result;
 
   useEffect(() => {
     const currentId = ++requestIdRef.current;

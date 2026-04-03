@@ -17,7 +17,9 @@ type MaintenanceRetryTaskType =
   | typeof RETRY_TASK_INVALIDATE_API_KEY_CACHE;
 
 function formatUnknownError(error: unknown): string {
-  return error instanceof Error ? `${error.name}: ${error.message}` : String(error);
+  return error instanceof Error
+    ? `${error.name}: ${error.message}`
+    : String(error);
 }
 
 function computeRetryBackoffMs(attempts: number): number {
@@ -107,7 +109,9 @@ async function processMaintenanceRetryTasks(now = new Date()): Promise<{
       });
       succeeded += 1;
 
-      await db.delete(maintenanceRetryTasks).where(eq(maintenanceRetryTasks.id, task.id));
+      await db
+        .delete(maintenanceRetryTasks)
+        .where(eq(maintenanceRetryTasks.id, task.id));
     } catch (error) {
       failed += 1;
       const nextAttempts = task.attempts + 1;
@@ -341,11 +345,12 @@ export async function runDailyMaintenance(): Promise<{
     retryQueue = { ok: false, error: String(error) };
   }
 
-  const [usageFlushResult, cleanupResult, sweepResult] = await Promise.allSettled([
-    flushUsageBufferToDatabase(),
-    cleanupOldRequestLogs(),
-    revokeExpiredApiKeys(),
-  ]);
+  const [usageFlushResult, cleanupResult, sweepResult] =
+    await Promise.allSettled([
+      flushUsageBufferToDatabase(),
+      cleanupOldRequestLogs(),
+      revokeExpiredApiKeys(),
+    ]);
 
   const usageBufferFlush =
     usageFlushResult.status === "fulfilled"
@@ -380,7 +385,11 @@ export async function runDailyMaintenance(): Promise<{
       : { ok: false, error: String(sweepResult.reason) };
 
   return {
-    ok: retryQueue.ok && usageBufferFlush.ok && requestLogCleanup.ok && expiredApiKeySweep.ok,
+    ok:
+      retryQueue.ok &&
+      usageBufferFlush.ok &&
+      requestLogCleanup.ok &&
+      expiredApiKeySweep.ok,
     durationMs: Date.now() - startedAt,
     retryQueue,
     usageBufferFlush,

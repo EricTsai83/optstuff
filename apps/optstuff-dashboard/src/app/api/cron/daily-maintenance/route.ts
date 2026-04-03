@@ -20,7 +20,9 @@ export async function GET(request: Request) {
   if (!authResult.ok) {
     if (authResult.reason === "misconfigured") {
       return NextResponse.json(
-        { error: "Server misconfigured: CRON_SECRET is required in production" },
+        {
+          error: "Server misconfigured: CRON_SECRET is required in production",
+        },
         { status: 500 },
       );
     }

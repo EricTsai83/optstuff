@@ -1,7 +1,3 @@
 {
-  "pages": [
-    "core-concepts",
-    "how-it-works",
-    "cost-analysis"
-  ]
+  "pages": ["core-concepts", "how-it-works", "cost-analysis"]
 }

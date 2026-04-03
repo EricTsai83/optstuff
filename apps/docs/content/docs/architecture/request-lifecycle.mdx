@@ -112,7 +112,7 @@ After successful `GET` response:
 2. **Usage metering buffer** (fire-and-forget):  
    increment Redis minute-bucket counters for `(projectId, apiKeyId, requests, bytes)`.
 3. **Request logging**:  
-   sanitized source URL (query/hash stripped), status/size/timing metadata.
+   sanitized source URL (query/hash stripped), operations string, status, error detail (for failures), and size/timing metadata.
 4. **Optional original size sampling**:  
    ~10% requests perform an extra upstream `HEAD` for size analytics.
 

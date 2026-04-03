@@ -7,8 +7,8 @@ onlyBuiltDependencies:
   - sharp
 
 ignoredBuiltDependencies:
-  - '@clerk/shared'
-  - '@parcel/watcher'
+  - "@clerk/shared"
+  - "@parcel/watcher"
   - core-js-pure
   - esbuild
   - unrs-resolver

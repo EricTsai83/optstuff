@@ -220,41 +220,44 @@ function ZoomableViewport({
     return () => outer.removeEventListener("wheel", handleWheel);
   }, [applyTransform, clampScale, wheelZoomEnabled]);
 
-  const handlePointerDown = useCallback((e: PointerEvent<HTMLDivElement>) => {
-    if (e.button !== 0) return;
-    const outer = outerRef.current;
-    if (!outer) return;
+  const handlePointerDown = useCallback(
+    (e: PointerEvent<HTMLDivElement>) => {
+      if (e.button !== 0) return;
+      const outer = outerRef.current;
+      if (!outer) return;
 
-    if (!panEnabled && !pinchZoomEnabled) {
-      outer.style.cursor = "default";
-      return;
-    }
+      if (!panEnabled && !pinchZoomEnabled) {
+        outer.style.cursor = "default";
+        return;
+      }
 
-    activePointersRef.current.set(e.pointerId, {
-      cx: e.clientX,
-      cy: e.clientY,
-    });
-    e.currentTarget.setPointerCapture(e.pointerId);
+      activePointersRef.current.set(e.pointerId, {
+        cx: e.clientX,
+        cy: e.clientY,
+      });
+      e.currentTarget.setPointerCapture(e.pointerId);
 
-    if (activePointersRef.current.size >= 2) {
-      draggingRef.current = false;
-      if (!pinchZoomEnabled) {
-        pinchLastDistRef.current = null;
+      if (activePointersRef.current.size >= 2) {
+        draggingRef.current = false;
+        if (!pinchZoomEnabled) {
+          pinchLastDistRef.current = null;
+          outer.style.cursor = panEnabled ? "grab" : "default";
+          return;
+        }
+        const rect = outer.getBoundingClientRect();
+        const pinch = pinchMetricsFromMap(activePointersRef.current, rect);
+        pinchLastDistRef.current = pinch && pinch.dist >= 8 ? pinch.dist : null;
         outer.style.cursor = panEnabled ? "grab" : "default";
         return;
       }
-      const rect = outer.getBoundingClientRect();
-      const pinch = pinchMetricsFromMap(activePointersRef.current, rect);
-      pinchLastDistRef.current = pinch && pinch.dist >= 8 ? pinch.dist : null;
-      outer.style.cursor = panEnabled ? "grab" : "default";
-      return;
-    }
 
-    const allowSinglePointerPan = panEnabled;
-    draggingRef.current = allowSinglePointerPan;
-    lastPointerRef.current = { x: e.clientX, y: e.clientY };
-    outer.style.cursor = allowSinglePointerPan ? "grabbing" : "default";
-  }, [panEnabled, pinchZoomEnabled]);
+      const allowSinglePointerPan = panEnabled;
+      draggingRef.current = allowSinglePointerPan;
+      lastPointerRef.current = { x: e.clientX, y: e.clientY };
+      outer.style.cursor = allowSinglePointerPan ? "grabbing" : "default";
+    },
+    [panEnabled, pinchZoomEnabled],
+  );
 
   const handlePointerMove = useCallback(
     (e: PointerEvent<HTMLDivElement>) => {
@@ -303,17 +306,20 @@ function ZoomableViewport({
     [applyTransform, clampScale, pinchZoomEnabled],
   );
 
-  const handlePointerUp = useCallback((e: PointerEvent<HTMLDivElement>) => {
-    activePointersRef.current.delete(e.pointerId);
-    if (activePointersRef.current.size < 2) pinchLastDistRef.current = null;
+  const handlePointerUp = useCallback(
+    (e: PointerEvent<HTMLDivElement>) => {
+      activePointersRef.current.delete(e.pointerId);
+      if (activePointersRef.current.size < 2) pinchLastDistRef.current = null;
 
-    if (activePointersRef.current.size === 0) {
-      draggingRef.current = false;
-    }
+      if (activePointersRef.current.size === 0) {
+        draggingRef.current = false;
+      }
 
-    const outer = outerRef.current;
-    if (outer) outer.style.cursor = panEnabled ? "grab" : "default";
-  }, [panEnabled]);
+      const outer = outerRef.current;
+      if (outer) outer.style.cursor = panEnabled ? "grab" : "default";
+    },
+    [panEnabled],
+  );
 
   const zoomIn = useCallback(() => {
     const outer = outerRef.current;

@@ -17,7 +17,6 @@ import {
   AlertTriangle,
   Clock,
   Gauge,
-
   Key,
   MoreHorizontal,
   Pencil,
@@ -208,8 +207,8 @@ export function ApiKeyItem({
   const statusLabel = isExpired
     ? "Expired"
     : isExpiringSoon
-        ? "Expiring soon"
-        : "Active";
+      ? "Expiring soon"
+      : "Active";
 
   // Show first 8 chars in plain text, mask the rest for aesthetics
   const visibleChars = 8;
@@ -315,7 +314,6 @@ export function ApiKeyItem({
             </div>
           </div>
         </div>
-
       </div>
     </div>
   );

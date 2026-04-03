@@ -154,10 +154,7 @@ export function OptimizerPlayground() {
                   const nextWidth = Number.parseInt(e.target.value, 10);
                   if (Number.isFinite(nextWidth)) {
                     setWidth(
-                      Math.max(
-                        minNumericInput,
-                        Math.min(nextWidth, maxWidth),
-                      ),
+                      Math.max(minNumericInput, Math.min(nextWidth, maxWidth)),
                     );
                   }
                 }}
@@ -199,7 +196,10 @@ export function OptimizerPlayground() {
                   }
                 }}
                 onBlur={(e) => {
-                  const nextQuality = Number.parseInt(e.currentTarget.value, 10);
+                  const nextQuality = Number.parseInt(
+                    e.currentTarget.value,
+                    10,
+                  );
                   if (
                     !Number.isFinite(nextQuality) ||
                     nextQuality < minNumericInput
@@ -290,7 +290,7 @@ export function OptimizerPlayground() {
             </div>
           </div>
           <div className="p-3 sm:p-4">
-            <div className="bg-card-hover relative aspect-4/3 overflow-hidden rounded-lg">
+            <div className="bg-card-hover aspect-4/3 relative overflow-hidden rounded-lg">
               {previewUrl ? (
                 /* eslint-disable-next-line @next/next/no-img-element */
                 <img
@@ -323,7 +323,7 @@ export function OptimizerPlayground() {
           </div>
         ) : generatedUrl ? (
           <div>
-            <div className="relative overflow-x-auto rounded-lg border border-zinc-800 bg-code-bg p-4 text-code-text">
+            <div className="bg-code-bg text-code-text relative overflow-x-auto rounded-lg border border-zinc-800 p-4">
               <code className="block break-all font-mono text-xs leading-relaxed text-emerald-400">
                 {generatedUrl}
               </code>
@@ -355,7 +355,7 @@ export function OptimizerPlayground() {
             Code Example
           </h3>
         </div>
-        <div className="rounded-none border-x-0 border-y border-zinc-800 bg-code-bg p-4 text-code-text sm:p-5">
+        <div className="bg-code-bg text-code-text rounded-none border-x-0 border-y border-zinc-800 p-4 sm:p-5">
           <pre className="text-code-text overflow-x-auto font-mono text-xs leading-relaxed">
             <code>{`import { OptStuffImage } from "@/components/optstuff-image";
 

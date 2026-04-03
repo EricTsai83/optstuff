@@ -10,7 +10,7 @@ import { UserButtonSkeleton } from "@workspace/auth/components/user-button-skele
 import { useIsMobile } from "@workspace/hooks/use-mobile";
 import { Button } from "@workspace/ui/components/button";
 import { Input } from "@workspace/ui/components/input";
-import { Bell, BookOpen, Home, Menu, Moon, Search, Sun, X } from "lucide-react";
+import { BookOpen, Home, Menu, Moon, Search, Sun, X } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
 
@@ -39,7 +39,10 @@ export function Header({ teamSlug }: HeaderProps) {
           <>
             <AnimatedLogo />
             <div className="ml-15 flex items-center gap-2">
-              <span className="text-muted-foreground text-lg" aria-hidden="true">
+              <span
+                className="text-muted-foreground text-lg"
+                aria-hidden="true"
+              >
                 /
               </span>
               <TeamSwitcher currentTeamSlug={teamSlug} />
@@ -55,14 +58,16 @@ export function Header({ teamSlug }: HeaderProps) {
               size="sm"
               className="text-muted-foreground transition-colors duration-200"
               aria-label="Send feedback"
+              onClick={() =>
+                window.open(
+                  "https://github.com/EricTsai83/optstuff/issues/new",
+                  "_blank",
+                  "noopener,noreferrer",
+                )
+              }
             >
               Feedback
             </Button>
-            <IconButton
-              icon={Bell}
-              hasNotification
-              ariaLabel="Notifications"
-            />
             <IconButton
               icon={BookOpen}
               href={DOCS_LINKS.home}
@@ -75,12 +80,6 @@ export function Header({ teamSlug }: HeaderProps) {
           <>
             <IconButton icon={Search} size="mobile" ariaLabel="Search" />
             <IconButton
-              icon={Bell}
-              size="mobile"
-              hasNotification
-              ariaLabel="Notifications"
-            />
-            <IconButton
               icon={isSidebarOpen ? X : Menu}
               size="mobile"
               onClick={handleToggleSidebar}
@@ -90,10 +89,7 @@ export function Header({ teamSlug }: HeaderProps) {
         }
       />
 
-      <MobileSidebar
-        open={isSidebarOpen}
-        onOpenChange={setIsSidebarOpen}
-      />
+      <MobileSidebar open={isSidebarOpen} onOpenChange={setIsSidebarOpen} />
     </>
   );
 }

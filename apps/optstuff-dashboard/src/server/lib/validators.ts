@@ -135,15 +135,7 @@ export function parseSignatureParams(searchParams: URLSearchParams) {
 const MAX_DIMENSION = 8192;
 const VALID_FORMATS = ["webp", "avif", "png", "jpg"] as const;
 const VALID_FITS = ["cover", "contain", "fill"] as const;
-const VALID_OPERATION_KEYS = [
-  "w",
-  "h",
-  "q",
-  "f",
-  "fit",
-  "s",
-  "embed",
-] as const;
+const VALID_OPERATION_KEYS = ["w", "h", "q", "f", "fit", "s", "embed"] as const;
 const VALID_FORMATS_SET = new Set<string>(VALID_FORMATS);
 const VALID_FITS_SET = new Set<string>(VALID_FITS);
 const VALID_OPERATION_KEYS_SET = new Set<string>(VALID_OPERATION_KEYS);
@@ -158,12 +150,23 @@ function parseBoundedInt(
   max: number,
 ): OperationValidationResult {
   if (typeof value !== "string" || !/^\d+$/.test(value)) {
-    return { ok: false, error: `${name} must be an integer between ${min} and ${max}` };
+    return {
+      ok: false,
+      error: `${name} must be an integer between ${min} and ${max}`,
+    };
   }
 
   const parsed = Number(value);
-  if (!Number.isFinite(parsed) || !Number.isInteger(parsed) || parsed < min || parsed > max) {
-    return { ok: false, error: `${name} must be an integer between ${min} and ${max}` };
+  if (
+    !Number.isFinite(parsed) ||
+    !Number.isInteger(parsed) ||
+    parsed < min ||
+    parsed > max
+  ) {
+    return {
+      ok: false,
+      error: `${name} must be an integer between ${min} and ${max}`,
+    };
   }
 
   return { ok: true };
@@ -202,14 +205,20 @@ export function validateSignedOperations(
   if ("f" in operations) {
     const format = operations.f;
     if (typeof format !== "string" || !VALID_FORMATS_SET.has(format)) {
-      return { ok: false, error: `f must be one of: ${VALID_FORMATS.join(",")}` };
+      return {
+        ok: false,
+        error: `f must be one of: ${VALID_FORMATS.join(",")}`,
+      };
     }
   }
 
   if ("fit" in operations) {
     const fit = operations.fit;
     if (typeof fit !== "string" || !VALID_FITS_SET.has(fit)) {
-      return { ok: false, error: `fit must be one of: ${VALID_FITS.join(",")}` };
+      return {
+        ok: false,
+        error: `fit must be one of: ${VALID_FITS.join(",")}`,
+      };
     }
   }
 
@@ -228,7 +237,12 @@ export function validateSignedOperations(
 
     const widthValidation = parseBoundedInt(width, "s width", 1, MAX_DIMENSION);
     if (!widthValidation.ok) return widthValidation;
-    const heightValidation = parseBoundedInt(height, "s height", 1, MAX_DIMENSION);
+    const heightValidation = parseBoundedInt(
+      height,
+      "s height",
+      1,
+      MAX_DIMENSION,
+    );
     if (!heightValidation.ok) return heightValidation;
   }
 

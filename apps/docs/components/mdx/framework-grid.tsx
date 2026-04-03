@@ -31,13 +31,7 @@ function NextJsIcon() {
           d="M149.508 157.52L69.142 54H54V125.97H66.1136V69.3836L139.999 164.845C143.333 162.614 146.509 160.165 149.508 157.52Z"
           fill={`url(#${grad0Id})`}
         />
-        <rect
-          x="115"
-          y="54"
-          width="12"
-          height="72"
-          fill={`url(#${grad1Id})`}
-        />
+        <rect x="115" y="54" width="12" height="72" fill={`url(#${grad1Id})`} />
       </g>
       <defs>
         <linearGradient
@@ -77,7 +71,7 @@ function NextJsIcon() {
 
 function PlaceholderIcon() {
   return (
-    <div className="flex size-full items-center justify-center rounded-md border border-dashed border-fd-border text-fd-muted-foreground">
+    <div className="border-fd-border text-fd-muted-foreground flex size-full items-center justify-center rounded-md border border-dashed">
       <span className="text-xs font-semibold">?</span>
     </div>
   );
@@ -87,7 +81,7 @@ const icons: Record<string, IconRenderer> = {
   nextjs: NextJsIcon,
   cli: () => (
     <SquareTerminal
-      className="size-full text-fd-foreground"
+      className="text-fd-foreground size-full"
       strokeWidth={1.5}
     />
   ),
@@ -120,13 +114,13 @@ function FrameworkCard({ icon, title, description, href }: FrameworkCardProps) {
         <ResolvedIcon />
       </div>
       <div className="flex min-w-0 flex-col">
-        <p className="text-[0.95rem] font-semibold leading-snug text-fd-foreground">
+        <p className="text-fd-foreground text-[0.95rem] font-semibold leading-snug">
           {title}
         </p>
-        <p className="mt-1.5 text-sm leading-relaxed text-fd-muted-foreground">
+        <p className="text-fd-muted-foreground mt-1.5 text-sm leading-relaxed">
           {description}
         </p>
-        <span className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-fd-primary transition-colors group-hover:text-fd-primary/80">
+        <span className="text-fd-primary group-hover:text-fd-primary/80 mt-3 inline-flex items-center gap-1.5 text-sm font-medium transition-colors">
           Read more
           <ArrowRight className="size-3.5 transition-transform group-hover:translate-x-1" />
         </span>
@@ -141,12 +135,12 @@ type FrameworkGridProps = {
 
 function FrameworkGrid({ children }: FrameworkGridProps) {
   return (
-    <div className="not-prose mt-2 overflow-hidden rounded-xl border border-fd-border">
-      <div className="grid grid-cols-1 max-md:divide-y md:grid-cols-2 md:divide-x divide-fd-border">
+    <div className="not-prose border-fd-border mt-2 overflow-hidden rounded-xl border">
+      <div className="divide-fd-border grid grid-cols-1 max-md:divide-y md:grid-cols-2 md:divide-x">
         {children}
       </div>
     </div>
   );
 }
 
-export { FrameworkGrid, FrameworkCard };
+export { FrameworkCard, FrameworkGrid };

@@ -1,7 +1,8 @@
 "use client";
 
-import { useMemo } from "react";
+import type { RequestLogStatus } from "@/server/lib/request-logger";
 import { api } from "@/trpc/react";
+import { useMemo } from "react";
 import { calcTrend, STATUS_OPTIONS } from "../../lib/date-range-utils";
 
 const TOP_IMAGES_LIMIT = 10;
@@ -45,10 +46,12 @@ export function useUsageData({
     [projectId, startDate, endDate],
   );
   const allStatusesSelected = statusFilters.size === STATUS_OPTIONS.length;
-  const selectedStatuses = useMemo(
-    () => (allStatusesSelected ? undefined : Array.from(statusFilters)),
-    [allStatusesSelected, statusFilters],
-  );
+  const selectedStatuses = useMemo((): RequestLogStatus[] | undefined => {
+    if (allStatusesSelected) return undefined;
+    return STATUS_OPTIONS.filter((opt) => statusFilters.has(opt.value)).flatMap(
+      (opt): RequestLogStatus[] => [...opt.dbStatuses],
+    );
+  }, [allStatusesSelected, statusFilters]);
 
   const {
     data: usageSummary,

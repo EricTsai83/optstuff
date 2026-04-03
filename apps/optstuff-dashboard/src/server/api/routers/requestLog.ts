@@ -3,17 +3,19 @@ import { z } from "zod";
 
 import { verifyProjectAccess } from "@/server/api/lib/access";
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
-import { requestLogs } from "@/server/db/schema";
+import { requestLogs, requestLogStatusEnum } from "@/server/db/schema";
 
 const DATE_ONLY_REGEX = /^(\d{4})-(\d{2})-(\d{2})$/;
 
 /**
  * Accepts ISO date-only and full ISO datetime strings.
  */
-const zDateString = z.string().refine(
-  (value) => !Number.isNaN(Date.parse(value)),
-  "Invalid ISO date/datetime string",
-);
+const zDateString = z
+  .string()
+  .refine(
+    (value) => !Number.isNaN(Date.parse(value)),
+    "Invalid ISO date/datetime string",
+  );
 
 /**
  * Parses an input date string and throws for invalid values.
@@ -56,7 +58,7 @@ export const requestLogRouter = createTRPCRouter({
         startDate: zDateString,
         endDate: zDateString,
         limit: z.number().int().min(1).max(100).default(20),
-        statuses: z.array(z.string()).optional(),
+        statuses: z.array(z.enum(requestLogStatusEnum.enumValues)).optional(),
       }),
     )
     .query(async ({ ctx, input }) => {
@@ -81,7 +83,9 @@ export const requestLogRouter = createTRPCRouter({
       return logs.map((log) => ({
         id: log.id,
         sourceUrl: log.sourceUrl,
+        operations: log.operations,
         status: log.status,
+        errorDetail: log.errorDetail,
         processingTimeMs: log.processingTimeMs,
         originalSize: log.originalSize,
         optimizedSize: log.optimizedSize,
@@ -205,10 +209,11 @@ export const requestLogRouter = createTRPCRouter({
             sql<number>`coalesce(sum(${requestLogs.optimizedSize}) filter (where ${requestLogs.status} = 'success' and ${requestLogs.originalSize} is not null and ${requestLogs.optimizedSize} is not null), 0)::bigint`.as(
               "total_optimized_size",
             ),
-          avgProcessingTimeMs:
-            sql<number | null>`round(avg(${requestLogs.processingTimeMs}))::int`.as(
-              "avg_processing_time_ms",
-            ),
+          avgProcessingTimeMs: sql<
+            number | null
+          >`round(avg(${requestLogs.processingTimeMs}))::int`.as(
+            "avg_processing_time_ms",
+          ),
         })
         .from(requestLogs)
         .where(
@@ -249,7 +254,8 @@ export const requestLogRouter = createTRPCRouter({
         totalRequests: stats.totalRequests,
         successfulRequests: stats.successfulRequests,
         pairedSizeSamples: stats.pairedSizeSamples,
-        sampleCoveragePercentage: Math.round(sampleCoveragePercentage * 10) / 10,
+        sampleCoveragePercentage:
+          Math.round(sampleCoveragePercentage * 10) / 10,
         isEstimated: stats.pairedSizeSamples < stats.successfulRequests,
         totalOriginalSize: originalSize,
         totalOptimizedSize: optimizedSize,

@@ -1,8 +1,8 @@
 import "server-only";
 
 import { HERO_BLUR_CONFIG } from "./hero-blur-config";
-import { generateOptStuffUrl } from "./optstuff-core";
 import type { ImageOperation } from "./optstuff-core";
+import { generateOptStuffUrl } from "./optstuff-core";
 
 const BLUR_DATA_REVALIDATE_SECONDS = 3600;
 const BLUR_DATA_FETCH_TIMEOUT_MS = HERO_BLUR_CONFIG.fetchTimeoutMs;
@@ -204,7 +204,8 @@ export async function getBlurDataResult(
     try {
       const res = await fetch(url, requestInit);
       const durationMs = Math.round(performance.now() - startTimeMs);
-      const contentType = res.headers.get("content-type") ?? `image/${resolvedFormat}`;
+      const contentType =
+        res.headers.get("content-type") ?? `image/${resolvedFormat}`;
       if (!res.ok) {
         return {
           status: "miss",
