@@ -1,35 +1,31 @@
 import { env } from "@/env";
 import { highlightCode } from "@/lib/highlight-code";
 import type { Project } from "../../types";
-import {
-  DeveloperSnippets,
-  type Framework,
-  type SnippetTab,
-} from "../components/developer-snippets";
+import { DeveloperSnippets, type Framework } from "../components/developer-snippets";
 import { UrlTester } from "../components/url-tester";
 
 type DeveloperTabProps = {
   readonly project: Project;
 };
 
-type RawSnippet = {
+type SnippetDef = {
   readonly id: string;
   readonly label: string;
   readonly lang: string;
   readonly code: string;
 };
 
-type RawFramework = {
+type FrameworkDef = {
   readonly id: string;
   readonly label: string;
   readonly icon: string;
-  readonly snippets: readonly RawSnippet[];
+  readonly snippets: readonly SnippetDef[];
 };
 
-function getFrameworks(
+function getFrameworkDefs(
   projectSlug: string,
   apiEndpoint: string,
-): readonly RawFramework[] {
+): readonly FrameworkDef[] {
   return [
     {
       id: "nextjs",
@@ -241,24 +237,22 @@ createServer((req, res) => {
   ];
 }
 
-async function buildFrameworkTabs(
-  rawFrameworks: readonly RawFramework[],
+async function buildFrameworks(
+  defs: readonly FrameworkDef[],
 ): Promise<Framework[]> {
   return Promise.all(
-    rawFrameworks.map(async (fw) => ({
-      id: fw.id,
-      label: fw.label,
-      icon: fw.icon,
+    defs.map(async ({ id, label, icon, snippets }) => ({
+      id,
+      label,
+      icon,
       tabs: await Promise.all(
-        fw.snippets.map(
-          async (snippet): Promise<SnippetTab> => ({
-            id: snippet.id,
-            label: snippet.label,
-            lang: snippet.lang,
-            raw: snippet.code,
-            html: await highlightCode(snippet.code, snippet.lang),
-          }),
-        ),
+        snippets.map(async ({ id: tabId, label: tabLabel, lang, code }) => ({
+          id: tabId,
+          label: tabLabel,
+          lang,
+          raw: code,
+          html: await highlightCode(code, lang),
+        })),
       ),
     })),
   );
@@ -267,8 +261,9 @@ async function buildFrameworkTabs(
 export async function DeveloperTab({ project }: DeveloperTabProps) {
   const baseUrl = env.NEXT_PUBLIC_APP_URL.replace(/\/+$/, "");
   const apiEndpoint = `${baseUrl}/api/v1`;
-  const rawFrameworks = getFrameworks(project.slug, apiEndpoint);
-  const frameworks = await buildFrameworkTabs(rawFrameworks);
+  const frameworks = await buildFrameworks(
+    getFrameworkDefs(project.slug, apiEndpoint),
+  );
 
   return (
     <div className="space-y-6">
