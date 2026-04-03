@@ -2,7 +2,7 @@
 
 import { CopyButton } from "@workspace/ui/components/copy-button";
 import { cn } from "@workspace/ui/lib/utils";
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 
 // ── Types ──
 
@@ -81,6 +81,9 @@ export function DeveloperSnippets({ frameworks }: DeveloperSnippetsProps) {
           }
         />
         <div
+          role="tabpanel"
+          id={`panel-${activeTab.id}`}
+          aria-labelledby={`tab-${activeTab.id}`}
           className="scrollbar-editor h-[420px] overflow-auto bg-white text-[13px] leading-[1.7] dark:bg-[#0a0a0a] [&_code]:!block [&_code]:min-w-fit [&_pre]:!bg-transparent [&_pre]:py-3 [&_pre]:pl-0 [&_pre]:pr-4 [&_span.line]:block [&_span.line]:w-fit [&_span.line]:min-w-full [&_span.line]:pl-4"
           dangerouslySetInnerHTML={{ __html: activeTab.html }}
         />
@@ -162,6 +165,8 @@ function TabBar({
   activeTab: SnippetTab;
   onSelect: (id: string) => void;
 }) {
+  const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
+
   const needsSeparator = useCallback(
     (index: number) => {
       const current = tabs[index]!;
@@ -173,10 +178,42 @@ function TabBar({
     [tabs, activeTabId],
   );
 
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent, index: number) => {
+      let nextIndex: number | null = null;
+      switch (e.key) {
+        case "ArrowRight":
+          nextIndex = (index + 1) % tabs.length;
+          break;
+        case "ArrowLeft":
+          nextIndex = (index - 1 + tabs.length) % tabs.length;
+          break;
+        case "Home":
+          nextIndex = 0;
+          break;
+        case "End":
+          nextIndex = tabs.length - 1;
+          break;
+        default:
+          return;
+      }
+      e.preventDefault();
+      const nextTab = tabs[nextIndex];
+      if (nextTab) {
+        onSelect(nextTab.id);
+        tabRefs.current[nextIndex]?.focus();
+      }
+    },
+    [tabs, onSelect],
+  );
+
   return (
     <div className="relative flex items-end bg-[#f6f6f6] dark:bg-[#0f0f0f]">
       <div className="absolute inset-x-0 bottom-0 h-px bg-black/[0.06] dark:bg-white/[0.06]" />
-      <div className="scrollbar-hide relative flex flex-1 overflow-x-auto">
+      <div
+        role="tablist"
+        className="scrollbar-hide relative flex flex-1 overflow-x-auto"
+      >
         {tabs.map((tab, index) => {
           const isActive = tab.id === activeTabId;
           const isLast = index === tabs.length - 1;
@@ -185,8 +222,17 @@ function TabBar({
             <div key={tab.id} className="flex shrink-0">
               {needsSeparator(index) && <TabSeparator />}
               <button
+                ref={(el) => {
+                  tabRefs.current[index] = el;
+                }}
+                role="tab"
+                id={`tab-${tab.id}`}
+                aria-selected={isActive}
+                aria-controls={`panel-${tab.id}`}
+                tabIndex={isActive ? 0 : -1}
                 type="button"
                 onClick={() => onSelect(tab.id)}
+                onKeyDown={(e) => handleKeyDown(e, index)}
                 className={cn(
                   "relative flex h-9 shrink-0 items-center gap-2 px-5 text-[13px] transition-colors",
                   isActive

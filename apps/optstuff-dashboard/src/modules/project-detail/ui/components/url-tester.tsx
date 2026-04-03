@@ -22,7 +22,7 @@ import {
 } from "@workspace/ui/components/select";
 import { Slider } from "@workspace/ui/components/slider";
 import { ExternalLink, ImageIcon, Loader2 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 type UrlTesterProps = {
   readonly projectId: string;
@@ -47,9 +47,16 @@ export function UrlTester({
   const { data: apiKeys } = api.apiKey.list.useQuery({ projectId });
   const signUrlMutation = api.apiKey.signUrl.useMutation();
 
-  // Auto-select the first API key when keys load
+  // Clear selection if the selected key no longer exists
+  useEffect(() => {
+    if (!apiKeys || selectedApiKeyId === "") return;
+    if (!apiKeys.some((k) => k.id === selectedApiKeyId)) {
+      setSelectedApiKeyId("");
+    }
+  }, [apiKeys, selectedApiKeyId]);
+
   const effectiveApiKeyId =
-    selectedApiKeyId || (apiKeys && apiKeys.length > 0 ? apiKeys[0]!.id : "");
+    apiKeys?.some((k) => k.id === selectedApiKeyId) ? selectedApiKeyId : "";
 
   const buildOperationsString = () => {
     const operations = [];
@@ -136,28 +143,46 @@ export function UrlTester({
             </p>
           </div>
 
-          {apiKeys && apiKeys.length > 0 && (
+          <div className="grid grid-cols-2 gap-4">
+            {apiKeys && apiKeys.length > 0 && (
+              <div className="space-y-2">
+                <Label>API Key</Label>
+                <Select
+                  value={effectiveApiKeyId}
+                  onValueChange={setSelectedApiKeyId}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select API key" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {apiKeys.map((key) => (
+                      <SelectItem key={key.id} value={key.id}>
+                        {key.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
             <div className="space-y-2">
-              <Label>API Key</Label>
-              <Select
-                value={effectiveApiKeyId}
-                onValueChange={setSelectedApiKeyId}
-              >
+              <Label>Format</Label>
+              <Select value={format} onValueChange={setFormat}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select API key" />
+                  <SelectValue placeholder="Format" />
                 </SelectTrigger>
                 <SelectContent>
-                  {apiKeys.map((key) => (
-                    <SelectItem key={key.id} value={key.id}>
-                      {key.name}
-                    </SelectItem>
-                  ))}
+                  <SelectItem value="webp">WebP</SelectItem>
+                  <SelectItem value="avif">AVIF</SelectItem>
+                  <SelectItem value="jpeg">JPEG</SelectItem>
+                  <SelectItem value="png">PNG</SelectItem>
+                  <SelectItem value="auto">Auto</SelectItem>
                 </SelectContent>
               </Select>
             </div>
-          )}
+          </div>
 
-          <div className="grid gap-4 sm:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label>Width: {width}px</Label>
               <Slider
@@ -178,22 +203,6 @@ export function UrlTester({
                 max={100}
                 step={5}
               />
-            </div>
-
-            <div className="space-y-2">
-              <Label>Format</Label>
-              <Select value={format} onValueChange={setFormat}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Format" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="webp">WebP</SelectItem>
-                  <SelectItem value="avif">AVIF</SelectItem>
-                  <SelectItem value="jpeg">JPEG</SelectItem>
-                  <SelectItem value="png">PNG</SelectItem>
-                  <SelectItem value="auto">Auto</SelectItem>
-                </SelectContent>
-              </Select>
             </div>
           </div>
         </div>
