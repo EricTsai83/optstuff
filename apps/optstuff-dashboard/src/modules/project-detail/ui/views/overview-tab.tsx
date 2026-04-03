@@ -50,7 +50,7 @@ function SetupChecklist({
       done: hasSourceDomains,
       label: "Configure image sources",
       icon: ImageIcon,
-      href: teamSlug ? `/${teamSlug}/${projectSlug}?tab=settings` : undefined,
+      href: teamSlug ? `/${teamSlug}/${projectSlug}/~/settings` : undefined,
       hrefLabel: "Go to Settings",
     },
     { done: hasApiKeys, label: "API key ready", icon: Key },
