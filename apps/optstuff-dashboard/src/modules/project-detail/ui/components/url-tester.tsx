@@ -232,7 +232,10 @@ export function UrlTester({
               <Button
                 variant="secondary"
                 size="sm"
-                onClick={() => window.open(previewUrl, "_blank")}
+                aria-label="Open preview in new tab"
+                onClick={() =>
+                  window.open(previewUrl, "_blank", "noopener,noreferrer")
+                }
               >
                 <ExternalLink className="h-4 w-4" />
               </Button>
