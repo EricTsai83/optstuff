@@ -136,7 +136,7 @@ export function UrlTester({
             </p>
           </div>
 
-          {apiKeys && apiKeys.length > 1 && (
+          {apiKeys && apiKeys.length > 0 && (
             <div className="space-y-2">
               <Label>API Key</Label>
               <Select
@@ -149,7 +149,7 @@ export function UrlTester({
                 <SelectContent>
                   {apiKeys.map((key) => (
                     <SelectItem key={key.id} value={key.id}>
-                      {key.name} ({key.publicKey})
+                      {key.name}
                     </SelectItem>
                   ))}
                 </SelectContent>

@@ -16,7 +16,7 @@ function getSnippets(projectSlug: string, apiEndpoint: string) {
       lang: "bash",
       code: `# Add to your .env file (server-side only - keep secret!)
 OPTSTUFF_SECRET_KEY="sk_your_secret_key_here"  # From API Key creation
-OPTSTUFF_PUBLIC_KEY="pk_abc123..."             # From API Key creation
+OPTSTUFF_PUBLIC_KEY="pk_abc123..."  # From API Key creation
 
 # Public config
 NEXT_PUBLIC_OPTSTUFF_PROJECT_SLUG="${projectSlug}"
@@ -24,14 +24,14 @@ NEXT_PUBLIC_OPTSTUFF_ENDPOINT="${apiEndpoint}"  # Your deployment URL`,
     },
     {
       id: "loader",
-      label: "Loader",
+      label: "optstuff.ts",
       lang: "typescript",
       code: `// lib/optstuff.ts (SERVER-SIDE ONLY)
 import crypto from "crypto";
 
 const SECRET_KEY = process.env.OPTSTUFF_SECRET_KEY!;
 const PUBLIC_KEY = process.env.OPTSTUFF_PUBLIC_KEY!;
-const ENDPOINT = process.env.NEXT_PUBLIC_OPTSTUFF_ENDPOINT!; // Your deployment URL + /api/v1
+const ENDPOINT = process.env.NEXT_PUBLIC_OPTSTUFF_ENDPOINT!;  // Your deployment URL + /api/v1
 const PROJECT_SLUG = process.env.NEXT_PUBLIC_OPTSTUFF_PROJECT_SLUG || "${projectSlug}";
 
 /**
@@ -88,7 +88,7 @@ export async function GET(request: Request) {
   const ops = width ? \`w_\${width},f_webp\` : "f_webp";
   const signedUrl = signImageUrl(src, ops, {
     ttlSeconds: 3600,
-    bucketSeconds: 3600, // same hour => same URL => better cache reuse
+    bucketSeconds: 3600,  // same hour => same URL => better cache reuse
   });
 
   return Response.json({ url: signedUrl });
@@ -96,7 +96,7 @@ export async function GET(request: Request) {
     },
     {
       id: "usage",
-      label: "Usage",
+      label: "page.tsx",
       lang: "tsx",
       code: `// Using signed URLs in Next.js
 // Option 1: Server Component (recommended)
@@ -120,34 +120,6 @@ export default function MyPage() {
 // Create /api/image-url route, then fetch from client:
 const response = await fetch(\`/api/image-url?src=\${imageSrc}&w=800\`);
 const { url } = await response.json();`,
-    },
-    {
-      id: "direct",
-      label: "Direct URL",
-      lang: "html",
-      code: `<!-- Signed URL Format -->
-${apiEndpoint}/${projectSlug}/{operations}/{imageUrl}?key={publicKey}&sig={signature}&exp={expiry}
-
-<!-- Example Signed URL -->
-${apiEndpoint}/${projectSlug}/w_800,f_webp/images.example.com/photo.jpg?key=pk_abc123...&sig=xyz789&exp=1706500000
-
-<!-- URL Parameters -->
-key      → Public Key (from dashboard)
-sig      → HMAC-SHA256 signature
-exp      → (optional) Expiration timestamp
-
-<!-- Operations Examples -->
-w_800        → Width 800px
-h_600        → Height 600px
-s_800x600    → Size 800x600
-q_80         → Quality 80%
-f_webp       → Format WebP
-f_avif       → Format AVIF
-fit_cover    → Crop to fill dimensions
-fit_contain  → Scale to fit within dimensions
-fit_fill     → Stretch to fill exact dimensions
-embed        → Embed mode
-_            → No operations`,
     },
   ] as const;
 }
