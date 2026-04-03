@@ -364,6 +364,13 @@ export const apiKeyRouter = createTRPCRouter({
         });
       }
 
+      if (apiKey.expiresAt && apiKey.expiresAt < new Date()) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Cannot sign with an expired API key",
+        });
+      }
+
       const decrypted = decryptApiKey(apiKey.secretKey);
       if (!decrypted.ok) {
         throw new TRPCError({
