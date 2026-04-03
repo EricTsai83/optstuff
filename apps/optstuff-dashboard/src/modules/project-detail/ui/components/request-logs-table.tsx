@@ -479,7 +479,7 @@ export function RequestLogsTable({ logs, isLoading }: RequestLogsTableProps) {
   if (isLoading) {
     return (
       <Card className="gap-4 py-4">
-        <CardHeader className="gap-1.5 border-b [.border-b]:pb-4">
+        <CardHeader className="[.border-b]:pb-4 gap-1.5 border-b">
           <CardTitle>Recent Requests</CardTitle>
           <CardDescription>Last 20 API requests</CardDescription>
         </CardHeader>
@@ -507,7 +507,7 @@ export function RequestLogsTable({ logs, isLoading }: RequestLogsTableProps) {
   return (
     <TooltipProvider>
       <Card className="gap-4 py-4">
-        <CardHeader className="gap-1.5 border-b [.border-b]:pb-4">
+        <CardHeader className="[.border-b]:pb-4 gap-1.5 border-b">
           <CardTitle className="flex items-center gap-2">
             <Clock className="h-5 w-5" />
             Recent Requests

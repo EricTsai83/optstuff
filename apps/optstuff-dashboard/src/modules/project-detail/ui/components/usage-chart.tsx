@@ -1,11 +1,6 @@
 "use client";
 
-import {
-  formatBytes,
-  formatBytesParts,
-  formatNumber,
-  formatNumberParts,
-} from "@/lib/format";
+import { formatBytesParts, formatNumberParts } from "@/lib/format";
 import {
   Card,
   CardContent,

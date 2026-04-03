@@ -50,7 +50,7 @@ export function TopImagesList({ images, isLoading }: TopImagesListProps) {
   if (isLoading) {
     return (
       <Card className="gap-4 py-4">
-        <CardHeader className="gap-1.5 border-b [.border-b]:pb-4">
+        <CardHeader className="[.border-b]:pb-4 gap-1.5 border-b">
           <CardTitle>Top Images</CardTitle>
           <CardDescription>Most requested images</CardDescription>
         </CardHeader>
@@ -75,7 +75,7 @@ export function TopImagesList({ images, isLoading }: TopImagesListProps) {
   return (
     <TooltipProvider>
       <Card className="gap-4 py-4 pb-0">
-        <CardHeader className="gap-1.5 border-b [.border-b]:pb-4">
+        <CardHeader className="[.border-b]:pb-4 gap-1.5 border-b">
           <CardTitle className="flex items-center gap-2">
             <ImageIcon className="h-5 w-5" />
             Top Images

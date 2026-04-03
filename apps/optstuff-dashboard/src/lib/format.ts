@@ -38,7 +38,10 @@ export function formatNumber(num: number) {
 /**
  * Format bytes and return value and unit separately.
  */
-export function formatBytesParts(bytes: number): { value: string; unit: string } {
+export function formatBytesParts(bytes: number): {
+  value: string;
+  unit: string;
+} {
   if (bytes === 0) return { value: "0", unit: "B" };
   const k = 1024;
   const sizes = ["B", "KB", "MB", "GB", "TB", "PB"];
@@ -55,7 +58,10 @@ export function formatBytesParts(bytes: number): { value: string; unit: string }
 /**
  * Format number and return value and unit separately.
  */
-export function formatNumberParts(num: number): { value: string; unit: string } {
+export function formatNumberParts(num: number): {
+  value: string;
+  unit: string;
+} {
   if (num >= 1_000_000_000_000) {
     return { value: (num / 1_000_000_000_000).toFixed(1), unit: "T" };
   }
