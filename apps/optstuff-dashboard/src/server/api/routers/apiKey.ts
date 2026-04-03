@@ -7,7 +7,12 @@ import { verifyProjectAccess } from "@/server/api/lib/access";
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
 import type { db as dbType } from "@/server/db";
 import { apiKeys, projects } from "@/server/db/schema";
-import { encryptApiKey, generateApiKey } from "@/server/lib/api-key";
+import {
+  createUrlSignature,
+  decryptApiKey,
+  encryptApiKey,
+  generateApiKey,
+} from "@/server/lib/api-key";
 import { invalidateApiKeyCache } from "@/server/lib/config-cache";
 
 /** Helper to update project's API key count using SQL count() */
@@ -324,5 +329,54 @@ export const apiKeyRouter = createTRPCRouter({
         .where(eq(projects.id, apiKey.projectId));
 
       return { success: true };
+    }),
+
+  /**
+   * Sign a URL path for testing in the dashboard URL Tester.
+   * Decrypts the API key's secret, signs the path, and returns the query params.
+   */
+  signUrl: protectedProcedure
+    .input(
+      z.object({
+        apiKeyId: z.string().uuid(),
+        /** The operations + image path to sign, e.g. "w_800,f_webp/images.example.com/photo.jpg" */
+        path: z.string().min(1),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const apiKey = await ctx.db.query.apiKeys.findFirst({
+        where: eq(apiKeys.id, input.apiKeyId),
+      });
+
+      if (!apiKey) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "API key not found",
+        });
+      }
+
+      await verifyProjectAccess(ctx.db, apiKey.projectId, ctx.userId);
+
+      if (apiKey.revokedAt) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Cannot sign with a revoked API key",
+        });
+      }
+
+      const decrypted = decryptApiKey(apiKey.secretKey);
+      if (!decrypted.ok) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to decrypt API key",
+        });
+      }
+
+      const signature = createUrlSignature(decrypted.value, input.path);
+
+      return {
+        publicKey: apiKey.publicKey,
+        signature,
+      };
     }),
 });

@@ -139,7 +139,7 @@ export function generateApiKey() {
  * @param expiresAt - Optional expiration timestamp
  * @returns Base64URL encoded signature
  */
-function createUrlSignature(
+export function createUrlSignature(
   secretKey: string,
   path: string,
   expiresAt?: number,

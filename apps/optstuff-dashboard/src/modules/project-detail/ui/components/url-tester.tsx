@@ -1,5 +1,6 @@
 "use client";
 
+import { api } from "@/trpc/react";
 import { Button } from "@workspace/ui/components/button";
 import {
   Card,
@@ -20,49 +21,77 @@ import {
   SelectValue,
 } from "@workspace/ui/components/select";
 import { Slider } from "@workspace/ui/components/slider";
-import { ExternalLink, ImageIcon } from "lucide-react";
+import { ExternalLink, ImageIcon, Loader2 } from "lucide-react";
 import { useState } from "react";
 
 type UrlTesterProps = {
+  readonly projectId: string;
   readonly projectSlug: string;
   readonly apiEndpoint: string;
 };
 
-export function UrlTester({ projectSlug, apiEndpoint }: UrlTesterProps) {
+export function UrlTester({
+  projectId,
+  projectSlug,
+  apiEndpoint,
+}: UrlTesterProps) {
   const [imageUrl, setImageUrl] = useState("");
   const [width, setWidth] = useState<number>(800);
   const [quality, setQuality] = useState<number>(80);
   const [format, setFormat] = useState<string>("webp");
+  const [selectedApiKeyId, setSelectedApiKeyId] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
-  const buildOptimizedUrl = () => {
-    if (!imageUrl) return null;
+  const { data: apiKeys } = api.apiKey.list.useQuery({ projectId });
+  const signUrlMutation = api.apiKey.signUrl.useMutation();
 
+  // Auto-select the first API key when keys load
+  const effectiveApiKeyId =
+    selectedApiKeyId || (apiKeys && apiKeys.length > 0 ? apiKeys[0]!.id : "");
+
+  const buildOperationsString = () => {
     const operations = [];
     if (width) operations.push(`w_${width}`);
     if (quality) operations.push(`q_${quality}`);
     if (format && format !== "auto") operations.push(`f_${format}`);
+    return operations.length > 0 ? operations.join(",") : "_";
+  };
 
-    const opsString = operations.length > 0 ? operations.join(",") : "_";
+  const buildUnsignedUrl = () => {
+    if (!imageUrl) return null;
+    const opsString = buildOperationsString();
     const cleanUrl = imageUrl.replace(/^https?:\/\//, "");
-
     return `${apiEndpoint}/${projectSlug}/${opsString}/${cleanUrl}`;
   };
 
-  const optimizedUrl = buildOptimizedUrl();
+  const unsignedUrl = buildUnsignedUrl();
 
   const handleTest = async () => {
-    if (!optimizedUrl) return;
+    if (!unsignedUrl || !effectiveApiKeyId) return;
 
     setIsLoading(true);
     setError(null);
 
     try {
-      const response = await fetch(optimizedUrl, { method: "HEAD" });
+      const opsString = buildOperationsString();
+      const cleanUrl = imageUrl.replace(/^https?:\/\//, "");
+      const signingPath = `${opsString}/${cleanUrl}`;
+
+      const { publicKey, signature } = await signUrlMutation.mutateAsync({
+        apiKeyId: effectiveApiKeyId,
+        path: signingPath,
+      });
+
+      const params = new URLSearchParams();
+      params.set("key", publicKey);
+      params.set("sig", signature);
+      const signedUrl = `${unsignedUrl}?${params.toString()}`;
+
+      const response = await fetch(signedUrl, { method: "HEAD" });
       if (response.ok) {
-        setPreviewUrl(optimizedUrl);
+        setPreviewUrl(signedUrl);
       } else {
         setError(
           `Failed to load image: ${response.status} ${response.statusText}`,
@@ -70,7 +99,11 @@ export function UrlTester({ projectSlug, apiEndpoint }: UrlTesterProps) {
         setPreviewUrl(null);
       }
     } catch (err) {
-      setError("Failed to connect to the optimization service");
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Failed to connect to the optimization service",
+      );
       setPreviewUrl(null);
     } finally {
       setIsLoading(false);
@@ -102,6 +135,27 @@ export function UrlTester({ projectSlug, apiEndpoint }: UrlTesterProps) {
               Enter a public image URL (without protocol)
             </p>
           </div>
+
+          {apiKeys && apiKeys.length > 1 && (
+            <div className="space-y-2">
+              <Label>API Key</Label>
+              <Select
+                value={effectiveApiKeyId}
+                onValueChange={setSelectedApiKeyId}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select API key" />
+                </SelectTrigger>
+                <SelectContent>
+                  {apiKeys.map((key) => (
+                    <SelectItem key={key.id} value={key.id}>
+                      {key.name} ({key.publicKey})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
           <div className="grid gap-4 sm:grid-cols-3">
             <div className="space-y-2">
@@ -144,19 +198,32 @@ export function UrlTester({ projectSlug, apiEndpoint }: UrlTesterProps) {
           </div>
         </div>
 
-        {optimizedUrl && (
+        {unsignedUrl && (
           <div className="space-y-2">
-            <Label>Generated URL</Label>
+            <Label>Generated URL (unsigned)</Label>
             <div className="bg-muted flex items-center gap-2 rounded-lg p-3">
-              <code className="flex-1 truncate text-sm">{optimizedUrl}</code>
+              <code className="flex-1 truncate text-sm">{unsignedUrl}</code>
               <CopyButton
-                text={optimizedUrl}
+                text={unsignedUrl}
+                className="bg-secondary h-8 w-8 rounded-md"
+              />
+            </div>
+          </div>
+        )}
+
+        {previewUrl && (
+          <div className="space-y-2">
+            <Label>Signed URL</Label>
+            <div className="bg-muted flex items-center gap-2 rounded-lg p-3">
+              <code className="flex-1 truncate text-sm">{previewUrl}</code>
+              <CopyButton
+                text={previewUrl}
                 className="bg-secondary h-8 w-8 rounded-md"
               />
               <Button
                 variant="secondary"
                 size="sm"
-                onClick={() => window.open(optimizedUrl, "_blank")}
+                onClick={() => window.open(previewUrl, "_blank")}
               >
                 <ExternalLink className="h-4 w-4" />
               </Button>
@@ -168,10 +235,15 @@ export function UrlTester({ projectSlug, apiEndpoint }: UrlTesterProps) {
           <LoadingButton
             onClick={handleTest}
             loading={isLoading}
-            disabled={!imageUrl}
+            disabled={!imageUrl || !effectiveApiKeyId}
           >
             Test Image
           </LoadingButton>
+          {apiKeys && apiKeys.length === 0 && (
+            <p className="text-muted-foreground self-center text-sm">
+              Create an API key first to test URLs
+            </p>
+          )}
         </div>
 
         {error && (
@@ -183,12 +255,17 @@ export function UrlTester({ projectSlug, apiEndpoint }: UrlTesterProps) {
         {previewUrl && (
           <div className="space-y-2">
             <Label>Preview</Label>
-            <div className="bg-muted/50 overflow-hidden rounded-lg border">
+            <div className="bg-muted/50 relative flex min-h-[200px] items-center justify-center overflow-auto rounded-xl p-4">
+              {isLoading && (
+                <div className="absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-black/40">
+                  <Loader2 className="text-primary h-8 w-8 animate-spin" />
+                </div>
+              )}
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={previewUrl}
                 alt="Optimized preview"
-                className="max-h-[400px] w-full object-contain"
+                className="ring-border max-h-[600px] max-w-full rounded-lg ring-1"
                 onError={() => {
                   setError("Failed to load preview image");
                   setPreviewUrl(null);

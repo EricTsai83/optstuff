@@ -1,1 +1,14 @@
 @import "@workspace/ui/globals.css";
+
+/* Shiki dual-theme: light by default, dark when .dark is active */
+.shiki,
+.shiki span {
+  color: var(--shiki-light) !important;
+  background-color: var(--shiki-light-bg) !important;
+}
+
+.dark .shiki,
+.dark .shiki span {
+  color: var(--shiki-dark) !important;
+  background-color: var(--shiki-dark-bg) !important;
+}
