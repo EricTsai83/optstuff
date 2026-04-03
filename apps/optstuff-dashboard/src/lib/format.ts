@@ -36,6 +36,42 @@ export function formatNumber(num: number) {
 }
 
 /**
+ * Format bytes and return value and unit separately.
+ */
+export function formatBytesParts(bytes: number): { value: string; unit: string } {
+  if (bytes === 0) return { value: "0", unit: "B" };
+  const k = 1024;
+  const sizes = ["B", "KB", "MB", "GB", "TB", "PB"];
+  const i = Math.min(
+    Math.floor(Math.log(bytes) / Math.log(k)),
+    sizes.length - 1,
+  );
+  return {
+    value: parseFloat((bytes / Math.pow(k, i)).toFixed(1)).toString(),
+    unit: sizes[i]!,
+  };
+}
+
+/**
+ * Format number and return value and unit separately.
+ */
+export function formatNumberParts(num: number): { value: string; unit: string } {
+  if (num >= 1_000_000_000_000) {
+    return { value: (num / 1_000_000_000_000).toFixed(1), unit: "T" };
+  }
+  if (num >= 1_000_000_000) {
+    return { value: (num / 1_000_000_000).toFixed(1), unit: "B" };
+  }
+  if (num >= 1_000_000) {
+    return { value: (num / 1_000_000).toFixed(1), unit: "M" };
+  }
+  if (num >= 1_000) {
+    return { value: (num / 1_000).toFixed(1), unit: "K" };
+  }
+  return { value: num.toLocaleString(), unit: "" };
+}
+
+/**
  * Get date range for last N days
  */
 export function getDateRange(days: number) {

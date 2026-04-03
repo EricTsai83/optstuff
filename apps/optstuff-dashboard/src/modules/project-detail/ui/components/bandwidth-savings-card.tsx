@@ -35,8 +35,8 @@ export function BandwidthSavingsCard({
 }: BandwidthSavingsProps) {
   if (isLoading) {
     return (
-      <Card>
-        <CardHeader>
+      <Card className="gap-4 py-4">
+        <CardHeader className="gap-1.5 border-b [.border-b]:pb-4">
           <CardTitle>Bandwidth Savings</CardTitle>
           <CardDescription>Original vs Optimized</CardDescription>
         </CardHeader>
@@ -56,8 +56,8 @@ export function BandwidthSavingsCard({
     : `+${Math.abs(savingsPercentage)}%`;
 
   return (
-    <Card>
-      <CardHeader>
+    <Card className="gap-4 py-4">
+      <CardHeader className="gap-1.5 border-b [.border-b]:pb-4">
         <CardTitle className="flex items-center gap-2">
           <PiggyBank className="h-5 w-5" />
           Bandwidth Savings

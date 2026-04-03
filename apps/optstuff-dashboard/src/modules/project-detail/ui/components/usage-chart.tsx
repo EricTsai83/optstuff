@@ -1,6 +1,11 @@
 "use client";
 
-import { formatBytes, formatNumber } from "@/lib/format";
+import {
+  formatBytes,
+  formatBytesParts,
+  formatNumber,
+  formatNumberParts,
+} from "@/lib/format";
 import {
   Card,
   CardContent,
@@ -74,16 +79,29 @@ export function UsageChart({ data, days = 30, isLoading }: UsageChartProps) {
             <button
               key={key}
               data-active={activeMetric === key}
-              className="data-[active=false]:text-muted-foreground data-[active=false]:hover:bg-muted/30 data-[active=true]:bg-muted/50 relative z-30 flex flex-1 cursor-pointer flex-col justify-center gap-1 border-t px-6 py-4 text-left transition-colors even:border-l data-[active=true]:shadow-[inset_0_-2px_0_0_var(--color-primary)] sm:border-l sm:border-t-0 sm:px-8 sm:py-6"
+              className="data-[active=false]:text-muted-foreground data-[active=false]:hover:bg-muted/30 data-[active=true]:bg-muted/50 relative z-30 flex flex-1 cursor-pointer flex-col justify-center gap-0.5 border-t px-6 py-3 text-left transition-colors even:border-l data-[active=true]:shadow-[inset_0_-2px_0_0_var(--color-primary)] sm:border-l sm:border-t-0 sm:px-8 sm:py-4"
               onClick={() => setActiveMetric(key)}
             >
+              {(() => {
+                const parts =
+                  key === "bytesProcessed"
+                    ? formatBytesParts(totals[key])
+                    : formatNumberParts(totals[key]);
+                return (
+                  <span className="flex items-baseline gap-1">
+                    <span className="text-lg font-bold leading-none sm:text-2xl">
+                      {parts.value}
+                    </span>
+                    {parts.unit && (
+                      <span className="text-xs font-medium sm:text-sm">
+                        {parts.unit}
+                      </span>
+                    )}
+                  </span>
+                );
+              })()}
               <span className="text-muted-foreground text-xs">
                 {chartConfig[key].label}
-              </span>
-              <span className="text-lg font-bold leading-none sm:text-3xl">
-                {key === "bytesProcessed"
-                  ? formatBytes(totals[key])
-                  : formatNumber(totals[key])}
               </span>
             </button>
           ))}
