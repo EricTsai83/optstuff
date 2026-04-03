@@ -140,8 +140,11 @@ export default function MyPage() {
 
 // Option 2: API Route + Client Fetch
 // Create /api/image-url route, then fetch from client:
-const response = await fetch(\`/api/image-url?src=\${imageSrc}&w=800\`);
-const { url } = await response.json();`,
+async function getOptimizedUrl(imageSrc: string) {
+  const response = await fetch(\`/api/image-url?src=\${imageSrc}&w=800\`);
+  const { url } = await response.json();
+  return url as string;
+}`,
         },
       ],
     },
