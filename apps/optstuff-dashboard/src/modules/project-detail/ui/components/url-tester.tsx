@@ -1,5 +1,6 @@
 "use client";
 
+import { api } from "@/trpc/react";
 import { Button } from "@workspace/ui/components/button";
 import {
   Card,
@@ -20,49 +21,90 @@ import {
   SelectValue,
 } from "@workspace/ui/components/select";
 import { Slider } from "@workspace/ui/components/slider";
-import { ExternalLink, ImageIcon } from "lucide-react";
-import { useState } from "react";
+import { ExternalLink, ImageIcon, Loader2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { getExpirationStatus } from "./api-key-types";
 
 type UrlTesterProps = {
+  readonly projectId: string;
   readonly projectSlug: string;
   readonly apiEndpoint: string;
 };
 
-export function UrlTester({ projectSlug, apiEndpoint }: UrlTesterProps) {
+export function UrlTester({
+  projectId,
+  projectSlug,
+  apiEndpoint,
+}: UrlTesterProps) {
   const [imageUrl, setImageUrl] = useState("");
   const [width, setWidth] = useState<number>(800);
   const [quality, setQuality] = useState<number>(80);
   const [format, setFormat] = useState<string>("webp");
+  const [selectedApiKeyId, setSelectedApiKeyId] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
-  const buildOptimizedUrl = () => {
-    if (!imageUrl) return null;
+  const { data: apiKeys } = api.apiKey.list.useQuery({ projectId });
+  const signUrlMutation = api.apiKey.signUrl.useMutation();
 
+  // Clear selection if the selected key no longer exists or is expired
+  useEffect(() => {
+    if (!apiKeys || selectedApiKeyId === "") return;
+    const selected = apiKeys.find((k) => k.id === selectedApiKeyId);
+    if (!selected || getExpirationStatus(selected.expiresAt).isExpired) {
+      setSelectedApiKeyId("");
+    }
+  }, [apiKeys, selectedApiKeyId]);
+
+  const effectiveApiKeyId = apiKeys?.some(
+    (k) =>
+      k.id === selectedApiKeyId && !getExpirationStatus(k.expiresAt).isExpired,
+  )
+    ? selectedApiKeyId
+    : "";
+
+  const buildOperationsString = () => {
     const operations = [];
     if (width) operations.push(`w_${width}`);
     if (quality) operations.push(`q_${quality}`);
     if (format && format !== "auto") operations.push(`f_${format}`);
+    return operations.length > 0 ? operations.join(",") : "_";
+  };
 
-    const opsString = operations.length > 0 ? operations.join(",") : "_";
+  const buildUnsignedUrl = () => {
+    if (!imageUrl) return null;
+    const opsString = buildOperationsString();
     const cleanUrl = imageUrl.replace(/^https?:\/\//, "");
-
     return `${apiEndpoint}/${projectSlug}/${opsString}/${cleanUrl}`;
   };
 
-  const optimizedUrl = buildOptimizedUrl();
+  const unsignedUrl = buildUnsignedUrl();
 
   const handleTest = async () => {
-    if (!optimizedUrl) return;
+    if (!unsignedUrl || !effectiveApiKeyId) return;
 
     setIsLoading(true);
     setError(null);
 
     try {
-      const response = await fetch(optimizedUrl, { method: "HEAD" });
+      const opsString = buildOperationsString();
+      const cleanUrl = imageUrl.replace(/^https?:\/\//, "");
+      const signingPath = `${opsString}/${cleanUrl}`;
+
+      const { publicKey, signature } = await signUrlMutation.mutateAsync({
+        apiKeyId: effectiveApiKeyId,
+        path: signingPath,
+      });
+
+      const params = new URLSearchParams();
+      params.set("key", publicKey);
+      params.set("sig", signature);
+      const signedUrl = `${unsignedUrl}?${params.toString()}`;
+
+      const response = await fetch(signedUrl, { method: "HEAD" });
       if (response.ok) {
-        setPreviewUrl(optimizedUrl);
+        setPreviewUrl(signedUrl);
       } else {
         setError(
           `Failed to load image: ${response.status} ${response.statusText}`,
@@ -70,7 +112,11 @@ export function UrlTester({ projectSlug, apiEndpoint }: UrlTesterProps) {
         setPreviewUrl(null);
       }
     } catch (err) {
-      setError("Failed to connect to the optimization service");
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Failed to connect to the optimization service",
+      );
       setPreviewUrl(null);
     } finally {
       setIsLoading(false);
@@ -103,7 +149,56 @@ export function UrlTester({ projectSlug, apiEndpoint }: UrlTesterProps) {
             </p>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-3">
+          <div className="grid grid-cols-2 gap-4">
+            {apiKeys && apiKeys.length > 0 && (
+              <div className="space-y-2">
+                <Label>API Key</Label>
+                <Select
+                  value={effectiveApiKeyId}
+                  onValueChange={setSelectedApiKeyId}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select API key" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {apiKeys.map((key) => {
+                      const expired = getExpirationStatus(
+                        key.expiresAt,
+                      ).isExpired;
+                      return (
+                        <SelectItem
+                          key={key.id}
+                          value={key.id}
+                          disabled={expired}
+                        >
+                          {key.name}
+                          {expired ? " (expired)" : ""}
+                        </SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <Label>Format</Label>
+              <Select value={format} onValueChange={setFormat}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Format" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="webp">WebP</SelectItem>
+                  <SelectItem value="avif">AVIF</SelectItem>
+                  <SelectItem value="jpeg">JPEG</SelectItem>
+                  <SelectItem value="png">PNG</SelectItem>
+                  <SelectItem value="auto">Auto</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label>Width: {width}px</Label>
               <Slider
@@ -125,38 +220,38 @@ export function UrlTester({ projectSlug, apiEndpoint }: UrlTesterProps) {
                 step={5}
               />
             </div>
-
-            <div className="space-y-2">
-              <Label>Format</Label>
-              <Select value={format} onValueChange={setFormat}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Format" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="webp">WebP</SelectItem>
-                  <SelectItem value="avif">AVIF</SelectItem>
-                  <SelectItem value="jpeg">JPEG</SelectItem>
-                  <SelectItem value="png">PNG</SelectItem>
-                  <SelectItem value="auto">Auto</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
           </div>
         </div>
 
-        {optimizedUrl && (
+        {unsignedUrl && (
           <div className="space-y-2">
-            <Label>Generated URL</Label>
+            <Label>Generated URL (unsigned)</Label>
             <div className="bg-muted flex items-center gap-2 rounded-lg p-3">
-              <code className="flex-1 truncate text-sm">{optimizedUrl}</code>
+              <code className="flex-1 truncate text-sm">{unsignedUrl}</code>
               <CopyButton
-                text={optimizedUrl}
+                text={unsignedUrl}
+                className="bg-secondary h-8 w-8 rounded-md"
+              />
+            </div>
+          </div>
+        )}
+
+        {previewUrl && (
+          <div className="space-y-2">
+            <Label>Signed URL</Label>
+            <div className="bg-muted flex items-center gap-2 rounded-lg p-3">
+              <code className="flex-1 truncate text-sm">{previewUrl}</code>
+              <CopyButton
+                text={previewUrl}
                 className="bg-secondary h-8 w-8 rounded-md"
               />
               <Button
                 variant="secondary"
                 size="sm"
-                onClick={() => window.open(optimizedUrl, "_blank")}
+                aria-label="Open preview in new tab"
+                onClick={() =>
+                  window.open(previewUrl, "_blank", "noopener,noreferrer")
+                }
               >
                 <ExternalLink className="h-4 w-4" />
               </Button>
@@ -168,10 +263,15 @@ export function UrlTester({ projectSlug, apiEndpoint }: UrlTesterProps) {
           <LoadingButton
             onClick={handleTest}
             loading={isLoading}
-            disabled={!imageUrl}
+            disabled={!imageUrl || !effectiveApiKeyId}
           >
             Test Image
           </LoadingButton>
+          {apiKeys && apiKeys.length === 0 && (
+            <p className="text-muted-foreground self-center text-sm">
+              Create an API key first to test URLs
+            </p>
+          )}
         </div>
 
         {error && (
@@ -183,12 +283,17 @@ export function UrlTester({ projectSlug, apiEndpoint }: UrlTesterProps) {
         {previewUrl && (
           <div className="space-y-2">
             <Label>Preview</Label>
-            <div className="bg-muted/50 overflow-hidden rounded-lg border">
+            <div className="bg-muted/50 relative flex min-h-[200px] items-center justify-center overflow-auto rounded-xl p-4">
+              {isLoading && (
+                <div className="absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-black/40">
+                  <Loader2 className="text-primary h-8 w-8 animate-spin" />
+                </div>
+              )}
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={previewUrl}
                 alt="Optimized preview"
-                className="max-h-[400px] w-full object-contain"
+                className="ring-border max-h-[600px] max-w-full rounded-lg ring-1"
                 onError={() => {
                   setError("Failed to load preview image");
                   setPreviewUrl(null);

@@ -1,235 +1,274 @@
 "use client";
 
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@workspace/ui/components/card";
 import { CopyButton } from "@workspace/ui/components/copy-button";
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@workspace/ui/components/tabs";
+import { cn } from "@workspace/ui/lib/utils";
+import { useCallback, useRef, useState } from "react";
 
-type DeveloperSnippetsProps = {
-  readonly projectSlug: string;
-  readonly apiEndpoint: string;
+// ── Types ──
+
+export type SnippetTab = {
+  readonly id: string;
+  readonly label: string;
+  readonly lang: string;
+  readonly raw: string;
+  readonly html: string;
 };
 
-/**
- * Render a tabbed "Quick Start" card with ready-to-copy code snippets for integrating OptStuff.
- *
- * @param projectSlug - Project identifier inserted into the displayed snippets (e.g., NEXT_PUBLIC_OPTSTUFF_PROJECT_SLUG).
- * @param apiEndpoint - Deployment endpoint inserted into the displayed snippets (used for signed URL examples).
- * @returns A React element containing a card with four tabs (.env, Loader, Usage, Direct URL), each showing a code example and a copy button.
- */
-export function DeveloperSnippets({
-  projectSlug,
-  apiEndpoint,
-}: DeveloperSnippetsProps) {
-  const envExample = `# Add to your .env file (server-side only - keep secret!)
-OPTSTUFF_SECRET_KEY="sk_your_secret_key_here"  # From API Key creation
-OPTSTUFF_PUBLIC_KEY="pk_abc123..."             # From API Key creation
+export type Framework = {
+  readonly id: string;
+  readonly label: string;
+  readonly icon: string;
+  readonly tabs: readonly SnippetTab[];
+};
 
-# Public config
-NEXT_PUBLIC_OPTSTUFF_PROJECT_SLUG="${projectSlug}"
-NEXT_PUBLIC_OPTSTUFF_ENDPOINT="${apiEndpoint}"  # Your deployment URL`;
+type DeveloperSnippetsProps = {
+  readonly frameworks: readonly Framework[];
+};
 
-  const loaderExample = `// lib/optstuff.ts (SERVER-SIDE ONLY)
-import crypto from "crypto";
+// ── Constants ──
 
-const SECRET_KEY = process.env.OPTSTUFF_SECRET_KEY!;
-const PUBLIC_KEY = process.env.OPTSTUFF_PUBLIC_KEY!;
-const ENDPOINT = process.env.NEXT_PUBLIC_OPTSTUFF_ENDPOINT!; // Your deployment URL + /api/v1
-const PROJECT_SLUG = process.env.NEXT_PUBLIC_OPTSTUFF_PROJECT_SLUG || "${projectSlug}";
+const FRAMEWORK_ICON_COLORS: Record<string, string> = {
+  typescript: "text-[#3178c6]",
+  nextjs: "text-black dark:text-white",
+};
 
-/**
- * Sign an image URL with HMAC-SHA256
- * Call this from your API route or server component
- */
-export function signImageUrl(
-  imagePath: string,
-  operations: string = "_",
-  options?: {
-    ttlSeconds?: number;
-    /**
-     * Round expiration into fixed buckets so repeated renders generate
-     * identical URLs (better CDN/browser cache hit ratio).
-     */
-    bucketSeconds?: number;
-  }
-): string {
-  const path = \`\${operations}/\${imagePath}\`;
-  const now = Math.floor(Date.now() / 1000);
-  const ttlSeconds = options?.ttlSeconds;
-  const bucketSeconds = options?.bucketSeconds;
-  let exp: number | undefined;
-  if (ttlSeconds && ttlSeconds > 0) {
-    const rawExp = now + ttlSeconds;
-    const effectiveBucket = bucketSeconds && bucketSeconds > 0
-      ? Math.min(bucketSeconds, ttlSeconds)
-      : 0;
-    exp = effectiveBucket > 0
-      ? Math.ceil(rawExp / effectiveBucket) * effectiveBucket
-      : rawExp;
-  }
-  
-  const payload = exp ? \`\${path}?exp=\${exp}\` : path;
-  const sig = crypto
-    .createHmac("sha256", SECRET_KEY)
-    .update(payload)
-    .digest("base64url")
-    .substring(0, 32);
-  
-  let url = \`\${ENDPOINT}/\${PROJECT_SLUG}/\${path}?key=\${PUBLIC_KEY}&sig=\${sig}\`;
-  if (exp) url += \`&exp=\${exp}\`;
-  
-  return url;
-}
+const FILE_ICON_COLORS: Record<string, string> = {
+  typescript: "bg-[#3178c6]",
+  tsx: "bg-[#3178c6]",
+  bash: "bg-[#89e051]",
+};
 
-// Example usage in API route:
-// GET /api/image-url?src=images.example.com/photo.jpg&w=800
-export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
-  const src = searchParams.get("src")!;
-  const width = searchParams.get("w");
-  
-  const ops = width ? \`w_\${width},f_webp\` : "f_webp";
-  const signedUrl = signImageUrl(src, ops, {
-    ttlSeconds: 3600,
-    bucketSeconds: 3600, // same hour => same URL => better cache reuse
-  });
-  
-  return Response.json({ url: signedUrl });
-}`;
+const DEFAULT_FILE_ICON_COLOR = "bg-[#e44d26]";
 
-  const usageExample = `// Using signed URLs in Next.js
-// Option 1: Server Component (recommended)
-import { signImageUrl } from "@/lib/optstuff";
+// ── Main component ──
 
-export default function MyPage() {
-  // Sign URL on server
-  const imageUrl = signImageUrl(
-    "images.example.com/photo.jpg",
-    "w_800,f_webp",
-    {
-      ttlSeconds: 3600,
-      bucketSeconds: 3600,
-    }
+export function DeveloperSnippets({ frameworks }: DeveloperSnippetsProps) {
+  const [activeFrameworkId, setActiveFrameworkId] = useState(
+    frameworks[0]?.id ?? "",
   );
+  const [activeTabMap, setActiveTabMap] = useState<Record<string, string>>({});
 
-  return <img src={imageUrl} alt="Optimized image" />;
-}
+  const activeFramework =
+    frameworks.find((f) => f.id === activeFrameworkId) ?? frameworks[0];
+  if (!activeFramework) return null;
 
-// Option 2: API Route + Client Fetch
-// Create /api/image-url route, then fetch from client:
-const response = await fetch(\`/api/image-url?src=\${imageSrc}&w=800\`);
-const { url } = await response.json();`;
-
-  const directUrlExample = `<!-- Signed URL Format -->
-${apiEndpoint}/${projectSlug}/{operations}/{imageUrl}?key={publicKey}&sig={signature}&exp={expiry}
-
-<!-- Example Signed URL -->
-${apiEndpoint}/${projectSlug}/w_800,f_webp/images.example.com/photo.jpg?key=pk_abc123...&sig=xyz789&exp=1706500000
-
-<!-- URL Parameters -->
-key      → Public Key (from dashboard)
-sig      → HMAC-SHA256 signature
-exp      → (optional) Expiration timestamp
-
-<!-- Operations Examples -->
-w_800        → Width 800px
-h_600        → Height 600px
-s_800x600    → Size 800x600
-q_80         → Quality 80%
-f_webp       → Format WebP
-f_avif       → Format AVIF
-fit_cover    → Crop to fill dimensions
-fit_contain  → Scale to fit within dimensions
-fit_fill     → Stretch to fill exact dimensions
-embed        → Embed mode
-_            → No operations`;
+  const activeTabId =
+    activeTabMap[activeFramework.id] ?? activeFramework.tabs[0]?.id ?? "";
+  const activeTab =
+    activeFramework.tabs.find((t) => t.id === activeTabId) ??
+    activeFramework.tabs[0];
+  if (!activeTab) return null;
 
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Quick Start</CardTitle>
-          <CardDescription>
-            Copy these code snippets to integrate OptStuff into your project
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Tabs defaultValue="env" className="w-full">
-            <TabsList className="mb-4 grid w-full grid-cols-2 sm:grid-cols-4">
-              <TabsTrigger value="env">.env</TabsTrigger>
-              <TabsTrigger value="loader">Loader</TabsTrigger>
-              <TabsTrigger value="usage">Usage</TabsTrigger>
-              <TabsTrigger value="direct">Direct URL</TabsTrigger>
-            </TabsList>
+    <div className="flex overflow-hidden rounded-xl border border-black/[0.08] bg-white shadow-lg dark:border-white/[0.08] dark:bg-[#0a0a0a] dark:shadow-2xl">
+      <StackSidebar
+        frameworks={frameworks}
+        activeId={activeFrameworkId}
+        onSelect={setActiveFrameworkId}
+      />
 
-            <TabsContent value="env">
-              <div className="relative">
-                <pre className="bg-muted overflow-x-auto rounded-lg p-4 text-sm">
-                  <code>{envExample}</code>
-                </pre>
-                <div className="absolute right-2 top-2">
-                  <CopyButton
-                    text={envExample}
-                    className="bg-secondary h-8 w-8 rounded-md"
-                  />
-                </div>
-              </div>
-            </TabsContent>
-
-            <TabsContent value="loader">
-              <div className="relative">
-                <pre className="bg-muted max-h-[400px] overflow-auto rounded-lg p-4 text-sm">
-                  <code>{loaderExample}</code>
-                </pre>
-                <div className="absolute right-2 top-2">
-                  <CopyButton
-                    text={loaderExample}
-                    className="bg-secondary h-8 w-8 rounded-md"
-                  />
-                </div>
-              </div>
-            </TabsContent>
-
-            <TabsContent value="usage">
-              <div className="relative">
-                <pre className="bg-muted overflow-x-auto rounded-lg p-4 text-sm">
-                  <code>{usageExample}</code>
-                </pre>
-                <div className="absolute right-2 top-2">
-                  <CopyButton
-                    text={usageExample}
-                    className="bg-secondary h-8 w-8 rounded-md"
-                  />
-                </div>
-              </div>
-            </TabsContent>
-
-            <TabsContent value="direct">
-              <div className="relative">
-                <pre className="bg-muted overflow-x-auto rounded-lg p-4 text-sm">
-                  <code>{directUrlExample}</code>
-                </pre>
-                <div className="absolute right-2 top-2">
-                  <CopyButton
-                    text={directUrlExample}
-                    className="bg-secondary h-8 w-8 rounded-md"
-                  />
-                </div>
-              </div>
-            </TabsContent>
-          </Tabs>
-        </CardContent>
-      </Card>
+      <div className="flex min-w-0 flex-1 flex-col">
+        <TitleBar />
+        <TabBar
+          tabs={activeFramework.tabs}
+          activeTabId={activeTabId}
+          activeTab={activeTab}
+          onSelect={(tabId) =>
+            setActiveTabMap((prev) => ({
+              ...prev,
+              [activeFramework.id]: tabId,
+            }))
+          }
+        />
+        <div
+          role="tabpanel"
+          id={`panel-${activeTab.id}`}
+          aria-labelledby={`tab-${activeTab.id}`}
+          className="scrollbar-editor h-[420px] overflow-auto bg-white text-[13px] leading-[1.7] dark:bg-[#0a0a0a] [&_code]:!block [&_code]:min-w-fit [&_pre]:!bg-transparent [&_pre]:py-3 [&_pre]:pl-0 [&_pre]:pr-4 [&_span.line]:block [&_span.line]:w-fit [&_span.line]:min-w-full [&_span.line]:pl-4"
+          dangerouslySetInnerHTML={{ __html: activeTab.html }}
+        />
+      </div>
     </div>
+  );
+}
+
+// ── Sub-components ──
+
+function StackSidebar({
+  frameworks,
+  activeId,
+  onSelect,
+}: {
+  frameworks: readonly Framework[];
+  activeId: string;
+  onSelect: (id: string) => void;
+}) {
+  return (
+    <div className="flex w-[140px] shrink-0 flex-col border-r border-black/[0.06] bg-[#f0f0f0] dark:border-white/[0.06] dark:bg-[#0e0e0e]">
+      <div className="px-3 pb-2 pt-3">
+        <span className="text-[11px] font-semibold uppercase tracking-wider text-[#999] dark:text-[#555]">
+          Stack
+        </span>
+      </div>
+      <div className="flex flex-1 flex-col gap-0.5 px-2 pb-2">
+        {frameworks.map((fw) => (
+          <button
+            key={fw.id}
+            type="button"
+            onClick={() => onSelect(fw.id)}
+            className={cn(
+              "rounded-md px-2.5 py-1.5 text-left text-[13px] font-medium transition-colors",
+              fw.id === activeId
+                ? "bg-white text-[#111] shadow-sm dark:bg-[#1a1a1a] dark:text-[#f0f0f0]"
+                : "text-[#666] hover:text-[#333] dark:text-[#777] dark:hover:text-[#aaa]",
+            )}
+          >
+            <span
+              className={cn(
+                "inline-flex w-4 shrink-0 justify-center text-xs font-bold",
+                FRAMEWORK_ICON_COLORS[fw.id],
+              )}
+            >
+              {fw.icon}
+            </span>{" "}
+            {fw.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function TitleBar() {
+  return (
+    <div className="relative flex h-10 items-center border-b border-black/[0.06] bg-[#f6f6f6] px-4 dark:border-white/[0.06] dark:bg-[#0f0f0f]">
+      <div className="flex gap-2">
+        <div className="size-3 rounded-full bg-[#ff5f57] transition-opacity hover:opacity-80" />
+        <div className="size-3 rounded-full bg-[#febc2e] transition-opacity hover:opacity-80" />
+        <div className="size-3 rounded-full bg-[#28c840] transition-opacity hover:opacity-80" />
+      </div>
+      <span className="absolute inset-x-0 text-center text-xs font-medium text-[#555] dark:text-[#888]">
+        Quick Start — OptStuff
+      </span>
+    </div>
+  );
+}
+
+function TabBar({
+  tabs,
+  activeTabId,
+  activeTab,
+  onSelect,
+}: {
+  tabs: readonly SnippetTab[];
+  activeTabId: string;
+  activeTab: SnippetTab;
+  onSelect: (id: string) => void;
+}) {
+  const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
+
+  const needsSeparator = useCallback(
+    (index: number) => {
+      const current = tabs[index]!;
+      const prev = tabs[index - 1];
+      const isActive = current.id === activeTabId;
+      const isPrevActive = prev?.id === activeTabId;
+      return !isActive && !isPrevActive;
+    },
+    [tabs, activeTabId],
+  );
+
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent, index: number) => {
+      let nextIndex: number | null = null;
+      switch (e.key) {
+        case "ArrowRight":
+          nextIndex = (index + 1) % tabs.length;
+          break;
+        case "ArrowLeft":
+          nextIndex = (index - 1 + tabs.length) % tabs.length;
+          break;
+        case "Home":
+          nextIndex = 0;
+          break;
+        case "End":
+          nextIndex = tabs.length - 1;
+          break;
+        default:
+          return;
+      }
+      e.preventDefault();
+      const nextTab = tabs[nextIndex];
+      if (nextTab) {
+        onSelect(nextTab.id);
+        tabRefs.current[nextIndex]?.focus();
+      }
+    },
+    [tabs, onSelect],
+  );
+
+  return (
+    <div className="relative flex items-end bg-[#f6f6f6] dark:bg-[#0f0f0f]">
+      <div className="absolute inset-x-0 bottom-0 h-px bg-black/[0.06] dark:bg-white/[0.06]" />
+      <div
+        role="tablist"
+        className="scrollbar-hide relative flex flex-1 overflow-x-auto"
+      >
+        {tabs.map((tab, index) => {
+          const isActive = tab.id === activeTabId;
+          const isLast = index === tabs.length - 1;
+
+          return (
+            <div key={tab.id} className="flex shrink-0">
+              {needsSeparator(index) && <TabSeparator />}
+              <button
+                ref={(el) => {
+                  tabRefs.current[index] = el;
+                }}
+                role="tab"
+                id={`tab-${tab.id}`}
+                aria-selected={isActive}
+                aria-controls={`panel-${tab.id}`}
+                tabIndex={isActive ? 0 : -1}
+                type="button"
+                onClick={() => onSelect(tab.id)}
+                onKeyDown={(e) => handleKeyDown(e, index)}
+                className={cn(
+                  "relative flex h-9 shrink-0 items-center gap-2 px-5 text-[13px] transition-colors",
+                  isActive
+                    ? "z-10 border-x border-t-2 border-x-black/[0.06] border-t-blue-500 bg-white text-[#111] dark:border-x-white/[0.06] dark:bg-[#0a0a0a] dark:text-[#f0f0f0]"
+                    : "border-t-2 border-t-transparent text-[#666] hover:text-[#333] dark:text-[#777] dark:hover:text-[#aaa]",
+                )}
+              >
+                <FileIcon lang={tab.lang} />
+                {tab.label}
+              </button>
+              {isLast && !isActive && <TabSeparator />}
+            </div>
+          );
+        })}
+      </div>
+      <div className="pr-2">
+        <CopyButton
+          text={activeTab.raw}
+          className="size-7 rounded-md text-[#666] hover:bg-black/[0.04] hover:text-[#333] dark:text-[#777] dark:hover:bg-white/[0.06] dark:hover:text-[#bbb]"
+        />
+      </div>
+    </div>
+  );
+}
+
+function TabSeparator() {
+  return <div className="w-px bg-black/[0.08] dark:bg-white/[0.08]" />;
+}
+
+function FileIcon({ lang }: { lang: string }) {
+  return (
+    <div
+      className={cn(
+        "size-2.5 shrink-0 rounded-sm",
+        FILE_ICON_COLORS[lang] ?? DEFAULT_FILE_ICON_COLOR,
+      )}
+    />
   );
 }

@@ -1,1 +1,54 @@
 @import "@workspace/ui/globals.css";
+
+/* Shiki dual-theme: light colors are inline styles by default.
+   In dark mode, override with --shiki-dark CSS variable.
+   Darken the light-mode base text for better contrast. */
+.shiki {
+  color: #0a0a0a !important;
+  background-color: transparent !important;
+}
+
+.shiki span {
+  background-color: transparent !important;
+}
+
+.dark .shiki,
+.dark .shiki span {
+  color: var(--shiki-dark) !important;
+}
+
+/* Thin scrollbar for code editor areas */
+.scrollbar-editor {
+  scrollbar-width: thin;
+  scrollbar-color: #ddd transparent;
+
+  &::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: #ddd;
+    border-radius: 3px;
+  }
+
+  &::-webkit-scrollbar-thumb:hover {
+    background: #ccc;
+  }
+}
+
+.dark .scrollbar-editor {
+  scrollbar-color: #222 transparent;
+
+  &::-webkit-scrollbar-thumb {
+    background: #222;
+  }
+
+  &::-webkit-scrollbar-thumb:hover {
+    background: #333;
+  }
+}
