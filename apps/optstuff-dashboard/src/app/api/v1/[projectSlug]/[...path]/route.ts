@@ -17,6 +17,7 @@ import {
   getProjectConfigById,
 } from "@/server/lib/config-cache";
 import { checkRateLimit } from "@/server/lib/rate-limiter";
+import type { RequestLogData } from "@/server/lib/request-logger";
 import {
   parseSignatureParams,
   validateReferer,
@@ -65,7 +66,7 @@ function mapUpstreamErrorStatus(error: unknown): number {
 }
 
 type RouteParams = { projectSlug: string; path: string[] };
-type RequestLogPayload = import("@/server/lib/request-logger").RequestLogData;
+type RequestLogPayload = RequestLogData;
 type ValidatedRequestContext = {
   readonly apiKey: NonNullable<Awaited<ReturnType<typeof getApiKeyConfig>>>;
   readonly project: NonNullable<
@@ -148,6 +149,24 @@ function forbiddenResponse(error: string): Response {
     { error },
     { status: 403, headers: FORBIDDEN_HEADERS },
   );
+}
+
+function getSafeLogSourceUrl(imagePath: string): string {
+  try {
+    return ensureProtocol(imagePath);
+  } catch {
+    return imagePath;
+  }
+}
+
+function sanitizeRefererForLog(referer: string | null): string {
+  if (!referer) return "(no referer header)";
+  try {
+    const url = new URL(referer);
+    return url.origin + url.pathname;
+  } catch {
+    return referer.split("?")[0]?.split("#")[0] ?? referer;
+  }
 }
 
 function buildVaryHeader(
@@ -338,7 +357,7 @@ async function validateRequest(
   if (sigResult !== "valid") {
     const isExpired = sigResult === "expired";
     logRequestInBackground(apiKey.projectId, {
-      sourceUrl: ensureProtocol(parsed.imagePath),
+      sourceUrl: getSafeLogSourceUrl(parsed.imagePath),
       operations: parsed.operations,
       status: isExpired ? "sig_expired" : "sig_invalid",
       errorDetail: isExpired ? "Signature has expired" : "Invalid signature",
@@ -387,7 +406,7 @@ async function validateRequest(
 
   if (!rateLimitResult.allowed) {
     logRequestInBackground(project.id, {
-      sourceUrl: ensureProtocol(parsed.imagePath),
+      sourceUrl: getSafeLogSourceUrl(parsed.imagePath),
       operations: parsed.operations,
       status: "rate_limited",
       errorDetail: `Rate limit exceeded: ${rateLimitResult.reason === "minute" ? "per-minute" : "daily"} limit (${rateLimitResult.limit})`,
@@ -420,10 +439,10 @@ async function validateRequest(
   const referer = request.headers.get("referer");
   if (!validateReferer(referer, project.allowedRefererDomains)) {
     logRequestInBackground(project.id, {
-      sourceUrl: ensureProtocol(parsed.imagePath),
+      sourceUrl: getSafeLogSourceUrl(parsed.imagePath),
       operations: parsed.operations,
       status: "referer_blocked",
-      errorDetail: `Referer blocked: ${referer ?? "(no referer header)"}`,
+      errorDetail: `Referer blocked: ${sanitizeRefererForLog(referer)}`,
     });
     return {
       ok: false,

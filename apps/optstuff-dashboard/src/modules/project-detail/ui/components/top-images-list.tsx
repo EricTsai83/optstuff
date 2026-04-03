@@ -117,7 +117,7 @@ export function TopImagesList({ images, isLoading }: TopImagesListProps) {
                   <div className="text-muted-foreground flex shrink-0 items-center gap-3 text-xs tabular-nums">
                     <span>{formatNumber(image.requestCount)} req</span>
                     <span className="hidden sm:inline">
-                      {formatBytes(Number(image.totalOptimizedSize))}
+                      {formatBytes(image.totalOptimizedSize)}
                     </span>
                   </div>
                 </div>
