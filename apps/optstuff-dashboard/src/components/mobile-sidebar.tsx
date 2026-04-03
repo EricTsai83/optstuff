@@ -118,6 +118,13 @@ export function MobileSidebar({ open, onOpenChange }: MobileSidebarProps) {
           <Button
             variant="ghost"
             className="text-foreground [&_svg]:text-muted-foreground [&:hover_svg]:text-accent-foreground h-auto justify-start gap-3 px-3 py-2.5"
+            onClick={() =>
+              window.open(
+                "https://github.com/EricTsai83/optstuff/issues/new",
+                "_blank",
+                "noopener,noreferrer",
+              )
+            }
           >
             <MessageSquare />
             <span>Feedback</span>

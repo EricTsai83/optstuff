@@ -13,7 +13,10 @@
       "Bash(pnpm typecheck:*)",
       "Bash(pnpm --filter optstuff-dashboard lint)",
       "Bash(pnpm --filter optstuff-dashboard exec tsc --noEmit)",
-      "Bash(pnpm format:check)"
+      "Bash(pnpm format:check)",
+      "Bash(git remote:*)",
+      "Bash(pnpm turbo:*)",
+      "Bash(pnpm tsc:*)"
     ]
   }
 }
