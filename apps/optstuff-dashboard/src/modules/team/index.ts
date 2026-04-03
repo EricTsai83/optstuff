@@ -12,7 +12,6 @@ export {
   MobileTabs,
   MobileTabsSkeleton,
   NavTabsSkeleton,
-  NavigationTabs,
   ProjectList,
   ProjectListSkeleton,
   QuickStatsCard,

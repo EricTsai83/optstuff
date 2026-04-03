@@ -8,7 +8,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@workspace/ui/components/card";
-import { TrendingDown, TrendingUp } from "lucide-react";
+import { PiggyBank } from "lucide-react";
 
 type BandwidthSavingsProps = {
   readonly totalOriginalSize: number;
@@ -35,9 +35,12 @@ export function BandwidthSavingsCard({
 }: BandwidthSavingsProps) {
   if (isLoading) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Bandwidth Savings</CardTitle>
+      <Card className="gap-4 py-4">
+        <CardHeader className="[.border-b]:pb-4 gap-1.5 border-b">
+          <CardTitle className="flex items-center gap-2">
+            <PiggyBank className="h-5 w-5" />
+            Bandwidth Savings
+          </CardTitle>
           <CardDescription>Original vs Optimized</CardDescription>
         </CardHeader>
         <CardContent>
@@ -56,14 +59,10 @@ export function BandwidthSavingsCard({
     : `+${Math.abs(savingsPercentage)}%`;
 
   return (
-    <Card>
-      <CardHeader>
+    <Card className="gap-4 py-4">
+      <CardHeader className="[.border-b]:pb-4 gap-1.5 border-b">
         <CardTitle className="flex items-center gap-2">
-          {isPositiveSavings ? (
-            <TrendingDown className={`h-5 w-5 ${savingsClassName}`} />
-          ) : (
-            <TrendingUp className={`h-5 w-5 ${savingsClassName}`} />
-          )}
+          <PiggyBank className="h-5 w-5" />
           Bandwidth Savings
         </CardTitle>
         <CardDescription>

@@ -4,7 +4,6 @@ export { GetStartedCard } from "./get-started-card";
 export { MobileTabs } from "./mobile-tabs";
 export { MobileTabsSkeleton } from "./mobile-tabs.skeleton";
 export { NavTabsSkeleton } from "./nav-tabs.skeleton";
-export { NavigationTabs } from "./navigation-tabs";
 export { ProjectList } from "./project-list";
 export { ProjectListSkeleton } from "./project-list.skeleton";
 export { QuickStatsCard } from "./quick-stats-card";

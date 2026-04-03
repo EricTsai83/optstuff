@@ -306,25 +306,25 @@ function ProjectItem({
             </Link>
           </DropdownMenuItem>
           <DropdownMenuItem asChild>
-            <Link href={`/${teamSlug}/${project.slug}?tab=api-keys`}>
+            <Link href={`/${teamSlug}/${project.slug}/~/api-keys`}>
               <Key className="mr-2 h-4 w-4" />
               API Keys
             </Link>
           </DropdownMenuItem>
           <DropdownMenuItem asChild>
-            <Link href={`/${teamSlug}/${project.slug}?tab=usage`}>
+            <Link href={`/${teamSlug}/${project.slug}/~/usage`}>
               <Activity className="mr-2 h-4 w-4" />
               Usage
             </Link>
           </DropdownMenuItem>
           <DropdownMenuItem asChild>
-            <Link href={`/${teamSlug}/${project.slug}?tab=developer`}>
+            <Link href={`/${teamSlug}/${project.slug}/~/developer`}>
               <Code className="mr-2 h-4 w-4" />
               Developer
             </Link>
           </DropdownMenuItem>
           <DropdownMenuItem asChild>
-            <Link href={`/${teamSlug}/${project.slug}?tab=settings`}>
+            <Link href={`/${teamSlug}/${project.slug}/~/settings`}>
               <Settings className="mr-2 h-4 w-4" />
               Settings
             </Link>

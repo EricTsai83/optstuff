@@ -16,7 +16,13 @@
       "Bash(pnpm format:check)",
       "Bash(git remote:*)",
       "Bash(pnpm turbo:*)",
-      "Bash(pnpm tsc:*)"
+      "Bash(pnpm tsc:*)",
+      "Bash(mkdir -p /Users/eric/personal-project/optstuff/apps/optstuff-dashboard/src/app/\\\\[team\\\\]/\\\\[project\\\\]/\\\\\\(tabs\\\\\\)/~/api-keys)",
+      "Bash(mkdir -p /Users/eric/personal-project/optstuff/apps/optstuff-dashboard/src/app/\\\\[team\\\\]/\\\\[project\\\\]/\\\\\\(tabs\\\\\\)/~/usage)",
+      "Bash(mkdir -p /Users/eric/personal-project/optstuff/apps/optstuff-dashboard/src/app/\\\\[team\\\\]/\\\\[project\\\\]/\\\\\\(tabs\\\\\\)/~/developer)",
+      "Bash(mkdir -p /Users/eric/personal-project/optstuff/apps/optstuff-dashboard/src/app/\\\\[team\\\\]/\\\\[project\\\\]/\\\\\\(tabs\\\\\\)/~/settings)",
+      "Bash(pnpm --filter optstuff-dashboard typecheck)",
+      "Bash(find /Users/eric/personal-project/optstuff/apps/optstuff-dashboard/src/app/[team]/[project] -type f -name \"*.tsx\" -o -name \"*.ts\" -o -name \"loading.tsx\")"
     ]
   }
 }
