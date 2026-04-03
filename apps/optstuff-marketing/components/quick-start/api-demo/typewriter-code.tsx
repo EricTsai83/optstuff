@@ -14,22 +14,22 @@ export function TypewriterCode({
   const lines = code.split("\n");
 
   return (
-    <div className="bg-[#0a1120]">
-      <div className="flex items-center justify-between border-b border-white/8 px-4 py-3 sm:px-5">
+    <div className="bg-card">
+      <div className="border-border/50 flex items-center justify-between border-b px-4 py-3 sm:px-5">
         <div className="flex items-center gap-2">
-          <span className="h-2.5 w-2.5 rounded-full bg-sky-300/70" />
-          <span className="h-2.5 w-2.5 rounded-full bg-emerald-300/55" />
-          <span className="h-2.5 w-2.5 rounded-full bg-white/20" />
+          <div className="hidden h-2.5 w-2.5 rounded-full bg-[#ff5f57] sm:block" />
+          <div className="hidden h-2.5 w-2.5 rounded-full bg-[#febc2e] sm:block" />
+          <div className="hidden h-2.5 w-2.5 rounded-full bg-[#28c840] sm:block" />
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-[10px] font-medium uppercase tracking-[0.24em] text-sky-100/50">
+          <span className="text-muted-foreground text-[10px] font-medium uppercase tracking-[0.24em]">
             Live Example
           </span>
           <button
             type="button"
             onClick={onCopy}
             aria-label={copied ? "Copied code" : "Copy code"}
-            className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-white/4 text-white/72 transition-colors hover:border-emerald-200/18 hover:bg-emerald-300/8 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300/55 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a1120]"
+            className="border-border bg-secondary/40 text-muted-foreground hover:border-accent/20 hover:bg-accent/10 hover:text-foreground focus-visible:ring-ring focus-visible:ring-offset-background inline-flex h-8 w-8 items-center justify-center rounded-full border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
           >
             <span className="relative h-3.5 w-3.5">
               <Copy
@@ -58,7 +58,7 @@ export function TypewriterCode({
               key={`${variant}-${index}-${line}`}
               className="grid grid-cols-[auto_1fr] gap-3 px-4 sm:gap-4 sm:px-5"
             >
-              <span className="select-none text-[10px] tabular-nums text-white/22 sm:text-[11px]">
+              <span className="text-muted-foreground/40 select-none text-[10px] tabular-nums sm:text-[11px]">
                 {String(index + 1).padStart(2, "0")}
               </span>
               <span className="min-w-0 whitespace-pre">

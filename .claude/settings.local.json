@@ -6,7 +6,8 @@
       "Bash(cat:*)",
       "Bash(find /Users/eric/personal-project/optstuff/apps/optstuff-dashboard/src -name *redirect* -o -name *router*)",
       "Bash(grep:*)",
-      "Bash(find /Users/eric/personal-project/optstuff/apps/optstuff-dashboard/src/app -path *dashboard* -type f)"
+      "Bash(find /Users/eric/personal-project/optstuff/apps/optstuff-dashboard/src/app -path *dashboard* -type f)",
+      "Bash(npx tsc:*)"
     ]
   }
 }

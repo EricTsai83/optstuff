@@ -20,7 +20,7 @@ export const CODE_EXAMPLES: Record<"signedUrl" | "server" | "headers", string> =
     signedUrl: `https://images.example.com/api/v1/my-blog/
 w_800,q_80,f_webp/
 cdn.example.com/photo.jpg?
-key=pk_demo_123&sig=Jm3zQvY8n2C4sM6aK9pLxTw0Rb7HfNc1&exp=1735689600`,
+key=pk_abc123&sig=xyz789&exp=1706500000`,
     server: `import { createHmac } from "crypto";
 
 const path = "w_800,q_80,f_webp/cdn.example.com/photo.jpg";
@@ -38,7 +38,7 @@ const url = new URL(
 );
 
 url.search = new URLSearchParams({
-  key: "pk_demo_123",
+  key: "pk_abc123",
   sig,
   exp: String(exp),
 }).toString();`,

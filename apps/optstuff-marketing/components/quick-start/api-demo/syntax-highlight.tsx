@@ -27,7 +27,7 @@ function highlightUrl(code: string): string {
       '<span class="text-cyan-300">$1</span>',
     )
     .replace(
-      /\b([A-Za-z0-9_-]{32})\b/g,
+      /\b(xyz789)\b/g,
       '<span class="text-blue-300">$1</span>',
     );
 }
@@ -35,12 +35,12 @@ function highlightUrl(code: string): string {
 function highlightServer(code: string): string {
   return code
     .replace(
-      /\b(import|const|new|return)\b/g,
-      '<span class="text-sky-300">$1</span>',
-    )
-    .replace(
       /(".*?"|`.*?`)/g,
       '<span class="text-emerald-300">$1</span>',
+    )
+    .replace(
+      /\b(import|const|new|return)\b/g,
+      '<span class="text-sky-300">$1</span>',
     )
     .replace(
       /\b(createHmac|URLSearchParams|update|digest|substring|String)\b/g,
@@ -51,7 +51,7 @@ function highlightServer(code: string): string {
       '<span class="text-amber-300">$1</span>',
     )
     .replace(
-      /\b(base64url|sha256|pk_demo_123)\b/g,
+      /\b(base64url|sha256|pk_abc123)\b/g,
       '<span class="text-blue-300">$1</span>',
     );
 }
@@ -71,7 +71,7 @@ function highlightHeaders(code: string): string {
       '<span class="text-cyan-300">$1</span>',
     )
     .replace(
-      /\b(\d+ms|dur=\d+|\d{3})\b/g,
+      /\b(\d+ms|dur=\d+)\b/g,
       '<span class="text-amber-300">$1</span>',
     );
 }
@@ -88,7 +88,7 @@ export function SyntaxHighlight({ code, variant }: SyntaxHighlightProps) {
 
   return (
     <span
-      className="text-slate-200"
+      className="text-foreground"
       dangerouslySetInnerHTML={{ __html: highlighted }}
     />
   );
