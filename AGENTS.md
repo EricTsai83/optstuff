@@ -39,9 +39,11 @@ Long term maintainability is a core priority. If you add new functionality, firs
 
 
 ## Commands
+
 - Don't run dev server commands (e.g., `bun run dev`) - assume it's already running.
 - Don't run build commands unless specifically told to.
 - Focus on checking commands like `pnpm lint`, `pnpm format`, and `pnpm typecheck` to ensure code is consistent and correct.
 
 ## Workflow
+
 - If asked to do too much work at once, stop and state that clearly.
