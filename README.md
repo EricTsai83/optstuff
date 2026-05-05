@@ -105,4 +105,4 @@ Full documentation is available in the docs site:
 
 ## License
 
-MIT
+[MIT](https://github.com/EricTsai83/optstuff?tab=MIT-1-ov-file)
