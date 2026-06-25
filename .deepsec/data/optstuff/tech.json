@@ -1,0 +1,10 @@
+{
+  "tags": [
+    "node"
+  ],
+  "sentinels": [
+    "package.json"
+  ],
+  "detectedAt": "2026-06-25T10:51:27.596Z",
+  "rootPath": "/Users/eric/personal-project/optstuff"
+}
