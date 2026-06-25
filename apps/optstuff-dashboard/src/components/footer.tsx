@@ -1,6 +1,5 @@
 "use client";
 
-import { env } from "@/env";
 import { DOCS_LINKS } from "@/lib/constants";
 import { Button } from "@workspace/ui/components/button";
 import {
@@ -15,8 +14,6 @@ import { ChevronDown, Monitor, Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-
-const appDomain = new URL(env.NEXT_PUBLIC_APP_URL).hostname;
 
 const FOOTER_LINKS = [
   { name: "Home", href: "/" },
@@ -56,18 +53,8 @@ export function Footer() {
             </nav>
           </div>
 
-          {/* Right: Status and theme */}
-          <div className="flex items-center gap-4">
-            <a
-              href={`https://status.${appDomain}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-accent flex items-center gap-2 text-sm transition-all duration-200 hover:underline"
-            >
-              <span className="bg-accent h-2 w-2 animate-pulse rounded-full" />
-              All systems normal.
-            </a>
-
+          {/* Right: Theme */}
+          <div className="flex items-center">
             <ThemeSwitcher
               mounted={mounted}
               theme={theme}
