@@ -108,10 +108,10 @@ function LegalDropdown() {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start">
         <DropdownMenuItem asChild>
-          <Link href="/privacy">Privacy Policy</Link>
+          <Link href="#">Privacy Policy</Link>
         </DropdownMenuItem>
         <DropdownMenuItem asChild>
-          <Link href="/terms">Terms of Service</Link>
+          <Link href="#">Terms of Service</Link>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
