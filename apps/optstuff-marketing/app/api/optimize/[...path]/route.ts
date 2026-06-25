@@ -8,6 +8,139 @@ import {
   resolveContentType,
 } from "@/lib/ipx-utils";
 
+const DEMO_ASSETS = new Set(["demo-image.png", "demo-image.webp"]);
+const VALID_OPERATION_KEYS = new Set(["w", "h", "q", "f", "fit", "s"]);
+const VALID_FORMATS = new Set(["webp", "avif", "png", "jpg", "jpeg"]);
+const VALID_FITS = new Set(["cover", "contain", "fill"]);
+const MAX_DIMENSION = 1200;
+const DEMO_RATE_LIMIT_WINDOW_MS = 60_000;
+const DEMO_RATE_LIMIT_MAX_REQUESTS = 120;
+
+type RateLimitBucket = {
+  count: number;
+  resetAt: number;
+};
+
+const rateLimitBuckets = new Map<string, RateLimitBucket>();
+
+function getClientRateLimitId(request: Request): string {
+  const forwardedFor = request.headers.get("x-forwarded-for");
+  const firstForwardedFor = forwardedFor?.split(",")[0]?.trim();
+  const candidates = [
+    firstForwardedFor,
+    request.headers.get("x-real-ip"),
+    request.headers.get("cf-connecting-ip"),
+  ];
+  return (
+    candidates.find((candidate) => candidate && candidate.length > 0) ??
+    "unknown"
+  );
+}
+
+function checkDemoRateLimit(
+  identifier: string,
+): { allowed: true } | { allowed: false; retryAfterSeconds: number } {
+  const now = Date.now();
+  const current = rateLimitBuckets.get(identifier);
+
+  if (!current || current.resetAt <= now) {
+    rateLimitBuckets.set(identifier, {
+      count: 1,
+      resetAt: now + DEMO_RATE_LIMIT_WINDOW_MS,
+    });
+    return { allowed: true };
+  }
+
+  if (current.count >= DEMO_RATE_LIMIT_MAX_REQUESTS) {
+    return {
+      allowed: false,
+      retryAfterSeconds: Math.max(1, Math.ceil((current.resetAt - now) / 1000)),
+    };
+  }
+
+  current.count += 1;
+  return { allowed: true };
+}
+
+function parseBoundedInt(
+  value: string | boolean,
+  name: string,
+  min: number,
+  max: number,
+): string | null {
+  if (typeof value !== "string" || !/^\d+$/.test(value)) {
+    return `${name} must be an integer between ${min} and ${max}`;
+  }
+
+  const parsed = Number(value);
+  if (
+    !Number.isInteger(parsed) ||
+    !Number.isFinite(parsed) ||
+    parsed < min ||
+    parsed > max
+  ) {
+    return `${name} must be an integer between ${min} and ${max}`;
+  }
+
+  return null;
+}
+
+function validateDemoOperations(
+  operations: Record<string, string | boolean>,
+): string | null {
+  for (const key of Object.keys(operations)) {
+    if (!VALID_OPERATION_KEYS.has(key)) {
+      return `Unsupported operation: ${key}`;
+    }
+  }
+
+  if ("w" in operations) {
+    const error = parseBoundedInt(operations.w, "w", 1, MAX_DIMENSION);
+    if (error) return error;
+  }
+
+  if ("h" in operations) {
+    const error = parseBoundedInt(operations.h, "h", 1, MAX_DIMENSION);
+    if (error) return error;
+  }
+
+  if ("q" in operations) {
+    const error = parseBoundedInt(operations.q, "q", 1, 100);
+    if (error) return error;
+  }
+
+  if ("f" in operations) {
+    const format = operations.f;
+    if (typeof format !== "string" || !VALID_FORMATS.has(format)) {
+      return "Unsupported image format";
+    }
+  }
+
+  if ("fit" in operations) {
+    const fit = operations.fit;
+    if (typeof fit !== "string" || !VALID_FITS.has(fit)) {
+      return "Unsupported fit mode";
+    }
+  }
+
+  if ("s" in operations) {
+    const size = operations.s;
+    if (typeof size !== "string") return "Invalid size operation";
+
+    const match = /^(\d+)x(\d+)$/.exec(size);
+    const width = match?.[1];
+    const height = match?.[2];
+    if (!width || !height) return "Invalid size operation";
+
+    const widthError = parseBoundedInt(width, "width", 1, MAX_DIMENSION);
+    if (widthError) return widthError;
+    const heightError = parseBoundedInt(height, "height", 1, MAX_DIMENSION);
+    if (heightError) return heightError;
+  }
+
+  return null;
+}
+
 /**
  * Image Optimization API Route Handler
  *
@@ -77,6 +210,17 @@ export async function GET(
   _request: Request,
   { params }: { params: Promise<{ path: string[] }> },
 ) {
+  const rateLimit = checkDemoRateLimit(getClientRateLimitId(_request));
+  if (!rateLimit.allowed) {
+    return NextResponse.json(
+      { error: "Too many requests" },
+      {
+        status: 429,
+        headers: { "Retry-After": String(rateLimit.retryAfterSeconds) },
+      },
+    );
+  }
+
   if (!isSameOrigin(_request)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
@@ -101,6 +245,15 @@ export async function GET(
     }
 
     const operations = parseOperationsString(parsed.operations);
+    const operationError = validateDemoOperations(operations);
+    if (operationError) {
+      return NextResponse.json({ error: operationError }, { status: 400 });
+    }
+
+    if (!DEMO_ASSETS.has(parsed.imagePath)) {
+      return NextResponse.json({ error: "Image not found" }, { status: 404 });
+    }
+
     // Local files use "/" prefix for IPX file storage
     const imagePath = `/${parsed.imagePath}`;
 
@@ -118,13 +271,8 @@ export async function GET(
   } catch (error) {
     console.error("Image processing error:", error);
 
-    const errorMessage = error instanceof Error ? error.message : String(error);
-
     return NextResponse.json(
-      {
-        error: "Image processing failed",
-        details: errorMessage,
-      },
+      { error: "Image processing failed" },
       { status: 500 },
     );
   }

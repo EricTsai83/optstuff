@@ -2,49 +2,13 @@ import { and, desc, eq, gte, inArray, lt, sql } from "drizzle-orm";
 import { z } from "zod";
 
 import { verifyProjectAccess } from "@/server/api/lib/access";
+import {
+  addAnalyticsDateRangeIssue,
+  analyticsDateRangeFields,
+  getAnalyticsDateRange,
+} from "@/server/api/lib/date-range";
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
 import { requestLogs, requestLogStatusEnum } from "@/server/db/schema";
-
-const DATE_ONLY_REGEX = /^(\d{4})-(\d{2})-(\d{2})$/;
-
-/**
- * Accepts ISO date-only and full ISO datetime strings.
- */
-const zDateString = z
-  .string()
-  .refine(
-    (value) => !Number.isNaN(Date.parse(value)),
-    "Invalid ISO date/datetime string",
-  );
-
-/**
- * Parses an input date string and throws for invalid values.
- */
-function parseDateInput(value: string): Date {
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) {
-    throw new Error(`Invalid date string: ${value}`);
-  }
-  return parsed;
-}
-
-/**
- * Converts user end-date input to an exclusive upper bound.
- * Date-only values are interpreted as inclusive UTC day endpoints
- * and converted to next-day `00:00:00.000Z`; datetime values are used as-is.
- */
-function toEndExclusive(value: string): Date {
-  const dateOnlyMatch = DATE_ONLY_REGEX.exec(value);
-  if (dateOnlyMatch) {
-    const year = Number.parseInt(dateOnlyMatch[1] ?? "0", 10);
-    const month = Number.parseInt(dateOnlyMatch[2] ?? "0", 10);
-    const day = Number.parseInt(dateOnlyMatch[3] ?? "0", 10);
-
-    return new Date(Date.UTC(year, month - 1, day + 1, 0, 0, 0, 0));
-  }
-
-  return parseDateInput(value);
-}
 
 export const requestLogRouter = createTRPCRouter({
   /**
@@ -53,22 +17,23 @@ export const requestLogRouter = createTRPCRouter({
    */
   getRecentLogs: protectedProcedure
     .input(
-      z.object({
-        projectId: z.string().uuid(),
-        startDate: zDateString,
-        endDate: zDateString,
-        limit: z.number().int().min(1).max(100).default(20),
-        statuses: z.array(z.enum(requestLogStatusEnum.enumValues)).optional(),
-      }),
+      z
+        .object({
+          projectId: z.string().uuid(),
+          ...analyticsDateRangeFields,
+          limit: z.number().int().min(1).max(100).default(20),
+          statuses: z.array(z.enum(requestLogStatusEnum.enumValues)).optional(),
+        })
+        .superRefine((value, ctx) => addAnalyticsDateRangeIssue(value, ctx)),
     )
     .query(async ({ ctx, input }) => {
       await verifyProjectAccess(ctx.db, input.projectId, ctx.userId);
 
-      const endExclusive = toEndExclusive(input.endDate);
+      const range = getAnalyticsDateRange(input);
       const conditions = [
         eq(requestLogs.projectId, input.projectId),
-        gte(requestLogs.createdAt, parseDateInput(input.startDate)),
-        lt(requestLogs.createdAt, endExclusive),
+        gte(requestLogs.createdAt, range.start),
+        lt(requestLogs.createdAt, range.endExclusive),
       ];
       if (input.statuses && input.statuses.length > 0) {
         conditions.push(inArray(requestLogs.status, input.statuses));
@@ -98,14 +63,16 @@ export const requestLogRouter = createTRPCRouter({
    */
   getDailyVolume: protectedProcedure
     .input(
-      z.object({
-        projectId: z.string().uuid(),
-        startDate: zDateString,
-        endDate: zDateString,
-      }),
+      z
+        .object({
+          projectId: z.string().uuid(),
+          ...analyticsDateRangeFields,
+        })
+        .superRefine((value, ctx) => addAnalyticsDateRangeIssue(value, ctx)),
     )
     .query(async ({ ctx, input }) => {
       await verifyProjectAccess(ctx.db, input.projectId, ctx.userId);
+      const range = getAnalyticsDateRange(input);
       const utcDateExpr = sql`date(timezone('UTC', ${requestLogs.createdAt}))`;
 
       const result = await ctx.db
@@ -121,8 +88,8 @@ export const requestLogRouter = createTRPCRouter({
         .where(
           and(
             eq(requestLogs.projectId, input.projectId),
-            gte(requestLogs.createdAt, parseDateInput(input.startDate)),
-            lt(requestLogs.createdAt, toEndExclusive(input.endDate)),
+            gte(requestLogs.createdAt, range.start),
+            lt(requestLogs.createdAt, range.endExclusive),
           ),
         )
         .groupBy(utcDateExpr)
@@ -141,15 +108,17 @@ export const requestLogRouter = createTRPCRouter({
    */
   getTopImages: protectedProcedure
     .input(
-      z.object({
-        projectId: z.string().uuid(),
-        startDate: zDateString,
-        endDate: zDateString,
-        limit: z.number().int().min(1).max(50).default(10),
-      }),
+      z
+        .object({
+          projectId: z.string().uuid(),
+          ...analyticsDateRangeFields,
+          limit: z.number().int().min(1).max(50).default(10),
+        })
+        .superRefine((value, ctx) => addAnalyticsDateRangeIssue(value, ctx)),
     )
     .query(async ({ ctx, input }) => {
       await verifyProjectAccess(ctx.db, input.projectId, ctx.userId);
+      const range = getAnalyticsDateRange(input);
 
       const result = await ctx.db
         .select({
@@ -164,8 +133,8 @@ export const requestLogRouter = createTRPCRouter({
         .where(
           and(
             eq(requestLogs.projectId, input.projectId),
-            gte(requestLogs.createdAt, parseDateInput(input.startDate)),
-            lt(requestLogs.createdAt, toEndExclusive(input.endDate)),
+            gte(requestLogs.createdAt, range.start),
+            lt(requestLogs.createdAt, range.endExclusive),
           ),
         )
         .groupBy(requestLogs.sourceUrl)
@@ -181,14 +150,16 @@ export const requestLogRouter = createTRPCRouter({
    */
   getBandwidthSavings: protectedProcedure
     .input(
-      z.object({
-        projectId: z.string().uuid(),
-        startDate: zDateString,
-        endDate: zDateString,
-      }),
+      z
+        .object({
+          projectId: z.string().uuid(),
+          ...analyticsDateRangeFields,
+        })
+        .superRefine((value, ctx) => addAnalyticsDateRangeIssue(value, ctx)),
     )
     .query(async ({ ctx, input }) => {
       await verifyProjectAccess(ctx.db, input.projectId, ctx.userId);
+      const range = getAnalyticsDateRange(input);
 
       const result = await ctx.db
         .select({
@@ -219,8 +190,8 @@ export const requestLogRouter = createTRPCRouter({
         .where(
           and(
             eq(requestLogs.projectId, input.projectId),
-            gte(requestLogs.createdAt, parseDateInput(input.startDate)),
-            lt(requestLogs.createdAt, toEndExclusive(input.endDate)),
+            gte(requestLogs.createdAt, range.start),
+            lt(requestLogs.createdAt, range.endExclusive),
           ),
         );
 

@@ -190,7 +190,7 @@ export function UrlTester({
                 <SelectContent>
                   <SelectItem value="webp">WebP</SelectItem>
                   <SelectItem value="avif">AVIF</SelectItem>
-                  <SelectItem value="jpeg">JPEG</SelectItem>
+                  <SelectItem value="jpg">JPEG</SelectItem>
                   <SelectItem value="png">PNG</SelectItem>
                   <SelectItem value="auto">Auto</SelectItem>
                 </SelectContent>

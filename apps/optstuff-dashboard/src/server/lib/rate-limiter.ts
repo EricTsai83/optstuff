@@ -12,8 +12,11 @@ import { getRedis } from "@/server/lib/redis";
 
 const MINUTE_PREFIX = "ratelimit:ipx:minute";
 const DAY_PREFIX = "ratelimit:ipx:day";
+const PRE_AUTH_PREFIX = "ratelimit:ipx:pre-auth";
+const PRE_AUTH_LIMIT_PER_MINUTE = 600;
 const minuteLimiterCache = new Map<number, Ratelimit>();
 const dayLimiterCache = new Map<number, Ratelimit>();
+let preAuthLimiter: Ratelimit | undefined;
 
 /**
  * Rate limit check result
@@ -22,7 +25,7 @@ export type RateLimitResult =
   | { readonly allowed: true; readonly remaining: number }
   | {
       readonly allowed: false;
-      readonly reason: "minute" | "day";
+      readonly reason: "minute" | "day" | "unavailable";
       readonly retryAfterSeconds: number;
       readonly limit: number;
       readonly remaining: number;
@@ -65,47 +68,38 @@ function createDayLimiter(limit: number): Ratelimit {
   return limiter;
 }
 
+function createPreAuthLimiter(): Ratelimit {
+  preAuthLimiter ??= new Ratelimit({
+    redis: getRedis(),
+    limiter: Ratelimit.slidingWindow(PRE_AUTH_LIMIT_PER_MINUTE, "1m"),
+    analytics: true,
+    prefix: PRE_AUTH_PREFIX,
+  });
+  return preAuthLimiter;
+}
+
+function unavailableResult(): RateLimitResult {
+  return {
+    allowed: false,
+    reason: "unavailable",
+    retryAfterSeconds: 30,
+    limit: 0,
+    remaining: 0,
+  };
+}
+
 /**
  * Check if a request is allowed under the rate limit.
  * Uses sliding window algorithm via @upstash/ratelimit.
  *
- * Checks per-day limit first (wider window), then per-minute limit.
- *
- * The day limit is checked first to avoid wasting minute-window tokens
- * when the day limit is already exhausted. Since `.limit()` is a
- * consume-and-check operation, checking minute first would decrement
- * the minute counter even when the day limit would reject the request.
- * Checking day first minimises this: a wasted day token (when minute
- * subsequently rejects) is negligible relative to a 10,000-token pool.
- *
- * Degrades gracefully when Redis is unreachable — fails open (allows the
- * request) rather than returning a 500, since rate limiting is a protective
- * layer, not a core dependency. A warning is logged so operators can detect
- * prolonged Redis outages.
+ * Checks per-minute limit first so minute-limited bursts do not burn daily
+ * quota. Redis failures fail closed because this protects expensive image
+ * processing and quota integrity.
  */
 export async function checkRateLimit(
   config: RateLimitConfig,
 ): Promise<RateLimitResult> {
   try {
-    // Check per-day limit first (wider window — avoids wasting minute tokens)
-    const dayResult = await createDayLimiter(config.limitPerDay).limit(
-      config.publicKey,
-    );
-
-    if (!dayResult.success) {
-      return {
-        allowed: false,
-        reason: "day",
-        retryAfterSeconds: Math.max(
-          1,
-          Math.ceil((dayResult.reset - Date.now()) / 1000),
-        ),
-        limit: config.limitPerDay,
-        remaining: dayResult.remaining,
-      };
-    }
-
-    // Check per-minute limit (stricter, more immediate feedback)
     const minuteResult = await createMinuteLimiter(config.limitPerMinute).limit(
       config.publicKey,
     );
@@ -123,20 +117,59 @@ export async function checkRateLimit(
       };
     }
 
+    const dayResult = await createDayLimiter(config.limitPerDay).limit(
+      config.publicKey,
+    );
+
+    if (!dayResult.success) {
+      return {
+        allowed: false,
+        reason: "day",
+        retryAfterSeconds: Math.max(
+          1,
+          Math.ceil((dayResult.reset - Date.now()) / 1000),
+        ),
+        limit: config.limitPerDay,
+        remaining: dayResult.remaining,
+      };
+    }
+
     // Both limits passed
     return {
       allowed: true,
       remaining: Math.min(minuteResult.remaining, dayResult.remaining),
     };
   } catch (error) {
-    // Fail-open: allow the request through when Redis is unreachable.
-    // Rate limiting is a protective layer — a brief outage should not
-    // cause all image requests to fail with 500.
-    console.warn("Rate limiter Redis error, failing open:", error);
+    console.error("Rate limiter Redis error, failing closed:", error);
+    return unavailableResult();
+  }
+}
+
+export async function checkPreAuthRateLimit(
+  identifier: string,
+): Promise<RateLimitResult> {
+  try {
+    const result = await createPreAuthLimiter().limit(identifier);
+    if (!result.success) {
+      return {
+        allowed: false,
+        reason: "minute",
+        retryAfterSeconds: Math.max(
+          1,
+          Math.ceil((result.reset - Date.now()) / 1000),
+        ),
+        limit: PRE_AUTH_LIMIT_PER_MINUTE,
+        remaining: result.remaining,
+      };
+    }
+
     return {
       allowed: true,
-      remaining: 0,
+      remaining: result.remaining,
     };
+  } catch (error) {
+    console.error("Pre-auth rate limiter Redis error, failing closed:", error);
+    return unavailableResult();
   }
 }
 

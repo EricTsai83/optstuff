@@ -3,6 +3,11 @@ import { and, count, desc, eq, isNull } from "drizzle-orm";
 import { z } from "zod";
 
 import { RATE_LIMITS } from "@/lib/constants";
+import {
+  ensureProtocol,
+  parseIpxPath,
+  parseOperationsString,
+} from "@/lib/ipx-utils";
 import { verifyProjectAccess } from "@/server/api/lib/access";
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
 import type { db as dbType } from "@/server/db";
@@ -13,7 +18,14 @@ import {
   encryptApiKey,
   generateApiKey,
 } from "@/server/lib/api-key";
-import { invalidateApiKeyCache } from "@/server/lib/config-cache";
+import {
+  invalidateApiKeyCache,
+  markApiKeyCacheRevoked,
+} from "@/server/lib/config-cache";
+import {
+  validateSignedOperations,
+  validateSourceUrl,
+} from "@/server/lib/validators";
 
 /** Helper to update project's API key count using SQL count() */
 async function updateProjectApiKeyCount(db: typeof dbType, projectId: string) {
@@ -154,16 +166,7 @@ export const apiKeyRouter = createTRPCRouter({
       // Update project's API key count
       await updateProjectApiKeyCount(ctx.db, apiKey.projectId);
 
-      // Invalidate cache — best-effort so revoke still succeeds if Redis is down.
-      // The 60s TTL provides a self-healing fallback.
-      try {
-        await invalidateApiKeyCache(apiKey.publicKey);
-      } catch (error) {
-        console.error(
-          `Failed to invalidate cache for revoked API key ${apiKey.publicKey}:`,
-          error,
-        );
-      }
+      await markApiKeyCacheRevoked(apiKey.publicKey);
 
       // Strip encrypted secretKey from response (consistent with list/get).
       const { secretKey: _secretKey, ...safeKey } = revokedKey!;
@@ -220,16 +223,7 @@ export const apiKeyRouter = createTRPCRouter({
           .returning();
       });
 
-      // Invalidate cache — best-effort, outside the transaction.
-      // The 60s TTL provides a self-healing fallback.
-      try {
-        await invalidateApiKeyCache(oldApiKey.publicKey);
-      } catch (error) {
-        console.error(
-          `Failed to invalidate cache for rotated API key ${oldApiKey.publicKey}:`,
-          error,
-        );
-      }
+      await markApiKeyCacheRevoked(oldApiKey.publicKey);
 
       // Count doesn't change on rotation (one revoked, one created)
 
@@ -283,15 +277,7 @@ export const apiKeyRouter = createTRPCRouter({
         .where(eq(apiKeys.id, input.apiKeyId))
         .returning();
 
-      // Invalidate cache — best-effort so update still succeeds if Redis is down.
-      try {
-        await invalidateApiKeyCache(apiKey.publicKey);
-      } catch (error) {
-        console.error(
-          `Failed to invalidate cache for updated API key ${apiKey.publicKey}:`,
-          error,
-        );
-      }
+      await invalidateApiKeyCache(apiKey.publicKey);
 
       // Strip encrypted secretKey from response (consistent with list/get).
       const { secretKey: _secretKey, ...safeKey } = updatedKey!;
@@ -368,6 +354,57 @@ export const apiKeyRouter = createTRPCRouter({
         throw new TRPCError({
           code: "BAD_REQUEST",
           message: "Cannot sign with an expired API key",
+        });
+      }
+
+      const parsedPath = parseIpxPath(input.path.split("/"));
+      if (!parsedPath) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Invalid optimization path",
+        });
+      }
+
+      const operationValidation = validateSignedOperations(
+        parseOperationsString(parsedPath.operations),
+      );
+      if (!operationValidation.ok) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: operationValidation.error,
+        });
+      }
+
+      let imageUrl: string;
+      try {
+        imageUrl = ensureProtocol(parsedPath.imagePath);
+      } catch {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Invalid image URL",
+        });
+      }
+
+      const project = await ctx.db.query.projects.findFirst({
+        where: eq(projects.id, apiKey.projectId),
+        columns: { allowedSourceDomains: true },
+      });
+
+      if (!project) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Project not found",
+        });
+      }
+
+      const sourceValidation = await validateSourceUrl(
+        imageUrl,
+        project.allowedSourceDomains,
+      );
+      if (!sourceValidation.ok) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: sourceValidation.error,
         });
       }
 

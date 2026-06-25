@@ -7,8 +7,9 @@
     "build": "next build",
     "dev": "next dev --turbopack --port 3002",
     "start": "next start",
-    "lint": "next lint",
+    "lint": "eslint .",
     "check-types": "fumadocs-mdx && next typegen && tsc --noEmit",
+    "typecheck": "pnpm check-types",
     "postinstall": "fumadocs-mdx"
   },
   "dependencies": {

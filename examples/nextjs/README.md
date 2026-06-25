@@ -39,8 +39,13 @@ OPTSTUFF_PROJECT_SLUG=my-project
 OPTSTUFF_PUBLIC_KEY=pk_xxx
 OPTSTUFF_SECRET_KEY=sk_xxx
 
-# Optional: comma-separated host allowlist for /api/optstuff
-# Defaults: images.unsplash.com
+# Optional: comma-separated exact source URLs this public demo may sign.
+# Defaults to the bundled Unsplash demo images.
+OPTSTUFF_ALLOWED_IMAGE_URLS=https://images.unsplash.com/photo-1506744038136-46273834b3fb,https://images.unsplash.com/photo-1534528741775-53994a69daeb,https://images.unsplash.com/photo-1523275335684-37898b6baf30
+
+# Optional explicit opt-in for private/authenticated integrations that need
+# host-based signing. Do not enable this on an unauthenticated public demo.
+OPTSTUFF_ALLOW_ARBITRARY_HOST_SIGNING=false
 OPTSTUFF_ALLOWED_IMAGE_HOSTS=images.unsplash.com
 ```
 
@@ -133,6 +138,7 @@ Response:
 
 - `302` redirect to a signed OptStuff URL
 - cache headers are applied (`s-maxage`, `max-age`, `stale-while-revalidate`)
+- a signed demo-session cookie is set on first use for route-level rate limiting
 
 ### `POST /api/optstuff`
 
@@ -381,17 +387,17 @@ In `next.config.ts` this demo enables:
 `/api/optstuff` is a signing endpoint. Treat it like a sensitive API.
 
 - Keep `OPTSTUFF_SECRET_KEY` server-only
-- Validate source hostnames (this demo enforces allowlisting)
-- Add authentication in production
-- Add rate limiting in production
+- Sign only server-approved source URLs on public demos (this demo enforces exact URL allowlisting by default)
+- Keep the signed session rate limit enabled for public demos
+- Add authentication before enabling arbitrary host-based signing in production
 
 ## Troubleshooting
 
 - **Error: missing env variable**  
   Check `.env.local` values. Placeholder values (`xxx`, `your-*`) are rejected.
 
-- **`imageUrl/url hostname is not allowed`**  
-  Add hostnames to `OPTSTUFF_ALLOWED_IMAGE_HOSTS`.
+- **`imageUrl/url is not allowed`**  
+  Add exact demo URLs to `OPTSTUFF_ALLOWED_IMAGE_URLS`, or only for authenticated/private deployments, set `OPTSTUFF_ALLOW_ARBITRARY_HOST_SIGNING=true` with `OPTSTUFF_ALLOWED_IMAGE_HOSTS`.
 
 - **Images not loading through `next/image`**  
   Confirm host is included in `images.remotePatterns` and the API allowlist.

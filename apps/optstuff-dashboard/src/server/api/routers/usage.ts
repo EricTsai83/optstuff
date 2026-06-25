@@ -1,120 +1,40 @@
-import { TRPCError } from "@trpc/server";
-import { and, desc, eq, gte, inArray, lte, sql } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, lte } from "drizzle-orm";
 import { z } from "zod";
 
-import { getDateRange, getToday } from "@/lib/format";
+import { getDateRange } from "@/lib/format";
 import { verifyProjectAccess, verifyTeamAccess } from "@/server/api/lib/access";
-import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
-import { apiKeys, projects, teams, usageRecords } from "@/server/db/schema";
-import { getRedis } from "@/server/lib/redis";
 import {
-  flushUsageBufferToDatabase,
-  getUsageBufferFlushStatus,
-} from "@/server/lib/usage-tracker";
-
-const MANUAL_USAGE_FLUSH_COOLDOWN_SECONDS = 60;
+  addAnalyticsDateRangeIssue,
+  analyticsDateRangeFields,
+  getAnalyticsDateRange,
+  zDateString,
+} from "@/server/api/lib/date-range";
+import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
+import { projects, teams, usageRecords } from "@/server/db/schema";
+import { getUsageBufferFlushStatus } from "@/server/lib/usage-tracker";
 
 export const usageRouter = createTRPCRouter({
-  /**
-   * Record usage for a project/API key.
-   * Called by the API gateway when processing requests.
-   */
-  record: protectedProcedure
-    .input(
-      z.object({
-        projectId: z.string().uuid(),
-        apiKeyId: z.string().uuid().optional(),
-        requestCount: z.number().int().min(0).default(1),
-        bytesProcessed: z.number().int().min(0).default(0),
-      }),
-    )
-    .mutation(async ({ ctx, input }) => {
-      await verifyProjectAccess(ctx.db, input.projectId, ctx.userId);
-
-      // If apiKeyId is provided, verify it belongs to the same project
-      if (input.apiKeyId) {
-        const apiKey = await ctx.db.query.apiKeys.findFirst({
-          where: and(
-            eq(apiKeys.id, input.apiKeyId),
-            eq(apiKeys.projectId, input.projectId),
-          ),
-        });
-
-        if (!apiKey) {
-          throw new TRPCError({
-            code: "FORBIDDEN",
-            message: "The specified API key does not belong to this project",
-          });
-        }
-      }
-
-      const today = getToday();
-
-      // Use transaction to ensure atomic updates for both usage record and project totals
-      const result = await ctx.db.transaction(async (tx) => {
-        // Atomic upsert for usage record - eliminates race condition
-        const [upsertedRecord] = await tx
-          .insert(usageRecords)
-          .values({
-            projectId: input.projectId,
-            apiKeyId: input.apiKeyId ?? null,
-            date: today,
-            requestCount: input.requestCount,
-            bytesProcessed: input.bytesProcessed,
-          })
-          .onConflictDoUpdate({
-            target: input.apiKeyId
-              ? [
-                  usageRecords.projectId,
-                  usageRecords.apiKeyId,
-                  usageRecords.date,
-                ]
-              : [usageRecords.projectId, usageRecords.date],
-            targetWhere: input.apiKeyId
-              ? sql`${usageRecords.apiKeyId} IS NOT NULL`
-              : sql`${usageRecords.apiKeyId} IS NULL`,
-            set: {
-              requestCount: sql`${usageRecords.requestCount} + ${input.requestCount}`,
-              bytesProcessed: sql`${usageRecords.bytesProcessed} + ${input.bytesProcessed}`,
-            },
-          })
-          .returning();
-
-        // Update project's cached stats within the same transaction
-        await tx
-          .update(projects)
-          .set({
-            totalRequests: sql`${projects.totalRequests} + ${input.requestCount}`,
-            totalBandwidth: sql`${projects.totalBandwidth} + ${input.bytesProcessed}`,
-            lastActivityAt: new Date(),
-          })
-          .where(eq(projects.id, input.projectId));
-
-        return upsertedRecord;
-      });
-
-      return result;
-    }),
-
   /**
    * Get daily usage for a project within a date range.
    */
   getDailyUsage: protectedProcedure
     .input(
-      z.object({
-        projectId: z.string().uuid(),
-        startDate: z.string(),
-        endDate: z.string(),
-      }),
+      z
+        .object({
+          projectId: z.string().uuid(),
+          ...analyticsDateRangeFields,
+        })
+        .superRefine((value, ctx) => addAnalyticsDateRangeIssue(value, ctx)),
     )
     .query(async ({ ctx, input }) => {
       await verifyProjectAccess(ctx.db, input.projectId, ctx.userId);
+      const range = getAnalyticsDateRange(input);
 
       const records = await ctx.db.query.usageRecords.findMany({
         where: and(
           eq(usageRecords.projectId, input.projectId),
-          gte(usageRecords.date, input.startDate),
-          lte(usageRecords.date, input.endDate),
+          gte(usageRecords.date, range.startDate),
+          lte(usageRecords.date, range.endDate),
         ),
         orderBy: [desc(usageRecords.date)],
       });
@@ -182,12 +102,32 @@ export const usageRouter = createTRPCRouter({
    */
   getSummary: protectedProcedure
     .input(
-      z.object({
-        projectId: z.string().uuid(),
-        days: z.number().int().min(1).max(365).default(30),
-        startDate: z.string().optional(),
-        endDate: z.string().optional(),
-      }),
+      z
+        .object({
+          projectId: z.string().uuid(),
+          days: z.number().int().min(1).max(90).default(30),
+          startDate: zDateString.optional(),
+          endDate: zDateString.optional(),
+        })
+        .superRefine((value, ctx) => {
+          if (
+            (value.startDate && !value.endDate) ||
+            (!value.startDate && value.endDate)
+          ) {
+            ctx.addIssue({
+              code: "custom",
+              message: "startDate and endDate must be provided together",
+            });
+            return;
+          }
+
+          if (value.startDate && value.endDate) {
+            addAnalyticsDateRangeIssue(
+              { startDate: value.startDate, endDate: value.endDate },
+              ctx,
+            );
+          }
+        }),
     )
     .query(async ({ ctx, input }) => {
       await verifyProjectAccess(ctx.db, input.projectId, ctx.userId);
@@ -197,16 +137,13 @@ export const usageRouter = createTRPCRouter({
       let days: number;
 
       if (input.startDate && input.endDate) {
-        startDate = input.startDate.split("T")[0]!;
-        endDate = input.endDate.split("T")[0]!;
-        const msPerDay = 1000 * 60 * 60 * 24;
-        days = Math.max(
-          1,
-          Math.ceil(
-            (new Date(endDate).getTime() - new Date(startDate).getTime()) /
-              msPerDay,
-          ),
-        );
+        const range = getAnalyticsDateRange({
+          startDate: input.startDate,
+          endDate: input.endDate,
+        });
+        startDate = range.startDate;
+        endDate = range.endDate;
+        days = range.days;
       } else {
         ({ startDate, endDate } = getDateRange(input.days));
         days = input.days;
@@ -282,10 +219,8 @@ export const usageRouter = createTRPCRouter({
     }),
 
   /**
-   * Manually flush buffered usage counters into `usage_record`.
-   *
-   * The action is project-scoped for authorization but the flush itself is
-   * global, since usage buckets are shared across all projects.
+   * Refresh usage metering status for dashboard display.
+   * Global usage flush execution is reserved for the cron/service path.
    */
   flushNow: protectedProcedure
     .input(
@@ -296,27 +231,12 @@ export const usageRouter = createTRPCRouter({
     .mutation(async ({ ctx, input }) => {
       await verifyProjectAccess(ctx.db, input.projectId, ctx.userId);
 
-      const redis = getRedis();
-      const cooldownKey = `usage:buffer:manual-trigger:${ctx.userId}`;
-      const cooldownResult = await redis.set(cooldownKey, "1", {
-        nx: true,
-        ex: MANUAL_USAGE_FLUSH_COOLDOWN_SECONDS,
-      });
-
-      if (cooldownResult !== "OK") {
-        return {
-          ok: false as const,
-          reason: "cooldown" as const,
-          cooldownSeconds: MANUAL_USAGE_FLUSH_COOLDOWN_SECONDS,
-        };
-      }
-
-      const flushResult = await flushUsageBufferToDatabase();
+      const meteringStatus = await getUsageBufferFlushStatus();
       return {
-        ok: flushResult.ok,
-        reason: "executed" as const,
+        ok: true as const,
+        reason: "refreshed" as const,
         cooldownSeconds: 0,
-        flushResult,
+        meteringStatus,
       };
     }),
 
@@ -325,20 +245,22 @@ export const usageRouter = createTRPCRouter({
    */
   getByApiKey: protectedProcedure
     .input(
-      z.object({
-        projectId: z.string().uuid(),
-        startDate: z.string(),
-        endDate: z.string(),
-      }),
+      z
+        .object({
+          projectId: z.string().uuid(),
+          ...analyticsDateRangeFields,
+        })
+        .superRefine((value, ctx) => addAnalyticsDateRangeIssue(value, ctx)),
     )
     .query(async ({ ctx, input }) => {
       await verifyProjectAccess(ctx.db, input.projectId, ctx.userId);
+      const range = getAnalyticsDateRange(input);
 
       const records = await ctx.db.query.usageRecords.findMany({
         where: and(
           eq(usageRecords.projectId, input.projectId),
-          gte(usageRecords.date, input.startDate),
-          lte(usageRecords.date, input.endDate),
+          gte(usageRecords.date, range.startDate),
+          lte(usageRecords.date, range.endDate),
         ),
         with: { apiKey: true },
       });

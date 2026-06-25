@@ -7,6 +7,9 @@ dist/
 .turbo/
 out/
 
+# Generated security scan artifacts
+.deepsec/data/
+
 # Package manager
 pnpm-lock.yaml
 

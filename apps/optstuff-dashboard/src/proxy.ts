@@ -5,7 +5,12 @@ import {
   NextResponse,
 } from "next/server";
 
-const isPublicRoute = createRouteMatcher(["/sign-in(.*)", "/sign-up(.*)"]);
+const isPublicRoute = createRouteMatcher([
+  "/sign-in(.*)",
+  "/sign-up(.*)",
+  "/robots.txt",
+  "/sitemap.xml",
+]);
 
 const isServiceApiRoute = (req: { nextUrl: { pathname: string } }) =>
   req.nextUrl.pathname.startsWith("/api/") && // service API routes

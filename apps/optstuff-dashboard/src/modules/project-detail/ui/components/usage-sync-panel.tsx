@@ -59,25 +59,7 @@ export function UsageSyncPanel({
     try {
       const result = await flushNow({ projectId });
 
-      if (result.reason === "cooldown") {
-        toast.info("Sync already triggered recently", {
-          description: `Sync was recently triggered and is currently on cooldown. Try again in ${result.cooldownSeconds}s.`,
-          duration: 5000,
-        });
-        return;
-      }
-
-      if (result.flushResult?.skippedByLock) {
-        toast.info("Sync in progress", {
-          description: "Data is being updated — check back in a moment.",
-          duration: 5000,
-        });
-        return;
-      }
-
-      if (result.ok && result.flushResult) {
-        const fr = result.flushResult;
-
+      if (result.ok) {
         await Promise.all([
           utils.usage.getSummary.invalidate(),
           utils.usage.getMeteringStatus.invalidate(),
@@ -88,17 +70,10 @@ export function UsageSyncPanel({
           utils.usage.getMonthlyUsage.invalidate(),
         ]);
 
-        if (fr.totalRequests > 0) {
-          toast.success("Usage data updated", {
-            description: `Synced ${fr.totalRequests.toLocaleString()} requests globally across all projects (triggered from project ${projectId}).`,
-            duration: 5000,
-          });
-        } else {
-          toast.success("Already up to date", {
-            description: "No new usage data to sync.",
-            duration: 4000,
-          });
-        }
+        toast.success("Usage data refreshed", {
+          description: "Latest available metering status has been loaded.",
+          duration: 4000,
+        });
         return;
       }
 

@@ -14,6 +14,7 @@ const PUBLIC_KEY_PREFIX = "pk_";
 const SECRET_KEY_PREFIX = "sk_";
 const PUBLIC_KEY_LENGTH = 16; // 16 bytes → 22 base64url chars (128 bits entropy)
 const SECRET_KEY_LENGTH = 32; // 32 bytes → ~43 base64url chars (no padding)
+const PUBLIC_KEY_REGEX = /^pk_[A-Za-z0-9_-]{22}$/;
 
 // AES-256-GCM encryption constants
 const ENCRYPTION_ALGORITHM = "aes-256-gcm";
@@ -129,6 +130,10 @@ export function generateApiKey() {
   const secretKey = `${SECRET_KEY_PREFIX}${randomBytes(SECRET_KEY_LENGTH).toString("base64url")}`;
 
   return { publicKey, secretKey };
+}
+
+export function isValidPublicKeyFormat(publicKey: string): boolean {
+  return PUBLIC_KEY_REGEX.test(publicKey);
 }
 
 /**

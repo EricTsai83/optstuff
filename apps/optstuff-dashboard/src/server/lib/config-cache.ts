@@ -3,7 +3,7 @@ import { and, eq } from "drizzle-orm";
 import { RATE_LIMITS } from "@/lib/constants";
 import { db } from "@/server/db";
 import { apiKeys, projects, teams } from "@/server/db/schema";
-import { decryptApiKey } from "@/server/lib/api-key";
+import { decryptApiKey, isValidPublicKeyFormat } from "@/server/lib/api-key";
 import { getRedis } from "@/server/lib/redis";
 
 /**
@@ -121,12 +121,14 @@ const CACHE_TTL_SECONDS = 60;
  * while still allowing newly created resources to become visible quickly.
  */
 const NEGATIVE_CACHE_TTL_SECONDS = 10;
+const REVOKED_CACHE_TTL_SECONDS = 24 * 60 * 60;
 
 /**
  * Sentinel value stored in Redis to represent a cached "not found" result.
  * Must be distinguishable from any valid config object.
  */
 const NOT_FOUND_SENTINEL = "__NOT_FOUND__" as const;
+const REVOKED_SENTINEL = "__REVOKED__" as const;
 
 /**
  * Get project configuration by slug with Redis caching.
@@ -363,15 +365,22 @@ export async function getProjectConfigByTeamAndSlug(
 export async function getApiKeyConfig(
   publicKey: string,
 ): Promise<ApiKeyConfig | null> {
+  if (!isValidPublicKeyFormat(publicKey)) {
+    return null;
+  }
+
   const redis = getRedis();
   const cacheKey = `${API_KEY_PREFIX}:${publicKey}`;
 
   // Check Redis cache first (skip on Redis failure)
   try {
     const cached = await redis.get<
-      CachedApiKeyConfig | typeof NOT_FOUND_SENTINEL
+      CachedApiKeyConfig | typeof NOT_FOUND_SENTINEL | typeof REVOKED_SENTINEL
     >(cacheKey);
     if (cached === NOT_FOUND_SENTINEL) {
+      return null;
+    }
+    if (cached === REVOKED_SENTINEL) {
       return null;
     }
     if (cached) {
@@ -480,6 +489,20 @@ export async function invalidateProjectCache(
 export async function invalidateApiKeyCache(publicKey: string): Promise<void> {
   const redis = getRedis();
   await redis.del(`${API_KEY_PREFIX}:${publicKey}`);
+}
+
+/**
+ * Overwrite any cached API key config with a revoked tombstone.
+ *
+ * This is used for auth-sensitive state transitions where deleting a stale
+ * cache entry is not enough if Redis write/delete operations become
+ * inconsistent across retries. A tombstone makes cached auth fail closed.
+ */
+export async function markApiKeyCacheRevoked(publicKey: string): Promise<void> {
+  const redis = getRedis();
+  await redis.set(`${API_KEY_PREFIX}:${publicKey}`, REVOKED_SENTINEL, {
+    ex: REVOKED_CACHE_TTL_SECONDS,
+  });
 }
 
 /**

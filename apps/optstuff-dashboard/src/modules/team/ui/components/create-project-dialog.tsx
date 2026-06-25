@@ -230,6 +230,7 @@ function CreateProjectFormStep({
           </p>
           <DomainListInput
             id="allowed-source-domains"
+            kind="source"
             value={form.allowedSourceDomains}
             onChange={form.setAllowedSourceDomains}
             placeholder="https://images.example.com"
@@ -249,6 +250,7 @@ function CreateProjectFormStep({
           </p>
           <DomainListInput
             id="blocked-source-domains"
+            kind="referer"
             value={form.allowedRefererDomains}
             onChange={form.setAllowedRefererDomains}
             placeholder="https://example.com"

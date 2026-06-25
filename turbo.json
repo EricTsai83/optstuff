@@ -31,11 +31,17 @@
         "OPTSTUFF_BASE_URL",
         "OPTSTUFF_PROJECT_SLUG",
         "OPTSTUFF_SECRET_KEY",
-        "OPTSTUFF_PUBLIC_KEY"
+        "OPTSTUFF_PUBLIC_KEY",
+        "OPTSTUFF_ALLOWED_IMAGE_URLS",
+        "OPTSTUFF_ALLOWED_IMAGE_HOSTS",
+        "OPTSTUFF_ALLOW_ARBITRARY_HOST_SIGNING"
       ]
     },
     "lint": {
       "dependsOn": ["^lint"]
+    },
+    "typecheck": {
+      "dependsOn": ["^typecheck"]
     },
     "check-types": {
       "dependsOn": ["^check-types"]
@@ -65,7 +71,10 @@
         "OPTSTUFF_BASE_URL",
         "OPTSTUFF_PROJECT_SLUG",
         "OPTSTUFF_SECRET_KEY",
-        "OPTSTUFF_PUBLIC_KEY"
+        "OPTSTUFF_PUBLIC_KEY",
+        "OPTSTUFF_ALLOWED_IMAGE_URLS",
+        "OPTSTUFF_ALLOWED_IMAGE_HOSTS",
+        "OPTSTUFF_ALLOW_ARBITRARY_HOST_SIGNING"
       ]
     }
   }

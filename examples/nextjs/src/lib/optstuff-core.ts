@@ -16,6 +16,8 @@ const OPTSTUFF_PROJECT_SLUG = requireEnv("OPTSTUFF_PROJECT_SLUG");
 const OPTSTUFF_PUBLIC_KEY = requireEnv("OPTSTUFF_PUBLIC_KEY");
 const OPTSTUFF_SECRET_KEY = requireEnv("OPTSTUFF_SECRET_KEY");
 const EXPIRY_BUCKET_SECONDS = 3600;
+const MIN_DIMENSION = 1;
+const MAX_DIMENSION = 8192;
 const allowedFormats = ["webp", "avif", "png", "jpg"];
 const allowedFits = ["cover", "contain", "fill"];
 
@@ -39,46 +41,40 @@ function computeBucketedExpiration(expiresInSeconds: number): number {
   return Math.max(nowSeconds + 1, bucketedExpiration);
 }
 
+function assertIntegerInRange(
+  value: number,
+  name: string,
+  min: number,
+  max: number,
+): void {
+  if (
+    typeof value !== "number" ||
+    !Number.isFinite(value) ||
+    !Number.isInteger(value) ||
+    value < min ||
+    value > max
+  ) {
+    throw new Error(
+      `Invalid image operation: ${name} must be an integer between ${min} and ${max}`,
+    );
+  }
+}
+
 function buildOperationString(ops: ImageOperation): string {
   const parts: string[] = [];
 
   if (ops.width !== undefined) {
-    if (
-      typeof ops.width !== "number" ||
-      !Number.isFinite(ops.width) ||
-      ops.width < 0
-    ) {
-      throw new Error(
-        "Invalid image operation: width must be a finite number >= 0",
-      );
-    }
+    assertIntegerInRange(ops.width, "width", MIN_DIMENSION, MAX_DIMENSION);
     parts.push(`w_${ops.width}`);
   }
 
   if (ops.height !== undefined) {
-    if (
-      typeof ops.height !== "number" ||
-      !Number.isFinite(ops.height) ||
-      ops.height < 0
-    ) {
-      throw new Error(
-        "Invalid image operation: height must be a finite number >= 0",
-      );
-    }
+    assertIntegerInRange(ops.height, "height", MIN_DIMENSION, MAX_DIMENSION);
     parts.push(`h_${ops.height}`);
   }
 
   if (ops.quality !== undefined) {
-    if (
-      typeof ops.quality !== "number" ||
-      !Number.isFinite(ops.quality) ||
-      ops.quality < 1 ||
-      ops.quality > 100
-    ) {
-      throw new Error(
-        "Invalid image operation: quality must be a finite number between 1 and 100",
-      );
-    }
+    assertIntegerInRange(ops.quality, "quality", 1, 100);
     parts.push(`q_${ops.quality}`);
   }
 
@@ -119,6 +115,14 @@ function buildOperationString(ops: ImageOperation): string {
   return parts.length > 0 ? parts.join(",") : "_";
 }
 
+function buildCanonicalSourcePath(parsedImageUrl: URL): string {
+  return `${parsedImageUrl.host}${parsedImageUrl.pathname}${parsedImageUrl.search}`;
+}
+
+function encodeImagePathForRoute(imagePath: string): string {
+  return imagePath.split("/").map(encodeURIComponent).join("/");
+}
+
 /**
  * Generates a signed image optimization URL.
  *
@@ -147,17 +151,9 @@ export function generateOptStuffUrl(
     throw new Error("Invalid imageUrl: protocol must be http or https");
   }
 
-  const normalizedPathname = parsedImageUrl.pathname.replace(/\/+$/, "");
-  const normalizedSearch = parsedImageUrl.search.startsWith("?")
-    ? parsedImageUrl.search.slice(1)
-    : parsedImageUrl.search;
-  const encodedSearch = normalizedSearch
-    ? `%3F${encodeURIComponent(normalizedSearch)}`
-    : "";
-  const normalizedImageUrl = `${parsedImageUrl.hostname}${parsedImageUrl.port ? `:${parsedImageUrl.port}` : ""}${normalizedPathname}${encodedSearch}`;
-
-  const signingPath = `${opString}/${normalizedImageUrl}`;
-  const urlPath = `/api/v1/${OPTSTUFF_PROJECT_SLUG}/${signingPath}`;
+  const sourcePath = buildCanonicalSourcePath(parsedImageUrl);
+  const signingPath = `${opString}/${sourcePath}`;
+  const urlPath = `/api/v1/${OPTSTUFF_PROJECT_SLUG}/${opString}/${encodeImagePathForRoute(sourcePath)}`;
 
   const params = new URLSearchParams();
   params.set("key", OPTSTUFF_PUBLIC_KEY);

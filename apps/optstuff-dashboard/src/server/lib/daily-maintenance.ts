@@ -1,8 +1,11 @@
-import { and, count, eq, inArray, isNull, lt, lte } from "drizzle-orm";
+import { and, count, eq, isNull, lt, lte } from "drizzle-orm";
 
 import { db } from "@/server/db";
 import { apiKeys, maintenanceRetryTasks, projects } from "@/server/db/schema";
-import { invalidateApiKeyCache } from "@/server/lib/config-cache";
+import {
+  invalidateApiKeyCache,
+  markApiKeyCacheRevoked,
+} from "@/server/lib/config-cache";
 import { cleanupOldRequestLogs } from "@/server/lib/request-logger";
 import { flushUsageBufferToDatabase } from "@/server/lib/usage-tracker";
 
@@ -189,26 +192,20 @@ export async function revokeExpiredApiKeys(now = new Date()): Promise<{
   affectedProjects: number;
   queuedRetryTasks: number;
 }> {
-  const expired = await db.query.apiKeys.findMany({
-    where: and(isNull(apiKeys.revokedAt), lte(apiKeys.expiresAt, now)),
-    columns: {
-      id: true,
-      publicKey: true,
-      projectId: true,
-    },
-  });
+  const expired = await db
+    .update(apiKeys)
+    .set({ revokedAt: now })
+    .where(and(isNull(apiKeys.revokedAt), lte(apiKeys.expiresAt, now)))
+    .returning({
+      publicKey: apiKeys.publicKey,
+      projectId: apiKeys.projectId,
+    });
 
   if (expired.length === 0) {
     return { expiredKeys: 0, affectedProjects: 0, queuedRetryTasks: 0 };
   }
 
-  const expiredIds = expired.map((key) => key.id);
   const affectedProjectIds = [...new Set(expired.map((key) => key.projectId))];
-
-  await db
-    .update(apiKeys)
-    .set({ revokedAt: now })
-    .where(inArray(apiKeys.id, expiredIds));
 
   const syncResults = await Promise.allSettled(
     affectedProjectIds.map((projectId) => syncProjectApiKeyCount(projectId)),
@@ -239,7 +236,7 @@ export async function revokeExpiredApiKeys(now = new Date()): Promise<{
   }
 
   const cacheInvalidationResults = await Promise.allSettled(
-    expired.map((key) => invalidateApiKeyCache(key.publicKey)),
+    expired.map((key) => markApiKeyCacheRevoked(key.publicKey)),
   );
   for (const [index, result] of cacheInvalidationResults.entries()) {
     if (result.status === "rejected") {

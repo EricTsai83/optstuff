@@ -8,6 +8,7 @@ import { useState } from "react";
 
 type DomainListInputProps = {
   readonly id?: string;
+  readonly kind: "source" | "referer";
   readonly value: string[];
   readonly onChange: (domains: string[]) => void;
   readonly placeholder?: string;
@@ -17,8 +18,115 @@ type DomainListInputProps = {
 const PROTOCOL_REGEX = /^(https?):\/\//;
 const DOMAIN_REGEX =
   /^(\*\.)?[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$/;
-const VALID_FORMAT_MSG =
-  'Include protocol, e.g. "https://example.com", "https://*.example.com", or "http://localhost"';
+const SOURCE_FORMAT_MSG =
+  'Use a public source origin, e.g. "https://images.example.com". Wildcards, localhost, paths, and private IPs are not allowed.';
+const REFERER_FORMAT_MSG =
+  'Include protocol, e.g. "https://example.com", "https://*.example.com", or "http://localhost:3000"';
+
+function isPrivateIPv4(hostname: string): boolean {
+  const parts = hostname.split(".");
+  if (parts.length !== 4) return false;
+  const octets = parts.map((part) => Number(part));
+  if (
+    octets.some((octet) => !Number.isInteger(octet) || octet < 0 || octet > 255)
+  ) {
+    return false;
+  }
+
+  const [a, b] = octets;
+  return (
+    a === 0 ||
+    a === 10 ||
+    a === 127 ||
+    (a === 100 && b !== undefined && b >= 64 && b <= 127) ||
+    (a === 169 && b === 254) ||
+    (a === 172 && b !== undefined && b >= 16 && b <= 31) ||
+    (a === 192 && b === 168) ||
+    (a === 198 && (b === 18 || b === 19)) ||
+    (a !== undefined && a >= 224)
+  );
+}
+
+function normalizeDomainInput(
+  raw: string,
+  kind: DomainListInputProps["kind"],
+): { ok: true; value: string } | { ok: false; error: string } {
+  const formatMessage =
+    kind === "source" ? SOURCE_FORMAT_MSG : REFERER_FORMAT_MSG;
+  const protocolMatch = PROTOCOL_REGEX.exec(raw);
+  if (!protocolMatch) {
+    return { ok: false, error: formatMessage };
+  }
+
+  const protocol = protocolMatch[0];
+  let hostPart = raw.slice(protocol.length);
+  if (
+    !hostPart ||
+    hostPart.includes("/") ||
+    hostPart.includes("?") ||
+    hostPart.includes("#") ||
+    /\s/.test(hostPart)
+  ) {
+    return { ok: false, error: formatMessage };
+  }
+
+  const wildcard = hostPart.startsWith("*.");
+  if (wildcard) {
+    if (kind === "source") {
+      return {
+        ok: false,
+        error:
+          "Image source entries include subdomains automatically. Add the base domain instead.",
+      };
+    }
+    hostPart = hostPart.slice(2);
+  }
+
+  let parsed: URL;
+  try {
+    parsed = new URL(`${protocol}${hostPart}`);
+  } catch {
+    return { ok: false, error: formatMessage };
+  }
+
+  const hostname = parsed.hostname
+    .toLowerCase()
+    .replace(/^\[/, "")
+    .replace(/\]$/, "")
+    .replace(/\.$/, "");
+  const isLocalhost =
+    hostname === "localhost" || hostname.endsWith(".localhost");
+
+  if (kind === "source" && (isLocalhost || isPrivateIPv4(hostname))) {
+    return {
+      ok: false,
+      error: "Image source must be a public hostname.",
+    };
+  }
+
+  if (
+    !isLocalhost &&
+    !DOMAIN_REGEX.test(`${wildcard ? "*." : ""}${hostname}`)
+  ) {
+    return { ok: false, error: formatMessage };
+  }
+
+  const parts = hostname.replace(/^\*\./, "").split(".");
+  const tld = parts[parts.length - 1];
+  if (!isLocalhost && (!tld || tld.length < 2)) {
+    return {
+      ok: false,
+      error:
+        "Invalid TLD. Domain must end with a valid TLD (e.g., .com, .org, .io)",
+    };
+  }
+
+  const port = parsed.port ? `:${parsed.port}` : "";
+  return {
+    ok: true,
+    value: `${protocol}${wildcard ? "*." : ""}${hostname}${port}`,
+  };
+}
 
 /**
  * Input component for managing a list of allowed referer origins.
@@ -28,6 +136,7 @@ const VALID_FORMAT_MSG =
  */
 export function DomainListInput({
   id,
+  kind,
   value,
   onChange,
   placeholder = "https://example.com",
@@ -45,37 +154,13 @@ export function DomainListInput({
     const raw = inputValue.trim().toLowerCase();
     if (!raw) return;
 
-    const protocolMatch = PROTOCOL_REGEX.exec(raw);
-    if (!protocolMatch) {
-      setError(VALID_FORMAT_MSG);
+    const parsed = normalizeDomainInput(raw, kind);
+    if (!parsed.ok) {
+      setError(parsed.error);
       return;
     }
 
-    const hostPart = raw.slice(protocolMatch[0].length);
-    if (!hostPart) {
-      setError(VALID_FORMAT_MSG);
-      return;
-    }
-
-    const isLocalhost = hostPart === "localhost";
-
-    if (!isLocalhost) {
-      if (!DOMAIN_REGEX.test(hostPart)) {
-        setError(VALID_FORMAT_MSG);
-        return;
-      }
-
-      const parts = hostPart.replace(/^\*\./, "").split(".");
-      const tld = parts[parts.length - 1];
-      if (!tld || tld.length < 2) {
-        setError(
-          "Invalid TLD. Domain must end with a valid TLD (e.g., .com, .org, .io)",
-        );
-        return;
-      }
-    }
-
-    const domain = raw;
+    const domain = parsed.value;
 
     // Don't add duplicates
     if (value.includes(domain)) {

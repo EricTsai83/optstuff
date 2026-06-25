@@ -169,8 +169,10 @@ export function OptStuffImage({
   const loader = useOptStuffLoader({ format, fit });
 
   const imageProps = preSigned ? { unoptimized: true as const } : { loader };
+  const shouldUseBlurPlaceholder =
+    blurPlaceholder && (!preSigned || Boolean(blurDataUrl));
 
-  if (!blurPlaceholder) {
+  if (!shouldUseBlurPlaceholder) {
     return (
       <Image
         {...rest}
@@ -199,6 +201,7 @@ export function OptStuffImage({
       alt={alt}
       format={format}
       fit={fit}
+      preSigned={preSigned}
       quality={quality}
       blurDataUrl={blurDataUrl}
       blurWidth={blurWidth}
@@ -223,6 +226,7 @@ type BlurToSharpImageProps = Omit<ImageProps, "src"> & {
   src: string;
   format: ImageFormat;
   fit: ImageFit;
+  preSigned: boolean;
   blurDataUrl?: string;
   blurWidth: number;
   blurQuality: number;
@@ -255,6 +259,7 @@ function BlurToSharpImage({
   alt,
   format,
   fit,
+  preSigned,
   blurDataUrl,
   blurWidth,
   blurQuality,
@@ -347,19 +352,22 @@ function BlurToSharpImage({
 
   const placeholderUrl =
     blurDataUrl ??
-    buildOptStuffProxyPath({
-      src,
-      width: blurWidth,
-      quality: blurQuality,
-      format,
-      fit,
-    });
+    (preSigned
+      ? null
+      : buildOptStuffProxyPath({
+          src,
+          width: blurWidth,
+          quality: blurQuality,
+          format,
+          fit,
+        }));
 
   const objectFit = (style as CSSProperties | undefined)?.objectFit ?? fit;
   const showBlur =
-    phase === "loading" ||
-    phase === "fast-reveal-prep" ||
-    phase === "revealing";
+    placeholderUrl !== null &&
+    (phase === "loading" ||
+      phase === "fast-reveal-prep" ||
+      phase === "revealing");
   const revealed = phase === "revealing" || phase === "done";
   const blurFadesOut = transition.blurFadeOutMs > 0;
 
@@ -368,7 +376,7 @@ function BlurToSharpImage({
       className="relative overflow-hidden"
       style={{ width: "100%", height: "100%" }}
     >
-      {showBlur && (
+      {showBlur && placeholderUrl && (
         <Image
           src={placeholderUrl}
           alt=""

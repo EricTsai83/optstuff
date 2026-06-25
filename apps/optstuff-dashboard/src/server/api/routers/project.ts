@@ -8,28 +8,26 @@ import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
 import { apiKeys, pinnedProjects, projects, teams } from "@/server/db/schema";
 import { encryptApiKey, generateApiKey } from "@/server/lib/api-key";
 import {
-  invalidateApiKeyCache,
   invalidateProjectCache,
+  markApiKeyCacheRevoked,
 } from "@/server/lib/config-cache";
-
-/**
- * Matches a valid referer domain entry:
- *   - Optional protocol: http:// or https://
- *   - Optional wildcard prefix: *.
- *   - Standard hostname labels (alphanumeric, hyphens, no leading/trailing hyphen)
- *   - Optional port: :1-65535
- * Rejects schemes like javascript:/data:, paths, query strings, and whitespace.
- */
-const DOMAIN_PATTERN =
-  /^(https?:\/\/)?(\*\.)?([a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?\.)*[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?(:(6553[0-5]|655[0-2]\d|65[0-4]\d{2}|6[0-4]\d{3}|[1-5]\d{0,4}|[1-9]\d{0,3}))?$/;
+import {
+  normalizeRefererDomainEntry,
+  normalizeSourceDomainEntry,
+  validateConfiguredSourceDomains,
+} from "@/server/lib/validators";
 
 const refererDomainEntrySchema = z
   .string()
-  .regex(
-    DOMAIN_PATTERN,
-    "Invalid domain format. Use a hostname like 'example.com', optionally with protocol (http/https), wildcard (*.example.com), or port (:8080)",
-  )
-  .transform((s) => s.toLowerCase());
+  .trim()
+  .transform((value, ctx) => {
+    const result = normalizeRefererDomainEntry(value);
+    if (!result.ok) {
+      ctx.addIssue({ code: "custom", message: result.error });
+      return z.NEVER;
+    }
+    return result.value;
+  });
 
 const allowedRefererDomainsSchema = z
   .array(refererDomainEntrySchema)
@@ -38,8 +36,14 @@ const allowedRefererDomainsSchema = z
 const sourceDomainEntrySchema = z
   .string()
   .trim()
-  .regex(DOMAIN_PATTERN, "Invalid domain")
-  .transform((s) => s.toLowerCase());
+  .transform((value, ctx) => {
+    const result = normalizeSourceDomainEntry(value);
+    if (!result.ok) {
+      ctx.addIssue({ code: "custom", message: result.error });
+      return z.NEVER;
+    }
+    return result.value;
+  });
 
 const allowedSourceDomainsSchema = z.array(sourceDomainEntrySchema).optional();
 
@@ -68,6 +72,20 @@ function isUniqueConstraintError(
   return false;
 }
 
+async function assertSafeSourceDomains(
+  allowedSourceDomains: readonly string[] | undefined,
+) {
+  if (!allowedSourceDomains || allowedSourceDomains.length === 0) return;
+
+  const result = await validateConfiguredSourceDomains(allowedSourceDomains);
+  if (!result.ok) {
+    throw new TRPCError({
+      code: "BAD_REQUEST",
+      message: result.error,
+    });
+  }
+}
+
 export const projectRouter = createTRPCRouter({
   /**
    * Create a new project under a team.
@@ -85,6 +103,7 @@ export const projectRouter = createTRPCRouter({
     )
     .mutation(async ({ ctx, input }) => {
       await verifyTeamAccess(ctx.db, input.teamId, ctx.userId);
+      await assertSafeSourceDomains(input.allowedSourceDomains);
 
       const slug = generateSlug(input.name);
 
@@ -102,32 +121,56 @@ export const projectRouter = createTRPCRouter({
         finalSlug = existingProject ? generateUniqueSlug(input.name) : slug;
       }
 
-      // Insert project, retrying once on slug collision (TOCTOU with project_team_slug_unique)
-      const insertProject = async (slugToUse: string) => {
-        const [created] = await ctx.db
-          .insert(projects)
-          .values({
-            teamId: input.teamId,
-            name: input.name,
-            slug: slugToUse,
-            description: input.description,
-            allowedSourceDomains:
-              input.allowedSourceDomains &&
-              input.allowedSourceDomains.length > 0
-                ? input.allowedSourceDomains
-                : null,
-            allowedRefererDomains:
-              input.allowedRefererDomains &&
-              input.allowedRefererDomains.length > 0
-                ? input.allowedRefererDomains
-                : null,
-            apiKeyCount: 1, // Will have one default key
-          })
-          .returning();
-        return created;
+      // Create default API key
+      const { publicKey, secretKey } = generateApiKey();
+
+      // Encrypt secret key before storing (public key is stored in plaintext)
+      const encryptedSecretKey = encryptApiKey(secretKey);
+
+      // Insert project and default key atomically, retrying once on slug collision.
+      const createProjectWithDefaultKey = async (slugToUse: string) => {
+        return ctx.db.transaction(async (tx) => {
+          const [created] = await tx
+            .insert(projects)
+            .values({
+              teamId: input.teamId,
+              name: input.name,
+              slug: slugToUse,
+              description: input.description,
+              allowedSourceDomains:
+                input.allowedSourceDomains &&
+                input.allowedSourceDomains.length > 0
+                  ? input.allowedSourceDomains
+                  : null,
+              allowedRefererDomains:
+                input.allowedRefererDomains &&
+                input.allowedRefererDomains.length > 0
+                  ? input.allowedRefererDomains
+                  : null,
+              apiKeyCount: 1,
+            })
+            .returning();
+
+          if (!created) {
+            throw new TRPCError({
+              code: "INTERNAL_SERVER_ERROR",
+              message: "Failed to create project",
+            });
+          }
+
+          await tx.insert(apiKeys).values({
+            projectId: created.id,
+            name: "Default",
+            publicKey,
+            secretKey: encryptedSecretKey,
+            createdBy: ctx.userId,
+          });
+
+          return created;
+        });
       };
 
-      let newProject = await insertProject(finalSlug).catch(
+      let newProject = await createProjectWithDefaultKey(finalSlug).catch(
         (error: unknown) => {
           if (isUniqueConstraintError(error, "project_team_slug_unique")) {
             return null;
@@ -139,7 +182,7 @@ export const projectRouter = createTRPCRouter({
       // Retry once with a freshly generated unique slug
       if (!newProject) {
         finalSlug = generateUniqueSlug(input.name);
-        newProject = await insertProject(finalSlug);
+        newProject = await createProjectWithDefaultKey(finalSlug);
       }
 
       if (!newProject) {
@@ -148,20 +191,6 @@ export const projectRouter = createTRPCRouter({
           message: "Failed to create project",
         });
       }
-
-      // Create default API key
-      const { publicKey, secretKey } = generateApiKey();
-
-      // Encrypt secret key before storing (public key is stored in plaintext)
-      const encryptedSecretKey = encryptApiKey(secretKey);
-
-      await ctx.db.insert(apiKeys).values({
-        projectId: newProject.id,
-        name: "Default",
-        publicKey,
-        secretKey: encryptedSecretKey,
-        createdBy: ctx.userId,
-      });
 
       return {
         ...newProject,
@@ -305,6 +334,7 @@ export const projectRouter = createTRPCRouter({
     )
     .mutation(async ({ ctx, input }) => {
       await verifyProjectAccess(ctx.db, input.projectId, ctx.userId);
+      await assertSafeSourceDomains(input.allowedSourceDomains);
 
       const allowedSourceDomains = input.allowedSourceDomains.length
         ? input.allowedSourceDomains
@@ -371,8 +401,8 @@ export const projectRouter = createTRPCRouter({
 
       // Invalidate Redis caches for the project and all its API keys
       await Promise.all([
-        invalidateProjectCache(project.slug),
-        ...projectApiKeys.map((key) => invalidateApiKeyCache(key.publicKey)),
+        invalidateProjectCache(project.slug, project.id),
+        ...projectApiKeys.map((key) => markApiKeyCacheRevoked(key.publicKey)),
       ]);
 
       return { success: true };

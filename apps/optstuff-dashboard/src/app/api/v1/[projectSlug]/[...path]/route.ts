@@ -9,6 +9,7 @@ import {
   resolveContentType,
 } from "@/lib/ipx-utils";
 import {
+  isValidPublicKeyFormat,
   verifyUrlSignature,
   type SignatureVerificationResult,
 } from "@/server/lib/api-key";
@@ -16,13 +17,21 @@ import {
   getApiKeyConfig,
   getProjectConfigById,
 } from "@/server/lib/config-cache";
-import { checkRateLimit } from "@/server/lib/rate-limiter";
+import {
+  fetchPinnedUpstream,
+  VALIDATED_SOURCE_OPTION,
+} from "@/server/lib/pinned-upstream";
+import {
+  checkPreAuthRateLimit,
+  checkRateLimit,
+} from "@/server/lib/rate-limiter";
 import type { RequestLogData } from "@/server/lib/request-logger";
 import {
   parseSignatureParams,
   validateReferer,
   validateSignedOperations,
-  validateSourceDomain,
+  validateSourceUrl,
+  type ValidatedSourceUrl,
 } from "@/server/lib/validators";
 
 /**
@@ -73,6 +82,7 @@ type ValidatedRequestContext = {
     Awaited<ReturnType<typeof getProjectConfigById>>
   >;
   readonly imageUrl: string;
+  readonly source: ValidatedSourceUrl;
   readonly parsed: NonNullable<ReturnType<typeof parseIpxPath>>;
   readonly operations: ReturnType<typeof parseOperationsString>;
   readonly path: string[];
@@ -151,6 +161,43 @@ function forbiddenResponse(error: string): Response {
   );
 }
 
+function getClientRateLimitId(request: Request): string {
+  const forwardedFor = request.headers.get("x-forwarded-for");
+  const firstForwardedFor = forwardedFor?.split(",")[0]?.trim();
+  const candidates = [
+    firstForwardedFor,
+    request.headers.get("x-real-ip"),
+    request.headers.get("cf-connecting-ip"),
+  ];
+  return (
+    candidates.find((candidate) => candidate && candidate.length > 0) ??
+    "unknown"
+  );
+}
+
+function preAuthRateLimitResponse(
+  result: Extract<
+    Awaited<ReturnType<typeof checkPreAuthRateLimit>>,
+    { allowed: false }
+  >,
+): Response {
+  return NextResponse.json(
+    {
+      error:
+        result.reason === "unavailable"
+          ? "Rate limiter unavailable"
+          : "Too many authentication attempts",
+      retryAfter: result.retryAfterSeconds,
+    },
+    {
+      status: result.reason === "unavailable" ? 503 : 429,
+      headers: {
+        "Retry-After": String(result.retryAfterSeconds),
+      },
+    },
+  );
+}
+
 function getSafeLogSourceUrl(imagePath: string): string {
   try {
     return ensureProtocol(imagePath);
@@ -219,13 +266,12 @@ function isNonTransformableContentType(contentType: string): boolean {
 }
 
 async function probeUpstreamSource(
-  imageUrl: string,
+  source: ValidatedSourceUrl,
 ): Promise<UpstreamProbeResult> {
   const probeStart = Date.now();
   try {
-    const response = await fetch(imageUrl, {
+    const response = await fetchPinnedUpstream(source, {
       method: "HEAD",
-      redirect: "error",
       signal: AbortSignal.timeout(3_000),
     });
     const probeTimeMs = Date.now() - probeStart;
@@ -266,6 +312,13 @@ async function validateRequest(
   // 1. Parse and validate signature parameters
   const sigParams = parseSignatureParams(url.searchParams);
   if (!sigParams) {
+    const preAuthLimit = await checkPreAuthRateLimit(
+      getClientRateLimitId(request),
+    );
+    if (!preAuthLimit.allowed) {
+      return { ok: false, response: preAuthRateLimitResponse(preAuthLimit) };
+    }
+
     return {
       ok: false,
       response: NextResponse.json(
@@ -277,6 +330,30 @@ async function validateRequest(
         { status: 401 },
       ),
     };
+  }
+
+  if (!isValidPublicKeyFormat(sigParams.publicKey)) {
+    const preAuthLimit = await checkPreAuthRateLimit(
+      getClientRateLimitId(request),
+    );
+    if (!preAuthLimit.allowed) {
+      return { ok: false, response: preAuthRateLimitResponse(preAuthLimit) };
+    }
+
+    return {
+      ok: false,
+      response: NextResponse.json(
+        { error: "Invalid API key" },
+        { status: 401 },
+      ),
+    };
+  }
+
+  const preAuthLimit = await checkPreAuthRateLimit(
+    getClientRateLimitId(request),
+  );
+  if (!preAuthLimit.allowed) {
+    return { ok: false, response: preAuthRateLimitResponse(preAuthLimit) };
   }
 
   // 2. Get API key configuration
@@ -405,26 +482,32 @@ async function validateRequest(
   });
 
   if (!rateLimitResult.allowed) {
+    const rateLimiterUnavailable = rateLimitResult.reason === "unavailable";
     logRequestInBackground(project.id, {
       sourceUrl: getSafeLogSourceUrl(parsed.imagePath),
       operations: parsed.operations,
       status: "rate_limited",
-      errorDetail: `Rate limit exceeded: ${rateLimitResult.reason === "minute" ? "per-minute" : "daily"} limit (${rateLimitResult.limit})`,
+      errorDetail: rateLimiterUnavailable
+        ? "Rate limiter unavailable"
+        : `Rate limit exceeded: ${rateLimitResult.reason === "minute" ? "per-minute" : "daily"} limit (${rateLimitResult.limit})`,
     });
     return {
       ok: false,
       response: NextResponse.json(
         {
-          error: "Rate limit exceeded",
-          reason:
-            rateLimitResult.reason === "minute"
+          error: rateLimiterUnavailable
+            ? "Rate limiter unavailable"
+            : "Rate limit exceeded",
+          reason: rateLimiterUnavailable
+            ? "Rate limiter unavailable"
+            : rateLimitResult.reason === "minute"
               ? "Too many requests per minute"
               : "Daily limit exceeded",
           retryAfter: rateLimitResult.retryAfterSeconds,
           limit: rateLimitResult.limit,
         },
         {
-          status: 429,
+          status: rateLimiterUnavailable ? 503 : 429,
           headers: {
             "Retry-After": String(rateLimitResult.retryAfterSeconds),
             "X-RateLimit-Limit": String(rateLimitResult.limit),
@@ -467,28 +550,16 @@ async function validateRequest(
     };
   }
 
-  let sourceHost: string;
-  try {
-    sourceHost = new URL(imageUrl).hostname;
-  } catch {
-    return {
-      ok: false,
-      response: NextResponse.json(
-        {
-          error: "Invalid image URL",
-          details: `Unable to parse URL: ${imageUrl}`,
-        },
-        { status: 400 },
-      ),
-    };
-  }
-
-  if (!validateSourceDomain(sourceHost, project.allowedSourceDomains)) {
+  const sourceValidation = await validateSourceUrl(
+    imageUrl,
+    project.allowedSourceDomains,
+  );
+  if (!sourceValidation.ok) {
     logRequestInBackground(project.id, {
       sourceUrl: imageUrl,
       operations: parsed.operations,
       status: "source_blocked",
-      errorDetail: `Source domain not allowed: ${sourceHost}`,
+      errorDetail: sourceValidation.error,
     });
     return {
       ok: false,
@@ -502,6 +573,7 @@ async function validateRequest(
       apiKey,
       project,
       imageUrl,
+      source: sourceValidation.source,
       parsed,
       operations,
       path,
@@ -528,14 +600,16 @@ export async function GET(
   if (!validation.ok) {
     return validation.response;
   }
-  const { project, imageUrl, apiKey, operations } = validation.context;
+  const { project, imageUrl, source, apiKey, operations } = validation.context;
   const authTimeMs = Date.now() - startTime;
 
   // 9. Process image with IPX
   const transformStartTime = Date.now();
   try {
     const ipx = await getProjectIpxInstance();
-    const processedImage = await ipx(imageUrl, operations).process();
+    const processedImage = await ipx(imageUrl, operations, {
+      [VALIDATED_SOURCE_OPTION]: source,
+    }).process();
 
     const imageData = ensureUint8Array(processedImage.data);
     const contentType = resolveContentType(processedImage.format ?? "webp");
@@ -553,9 +627,8 @@ export async function GET(
       let originalSize: number | undefined;
       if (shouldProbeOriginalSize) {
         try {
-          const headResponse = await fetch(imageUrl, {
+          const headResponse = await fetchPinnedUpstream(source, {
             method: "HEAD",
-            redirect: "error",
             signal: AbortSignal.timeout(3_000),
           });
           const contentLength = headResponse.headers.get("content-length");
@@ -635,9 +708,9 @@ export async function HEAD(
   if (!validation.ok) {
     return validation.response;
   }
-  const { project, imageUrl } = validation.context;
+  const { project, source } = validation.context;
   const authTimeMs = Date.now() - startTime;
-  const probeResult = await probeUpstreamSource(imageUrl);
+  const probeResult = await probeUpstreamSource(source);
   const processingTimeMs = Date.now() - startTime;
   const serverTiming = buildServerTimingHeader(
     authTimeMs,

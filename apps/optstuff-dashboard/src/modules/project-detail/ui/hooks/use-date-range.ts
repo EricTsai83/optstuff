@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   type DateRange,
   getDateRangeFromDays,
+  isValidUsageDateRange,
   parseTimeInput,
 } from "../../lib/date-range-utils";
 
@@ -57,6 +58,7 @@ export function useDateRange(initialDays = 7) {
   }, [committedRange]);
 
   const commitRange = useCallback((from: Date, to: Date) => {
+    if (!isValidUsageDateRange(from, to)) return;
     setCommittedRange({ from, to });
     setCalendarRange({ from, to });
     setPreset("custom");
@@ -157,7 +159,7 @@ export function useDateRange(initialDays = 7) {
 
     const from = parseManualDate(startDateInput, startTimeInput);
     const to = parseManualDate(endDateInput, endTimeInput);
-    if (from && to && from < to) {
+    if (from && to && isValidUsageDateRange(from, to)) {
       commitRange(from, to);
       setCalendarOpen(false);
     }

@@ -209,6 +209,7 @@ export function SettingsTab({ project, team }: SettingsTabProps) {
                   Subdomains are included automatically.
                 </p>
                 <DomainListInput
+                  kind="source"
                   value={sourceDomains}
                   onChange={setSourceDomains}
                   placeholder="https://images.example.com"
@@ -225,6 +226,7 @@ export function SettingsTab({ project, team }: SettingsTabProps) {
                   to allow all.
                 </p>
                 <DomainListInput
+                  kind="referer"
                   value={refererDomains}
                   onChange={setRefererDomains}
                   placeholder="https://example.com"

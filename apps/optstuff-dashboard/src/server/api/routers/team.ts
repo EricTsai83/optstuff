@@ -1,9 +1,13 @@
 import { TRPCError } from "@trpc/server";
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, inArray } from "drizzle-orm";
 import { z } from "zod";
 
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
-import { teams } from "@/server/db/schema";
+import { apiKeys, projects, teams } from "@/server/db/schema";
+import {
+  invalidateProjectCache,
+  markApiKeyCacheRevoked,
+} from "@/server/lib/config-cache";
 
 /**
  * Generate a short random suffix for slug collision handling.
@@ -327,8 +331,28 @@ export const teamRouter = createTRPCRouter({
         });
       }
 
-      // Delete local record
+      const teamProjects = await ctx.db.query.projects.findMany({
+        where: eq(projects.teamId, input.teamId),
+        columns: { id: true, slug: true },
+      });
+      const projectIds = teamProjects.map((project) => project.id);
+      const teamApiKeys =
+        projectIds.length > 0
+          ? await ctx.db.query.apiKeys.findMany({
+              where: inArray(apiKeys.projectId, projectIds),
+              columns: { publicKey: true },
+            })
+          : [];
+
       await ctx.db.delete(teams).where(eq(teams.id, input.teamId));
+
+      await Promise.all([
+        ...teamProjects.map((project) =>
+          invalidateProjectCache(project.slug, project.id),
+        ),
+        ...teamApiKeys.map((key) => markApiKeyCacheRevoked(key.publicKey)),
+      ]);
+
       return { success: true };
     }),
 });

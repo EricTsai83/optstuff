@@ -8,6 +8,9 @@ export type DateRange = {
   to?: Date | undefined;
 };
 
+export const MAX_USAGE_RANGE_DAYS = 90;
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
 /** Pre-defined time window options shown in the {@link TimePresetPicker}. */
 export const TIME_PRESETS = [
   { label: "Last 7 Days", value: "7", days: 7 },
@@ -62,12 +65,29 @@ export function getDateRangeFromDays(numDays: number): {
   from: Date;
   to: Date;
 } {
+  const days = Math.min(Math.max(1, numDays), MAX_USAGE_RANGE_DAYS);
   const to = new Date();
   to.setHours(23, 59, 59, 999);
   const from = new Date(to);
-  from.setDate(from.getDate() - (numDays - 1));
+  from.setDate(from.getDate() - (days - 1));
   from.setHours(0, 0, 0, 0);
   return { from, to };
+}
+
+function isValidDate(value: Date): boolean {
+  return !Number.isNaN(value.getTime());
+}
+
+export function isValidUsageDateRange(from: Date, to: Date): boolean {
+  if (!isValidDate(from) || !isValidDate(to) || from >= to) return false;
+  return (
+    Math.ceil((to.getTime() - from.getTime()) / MS_PER_DAY) <=
+    MAX_USAGE_RANGE_DAYS
+  );
+}
+
+function validRangeOrNull(from: Date, to: Date): DateRange | null {
+  return isValidUsageDateRange(from, to) ? { from, to } : null;
 }
 
 const MONTHS: Record<string, number> = {
@@ -150,7 +170,7 @@ export function parseTimeInput(input: string): DateRange | null {
   if (s === "today") {
     const from = new Date(now);
     from.setHours(0, 0, 0, 0);
-    return { from, to: now };
+    return validRangeOrNull(from, now);
   }
   if (s === "yesterday") {
     const from = new Date(now);
@@ -158,31 +178,38 @@ export function parseTimeInput(input: string): DateRange | null {
     from.setHours(0, 0, 0, 0);
     const to = new Date(from);
     to.setHours(23, 59, 59, 999);
-    return { from, to };
+    return validRangeOrNull(from, to);
   }
   if (s === "last month") {
     const from = new Date(now.getFullYear(), now.getMonth() - 1, 1);
     const to = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
-    return { from, to };
+    return validRangeOrNull(from, to);
   }
   if (s === "last week") {
     const from = new Date(now);
     from.setDate(from.getDate() - 7);
     from.setHours(0, 0, 0, 0);
-    return { from, to: now };
+    return validRangeOrNull(from, now);
   }
 
   const relMatch =
     /^(\d+)\s*(m|min|mins|minutes?|h|hr|hrs|hours?|d|days?|w|weeks?)$/.exec(s);
   if (relMatch) {
     const n = Number(relMatch[1]);
+    if (!Number.isSafeInteger(n) || n < 1) return null;
+
     const u = relMatch[2]!;
+    if (u.startsWith("m") && n > MAX_USAGE_RANGE_DAYS * 24 * 60) return null;
+    if (u.startsWith("h") && n > MAX_USAGE_RANGE_DAYS * 24) return null;
+    if (u.startsWith("d") && n > MAX_USAGE_RANGE_DAYS) return null;
+    if (u.startsWith("w") && n * 7 > MAX_USAGE_RANGE_DAYS) return null;
+
     const from = new Date(now);
     if (u.startsWith("m")) from.setMinutes(from.getMinutes() - n);
     else if (u.startsWith("h")) from.setHours(from.getHours() - n);
     else if (u.startsWith("d")) from.setDate(from.getDate() - n);
     else if (u.startsWith("w")) from.setDate(from.getDate() - n * 7);
-    return { from, to: now };
+    return validRangeOrNull(from, now);
   }
 
   if (/[-–]/.test(s)) {
@@ -193,7 +220,7 @@ export function parseTimeInput(input: string): DateRange | null {
       if (from && to) {
         if (from.getTime() > to.getTime()) return null;
         to.setHours(23, 59, 59, 999);
-        return { from, to };
+        return validRangeOrNull(from, to);
       }
     }
   } else {
@@ -201,7 +228,7 @@ export function parseTimeInput(input: string): DateRange | null {
     if (single) {
       const to = new Date(single);
       to.setHours(23, 59, 59, 999);
-      return { from: single, to };
+      return validRangeOrNull(single, to);
     }
   }
 
