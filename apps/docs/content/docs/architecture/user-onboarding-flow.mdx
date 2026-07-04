@@ -159,7 +159,7 @@ The docs site base URL is configured via the `NEXT_PUBLIC_DOCS_URL` environment 
 NEXT_PUBLIC_DOCS_URL="http://localhost:3002"
 ```
 
-- Validated in `src/env.js` via `@t3-oss/env-nextjs` with Zod (`z.string().url()`)
+- Validated in `src/env.ts` via `@t3-oss/env-nextjs` with Zod (`z.url()`)
 - **Required** — validation will fail if `NEXT_PUBLIC_DOCS_URL` is missing or empty
 - Different environments can point to different docs sites (e.g., localhost for dev)
 
@@ -174,7 +174,7 @@ import { env } from "@/env";
 export const DOCS_LINKS = {
   home: env.NEXT_PUBLIC_DOCS_URL,
   quickstart: `${env.NEXT_PUBLIC_DOCS_URL}/getting-started/quickstart`,
-  integration: `${env.NEXT_PUBLIC_DOCS_URL}/getting-started/integrate-nextjs`,
+  integration: `${env.NEXT_PUBLIC_DOCS_URL}/getting-started/nextjs`,
   keyManagement: `${env.NEXT_PUBLIC_DOCS_URL}/guides/key-management`,
   security: `${env.NEXT_PUBLIC_DOCS_URL}/guides/security-best-practices`,
   urlSigning: `${env.NEXT_PUBLIC_DOCS_URL}/guides/url-signing`,
@@ -182,7 +182,6 @@ export const DOCS_LINKS = {
   cdnCaching: `${env.NEXT_PUBLIC_DOCS_URL}/guides/cdn-caching`,
   pricing: `${env.NEXT_PUBLIC_DOCS_URL}/introduction/cost-analysis`,
   faq: `${env.NEXT_PUBLIC_DOCS_URL}/faq`,
-  changelog: `${env.NEXT_PUBLIC_DOCS_URL}/changelog`,
 } as const;
 ```
 
@@ -211,14 +210,14 @@ To change the docs URL, update `NEXT_PUBLIC_DOCS_URL` in the environment — no 
 
 | File | Purpose |
 |------|---------|
-| `src/env.js` | `NEXT_PUBLIC_DOCS_URL` environment variable definition |
+| `src/env.ts` | `NEXT_PUBLIC_DOCS_URL` environment variable definition |
 | `src/lib/constants.ts` | `DOCS_LINKS` centralized documentation URL builder |
 | `src/app/onboarding/page.tsx` | Onboarding page component |
 | `src/modules/onboarding/ui/components/onboarding-form.tsx` | Team creation form with validation |
 | `src/modules/team/ui/components/create-project-dialog.tsx` | Two-step project creation dialog (form → API key display) |
 | `src/modules/team/ui/components/project-list.tsx` | Project list with empty state + docs link |
 | `src/modules/project-detail/ui/components/create-api-key-dialog.tsx` | API key creation dialog with docs link |
-| `src/modules/project-detail/ui/components/api-key-skeleton.tsx` | Empty API key state with docs link |
+| `src/modules/project-detail/ui/components/api-key-list.skeleton.tsx` | Empty API key state with docs link |
 | `src/modules/project-detail/ui/views/overview-tab.tsx` | Project overview (endpoint info + setup checklist + stats) |
 | `src/server/api/routers/project.ts` | Backend project + default API key creation |
 | `src/server/api/routers/team.ts` | Backend team creation logic |
@@ -239,5 +238,5 @@ The `teams` table enforces:
 - [Create API Key Flow](/architecture/create-api-key-flow) — Detailed API key creation and encryption flow
 - [Control Plane and Multi-Tenancy](/architecture/control-plane-and-tenancy) — Team/project ownership and access model
 - [URL Signing](/guides/url-signing) — Request signing and authentication
-- [Domain Whitelisting](/guides/domain-whitelisting) — Domain whitelist configuration
-- [Next.js Integration](/getting-started/integrate-nextjs) — How to integrate OptStuff
+- [Domain Allowlists](/guides/domain-allowlists) — Domain allowlist configuration
+- [Next.js Integration](/getting-started/nextjs) — How to integrate OptStuff

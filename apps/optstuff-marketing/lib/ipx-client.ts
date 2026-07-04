@@ -7,7 +7,7 @@ import path from "path";
  *
  * Supports:
  * - Local filesystem storage (public directory)
- * - HTTP remote images (only whitelisted domains, prevents SSRF attacks)
+ * - HTTP remote images (only allowed domains, prevents SSRF attacks)
  */
 const projectBaseUrl = getProjectBaseUrl();
 const projectDomain = projectBaseUrl.hostname;

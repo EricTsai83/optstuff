@@ -3,7 +3,7 @@ title: API Endpoint
 description: Complete API endpoint reference — URL format, path and query parameters, authentication flow, and request/response details.
 ---
 
-OptStuff exposes a single REST endpoint for image optimization. All transformations, authentication, and caching are encoded in the URL. For a step-by-step integration tutorial, see the [Next.js Integration](/getting-started/integrate-nextjs) guide.
+OptStuff exposes a single REST endpoint for image optimization. All transformations, authentication, and caching are encoded in the URL. For a step-by-step integration tutorial, see the [Next.js Integration](/getting-started/nextjs) guide.
 
 ## Endpoint Format
 
@@ -86,7 +86,7 @@ Image optimization URLs are **content-addressable**: the URL encodes all paramet
 |--------|-------|
 | 400 | Invalid path format, unsupported operation, or invalid operation value |
 | 401 | Missing/invalid/revoked/expired API key |
-| 403 | Invalid signature, forbidden referer, or blocked source domain |
+| 403 | Invalid signature, blocked referer, or blocked source domain |
 | 404 | Project not found, or upstream source returned `404` (passthrough) |
 | 410 | Upstream source returned `410` (passthrough) |
 | 429 | Rate limit exceeded |
@@ -115,7 +115,7 @@ flowchart TD
   D -->|OK| F["Find project by projectId\nMatch slug"]
   F -->|"Not found / mismatch"| E5["404 / 401"]
   F -->|OK| G["Check rate limits"]
-  G -->|Exceeded| E6["429"]
+  G -->|Exceeded / unavailable| E6["429 / 503"]
   G -->|OK| H["Validate Referer\ndomain"]
   H -->|Blocked| E7["403"]
   H -->|OK| I["Validate source\ndomain"]
@@ -132,7 +132,7 @@ flowchart TD
 | 3 | Parse operations/image path and validate operation constraints | `400` |
 | 4 | Verify HMAC-SHA256 signature (constant-time) | `403` |
 | 5 | Find project by key's `projectId`; match slug | `404` / `401` |
-| 6 | Check rate limits | `429` |
+| 6 | Check rate limits | `429` / `503` |
 | 7 | Validate Referer header against project domains | `403` |
 | 8 | Validate image source domain against project's domains | `403` |
 | 9 | Route by method (`GET` transform / `HEAD` fast path probe) | `502` (primary upstream fetch/probe/transform failure), `404`/`410` passthrough, rare `500` fallback |
@@ -147,7 +147,7 @@ This endpoint is optimized for serverless environments where cold starts matter:
 - `HEAD` requests run the full auth/abuse checks, run a lightweight upstream probe, skip image transformation, and avoid loading transform dependencies.
 - Success-path usage tracking and request logging are scheduled with `after()` so the image response is returned first.
 - Project/API-key config changes normally propagate within cache TTL (~60s) unless explicit cache invalidation applies immediately.
-- If Redis for rate limiting is temporarily unavailable, requests are allowed (fail-open) so image delivery remains available.
+- If Redis for rate limiting is temporarily unavailable, requests fail closed with `503` so expensive image processing and quota integrity stay protected.
 
 These changes reduce initialization overhead for rejected requests and metadata-only probes while preserving the same API behavior.
 
@@ -156,4 +156,4 @@ These changes reduce initialization overhead for rejected requests and metadata-
 - [Image Operations](/api-reference/image-operations) — Full list of supported transformations
 - [Error Codes](/api-reference/error-codes) — Complete error reference with troubleshooting
 - [URL Signing](/guides/url-signing) — How to generate signatures
-- [Next.js Integration](/getting-started/integrate-nextjs) — Step-by-step integration
+- [Next.js Integration](/getting-started/nextjs) — Step-by-step integration

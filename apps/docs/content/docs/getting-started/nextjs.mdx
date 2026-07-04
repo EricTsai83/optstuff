@@ -135,7 +135,7 @@ export function generateOptStuffUrl(
 `computeBucketedExpiration` keeps signatures stable within each bucket window, improving CDN cache hit rates while still bounding the TTL. The final `Math.max` ensures the expiration is always in the future, even under edge-case rounding.
 
 <Callout type="info">
-The snippet above is intentionally minimal. The [`examples/nextjs`](https://github.com/EricTsai83/optstuff/tree/HEAD/examples/nextjs) project includes a **hardened version** with input validation, query-string encoding, and allowed-format whitelists — use it as a starting point for production.
+The snippet above is intentionally minimal. The [`examples/nextjs`](https://github.com/EricTsai83/optstuff/tree/HEAD/examples/nextjs) project includes a **hardened version** with input validation, query-string encoding, and allowed-format lists — use it as a starting point for production.
 </Callout>
 
 ## Choose Your Integration Pattern
@@ -422,7 +422,7 @@ Before going to production, verify the following:
 - Signing logic runs only in Server Components or API Routes
 - No client code references the secret key
 - Signed URLs include an appropriate `exp`
-- Domain whitelists are configured in the [dashboard](/guides/domain-whitelisting)
+- Domain allowlists are configured in the [dashboard](/guides/domain-allowlists)
 
 If you still get `403` errors after verifying these items, see [Error Codes](/api-reference/error-codes).
 
@@ -431,6 +431,6 @@ If you still get `403` errors after verifying these items, see [Error Codes](/ap
 ## Further Reading
 
 - [URL Signing](/guides/url-signing) — Signature formula and security properties
-- [Domain Whitelisting](/guides/domain-whitelisting) — Allowed domain configuration
+- [Domain Allowlists](/guides/domain-allowlists) — Allowed domain configuration
 - [CDN and Caching](/guides/cdn-caching) — CDN integration and caching strategies
 - [Security Best Practices](/guides/security-best-practices) — Production recommendations

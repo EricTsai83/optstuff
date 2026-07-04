@@ -26,7 +26,7 @@ const FEATURES: readonly Feature[] = [
     icon: Shield,
     title: "Secure by Default",
     description:
-      "Domain whitelisting and signed URLs prevent unauthorized access.",
+      "Domain allowlists and signed URLs prevent unauthorized access.",
     animation: "icon-shield",
   },
   {

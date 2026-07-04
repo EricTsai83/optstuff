@@ -7,19 +7,11 @@
   - **建議方向**：新增 `X-Request-ID`，並在 API 回應與 log 中串接  
 
 ## 中優先級
-- **Redis fail-open 策略需明確化**（`src/server/lib/rate-limiter.ts`, `config-cache.ts`）  
-  - **原因**：Redis 故障時限流失效或退回 DB，容易放大風險  
-  - **建議方向**：明確 fail-open / fail-closed，並加上告警門檻  
-
 - **安全 headers**  
   - **原因**：缺少 CSP / HSTS 等安全強化  
   - **建議方向**：在 Next.js headers 加入標準安全 header  
 
 ## 低優先級
-- **API 版本策略**（`src/app/api/v1/`）  
-  - **原因**：後續版本演進與相容性風險  
-  - **建議方向**：定義版本策略與遷移規範  
-
 - **健康檢查端點**  
   - **原因**：缺少 `/health` / `/ready` 類型端點  
   - **建議方向**：新增基本健康檢查 route  

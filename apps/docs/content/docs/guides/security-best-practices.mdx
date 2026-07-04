@@ -1,6 +1,6 @@
 ---
 title: Security Best Practices
-description: Defense-in-depth security overview — encrypted storage, request signing, domain whitelisting, rate limiting, and actionable recommendations.
+description: Defense-in-depth security overview — encrypted storage, request signing, domain allowlists, rate limiting, and actionable recommendations.
 ---
 
 OptStuff is built with a defense-in-depth approach. Even if one layer is compromised, multiple additional barriers protect your assets.
@@ -12,7 +12,7 @@ OptStuff is built with a defense-in-depth approach. Even if one layer is comprom
 | [Encrypted Storage](#encrypted-storage) | Database breaches | AES-256-GCM encryption for secret keys at rest |
 | [Request Signing](#request-signing) | Unauthorized usage | HMAC-SHA256 signature on every request |
 | [Signature Expiration](#signature-expiration) | Replay attacks | Optional `exp` timestamp limits URL validity |
-| [Domain Whitelisting](#domain-whitelisting) | Hotlinking & abuse | Two-layer domain control |
+| [Domain Allowlists](#domain-allowlists) | Hotlinking & abuse | Two-layer domain control |
 | [Rate Limiting](#rate-limiting) | Resource exhaustion | Per-key per-minute and per-day limits |
 | [Dual-Key System](#dual-key-system) | Accidental exposure | Separates public identifiers from secrets |
 
@@ -30,13 +30,13 @@ See [URL Signing](/guides/url-signing) for implementation details.
 
 The optional `exp` parameter limits how long a signed URL is valid. Recommended expiration times depend on the use case — see [URL Signing](/guides/url-signing#signature-expiration).
 
-### Domain Whitelisting
+### Domain Allowlists
 
-Two-layer domain control restricts both who can use the service (referer domains) and which images can be processed (source domains). Both settings are configured at the project level in **Settings → Domain Security**. Referer validation targets browser-based hotlinking specifically — requests without a `Referer` header are allowed since they indicate server-to-server calls or privacy-stripping policies, not hotlinking. See [Domain Whitelisting](/guides/domain-whitelisting) for configuration and [Referer Security Model](/guides/referer-security-model) for the trust model.
+Two-layer domain control restricts both who can use the service (referer domains) and which images can be processed (source domains). Both settings are configured at the project level in **Settings → Domain Security**. If `allowedRefererDomains` is configured, requests without a matching `Referer` are denied; leave it empty for server-to-server or privacy-stripping clients. See [Domain Allowlists](/guides/domain-allowlists) for configuration and [Referer Security Model](/guides/referer-security-model) for the trust model.
 
 ### Rate Limiting
 
-Per-key rate limits prevent abuse and contain the impact of compromised keys. In the current implementation, Redis outages cause rate limiting to fail open to preserve availability; monitor Redis health and alerting accordingly. See [Rate Limiting](/guides/rate-limiting) for details.
+Per-key rate limits prevent abuse and contain the impact of compromised keys. In the current implementation, Redis outages cause rate limiting to fail closed with `503` to protect expensive image processing and quota integrity. Monitor Redis health and alerting accordingly. See [Rate Limiting](/guides/rate-limiting) for details.
 
 ### Dual-Key System
 
@@ -51,10 +51,10 @@ Public keys (`pk_...`) are safe to expose in URLs. Secret keys (`sk_...`) never 
 | Timing Attacks | `timingSafeEqual` constant-time comparison |
 | Database Breach | AES-256-GCM encryption; keys useless without master key |
 | Man-in-the-Middle | HTTPS + signature validation |
-| Hotlinking | Referer domain whitelist |
-| Unauthorized Sources | Source domain whitelist |
-| Resource Exhaustion | Per-key rate limiting |
-| SSRF | Image proxy validation/whitelisting and request sanitization ([details](/architecture/ssrf-prevention)) |
+| Hotlinking | Referer domain allowlist |
+| Unauthorized Sources | Source domain allowlist |
+| Resource Exhaustion | Per-key rate limiting that fails closed when Redis is unavailable |
+| SSRF | Source URL validation, DNS/IP safety checks, pinned upstream fetches, and redirect rejection ([details](/architecture/ssrf-prevention)) |
 
 ## Secure Defaults
 
@@ -132,7 +132,7 @@ Rotation is atomic — the old key stops working the moment the new key is creat
 ## Related Documentation
 
 - [URL Signing](/guides/url-signing) — Signature generation and code examples
-- [Domain Whitelisting](/guides/domain-whitelisting) — Domain configuration
+- [Domain Allowlists](/guides/domain-allowlists) — Domain configuration
 - [Rate Limiting](/guides/rate-limiting) — Rate limit configuration
 - [Key Management](/guides/key-management) — API key lifecycle best practices
 - [SSRF Prevention](/architecture/ssrf-prevention) — How the image proxy prevents Server-Side Request Forgery

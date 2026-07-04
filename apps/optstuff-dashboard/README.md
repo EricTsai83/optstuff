@@ -1,77 +1,51 @@
-# Image Optimizer
+# OptStuff Dashboard
 
-A high-performance image optimization API built with [Next.js](https://nextjs.org) and [IPX](https://github.com/unjs/ipx).
+Dashboard and image API application for OptStuff.
 
-## Getting Started
+## Responsibilities
+
+- Authenticated dashboard for teams, projects, API keys, domain security, and usage analytics
+- Signed image optimization API at `/api/v1/{projectSlug}/{operations}/{imageUrl}`
+- Request validation, rate limiting, source-domain enforcement, usage metering, and request logging
+
+## Image API
+
+```http
+GET /api/v1/{projectSlug}/{operations}/{imageUrl}?key={publicKey}&sig={signature}&exp={expiresAt}
+HEAD /api/v1/{projectSlug}/{operations}/{imageUrl}?key={publicKey}&sig={signature}&exp={expiresAt}
+```
+
+Example:
+
+```http
+GET /api/v1/my-blog/w_800,f_webp,q_80/cdn.example.com/photo.jpg?key=pk_...&sig=...
+```
+
+Supported operation keys are `w`, `h`, `q`, `f`, `fit`, `s`, and `embed`; use `_` for no transform operations. See the docs app for the full endpoint and signing reference.
+
+## Local Setup
 
 ```bash
-# Install dependencies
-bun install
-
-# Start development server
-bun run dev
+pnpm install
+cp apps/optstuff-dashboard/.env.example apps/optstuff-dashboard/.env
+pnpm --filter optstuff-dashboard db:push
 ```
 
-## Image Optimization API
-
-### URL Format
-
-```
-/api/optimize/{operations}/{image_url}
-```
-
-### Quick Examples
+Run workspace scripts from the repository root:
 
 ```bash
-# Set width to 800px
-/api/optimize/w_800/https://images.unsplash.com/photo-1506905925346-21bda4d32df4
-
-# WebP format + quality 80
-/api/optimize/f_webp,q_80/https://images.unsplash.com/photo-1506905925346-21bda4d32df4
-
-# Resize + crop
-/api/optimize/s_400x300,fit_cover/https://images.unsplash.com/photo-1506905925346-21bda4d32df4
-
-# No operation (original image)
-/api/optimize/_/https://images.unsplash.com/photo-1506905925346-21bda4d32df4
+pnpm lint
+pnpm typecheck
+pnpm format
 ```
 
-### Common Operations
+## Main Files
 
-| Operation    | Description  | Example            |
-| ------------ | ------------ | ------------------ |
-| `w_{n}`      | Width        | `w_800`            |
-| `h_{n}`      | Height       | `h_600`            |
-| `s_{w}x{h}`  | Resize       | `s_800x600`        |
-| `q_{n}`      | Quality      | `q_80`             |
-| `f_{format}` | Format       | `f_webp`, `f_avif` |
-| `fit_{mode}` | Fit mode     | `fit_cover`        |
-| `_`          | No operation | `_`                |
-
-### Full Documentation
-
-For all available operations, see the IPX documentation:
-
-👉 **[https://github.com/unjs/ipx](https://github.com/unjs/ipx)**
-
-### React Example
-
-```tsx
-const OptimizedImage = ({ src }: { readonly src: string }) => {
-  return (
-    <img
-      src={`/api/optimize/w_800,f_webp,q_80/${src}`}
-      alt="Optimized"
-      loading="lazy"
-    />
-  );
-};
-```
-
-## Tech Stack
-
-- [Next.js](https://nextjs.org) - React framework
-- [IPX](https://github.com/unjs/ipx) - Image optimizer powered by sharp
-- [tRPC](https://trpc.io) - End-to-end typesafe APIs
-- [Drizzle](https://orm.drizzle.team) - TypeScript ORM
-- [Tailwind CSS](https://tailwindcss.com) - Utility-first CSS
+| Area | Files |
+|------|-------|
+| Image API route | `src/app/api/v1/[projectSlug]/[...path]/route.ts` |
+| Source URL and operation validation | `src/server/lib/validators.ts`, `src/lib/ipx-utils.ts` |
+| Pinned upstream fetch | `src/server/lib/pinned-upstream.ts`, `src/server/lib/ipx-factory.ts` |
+| API key crypto | `src/server/lib/api-key.ts` |
+| Config cache and rate limits | `src/server/lib/config-cache.ts`, `src/server/lib/rate-limiter.ts` |
+| Usage metering and request logs | `src/server/lib/usage-tracker.ts`, `src/server/lib/request-logger.ts` |

@@ -28,5 +28,4 @@ export const DOCS_LINKS = {
   cdnCaching: `${env.NEXT_PUBLIC_DOCS_URL}/guides/cdn-caching`,
   pricing: `${env.NEXT_PUBLIC_DOCS_URL}/introduction/cost-analysis`,
   faq: `${env.NEXT_PUBLIC_DOCS_URL}/faq`,
-  changelog: `${env.NEXT_PUBLIC_DOCS_URL}/changelog`,
 } as const;

@@ -27,7 +27,7 @@ GET /api/v1/my-blog/w_800,q_80,f_webp/cdn.example.com/photo.jpg?key=pk_...&sig=.
 - **On-the-fly Optimization** — Resize, format conversion (WebP, AVIF), and quality adjustment via URL parameters
 - **Signed URL Security** — HMAC-SHA256 signatures prevent unauthorized access
 - **Multi-tenant Architecture** — Teams → Projects → API Keys hierarchy
-- **Domain Whitelisting** — Two-layer control for image sources and authorized websites
+- **Domain Allowlists** — Two-layer control for image sources and authorized websites
 - **Encrypted Key Storage** — AES-256-GCM encryption for API keys at rest
 - **Rate Limiting** — Configurable per-minute and per-day limits per API key
 - **Usage Analytics** — Request logs, bandwidth tracking, and top images statistics
@@ -63,8 +63,8 @@ packages/
 
 ### Prerequisites
 
-- Node.js 18+
-- pnpm 9+
+- Node.js 20+
+- pnpm 10+
 - PostgreSQL database
 - Clerk account
 
@@ -84,7 +84,7 @@ cp apps/optstuff-dashboard/.env.example apps/optstuff-dashboard/.env
 # Edit .env with your database, Clerk, and encryption credentials
 
 # Push database schema
-pnpm db:push
+pnpm --filter optstuff-dashboard db:push
 
 # Start development server
 pnpm dev
@@ -99,7 +99,7 @@ See the [Environment Variables documentation](./apps/docs/content/docs/self-host
 Full documentation is available in the docs site:
 
 - [Quick Start](./apps/docs/content/docs/getting-started/quickstart.mdx) — Get your first optimized image in 5 minutes
-- [Integration Guide](./apps/docs/content/docs/getting-started/integration-guide.mdx) — Add OptStuff to your application
+- [Next.js Integration](./apps/docs/content/docs/getting-started/nextjs.mdx) — Add OptStuff to a Next.js application
 - [API Reference](./apps/docs/content/docs/api-reference/endpoint.mdx) — Full endpoint documentation
 - [Self-Hosting](./apps/docs/content/docs/self-hosting/deployment.mdx) — Deploy your own instance
 

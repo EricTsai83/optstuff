@@ -13,7 +13,7 @@ There is no single algorithm that is “best” for every product. The choice de
 - **Image workloads** → need both **short-horizon** control (sudden spikes) and **long-horizon** control (sustained overuse and cost).
 - **Fair, predictable abuse bounds** → prefer limiting the classic **fixed-window boundary burst** (two back-to-back compliant bursts can briefly approach ~2× the nominal rate in real time).
 - **Global API** → avoid **calendar-day fixed buckets** tied to a single timezone’s midnight where possible; rolling windows sidestep that class of edge case.
-- **Availability** → if Redis is down, the limiter **fails open** so serving stays up; rate limiting is protective, not the only line of defense (see [Design Notes](#design-notes)).
+- **Reliability under abuse** → if Redis is down, the limiter **fails closed** with `503` so expensive image processing and quota integrity stay protected (see [Design Notes](#design-notes)).
 
 ### How common families compare
 
@@ -203,14 +203,14 @@ See [CDN and Caching](/guides/cdn-caching) for cache optimization strategies.
 | Per-key daily usage | Catch keys approaching limits | Alert at 80% of daily quota |
 | Redis connectivity | Rate limiter depends on Redis | Alert on Redis connection errors |
 
-When the rate limiter fails open (Redis unavailable), monitor for abnormal traffic patterns and consider temporary upstream WAF rules until Redis recovers.
+When Redis is unavailable, rate-limited routes return `503` with `Retry-After`. Monitor Redis health and alert before this becomes customer-visible.
 
 ## Design Notes
 
 - Rate limits are checked **after** signature verification so that unauthenticated requests cannot exhaust quota.
-- The per-day limit is checked **before** the per-minute limit to minimize token waste (see [Redis Schema](/architecture/redis-schema) for details).
+- The per-minute limit is checked **before** the per-day limit so short bursts do not consume daily quota after they have already exceeded the minute window (see [Redis Schema](/architecture/redis-schema) for details).
 - Both `GET` and `HEAD` requests consume quota because both run through the same authentication and abuse-protection pipeline.
-- If Redis is temporarily unavailable, the limiter fails open (`allowed`) to prioritize image-serving availability; monitor infrastructure health accordingly.
+- If Redis is temporarily unavailable, the limiter fails closed with `503`; clients should respect `Retry-After` and operators should check Redis health.
 
 ## Related Documentation
 
@@ -218,4 +218,3 @@ When the rate limiter fails open (Redis unavailable), monitor for abnormal traff
 - [CDN and Caching](/guides/cdn-caching): Cache strategies that reduce rate limit pressure
 - [Error Codes](/api-reference/error-codes): Rate limit error details
 - [Security Best Practices](/guides/security-best-practices): Broader security context
-

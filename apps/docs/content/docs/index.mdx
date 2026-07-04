@@ -41,7 +41,7 @@ const url = generateOptStuffUrl(
 - **On-the-fly Optimization** — Resize, format conversion (WebP, AVIF), and quality adjustment via URL parameters
 - **Signed URL Security** — HMAC-SHA256 signatures prevent unauthorized access
 - **Multi-tenant Architecture** — Teams → Projects → API Keys hierarchy
-- **Domain Whitelisting** — Control allowed image sources and referer domains
+- **Domain Allowlists** — Control allowed image sources and referer domains
 - **Encrypted Key Storage** — AES-256-GCM encryption for API keys at rest
 - **Rate Limiting** — Configurable per-minute and per-day limits per API key
 - **Usage Analytics** — Request logs, bandwidth tracking, and top images statistics
@@ -87,7 +87,7 @@ OptStuff is designed to run on serverless infrastructure at minimal cost. For a 
   <Card title="Quick Start" href="/getting-started/quickstart">
     Get your first optimized image in under 5 minutes.
   </Card>
-  <Card title="Next.js Integration" href="/getting-started/integrate-nextjs">
+  <Card title="Next.js Integration" href="/getting-started/nextjs">
     Add OptStuff to your Next.js application with Server Components, API Routes, and the next/image loader.
   </Card>
   <Card title="API Reference" href="/api-reference/endpoint">

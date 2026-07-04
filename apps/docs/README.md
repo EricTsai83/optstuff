@@ -1,45 +1,28 @@
-# docs
+# OptStuff Docs
 
-This is a Next.js application generated with
-[Create Fumadocs](https://github.com/fuma-nama/fumadocs).
+Fumadocs + Next.js documentation site for OptStuff.
 
-Run development server:
+## Content
+
+Documentation pages live in `content/docs`. The sidebar order is controlled by the nearest `meta.json` file, and routes are generated from MDX file paths.
+
+## Local Commands
+
+Run from the repository root:
 
 ```bash
-npm run dev
-# or
-pnpm dev
-# or
-yarn dev
+pnpm --filter optstuff-docs typecheck
+pnpm --filter optstuff-docs lint
 ```
 
-Open http://localhost:3000 with your browser to see the result.
+The docs development server uses port `3002` when started through the package `dev` script.
 
-## Explore
+## Main Files
 
-In the project, you can see:
-
-- `lib/source.ts`: Code for content source adapter, [`loader()`](https://fumadocs.dev/docs/headless/source-api) provides the interface to access your content.
-- `lib/layout.shared.tsx`: Shared options for layouts, optional but preferred to keep.
-
-| Route                     | Description                                            |
-| ------------------------- | ------------------------------------------------------ |
-| `app/(home)`              | The route group for your landing page and other pages. |
-| `app/docs`                | The documentation layout and pages.                    |
-| `app/api/search/route.ts` | The Route Handler for search.                          |
-
-### Fumadocs MDX
-
-A `source.config.ts` config file has been included, you can customise different options like frontmatter schema.
-
-Read the [Introduction](https://fumadocs.dev/docs/mdx) for further details.
-
-## Learn More
-
-To learn more about Next.js and Fumadocs, take a look at the following
-resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js
-  features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-- [Fumadocs](https://fumadocs.dev) - learn about Fumadocs
+| Area | Files |
+|------|-------|
+| Source config | `source.config.ts`, `lib/source.ts` |
+| Shared layout options | `lib/layout.shared.tsx` |
+| Docs route | `app/(docs)/[[...slug]]/page.tsx` |
+| Search route | `app/api/search/route.ts` |
+| LLM text routes | `app/llms.txt/route.ts`, `app/llms-full.txt/route.ts`, `app/llms.mdx/[[...slug]]/route.ts` |

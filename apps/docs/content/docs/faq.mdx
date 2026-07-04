@@ -7,7 +7,7 @@ description: Frequently asked questions about OptStuff — pricing, CDN usage, m
 
 ### What is OptStuff?
 
-OptStuff is a secure image optimization API that resizes, compresses, and converts images on-the-fly via URL parameters. See [What is OptStuff?](/docs) for a full overview.
+OptStuff is a secure image optimization API that resizes, compresses, and converts images on-the-fly via URL parameters. See [What is OptStuff?](/) for a full overview.
 
 ### What image formats are supported?
 
@@ -50,7 +50,7 @@ Yes. OptStuff is a standard HTTP API — any server-side language that can compu
 
 ### Can I use OptStuff from the browser?
 
-URL **signing** must happen server-side because it requires the secret key. The signed URL itself can be used in `<img>` tags, CSS `background-image`, or any client-side context. See the [Next.js Integration](/getting-started/integrate-nextjs) guide for the recommended pattern.
+URL **signing** must happen server-side because it requires the secret key. The signed URL itself can be used in `<img>` tags, CSS `background-image`, or any client-side context. See the [Next.js Integration](/getting-started/nextjs) guide for the recommended pattern.
 
 ### How do I migrate from Cloudinary / Imgix / another service?
 
@@ -110,7 +110,7 @@ See [Troubleshooting Signature Errors](/api-reference/error-codes#troubleshootin
 
 ### I'm getting `403 Source domain not allowed`
 
-The image source domain is not in the project's allowed source domains list. Add it in **Dashboard → Project → Settings → Domain Security → Image Sources**. See [Domain Whitelisting](/guides/domain-whitelisting).
+The image source domain is not in the project's allowed source domains list. Add it in **Dashboard → Project → Settings → Domain Security → Image Sources**. See [Domain Allowlists](/guides/domain-allowlists).
 
 ### I'm getting `429 Too Many Requests`
 

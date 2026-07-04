@@ -1,9 +1,9 @@
 ---
 title: Referer Security Model
-description: Why the browser Referer header is reliable for anti-hotlinking, why it's not a substitute for authentication, and how OptStuff uses it alongside signed URLs.
+description: Why the browser Referer header helps with anti-hotlinking, why it is not a substitute for authentication, and how OptStuff enforces it alongside signed URLs.
 ---
 
-When protecting image assets from unauthorized embedding, the HTTP `Referer` header is a surprisingly effective tool — if you understand its trust boundaries. This article explains when and why `Referer` is trustworthy, and how OptStuff leverages it as a supplementary anti-hotlinking layer.
+When protecting image assets from unauthorized embedding, the HTTP `Referer` header is useful only within clear trust boundaries. This article explains when `Referer` is trustworthy, where it is absent, and how OptStuff enforces it as a supplementary anti-hotlinking layer.
 
 ## What is the Referer header?
 
@@ -67,7 +67,7 @@ The `Referer` header is `null` in several legitimate scenarios:
 | HTTPS → HTTP downgrade | Browser strips it for security | _(rare in modern web)_ |
 | Privacy tools | User or extension strips it | Ad blockers, privacy extensions |
 
-These are all legitimate, non-malicious scenarios. Blocking them would create false positives without improving security — the signed URL already authenticates the request.
+These are all legitimate, non-malicious scenarios. They matter because OptStuff treats them differently depending on whether you configured an Authorized Websites allowlist.
 
 ## OptStuff's layered security model
 
@@ -77,11 +77,11 @@ OptStuff uses defense-in-depth with distinct layers, each protecting against a s
 flowchart TD
   A["Incoming Request"] --> B{"HMAC-SHA256\nSignature Valid?"}
   B -->|"Invalid/Expired"| X1["401/403 Rejected"]
-  B -->|"Valid"| C{"Referer Header\nPresent?"}
-  C -->|"Present"| D{"Referer in\nAllowlist?"}
-  C -->|"Absent (null)"| E["✅ Allowed\n(server-to-server, privacy policy, etc.)"]
-  D -->|"Not in list"| X2["403 Forbidden\n(hotlinking blocked)"]
-  D -->|"In list"| E2["✅ Allowed"]
+  B -->|"Valid"| C{"allowedRefererDomains\nconfigured?"}
+  C -->|"No"| E["Allowed\n(no referer restriction)"]
+  C -->|"Yes"| D{"Referer present\nand allowed?"}
+  D -->|"No"| X2["403 Forbidden\n(referer blocked)"]
+  D -->|"Yes"| E2["Allowed"]
 ```
 
 | Layer | Purpose | Protects against |
@@ -97,17 +97,15 @@ flowchart TD
 
 1. It works against the actual threat (unauthorized websites embedding your images)
 2. The browser enforces it — the unauthorized site cannot bypass it
-3. It doesn't interfere with legitimate server-side usage
+3. It gives projects an explicit strict mode: configure allowed referer origins only when every expected browser request can send one
 
-### Absent Referer = allowed
+### How absent Referer is handled
 
-When the `Referer` header is absent, OptStuff allows the request (assuming the signature is valid). This is the correct behavior because:
+When `allowedRefererDomains` is empty, OptStuff does not apply a referer restriction, so requests without `Referer` are allowed after signature verification.
 
-- **The signed URL already authenticates the request.** If someone has a valid signed URL, they were authorized to use it.
-- **Null Referer doesn't indicate hotlinking.** It indicates a non-browser context (server-side rendering, API calls) or a privacy-stripping browser policy — none of which are the threat Referer validation targets.
-- **Blocking null Referer creates false positives.** It breaks SSR blur placeholders, cron-based pre-warming, health checks, and users with strict privacy settings — all without preventing any real attack.
+When `allowedRefererDomains` is non-empty, OptStuff requires the request to include a `Referer` whose origin matches the allowlist. A missing `Referer` is rejected with `403 Forbidden: Invalid referer`.
 
-An attacker who strips their own `Referer` to bypass the check could just as easily download the image with `curl` and self-host it. The Referer check isn't meant to stop that — it stops the much more common scenario of someone copy-pasting your `<img>` tag onto their website, where the browser _will_ send the real `Referer`.
+This is intentionally stricter than pure best-effort hotlinking protection. Use an empty Authorized Websites list for server-to-server calls, privacy-stripping clients, pre-warming jobs, or health checks. Configure `allowedRefererDomains` only when you want browser requests without a matching referer to fail closed.
 
 ## Summary
 
@@ -115,12 +113,12 @@ An attacker who strips their own `Referer` to bypass the check could just as eas
 |----------|--------|
 | Can a website forge the `Referer` header? | **No.** Browsers forbid JS from overriding it. |
 | Can a website hide the `Referer` header? | **Yes**, via `Referrer-Policy: no-referrer`. |
-| Should absent `Referer` be blocked? | **No.** It indicates a non-browser or privacy-enhanced context, not hotlinking. |
+| Should absent `Referer` be blocked? | **Only when `allowedRefererDomains` is configured.** Empty list means no referer restriction; non-empty list means missing referer is denied. |
 | Is `Referer` a good authentication mechanism? | **No.** Use signed URLs (HMAC) for authentication. |
 | Is `Referer` a good anti-hotlinking mechanism? | **Yes.** It reliably identifies which website triggered a browser request. |
 
 ## Related documentation
 
-- [Domain Whitelisting](/guides/domain-whitelisting) — Configure referer and source domain allowlists (both project-level)
+- [Domain Allowlists](/guides/domain-allowlists) — Configure referer and source domain allowlists (both project-level)
 - [URL Signing](/guides/url-signing) — How HMAC-SHA256 signatures work
 - [Security Best Practices](/guides/security-best-practices) — Full defense-in-depth overview

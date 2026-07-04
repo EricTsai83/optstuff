@@ -10,6 +10,7 @@ OptStuff is open source and designed to be self-hosted. This guide walks you thr
 | Service | Purpose | Recommended Provider |
 |---------|---------|---------------------|
 | **PostgreSQL** | Data storage (teams, projects, API keys, usage) | [Neon](https://neon.tech), [Supabase](https://supabase.com), or any PostgreSQL provider |
+| **Redis** | Rate limiting, config cache, usage buffering | [Upstash Redis](https://upstash.com) |
 | **Clerk** | User authentication | [Clerk](https://clerk.com) (required) |
 | **Hosting** | Application runtime | [Vercel](https://vercel.com) (recommended), any Node.js-compatible platform |
 
@@ -27,6 +28,11 @@ Fork [EricTsai83/optstuff](https://github.com/EricTsai83/optstuff) to your GitHu
 
 1. Create a PostgreSQL database (e.g., on [Neon](https://neon.tech))
 2. Note your connection string: `postgresql://user:password@host/database`
+
+#### Redis
+
+1. Create an Upstash Redis database
+2. Copy the REST URL and REST token into `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN`
 
 #### Clerk
 
@@ -55,7 +61,7 @@ openssl rand -base64 32
 After the first deployment, run the database migrations:
 
 ```bash
-pnpm db:push
+pnpm --filter optstuff-dashboard db:push
 ```
 
 Or use the Drizzle migration scripts included in the project.
@@ -70,6 +76,7 @@ Or use the Drizzle migration scripts included in the project.
 ## Production Checklist
 
 - [ ] PostgreSQL database created and connected
+- [ ] Upstash Redis database created and connected
 - [ ] Clerk application configured with correct redirect URLs
 - [ ] `API_KEY_ENCRYPTION_SECRET` set to a unique 32+ character value
 - [ ] `NEXT_PUBLIC_APP_URL` set to your production URL

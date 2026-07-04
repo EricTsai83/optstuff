@@ -138,7 +138,7 @@ Layer 3: API key policy (expiry, revocation, rate limits)
 Layer 4: Request integrity (signature verification + optional exp / TTL)
 ```
 
-These layers are designed to **fail closed**: when any check fails, the request is denied. Configuration patterns for domains are in [Domain Whitelisting](/guides/domain-whitelisting); referer behavior in [Referer Security Model](/guides/referer-security-model); limits in [Rate Limiting](/guides/rate-limiting).
+These layers are designed to **fail closed**: when any check fails, the request is denied. Configuration patterns for domains are in [Domain Allowlists](/guides/domain-allowlists); referer behavior in [Referer Security Model](/guides/referer-security-model); limits in [Rate Limiting](/guides/rate-limiting).
 
 ## What You Need to Use the Service
 
@@ -156,6 +156,6 @@ If any one is missing, requests are either rejected or you have accidentally rem
 - [How It Works](/introduction/how-it-works): Request lifecycle and validation order
 - [What Is HMAC?](/guides/hmac-introduction): MAC versus hashing, encryption, and how `sig` fits in
 - [URL Signing](/guides/url-signing): Payload, `exp`, and HMAC details
-- [Domain Whitelisting](/guides/domain-whitelisting): Policy configuration patterns
+- [Domain Allowlists](/guides/domain-allowlists): Policy configuration patterns
 - [Custom next/image Loader](/guides/nextjs-image-loader): `next/image` with signing and redirect
 - [Quick Start](/getting-started/quickstart): End-to-end implementation walkthrough

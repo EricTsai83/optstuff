@@ -33,21 +33,17 @@ This separation of concerns looks clean. Each layer has a single responsibility.
 
 ---
 
-## The Design Flaw: Validation and Execution Operate on Different URLs
+## The Design Flaw to Avoid: Validation and Execution Operate on Different URLs
 
-The Validation Layer inspects the URL as the client submitted it:
+A common unsafe design is to validate the URL as the client submitted it, then hand the same string to a lower-level image library that performs its own network fetch:
 
 ```typescript
-const sourceHost = new URL(imageUrl).hostname;  // "cdn.example.com"
+const sourceUrl = new URL(imageUrl);
 
-if (!validateSourceDomain(sourceHost, project.allowedSourceDomains)) {
+if (!isAllowedSourceHost(sourceUrl.hostname, project.allowedSourceDomains)) {
   return error(403, "Source domain not allowed");
 }
-```
 
-The Processing Layer then hands that same URL to IPX, which calls `fetch()` internally:
-
-```typescript
 const ipx = getProjectIPX();
 const result = await ipx(imageUrl, operations).process();
 ```
@@ -112,61 +108,70 @@ If you delegate the network call to a third-party library (as we do with IPX), y
 
 ---
 
-## The Fix: Constraining the Processing Layer
+## The Fix: Validate, Pin, and Fetch Through a Guarded Storage Layer
 
-The Fetch API provides a `redirect` option with three modes:
-
-| Mode | Behavior | Use case |
-|---|---|---|
-| `"follow"` | Silently follow all redirects (default) | General-purpose browsing |
-| `"error"` | Throw `TypeError` on any redirect | Strict proxies where the validated URL must be the fetched URL |
-| `"manual"` | Return the `3xx` response without following | When you need to inspect and re-validate before following |
-
-We configured IPX's HTTP storage layer to reject redirects:
+OptStuff does not let IPX perform an unconstrained fetch from a raw user-controlled URL. The request route first validates the complete source URL:
 
 ```typescript
-export function getProjectIPX() {
-  return createIPX({
-    storage: ipxFSStorage({ dir: path.join(process.cwd(), "public") }),
-    httpStorage: ipxHttpStorage({
-      // Safe only because (1) domain validation happens upstream in the route
-      // handler, and (2) redirect: "error" below prevents redirect-based
-      // bypasses. Removing redirect: "error" turns this into an open proxy.
-      // Prefer allowAllDomains: false with an explicit domain allowlist unless
-      // you have equivalent upstream controls.
-      allowAllDomains: true,
-      fetchOptions: { redirect: "error" },
-    }),
-  });
+const sourceValidation = await validateSourceUrl(
+  imageUrl,
+  project.allowedSourceDomains,
+);
+
+if (!sourceValidation.ok) {
+  return forbidden("Forbidden: Source domain not allowed");
 }
+
+const processedImage = await ipx(imageUrl, operations, {
+  [VALIDATED_SOURCE_OPTION]: sourceValidation.source,
+}).process();
 ```
 
-Note that `allowAllDomains: true` is intentionally set here because IPX's built-in domain check only performs exact hostname matching, while our upstream validation supports subdomain matching (e.g., allowing `images.unsplash.com` when `unsplash.com` is on the allowlist). This is safe **only** because `redirect: "error"` ensures the URL that passed upstream validation is precisely the URL that gets fetched — no redirect can reroute the request to an unvalidated host. If you remove or change the `redirect` option, `allowAllDomains: true` creates an open-proxy vulnerability. If your system does not have equivalent upstream domain validation, keep `allowAllDomains: false` and pass an explicit domain allowlist to IPX instead.
+`validateSourceUrl()` performs three checks before any upstream request is made:
 
-`ipxHttpStorage` accepts a `fetchOptions` field (typed as `RequestInit`) that is forwarded to every internal `fetch` call. Setting `redirect: "error"` means any `3xx` response immediately throws an error, which propagates up through IPX and is caught by the route handler's `catch` block, returning a `500` to the client.
+1. The URL must use `http` or `https`.
+2. The URL must match the project's `allowedSourceDomains`.
+3. DNS results must resolve only to public addresses; localhost, private ranges, link-local ranges, documentation ranges, metadata hostnames, multicast, and other unsafe targets are rejected.
 
-After the fix, the system enforces a strict invariant: **the URL that passes domain validation is precisely the URL that the server contacts**. No transformation happens between validation and execution.
+The validated URL and the validated DNS addresses are then passed into a custom IPX HTTP storage layer. That storage layer refuses to fetch unless the validated source object is present, verifies that the IPX storage ID still matches the validated URL, and then connects to the pinned validated address:
+
+```typescript
+const source = getValidatedSourceFromOptions(options);
+assertStorageIdMatchesValidatedSource(id, source);
+
+const response = await fetchPinnedUpstream(source, {
+  method: "GET",
+  signal: AbortSignal.timeout(10_000),
+});
+```
+
+`fetchPinnedUpstream()` connects to the already-validated address, sets the original `Host` header, uses the original hostname for HTTPS SNI, and rejects any upstream redirect. This prevents both DNS rebinding and redirect-based SSRF bypasses.
+
+After the fix, the system enforces a strict invariant: **the URL and public address that pass source validation are the URL and address the server contacts**. No later component can silently resolve a different destination.
 
 ```mermaid title="Redirects blocked at fetch"
 flowchart TD
-  A["Validation Layer"] -->|"cdn.example.com in allowlist"| B["Processing Layer (IPX)"]
-  B --> C["fetch cdn.example.com/go?url=..."]
-  C --> D["302 Found"]
-  D --> E["redirect: 'error'\nTypeError thrown"]
-  E --> F["Request aborted\n500 returned to client"]
+  A["Validate URL + source allowlist"] --> B["Resolve DNS and reject private addresses"]
+  B --> C["Pass validated source into IPX options"]
+  C --> D["Custom pinned HTTP storage"]
+  D --> E["Connect to pinned public address"]
+  E --> F{"Upstream redirect?"}
+  F -->|"Yes"| G["Reject with 502"]
+  F -->|"No"| H["Return image bytes to IPX"]
 ```
 
 ---
 
 ## Alternative Design: Re-Validate on Redirect
 
-If the system needed to support legitimate redirects (e.g., CDNs that use `302` for geographic load balancing), the alternative is `redirect: "manual"` with a validation loop:
+If the system needed to support legitimate redirects (for example, CDNs that use `302` for geographic load balancing), the alternative would be manual redirect handling with re-validation on every hop:
 
 ```text
 fetch(url, { redirect: "manual" })
   → if 3xx:
       extract Location header
-      validate new hostname against allowlist
+      validate new URL against allowlist
+      resolve DNS and reject private addresses
       if allowed: fetch(new_url, { redirect: "manual" })  ← repeat (up to N hops)
       if not allowed: reject
   → if 200: return response
@@ -177,9 +182,10 @@ This is more complex and introduces additional concerns:
 - **Max hop limit** — without one, a redirect loop becomes a denial-of-service vector.
 - **Relative URLs** — `Location` headers can be relative, requiring URL resolution.
 - **Protocol downgrade** — a redirect from `https://` to `http://` could leak data in transit.
+- **DNS rebinding per hop** — every redirect target must be resolved and pinned again.
 - **Larger attack surface** — more code paths to test and audit.
 
-We chose `redirect: "error"` because image CDNs serve assets directly, and the added complexity of manual redirect handling isn't justified by the use case. The simpler design is also the more secure one.
+OptStuff rejects redirects because image origins should serve assets directly, and the added complexity of manual redirect handling is not justified by the current use case. The simpler design is also the more secure one.
 
 ---
 
@@ -187,11 +193,11 @@ We chose `redirect: "error"` because image CDNs serve assets directly, and the a
 
 ### 1. Treat Every Server-Side Fetch as a Proxy
 
-Any time your server makes an HTTP request to a URL derived from user input, you are building a proxy. Apply proxy-level security: validate the *final* destination, not just the input.
+Any time your server makes an HTTP request to a URL derived from user input, you are building a proxy. Apply proxy-level security: validate the destination, resolve it safely, and make sure the component that performs the fetch cannot switch destinations later.
 
 ### 2. Third-Party Libraries Are Part of Your Trust Boundary
 
-When you delegate a network call to a library, its default configuration becomes your security posture. IPX's default `redirect: "follow"` is perfectly reasonable for a general-purpose image optimizer — but inside our security model, it violated our invariant. Always audit the defaults of libraries that make outbound network requests on your behalf.
+When you delegate a network call to a library, its default behavior becomes part of your security posture. OptStuff avoids relying on IPX's generic HTTP fetch path by giving IPX a custom storage layer that requires validated source metadata.
 
 ### 3. Defense in Depth Still Requires Correct Layering
 
@@ -199,7 +205,7 @@ Our system had multiple security layers (signatures, rate limits, domain allowli
 
 ### 4. Prefer Eliminating Behavior Over Detecting Abuse
 
-We could have tried to detect SSRF attempts by inspecting redirect targets, blocking private IP ranges, or analyzing response content. Each of those approaches is a cat-and-mouse game with known bypasses (DNS rebinding, IPv6 mapped addresses, cloud metadata via custom domains). Instead, we eliminated the behavior entirely: no redirects are followed, period. **Reducing capability is more reliable than detecting misuse.**
+We could have tried to detect SSRF attempts by inspecting redirect targets or analyzing response content. Instead, OptStuff reduces capability: source hosts must resolve to public addresses, those addresses are pinned for the fetch, and redirects are rejected. **Reducing capability is more reliable than detecting misuse.**
 
 ---
 

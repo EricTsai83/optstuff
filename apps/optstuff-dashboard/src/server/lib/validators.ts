@@ -6,7 +6,7 @@ import { isIP } from "node:net";
  *
  * Security Model:
  * - Signed URLs: All requests must have a valid signature created with the API key's secret
- * - Allowlist-only: Only domains explicitly listed in the API key's allowedSourceDomains are permitted
+ * - Allowlist-only: Only domains explicitly listed in the project's allowedSourceDomains are permitted
  * - Production: Empty allowlist = reject all requests (fail closed)
  * - Development: Empty allowlist skips tenant allowlist matching but still requires public upstream targets
  */
@@ -78,12 +78,11 @@ function parseDomainRule(raw: string): DomainRule | null {
   if (!entry || /\s/.test(entry)) return null;
 
   const protocolMatch = /^(https?):\/\//.exec(entry);
+  if (!protocolMatch) return null;
   const protocol = protocolMatch
     ? (`${protocolMatch[1]}:` as "http:" | "https:")
     : undefined;
-  let hostAndPort = protocolMatch
-    ? entry.slice(protocolMatch[0].length)
-    : entry;
+  let hostAndPort = entry.slice(protocolMatch[0].length);
 
   if (
     !hostAndPort ||
@@ -443,9 +442,6 @@ export async function validateConfiguredSourceDomains(
  * "http://localhost". The referer's protocol and hostname are both checked.
  * Wildcard prefixes ("https://*.example.com") match any subdomain.
  *
- * Legacy entries without a protocol are treated as hostname-only and matched
- * against any protocol for backwards compatibility.
- *
  * @param referer - The referer header value
  * @param allowedDomains - List of allowed origins (null or empty = allow all)
  * @returns true if the referer is allowed
@@ -469,39 +465,12 @@ export function validateReferer(
 }
 
 /**
- * Validate if the source domain is in the allowed domains list.
+ * Validate a source image URL against the project's allowed source domains and
+ * ensure the resolved upstream address is public.
  *
- * Security: Allowlist-only approach.
- * - Production: Only explicitly allowed domains are permitted. Empty allowlist = reject all.
- * - Development: Empty allowlist = allow all for this legacy hostname-only check.
- *   Full URL validation still requires public, resolvable upstream targets.
- *
- * @param sourceHost - The hostname of the image source
- * @param allowedDomains - List of allowed domains (empty = reject all in production)
- * @returns true if the source domain is allowed
+ * Development can skip the tenant allowlist when it is empty, but DNS/public
+ * address validation still runs so local/private upstream targets stay blocked.
  */
-export function validateSourceDomain(
-  sourceHost: string,
-  allowedDomains: readonly string[] | null,
-) {
-  // Empty allowlist: reject all in production, allow all in development
-  if (!allowedDomains || allowedDomains.length === 0) {
-    return isDevelopment;
-  }
-
-  const normalizedSourceHost = normalizeHostname(sourceHost);
-  if (isUnsafeHostnameLiteral(normalizedSourceHost)) return false;
-
-  return allowedDomains.some((raw) => {
-    const rule = parseDomainRule(raw);
-    if (!rule) return false;
-    return (
-      normalizedSourceHost === rule.hostname ||
-      normalizedSourceHost.endsWith(`.${rule.hostname}`)
-    );
-  });
-}
-
 export async function validateSourceUrl(
   imageUrl: string,
   allowedDomains: readonly string[] | null,

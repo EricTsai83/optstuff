@@ -61,7 +61,7 @@ flowchart TD
   D -->|Invalid| E4["403"]
   D -->|OK| F["Load project by apiKey.projectId\nand check slug match"]
   F -->|Not found/mismatch| E5["404/401"]
-  F -->|OK| G["Rate limit check\n(day then minute)"]
+  F -->|OK| G["Rate limit check\n(minute then day)"]
   G -->|Exceeded| E6["429"]
   G -->|OK| H["Validate Referer domain"]
   H -->|Blocked| E7["403"]
@@ -130,7 +130,7 @@ flowchart TD
 | URL Auth | HMAC-SHA256 signature | Constant-time compare, optional `exp` |
 | Key Storage | AES-256-GCM + HKDF | Secret keys encrypted at rest |
 | Source Control | `allowedSourceDomains` | Production empty-list is fail-closed |
-| Hotlinking Control | `allowedRefererDomains` | Missing `Referer` is allowed by design |
+| Hotlinking Control | `allowedRefererDomains` | Non-empty list blocks missing or non-matching `Referer` |
 | Abuse Control | Per-key rate limiting | Day window then minute window |
 
 ## Operations Reference (Server Validation)
@@ -148,7 +148,7 @@ flowchart TD
 ## Operational Notes
 
 - **Cache propagation:** config cache TTL is 60s; negative cache TTL is 10s.
-- **Rate-limiter availability:** Redis failures fail open (request allowed).
+- **Rate-limiter availability:** Redis failures fail closed with `503`.
 - **Request logging:** source URL is sanitized (query/hash removed); retention target is 30 days; errors are always logged while successful requests can be sampled via `REQUEST_LOG_SUCCESS_SAMPLE_RATE`.
 - **Usage metering:** successful request counters are buffered in Redis minute buckets and flushed to `usage_record` via scheduled cron maintenance (with optional high-frequency flush route on higher plans).
 - **Original-size metric:** sampled (10%) to avoid extra upstream `HEAD` on every success.

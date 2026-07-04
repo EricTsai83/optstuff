@@ -59,13 +59,6 @@ function getStatusConfig(status: string) {
         label: "Success",
         dotClass: "bg-emerald-500",
       };
-    case "forbidden":
-      return {
-        variant: "secondary" as const,
-        icon: ShieldOff,
-        label: "Forbidden",
-        dotClass: "bg-amber-500",
-      };
     case "sig_expired":
       return {
         variant: "secondary" as const,

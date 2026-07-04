@@ -5,7 +5,7 @@ description: High-level overview of how OptStuff processes requests — architec
 
 This page gives you a high-level understanding of how OptStuff processes requests so you can reason about behavior, performance, and security before integrating.
 
-For product-level concepts, see [What is OptStuff?](/docs). For the full implementation deep-dive, see [Architecture Overview](/architecture/overview).
+For product-level concepts, see [What is OptStuff?](/). For the full implementation deep-dive, see [Architecture Overview](/architecture/overview).
 
 ## Who calls whom on one GET
 
@@ -77,7 +77,7 @@ Key design decisions:
 | Layer | What It Protects |
 |-------|------------------|
 | [**Signed URLs, HMAC-SHA256**](/guides/url-signing) | Prevents unauthorized URL forging |
-| [**Source domain allowlist**](/guides/domain-whitelisting) | Controls which image origins can be fetched |
+| [**Source domain allowlist**](/guides/domain-allowlists) | Controls which image origins can be fetched |
 | [**Referer allowlist**](/guides/referer-security-model) | Mitigates browser hotlinking |
 | [**Key expiry / revocation**](/guides/key-management) | Invalidates stale or compromised credentials |
 | [**Rate limiting**](/guides/rate-limiting) | Limits abuse and accidental bursts |

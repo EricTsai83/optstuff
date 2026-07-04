@@ -3,7 +3,11 @@ title: Cost Analysis & Pricing Strategy
 description: How to reason about OptStuff's per-request cost — Vercel serverless, Neon PostgreSQL, Upstash Redis, Clerk auth, and how to set your pricing.
 ---
 
-This page walks through the actual infrastructure costs behind running OptStuff, so you can understand the cost floor per request and reason about how to price your own instance.
+This page walks through the infrastructure costs behind running OptStuff, so you can understand the cost floor per request and reason about how to price your own instance.
+
+<Callout type="warn">
+Provider pricing changes. The example figures below were checked against the linked provider pricing pages on **2026-07-04**; verify the source pages before using these numbers for billing decisions.
+</Callout>
 
 ## Infrastructure Stack
 
@@ -26,9 +30,9 @@ Every image request triggers one serverless function invocation.
 
 | Item | Value |
 |------|-------|
-| Price | $0.60 per 1M invocations (as of 2026-03-04 — source: [Vercel Pricing](https://vercel.com/pricing)) |
-| Free tier (Hobby/Pro) | First 1M/month included (as of 2026-03-04 — source: [Vercel Pricing](https://vercel.com/pricing)) |
-| **Per-request cost** | **$0.0000006** (derived from Vercel invocation pricing as of 2026-03-04 — source: [Vercel Pricing](https://vercel.com/pricing)) |
+| Price | $0.60 per 1M invocations (checked 2026-07-04 — source: [Vercel Pricing](https://vercel.com/pricing)) |
+| Free tier (Hobby/Pro) | First 1M/month included (checked 2026-07-04 — source: [Vercel Pricing](https://vercel.com/pricing)) |
+| **Per-request cost** | **$0.0000006** (derived from Vercel invocation pricing checked 2026-07-04 — source: [Vercel Pricing](https://vercel.com/pricing)) |
 
 ### 2. Vercel Active CPU
 
@@ -36,9 +40,9 @@ Image processing (Sharp/IPX resize, format conversion) is CPU-intensive. Vercel'
 
 | Item | Value |
 |------|-------|
-| Rate (US region) | ~$0.128 per CPU-hour (as of 2026-03-04 — source: [Vercel Pricing](https://vercel.com/pricing)) |
+| Rate (US region) | ~$0.128 per CPU-hour (checked 2026-07-04 — source: [Vercel Pricing](https://vercel.com/pricing)) |
 | Typical image transform | 50–200ms CPU time |
-| Estimate at 100ms | $0.128 / 3,600 × 0.1 = **$0.0000036** (derived from Vercel CPU pricing as of 2026-03-04 — source: [Vercel Pricing](https://vercel.com/pricing)) |
+| Estimate at 100ms | $0.128 / 3,600 × 0.1 = **$0.0000036** (derived from Vercel CPU pricing checked 2026-07-04 — source: [Vercel Pricing](https://vercel.com/pricing)) |
 
 <Callout type="info">
 Simple resizes (e.g., `w_400`) take ~50ms. Heavy operations (large source + format conversion to AVIF) can reach 200ms+. The 100ms estimate is a reasonable midpoint for WebP output.
@@ -50,7 +54,7 @@ Memory is billed for the entire function instance lifetime (including I/O wait),
 
 | Item | Value |
 |------|-------|
-| Rate (US region) | ~$0.0106 per GB-hour (as of 2026-03-04 — source: [Vercel Pricing](https://vercel.com/pricing)) |
+| Rate (US region) | ~$0.0106 per GB-hour (checked 2026-07-04 — source: [Vercel Pricing](https://vercel.com/pricing)) |
 | Function memory | ~256MB (0.25 GB) |
 | Instance lifetime | ~300ms (including I/O) |
 | Cost | 0.25 × (0.3 / 3,600) × $0.0106 = **$0.0000002** (derived from Vercel memory pricing as of 2026-03-04 — source: [Vercel Pricing](https://vercel.com/pricing)) |
@@ -63,7 +67,7 @@ Each request makes 3–5 Redis commands: config cache lookup, rate limit checks 
 
 | Item | Value |
 |------|-------|
-| Rate | $0.20 per 100K commands (as of 2026-03-04 — source: [Upstash Redis Pricing](https://upstash.com/pricing/redis)) |
+| Rate | $0.20 per 100K commands (checked 2026-07-04 — source: [Upstash Redis Pricing](https://upstash.com/pricing/redis)) |
 | Commands per request | ~4 |
 | **Per-request cost** | 4 × $0.000002 = **$0.000008** (derived from Upstash pricing as of 2026-03-04 — source: [Upstash Redis Pricing](https://upstash.com/pricing/redis)) |
 
@@ -73,10 +77,10 @@ Most requests hit the Redis config cache (60s TTL). Only cache misses or first r
 
 | Item | Value |
 |------|-------|
-| Rate (Launch plan) | $0.106 per CU-hour (as of 2026-03-04 — source: [Neon Pricing](https://neon.tech/pricing)) |
+| Rate (Launch plan) | $0.106 per CU-hour (checked 2026-07-04 — source: [Neon Pricing](https://neon.tech/pricing)) |
 | DB queries per request | ~0.05 (amortized, most hit cache) |
 | Background write cost | ~0.02 queries amortized (throttled) |
-| **Per-request cost** | **~$0.000001** (amortized; derived from Neon pricing as of 2026-03-04 — source: [Neon Pricing](https://neon.tech/pricing)) |
+| **Per-request cost** | **~$0.000001** (amortized; derived from Neon pricing checked 2026-07-04 — source: [Neon Pricing](https://neon.tech/pricing)) |
 
 ### 6. Vercel Bandwidth
 
@@ -84,10 +88,10 @@ Optimized images are served as response bytes. This is often the largest variabl
 
 | Item | Value |
 |------|-------|
-| Pro plan included | 1 TB/month (as of 2026-03-04 — source: [Vercel Pricing](https://vercel.com/pricing)) |
-| Overage rate | $0.15 per GB (as of 2026-03-04 — source: [Vercel Pricing](https://vercel.com/pricing)) |
+| Pro plan included | 1 TB/month (checked 2026-07-04 — source: [Vercel Pricing](https://vercel.com/pricing)) |
+| Overage rate | $0.15 per GB (checked 2026-07-04 — source: [Vercel Pricing](https://vercel.com/pricing)) |
 | Average optimized image | ~80–150 KB |
-| Estimate at 100 KB | $0.15 / 1,000,000 × 100 = **$0.000015** (derived from Vercel bandwidth pricing as of 2026-03-04 — source: [Vercel Pricing](https://vercel.com/pricing)) |
+| Estimate at 100 KB | $0.15 / 1,000,000 × 100 = **$0.000015** (derived from Vercel bandwidth pricing checked 2026-07-04 — source: [Vercel Pricing](https://vercel.com/pricing)) |
 
 <Callout type="info">
 With a CDN in front (Cloudflare, CloudFront), most repeat requests are served from CDN cache and never reach Vercel. Actual bandwidth cost depends heavily on your CDN cache hit ratio.
@@ -125,9 +129,9 @@ Beyond per-request costs, there are fixed monthly platform fees:
 | Service | Free Tier | Paid Tier | When You Need Paid |
 |---------|-----------|-----------|-------------------|
 | **Vercel** | Hobby (free) | Pro $20/mo | Commercial use, team features |
-| **Neon** | 100 CU-hours + 0.5GB | Launch $19/mo | >100 CU-hours or >0.5GB storage |
-| **Upstash** | 10K commands/day | Pay-as-you-go or $10/mo fixed | >10K commands/day |
-| **Clerk** | 10,000 MAU | Pro $20/mo | >10,000 MAU or advanced features |
+| **Neon** | 100 CU-hours + 0.5GB per project | Launch usage-based, typical intermittent-load spend ~$15/mo | >100 CU-hours, larger storage, or production support needs |
+| **Upstash** | 500K commands/month | Pay-as-you-go or $10/mo fixed | >500K commands/month or predictable fixed-plan needs |
+| **Clerk** | 50,000 monthly retained users (MRUs) | Pro $25/mo ($20/mo billed annually) | >50,000 MRUs, passkeys, custom branding, or advanced features |
 
 ### Minimum Monthly Cost Scenarios
 
@@ -135,7 +139,7 @@ Beyond per-request costs, there are fixed monthly platform fees:
 |----------|--------|------|---------|-------|------------|
 | **Hobby / Side project** | $0 | $0 | $0 | $0 | **$0/mo** |
 | **Small production** | $20 | $0 | $0 | $0 | **$20/mo** |
-| **Full production** | $20 | $19 | $10 | $20 | **$69/mo** |
+| **Full production example** | $20 | ~$15 | $10 | $25 | **~$70/mo** |
 
 ## Total Cost Model
 
@@ -145,11 +149,11 @@ Monthly Cost = Fixed Costs + (Per-Request Cost × Request Volume)
 
 | Monthly Volume | Free Stack | Full Production Stack |
 |----------------|------------|----------------------|
-| 10,000 | $0 + $0.28 = **$0.28** | $69 + $0.28 = **$69.28** |
-| 100,000 | $0 + $2.84 = **$2.84** | $69 + $2.84 = **$71.84** |
-| 1,000,000 | Over free limits | $69 + $28.40 = **$97.40** |
+| 10,000 | $0 + $0.28 = **$0.28** | $70 + $0.28 = **$70.28** |
+| 100,000 | $0 + $2.84 = **$2.84** | $70 + $2.84 = **$72.84** |
+| 1,000,000 | Over free limits | $70 + $28.40 = **$98.40** |
 
-At 1M requests/month on full production stack, the effective cost per request is ~$0.0001 ($0.10 per 1,000 requests).
+At 1M requests/month on the full production example, the effective cost per request is ~$0.0001 ($0.10 per 1,000 requests).
 
 ## Pricing Strategy
 
@@ -159,16 +163,16 @@ From the analysis above, the marginal cost per request is ~$0.00003. But the rea
 
 | Volume | Effective Cost per 1K Requests |
 |--------|-------------------------------|
-| 10,000/mo | $6.93 per 1K (fixed costs dominate) |
-| 100,000/mo | $0.72 per 1K |
+| 10,000/mo | $7.03 per 1K (fixed costs dominate) |
+| 100,000/mo | $0.73 per 1K |
 | 1,000,000/mo | $0.10 per 1K (approaching marginal cost) |
 
 ### Step 2: Compare with Alternatives
 
-| Service | Cost per 1K Optimizations | Source (as of 2026-03-04) |
+| Service | Cost per 1K Optimizations | Source (checked 2026-07-04) |
 |---------|----------------------------|----------------------------|
 | **Cloudinary** | Credit-based tiers: Free 25 credits/mo, Plus 225 credits/mo, Advanced 600 credits/mo (usage is credit-based, not fixed per-1K). | [https://cloudinary.com/pricing](https://cloudinary.com/pricing) |
-| **imgix** | Credit bundles: tiered ~$0.14-$0.25 per credit, with ~1-2 credits per GB depending on operation. | [https://www.imgix.com/pricing](https://www.imgix.com/pricing) |
+| **imgix** | Credit bundles: tiered roughly $0.12-$0.25 per credit depending on bundle and billing term; delivery is currently listed as 1 credit/GB, while transformations vary by feature. | [https://www.imgix.com/pricing](https://www.imgix.com/pricing) |
 | **Vercel Image Optimization** | Usage-based: ~$0.05-$0.0812 per 1K transformations, plus cache read ~$0.40-$0.64 per 1M and cache write ~$4.00-$6.40 per 1M. | [https://vercel.com/docs/image-optimization/limits-and-pricing](https://vercel.com/docs/image-optimization/limits-and-pricing) |
 | **OptStuff (self-hosted, 100K/mo)** | ~$0.72 per 1K | Derived from this page |
 | **OptStuff (self-hosted, 1M/mo)** | ~$0.10 per 1K | Derived from this page |

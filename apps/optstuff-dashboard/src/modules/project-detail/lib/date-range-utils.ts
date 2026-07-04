@@ -19,17 +19,17 @@ export const TIME_PRESETS = [
   { label: "Last 90 Days", value: "90", days: 90 },
 ] as const;
 
-/** Available request status filter groups for the usage logs.
- *  Each group maps a user-facing label to one or more DB status values.
- *  "Forbidden" includes the legacy `forbidden` value for backward compatibility. */
+/**
+ * Available request status filter groups for the usage logs.
+ * Each group maps a user-facing label to one or more DB status values.
+ */
 export const STATUS_OPTIONS = [
   { label: "Success", value: "success", dbStatuses: ["success"] },
   { label: "Error", value: "error", dbStatuses: ["error"] },
   {
-    label: "Forbidden",
-    value: "forbidden",
+    label: "Denied",
+    value: "denied",
     dbStatuses: [
-      "forbidden",
       "sig_expired",
       "sig_invalid",
       "referer_blocked",

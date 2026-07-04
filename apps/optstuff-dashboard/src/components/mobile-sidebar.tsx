@@ -12,7 +12,6 @@ import {
 import { Separator } from "@workspace/ui/components/separator";
 import {
   BookOpen,
-  FileText,
   HelpCircle,
   Home,
   MessageSquare,
@@ -39,12 +38,6 @@ const SIDEBAR_LINKS: readonly SidebarLink[] = [
     label: "Documentation",
     href: DOCS_LINKS.home,
     icon: BookOpen,
-    external: true,
-  },
-  {
-    label: "Changelog",
-    href: DOCS_LINKS.changelog,
-    icon: FileText,
     external: true,
   },
   {

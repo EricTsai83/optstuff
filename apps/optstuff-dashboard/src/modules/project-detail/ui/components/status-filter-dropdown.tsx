@@ -21,7 +21,7 @@ type StatusFilterDropdownProps = {
 
 /**
  * A dropdown menu with checkbox items for filtering request logs by status
- * (success, error, forbidden, rate-limited). At least one status must remain selected.
+ * (success, error, denied, rate-limited). At least one status must remain selected.
  */
 export function StatusFilterDropdown({
   statusFilters,

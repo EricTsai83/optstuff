@@ -59,9 +59,9 @@ export const projects = pgTable(
     name: d.varchar({ length: 255 }).notNull(),
     slug: d.varchar({ length: 255 }).notNull(),
     description: d.text(),
-    // Source domain whitelist - controls which image origins can be processed
+    // Source domain allowlist - controls which image origins can be processed
     allowedSourceDomains: d.text().array(),
-    // Referer whitelist - controls which websites can use this project's service
+    // Referer allowlist - controls which websites can use this project's service
     allowedRefererDomains: d.text().array(),
     // Cached statistics (updated on API key/usage changes)
     apiKeyCount: d.integer().default(0).notNull(),
@@ -135,7 +135,7 @@ export const apiKeys = pgTable(
     name: d.varchar({ length: 255 }).notNull(),
     publicKey: d.varchar({ length: 50 }).notNull().unique(), // Public identifier "pk_..." (plaintext, used in URL ?key= param)
     secretKey: d.varchar({ length: 255 }).notNull(), // Encrypted secret key (AES-256-GCM format: iv:authTag:ciphertext)
-    // Domain whitelist - controls which image sources this key can access
+    // Source domain snapshot for key-specific access controls if needed later
     allowedSourceDomains: d.text().array(),
     createdBy: d.varchar({ length: 255 }).notNull(), // Clerk user ID who created this key
     expiresAt: d.timestamp({ withTimezone: true }),
@@ -233,7 +233,6 @@ export const usageBufferFlushLedger = pgTable(
  *
  * - `success`        — Image processed and returned successfully.
  * - `error`          — Processing failed (upstream fetch error, transform error, etc.).
- * - `forbidden`      — Legacy: generic 403 before status granularity was added. Retained for backward compatibility with historical data.
  * - `sig_expired`    — HMAC signature was valid but the `exp` timestamp has passed.
  * - `sig_invalid`    — HMAC signature does not match the expected value (wrong secret key, tampered payload, etc.).
  * - `referer_blocked`— Request Referer header does not match the project's allowed referer domains.
@@ -243,7 +242,6 @@ export const usageBufferFlushLedger = pgTable(
 export const requestLogStatusEnum = pgEnum("request_log_status", [
   "success",
   "error",
-  "forbidden",
   "sig_expired",
   "sig_invalid",
   "referer_blocked",

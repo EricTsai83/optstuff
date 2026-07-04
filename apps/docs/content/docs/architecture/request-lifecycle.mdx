@@ -32,8 +32,9 @@ flowchart TD
   D -->|OK| F["Load project by apiKey.projectId"]
   F -->|Not found| E5["404"]
   F -->|Slug mismatch| E6["401"]
-  F -->|OK| G["Rate limit check: day -> minute"]
+  F -->|OK| G["Rate limit check: minute -> day"]
   G -->|Exceeded| E7["429"]
+  G -->|Unavailable| E7b["503"]
   G -->|OK| H["Validate Referer policy"]
   H -->|Blocked| E8["403"]
   H -->|OK| I["Normalize URL + validate source host"]
@@ -79,7 +80,7 @@ sequenceDiagram
 
 ```mermaid title="HEAD: validate then upstream HEAD"
 flowchart TD
-  A["Shared validation pipeline"] --> B["Upstream HEAD probe (3s timeout, redirect:error)"]
+  A["Shared validation pipeline"] --> B["Upstream HEAD probe (3s timeout, pinned address, redirects rejected)"]
   B -->|Status 404/410| C["Pass through status"]
   B -->|Other >=400| D["Map to 502/500"]
   B -->|Non-image content-type| E["502"]
@@ -100,6 +101,7 @@ flowchart TD
 | Signature rejected | `403` | Invalid HMAC or expired `exp` signature payload |
 | Bad request format | `400` | Invalid path/operations/image URL encoding |
 | Abuse control | `429` | Per-key minute/day limit exceeded |
+| Rate limiter unavailable | `503` | Redis-backed rate limiter failed closed |
 | Policy denied | `403` | Referer or source domain blocked |
 | Upstream/runtime issues | `502` / `500` | Non-passthrough upstream failures, processing errors |
 
@@ -124,7 +126,7 @@ These side effects are intentionally non-blocking to keep tail latency low.
 
 OptStuff uses a tiered request logging policy to balance observability and runtime cost:
 
-- **Error and policy-denied requests** (`error`, `forbidden`, `rate_limited`) are logged **100%**.
+- **Error and policy-denied requests** (`error`, `sig_expired`, `sig_invalid`, `referer_blocked`, `source_blocked`, `rate_limited`) are logged **100%**.
 - **Successful requests** can be sampled via `REQUEST_LOG_SUCCESS_SAMPLE_RATE` (`0.0 ~ 1.0`).
 - Default behavior:
   - `production`: `0.2` (20%)

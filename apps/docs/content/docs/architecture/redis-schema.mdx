@@ -128,10 +128,10 @@ Active invalidation via `invalidateApiKeyCache` remains the primary revocation m
 
 ```mermaid title="Rate limit check flow"
 flowchart TD
-  A["checkRateLimit(publicKey, limitPerMinute, limitPerDay)"] --> B["1. Per-day check\n(wider window, checked first)"]
-  B -->|Exceeded| C["Denied\nreason: day\nretryAfter: Ns"]
-  B -->|OK| D["2. Per-minute check\n(stricter)"]
-  D -->|Exceeded| E["Denied\nreason: minute\nretryAfter: Ns"]
+  A["checkRateLimit(publicKey, limitPerMinute, limitPerDay)"] --> B["1. Per-minute check\n(short-horizon burst control)"]
+  B -->|Exceeded| C["Denied\nreason: minute\nretryAfter: Ns"]
+  B -->|OK| D["2. Per-day check\nlong-horizon quota"]
+  D -->|Exceeded| E["Denied\nreason: day\nretryAfter: Ns"]
   D -->|OK| F["Allowed"]
 ```
 
@@ -144,9 +144,9 @@ flowchart TD
 
 ### Check Order Rationale
 
-The per-day limit is checked **first**. This is deliberate: Upstash's `.limit()` is a consume-and-check operation — it decrements the counter atomically before returning the result. If the minute limit were checked first, a successful minute check would consume a minute token; a subsequent day rejection would block the request, but the minute token is already spent. Checking the day limit first inverts the problem: if day fails, no minute token is consumed.
+The per-minute limit is checked **first**. This is deliberate: short bursts are the most common abuse shape for an image transformation endpoint, and denying them before the daily check avoids consuming daily quota for requests that already exceeded the minute window.
 
-> **Note:** Upstash also provides a non-consuming `getRemaining()` method that can query remaining tokens without decrementing. This could be used as a pre-check to avoid any token waste, at the cost of an extra Redis round trip per request. The current order-swap approach avoids this overhead while eliminating the most impactful waste scenario.
+Upstash's `.limit()` is a consume-and-check operation. If the minute check passes but the day check fails, the minute token has already been consumed. Avoiding all token waste would require an extra non-consuming pre-check such as `getRemaining()`, which would add another Redis round trip per request.
 
 ### Default Fallback Values
 
@@ -296,7 +296,7 @@ Redis contains **zero persistent data**. Every key falls into one of five catego
 | Flush lock | None (coordination flag, derived from application state/DB) | May trigger extra flush attempt; buffered increments retained. |
 | Usage buffer buckets | `usage_record` after flush | Any not-yet-flushed increments are lost |
 
-When Redis is unavailable, rate limiting is designed to fail open (`allowed: true`) to preserve image-serving availability.
+When Redis is unavailable, rate limiting fails closed with `503` to preserve quota integrity and prevent expensive transforms from running without abuse controls.
 
 ---
 
@@ -307,5 +307,5 @@ When Redis is unavailable, rate limiting is designed to fail open (`allowed: tru
 | [Architecture Overview](/architecture/overview) | Recommended architecture reading path |
 | [Request Lifecycle](/architecture/request-lifecycle) | Runtime request path that consumes these Redis keys |
 | [Rate Limiting](/guides/rate-limiting) | User-facing rate limiting guide |
-| [Domain Whitelisting](/guides/domain-whitelisting) | Domain whitelist configuration |
+| [Domain Allowlists](/guides/domain-allowlists) | Domain allowlist configuration |
 | [Security Best Practices](/guides/security-best-practices) | Security recommendations |

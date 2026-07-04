@@ -19,10 +19,11 @@ This page lists all error codes returned by the OptStuff API and provides troubl
 | 401 | API key has expired | Key is past its `expiresAt` date | Create a new key or [rotate](/guides/key-management#rotation) the existing one |
 | 401 | API key does not belong to this project | Public key is valid but bound to a different project | Use the correct key for the project, or check `projectSlug` in the URL |
 | 403 | Invalid or expired signature | HMAC-SHA256 verification failed, or `exp` has passed | See [Troubleshooting Signature Errors](#troubleshooting-signature-errors) below |
-| 403 | Forbidden: Invalid referer | Referer header doesn't match project's allowed domains | Add your domain in project settings (see [Domain Whitelisting](/guides/domain-whitelisting)) |
-| 403 | Forbidden: Source domain not allowed | Image source domain not in project's allowed list | Add the domain in project Settings → Domain Security → Image Sources (see [Domain Whitelisting](/guides/domain-whitelisting)) |
+| 403 | Forbidden: Invalid referer | Referer header is missing or doesn't match the project's allowed domains | Add your domain in project settings, or leave Authorized Websites empty when referer enforcement is not required (see [Domain Allowlists](/guides/domain-allowlists)) |
+| 403 | Forbidden: Source domain not allowed | Image source domain not in project's allowed list | Add the domain in project Settings → Domain Security → Image Sources (see [Domain Allowlists](/guides/domain-allowlists)) |
 | 404 | Project not found | `projectSlug` doesn't match any project | Check the project slug is correct |
 | 429 | Rate limit exceeded | Per-minute or per-day limit reached | Wait for `Retry-After` seconds, or [increase limits](/guides/rate-limiting) |
+| 503 | Rate limiter unavailable | Redis-backed rate limiter could not be reached, so the request failed closed | Retry after the `Retry-After` delay and check Redis health |
 | 502 | Image processing failed | Upstream fetch/transform/probe failure | Verify source image availability and retry; check upstream origin stability |
 | 500 | Image processing failed | Internal error during optimization or upstream fetch error without a mappable status code | Check that the source image is accessible and in a [supported format](/api-reference/image-operations#supported-formats) |
 
@@ -99,9 +100,9 @@ For `GET`, additional fields may be present depending on the error:
 | `details` | `400` (invalid image URL) | Additional context about the failure |
 | `usage` | `400` (invalid path), `401` (missing params) | Hints showing the correct URL format |
 | `examples` | `400` (invalid path) | Example valid URLs |
-| `reason` | `429` | Whether the minute or day limit was hit |
-| `retryAfter` | `429` | Seconds to wait before retrying |
-| `limit` | `429` | The limit that was exceeded |
+| `reason` | `429`, `503` | Whether the minute/day limit was hit, or that the limiter was unavailable |
+| `retryAfter` | `429`, `503` | Seconds to wait before retrying |
+| `limit` | `429`, authenticated `503` | The limit that was exceeded, or `0` when unavailable |
 
 ## Rate Limit Response Format
 
@@ -129,5 +130,5 @@ X-RateLimit-Remaining: 0
 
 - [API Endpoint](/api-reference/endpoint) — Endpoint format and authentication flow
 - [URL Signing](/guides/url-signing) — Signature formula and code examples
-- [Domain Whitelisting](/guides/domain-whitelisting) — Configuring allowed domains
+- [Domain Allowlists](/guides/domain-allowlists) — Configuring allowed domains
 - [Rate Limiting](/guides/rate-limiting) — Rate limit configuration and tuning

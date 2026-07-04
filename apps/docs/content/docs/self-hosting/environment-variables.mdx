@@ -14,7 +14,7 @@ cp apps/optstuff-dashboard/.env.example apps/optstuff-dashboard/.env
 | Variable | Required | Description | Example |
 |----------|----------|-------------|---------|
 | `NEXT_PUBLIC_APP_URL` | Yes | Public URL of your OptStuff deployment | `https://optstuff.example.com` |
-| `NEXT_PUBLIC_DOCS_URL` | No | URL of the documentation site | `https://docs.optstuff.example.com` |
+| `NEXT_PUBLIC_DOCS_URL` | Yes | URL of the documentation site | `https://docs.optstuff.example.com` |
 
 ## Scheduling & Maintenance
 
@@ -26,32 +26,24 @@ cp apps/optstuff-dashboard/.env.example apps/optstuff-dashboard/.env
 
 | Variable | Required | Description | Default |
 |----------|----------|-------------|---------|
-| `REQUEST_LOG_SUCCESS_SAMPLE_RATE` | No | Success request log sampling rate (`0.0` to `1.0`). Error/forbidden/rate-limited logs are always recorded. | `0.2` in production, `1.0` otherwise |
+| `REQUEST_LOG_SUCCESS_SAMPLE_RATE` | No | Success request log sampling rate (`0.0` to `1.0`). Error, policy-denied, and rate-limited logs are always recorded. | `0.2` in production, `1.0` otherwise |
 
 ## Database (PostgreSQL)
 
-You need at least one database connection string. The specific variables depend on your provider.
-
-### Standard Connection
+The dashboard reads a single PostgreSQL connection string.
 
 | Variable | Required | Description | Example |
 |----------|----------|-------------|---------|
 | `DATABASE_URL` | Yes | Primary connection string (pooled recommended) | `postgresql://user:pass@host/db` |
-| `DATABASE_URL_UNPOOLED` | No | Direct connection (for migrations) | `postgresql://user:pass@host/db` |
 
-### Neon / Vercel Postgres
+## Redis (Upstash)
 
-If using Neon or Vercel Postgres, these additional variables may be set automatically:
+Redis is required for rate limiting, config caching, usage buffering, and write throttling.
 
-| Variable | Description |
-|----------|-------------|
-| `PGHOST` | Database host |
-| `PGHOST_UNPOOLED` | Direct (unpooled) database host |
-| `PGUSER` | Database user |
-| `PGDATABASE` | Database name |
-| `PGPASSWORD` | Database password |
-| `POSTGRES_URL` | Full connection URL |
-| `POSTGRES_URL_NON_POOLING` | Direct connection URL |
+| Variable | Required | Description | Example |
+|----------|----------|-------------|---------|
+| `UPSTASH_REDIS_REST_URL` | Yes | Upstash Redis REST endpoint | `https://example.upstash.io` |
+| `UPSTASH_REDIS_REST_TOKEN` | Yes | Upstash Redis REST token | `AXxxxxx...` |
 
 ## Authentication (Clerk)
 
@@ -59,12 +51,10 @@ If using Neon or Vercel Postgres, these additional variables may be set automati
 |----------|----------|-------------|---------|
 | `CLERK_SECRET_KEY` | Yes | Clerk server-side secret key | `sk_test_xxxx...` |
 | `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | Yes | Clerk client-side publishable key | `pk_test_xxxx...` |
-| `NEXT_PUBLIC_CLERK_SIGN_IN_URL` | Yes | Sign-in page path | `/sign-in` |
-| `NEXT_PUBLIC_CLERK_SIGN_UP_URL` | Yes | Sign-up page path | `/sign-up` |
-| `NEXT_PUBLIC_CLERK_SIGN_IN_FORCE_REDIRECT_URL` | No | Redirect after sign-in | `/dashboard` |
-| `NEXT_PUBLIC_CLERK_SIGN_UP_FORCE_REDIRECT_URL` | No | Redirect after sign-up | `/dashboard` |
-| `NEXT_PUBLIC_CLERK_SIGN_IN_FALLBACK_REDIRECT_URL` | No | Fallback redirect after sign-in | `/dashboard` |
-| `NEXT_PUBLIC_CLERK_SIGN_UP_FALLBACK_REDIRECT_URL` | No | Fallback redirect after sign-up | `/dashboard` |
+| `NEXT_PUBLIC_CLERK_SIGN_IN_FORCE_REDIRECT_URL` | Yes | Redirect after sign-in | `/dashboard` |
+| `NEXT_PUBLIC_CLERK_SIGN_UP_FORCE_REDIRECT_URL` | Yes | Redirect after sign-up | `/dashboard` |
+| `NEXT_PUBLIC_CLERK_SIGN_IN_FALLBACK_REDIRECT_URL` | Yes | Fallback redirect after sign-in | `/dashboard` |
+| `NEXT_PUBLIC_CLERK_SIGN_UP_FALLBACK_REDIRECT_URL` | Yes | Fallback redirect after sign-up | `/dashboard` |
 
 ## Encryption
 
@@ -76,11 +66,11 @@ If using Neon or Vercel Postgres, these additional variables may be set automati
 This is the most sensitive configuration value. If compromised, all stored API secret keys can be decrypted. There is no automatic rotation mechanism — rotating requires re-encrypting all keys.
 </Callout>
 
-## Debug
+## Build-Time Escape Hatch
 
 | Variable | Required | Description | Default |
 |----------|----------|-------------|---------|
-| `MFE_DEBUG` | No | Enable microfrontend debug mode | `0` |
+| `SKIP_ENV_VALIDATION` | No | Set to a truthy value only for Docker/build contexts where env validation must be deferred. Do not use for normal production runtime. | unset |
 
 ## Client SDK Variables
 
