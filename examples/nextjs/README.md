@@ -39,6 +39,10 @@ OPTSTUFF_PROJECT_SLUG=my-project
 OPTSTUFF_PUBLIC_KEY=pk_xxx
 OPTSTUFF_SECRET_KEY=sk_xxx
 
+# Required when your OptStuff project restricts referer domains.
+# Set this to your demo site's URL (an allowed referer).
+OPTSTUFF_REFERER=https://optstuff-nextjs.vercel.app/
+
 # Optional: comma-separated exact source URLs this public demo may sign.
 # Defaults to the bundled Unsplash demo images.
 OPTSTUFF_ALLOWED_IMAGE_URLS=https://images.unsplash.com/photo-1506744038136-46273834b3fb,https://images.unsplash.com/photo-1534528741775-53994a69daeb,https://images.unsplash.com/photo-1523275335684-37898b6baf30
@@ -328,6 +332,15 @@ Switch mode (and cache/timeout settings) in:
 - `src/lib/hero-blur-config.ts`
 
 When blur generation fails, the demo now skips blur placeholder instead of injecting a fallback image.
+
+Server-side blur requests do not automatically include the browser's `Referer`.
+If your project restricts allowed referer domains, set `OPTSTUFF_REFERER` to the
+demo site's URL in your local or deployment environment and restart or redeploy
+the app. Both blur modes send this configured value as the `Referer` header.
+Without it, the API returns `403 Forbidden: Invalid referer` and the debug panel
+shows `Blur Result: missing`. Keep the value in trusted server configuration;
+do not derive it from incoming request headers. Projects without referer
+restrictions can omit this variable.
 
 Dev mode also includes a blur debug panel showing `mode`, `source`, whether a network request happened, and miss diagnostics (reason/status/content-type/duration).
 

@@ -8,6 +8,9 @@ const BLUR_DATA_REVALIDATE_SECONDS = 3600;
 const BLUR_DATA_FETCH_TIMEOUT_MS = HERO_BLUR_CONFIG.fetchTimeoutMs;
 const BLUR_SUCCESS_CACHE_MS = HERO_BLUR_CONFIG.successCacheMs;
 const BLUR_MISS_CACHE_MS = HERO_BLUR_CONFIG.missCacheMs;
+// Server-side fetch does not send a browser Referer automatically.
+// Configure the demo site's URL when the project restricts referer domains.
+const BLUR_DATA_REFERER = process.env.OPTSTUFF_REFERER?.trim();
 
 type BlurDataFetchMode = "build-cache" | "realtime";
 
@@ -189,14 +192,19 @@ export async function getBlurDataResult(
       controller.abort();
     }, BLUR_DATA_FETCH_TIMEOUT_MS);
 
+    const headers: HeadersInit = BLUR_DATA_REFERER
+      ? { Referer: BLUR_DATA_REFERER }
+      : {};
     const requestInit =
       mode === "realtime"
         ? ({
             cache: "no-store",
+            headers,
             signal: controller.signal,
           } as const)
         : ({
             cache: "force-cache",
+            headers,
             next: { revalidate: BLUR_DATA_REVALIDATE_SECONDS },
             signal: controller.signal,
           } as const);
