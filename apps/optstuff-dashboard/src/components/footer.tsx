@@ -13,7 +13,7 @@ import { cn } from "@workspace/ui/lib/utils";
 import { ChevronDown, Monitor, Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 
 const FOOTER_LINKS = [
   { name: "Home", href: "/" },
@@ -27,7 +27,7 @@ const THEME_OPTIONS = [
   { id: "dark", icon: Moon, label: "Dark" },
 ] as const;
 
-export function Footer() {
+export function Footer({ children }: { children?: ReactNode }) {
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
@@ -50,6 +50,7 @@ export function Footer() {
                   <FooterLink key={link.name} {...link} />
                 ),
               )}
+              {children}
             </nav>
           </div>
 

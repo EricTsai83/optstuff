@@ -1,3 +1,4 @@
+import { DemoNotice } from "@/components/demo-notice";
 import { OnboardingForm } from "@/modules/onboarding/ui/components/onboarding-form";
 import { db } from "@/server/db";
 import { teams } from "@/server/db/schema";
@@ -44,6 +45,9 @@ export default async function OnboardingPage() {
 
   return (
     <div className="bg-background flex min-h-screen items-center justify-center px-4">
+      <div className="fixed bottom-4 left-4 z-40">
+        <DemoNotice />
+      </div>
       <Card className="w-full max-w-sm">
         <CardHeader className="items-center py-4 text-center">
           <div className="mb-4 flex w-full justify-center">

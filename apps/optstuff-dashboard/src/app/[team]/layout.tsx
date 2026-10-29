@@ -1,3 +1,4 @@
+import { DemoNotice } from "@/components/demo-notice";
 import { Footer } from "@/components/footer";
 
 export default function DashboardLayout({
@@ -8,7 +9,9 @@ export default function DashboardLayout({
   return (
     <div className="bg-background flex min-h-screen flex-col">
       <div className="flex-1">{children}</div>
-      <Footer />
+      <Footer>
+        <DemoNotice />
+      </Footer>
     </div>
   );
 }

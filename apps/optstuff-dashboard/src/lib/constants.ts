@@ -19,6 +19,7 @@ export const RATE_LIMITS = {
 /** Centralized documentation links — driven by `NEXT_PUBLIC_DOCS_URL` env var */
 export const DOCS_LINKS = {
   home: env.NEXT_PUBLIC_DOCS_URL,
+  selfHosting: `${env.NEXT_PUBLIC_DOCS_URL}/self-hosting/deployment`,
   quickstart: `${env.NEXT_PUBLIC_DOCS_URL}/getting-started/quickstart`,
   integration: `${env.NEXT_PUBLIC_DOCS_URL}/getting-started/nextjs`,
   keyManagement: `${env.NEXT_PUBLIC_DOCS_URL}/guides/key-management`,
