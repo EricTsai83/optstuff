@@ -140,3 +140,47 @@ Potential future upgrades:
 - Separate dead-letter handling UI/reporting for exhausted tasks.
 - Distributed lock to prevent overlapping cron executions under high latency.
 - Re-enable a higher-frequency schedule for `/api/cron/flush-usage-buffer` when plan limits allow.
+
+## Weekly demo-data resets
+
+`GET /api/cron/weekly-reset` is scheduled for Mondays at 04:00 UTC
+(Monday noon in Taiwan) and uses the same cron authorization as daily maintenance.
+It is disabled unless `DEMO_RESET_ENABLED=true` and
+`DEMO_RESET_PROTECTED_USER_IDS` contains valid Clerk user IDs. Those accounts are excluded from both cycle registration and deletion.
+
+Other users receive a persistent 14-day cycle beginning at their first
+authenticated dashboard/onboarding visit or protected API call after activation.
+Existing users are backfilled from their oldest team's creation timestamp.
+Returning visits and API traffic do not extend the cycle. The weekly check means
+normal deletion occurs 14–21 days after a cycle starts. After a successful reset,
+a fresh 14-day cycle starts at the reset time, even if the user remains inactive.
+
+Resets retain Clerk accounts, but delete all selected users' teams (including
+personal teams), projects, API keys, request logs, usage records and pins.
+Users can log in again and complete onboarding to create fresh projects.
+Projects created during an ongoing cycle inherit that cycle's deadline.
+The reset-cycle record is retained to track the next reset.
+
+Each weekly run persists all due users as `reset_demo_user` tasks before deleting
+anything, then handles up to 50 users immediately. Weekly and daily maintenance drain remaining tasks
+in batches of 200. The response reports failures, newly queued users and the
+remaining backlog. A backlog can delay resets beyond the normal 14–21 days.
+Queued resets recheck the enable flag, protected IDs and cycle deadline.
+Each user's deletion and next-cycle update commit in one transaction. Row locks
+serialize duplicate resets and protect the parent/child deletion snapshot.
+New teams created after that snapshot survive as fresh data.
+
+Redis cleanup tasks are saved in the same database transaction before cascading
+deletions. They revoke cached API keys, invalidate project caches, and remove only
+the deleted projects' fields from shared usage buckets. The weekly endpoint
+attempts cleanup immediately; daily maintenance retries failures. Existing config
+caches have a 60-second TTL; requests already in flight may complete during reset.
+Late usage increments for deleted projects are discarded by the normal usage
+flush and expire from Redis within its existing two-week retention period.
+Rate-limit counters retain their normal TTLs. Image/CDN caches are not explicitly
+purged; authenticated service access relies on invalidating the project and keys.
+
+The retry task types `cleanup_deleted_project` and `revoke_deleted_api_key` extend
+the existing maintenance queue. Project cleanup uses a JSON task key containing
+the project ID and slug. Inspect exhausted tasks if Redis remains unavailable;
+a failed cleanup does not roll back an already committed reset.

@@ -22,6 +22,18 @@ cp apps/optstuff-dashboard/.env.example apps/optstuff-dashboard/.env
 |----------|----------|-------------|---------|
 | `CRON_SECRET` | Yes (production) | Bearer token used to authorize internal cron routes such as daily maintenance. | Generate with `openssl rand -hex 32` |
 
+Set `DEMO_RESET_ENABLED=true` to enable destructive demo-data resets (default: false).
+`DEMO_RESET_PROTECTED_USER_IDS` is also required.
+Set it to a comma-separated list of Clerk user IDs whose data must be retained
+(for example, `user_owner`). Missing, empty, or malformed values disable resets.
+Use IDs from the same Clerk instance as the deployment; development and
+production accounts may have different IDs. Never configure a placeholder ID.
+
+Before enabling this feature, synchronize the database schema with
+`pnpm --filter optstuff-dashboard db:push` so `user_reset_cycle` exists.
+Configure the protected IDs, `DEMO_RESET_ENABLED=true`, and `CRON_SECRET` in Vercel, then deploy.
+Do not invoke the reset route to verify a production deployment: it deletes data.
+
 ## Observability
 
 | Variable | Required | Description | Default |
