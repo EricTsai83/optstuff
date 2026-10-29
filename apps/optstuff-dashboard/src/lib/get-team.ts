@@ -2,6 +2,7 @@ import "server-only";
 
 import { db } from "@/server/db";
 import { teams } from "@/server/db/schema";
+import { recordResetCycle } from "@/server/lib/user-reset";
 import { auth } from "@workspace/auth/server";
 import { and, asc, eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
@@ -19,6 +20,8 @@ export const getVerifiedTeam = cache(async (teamSlug: string) => {
   if (!userId) {
     redirect("/sign-in");
   }
+
+  await recordResetCycle(userId);
 
   const team = await db.query.teams.findFirst({
     where: and(eq(teams.slug, teamSlug), eq(teams.ownerId, userId)),

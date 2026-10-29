@@ -14,3 +14,24 @@ export function protectedResetUsers(
   }
   return [...new Set(ids)];
 }
+
+export type ResetCycle = {
+  nextResetAt: Date | null;
+  lastResetAt: Date | null;
+};
+
+/** Visits resume paused cycles; active cycles never extend on ordinary visits. */
+export function resetCycleAction(
+  cycle: ResetCycle,
+  now: Date,
+): "continue" | "start" | "reset" {
+  if (cycle.nextResetAt === null) return "start";
+  return cycle.nextResetAt.getTime() <= now.getTime() ? "reset" : "continue";
+}
+
+export function demoResetProtectedUsers(
+  enabled: string | undefined,
+  protectedIds: string | undefined,
+): string[] | null {
+  return enabled === "true" ? protectedResetUsers(protectedIds) : null;
+}

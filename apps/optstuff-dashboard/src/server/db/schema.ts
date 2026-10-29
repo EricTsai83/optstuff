@@ -325,7 +325,8 @@ export const userResetCycles = pgTable(
   "user_reset_cycle",
   (d) => ({
     userId: d.varchar({ length: 255 }).primaryKey(),
-    nextResetAt: d.timestamp({ withTimezone: true }).notNull(),
+    // Null means data was reset while away; the next visit starts a new cycle.
+    nextResetAt: d.timestamp({ withTimezone: true }),
     lastResetAt: d.timestamp({ withTimezone: true }),
   }),
   (t) => [index("user_reset_cycle_due_idx").on(t.nextResetAt)],

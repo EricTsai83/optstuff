@@ -11,41 +11,79 @@ import {
   userResetCycles,
 } from "@/server/db/schema";
 import { queueDeletedProjectCleanup } from "./deleted-project-cleanup";
-import { nextResetAt, protectedResetUsers } from "./reset-policy";
+import {
+  demoResetProtectedUsers,
+  nextResetAt,
+  resetCycleAction,
+  type ResetCycle,
+} from "./reset-policy";
+
+type Transaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
 const BATCH_SIZE = 50;
 export const RESET_DEMO_USER = "reset_demo_user";
 
-/** First authenticated use starts a cycle; later visits never extend it. */
-export const recordResetCycle = cache(async (userId: string) => {
-  const protectedUsers = protectedResetUsers(env.DEMO_RESET_PROTECTED_USER_IDS);
-  if (
-    env.DEMO_RESET_ENABLED !== "true" ||
-    !protectedUsers ||
-    protectedUsers.includes(userId)
-  )
-    return;
-  const existing = await db.query.userResetCycles.findFirst({
-    where: eq(userResetCycles.userId, userId),
-    columns: { userId: true },
-  });
-  if (existing) return;
-  const [history] = await db
-    .select({ firstTeamAt: min(teams.createdAt) })
-    .from(teams)
-    .where(eq(teams.ownerId, userId));
-  await db
-    .insert(userResetCycles)
-    .values({
-      userId,
-      nextResetAt: nextResetAt(history?.firstTeamAt ?? new Date()),
-    })
-    .onConflictDoNothing();
-});
+/** Shared opt-in gate for both destructive work and its user-facing notice. */
+export function getDemoResetProtectedUsers(): string[] | null {
+  return demoResetProtectedUsers(
+    env.DEMO_RESET_ENABLED,
+    env.DEMO_RESET_PROTECTED_USER_IDS,
+  );
+}
+
+/** A returning user receives a fresh cycle after any expired data is removed. */
+export const recordResetCycle = cache(
+  async (userId: string): Promise<ResetCycle | null> => {
+    const protectedUsers = getDemoResetProtectedUsers();
+    if (!protectedUsers || protectedUsers.includes(userId)) return null;
+
+    const now = new Date();
+    const existing = await db.query.userResetCycles.findFirst({
+      where: eq(userResetCycles.userId, userId),
+    });
+    if (existing && resetCycleAction(existing, now) === "continue")
+      return existing;
+
+    return db.transaction(async (tx) => {
+      if (!existing) {
+        const [history] = await tx
+          .select({ firstTeamAt: min(teams.createdAt) })
+          .from(teams)
+          .where(eq(teams.ownerId, userId));
+        await tx
+          .insert(userResetCycles)
+          .values({
+            userId,
+            nextResetAt: nextResetAt(history?.firstTeamAt ?? now),
+          })
+          .onConflictDoNothing();
+      }
+      // Cron and concurrent visits must recheck the cycle under the same row lock.
+      const [cycle] = await tx
+        .select()
+        .from(userResetCycles)
+        .where(eq(userResetCycles.userId, userId))
+        .for("update");
+      if (!cycle) throw new Error("Missing demo reset cycle");
+      const action = resetCycleAction(cycle, now);
+      if (action === "continue") return cycle;
+      if (action === "reset") await deleteUserWorkspace(tx, userId);
+      const resumed = {
+        nextResetAt: nextResetAt(now),
+        lastResetAt: action === "reset" ? now : cycle.lastResetAt,
+      };
+      await tx
+        .update(userResetCycles)
+        .set(resumed)
+        .where(eq(userResetCycles.userId, userId));
+      return resumed;
+    });
+  },
+);
 
 export async function resetDemoUsers(now = new Date()) {
-  const protectedUsers = protectedResetUsers(env.DEMO_RESET_PROTECTED_USER_IDS);
-  if (env.DEMO_RESET_ENABLED !== "true" || !protectedUsers) {
+  const protectedUsers = getDemoResetProtectedUsers();
+  if (!protectedUsers) {
     return {
       ok: true,
       disabled: true,
@@ -135,13 +173,8 @@ export async function resetUserData(
   userId: string,
   now = new Date(),
 ): Promise<boolean> {
-  const protectedUsers = protectedResetUsers(env.DEMO_RESET_PROTECTED_USER_IDS);
-  if (
-    env.DEMO_RESET_ENABLED !== "true" ||
-    !protectedUsers ||
-    protectedUsers.includes(userId)
-  )
-    return false;
+  const protectedUsers = getDemoResetProtectedUsers();
+  if (!protectedUsers || protectedUsers.includes(userId)) return false;
   return db.transaction(async (tx) => {
     // Serializes duplicate invocations. A committed cycle is never reset twice.
     const [cycle] = await tx
@@ -155,31 +188,39 @@ export async function resetUserData(
       )
       .for("update");
     if (!cycle) return false;
-    const ownedTeams = await tx
-      .select({ id: teams.id })
-      .from(teams)
-      .where(eq(teams.ownerId, userId))
-      .for("update");
-    const teamIds = ownedTeams.map((team) => team.id);
-    if (teamIds.length > 0) {
-      // Lock parents before collecting keys, preventing new child inserts
-      // from escaping the durable cleanup snapshot.
-      const deletedProjects = await tx
-        .select({ id: projects.id, slug: projects.slug })
-        .from(projects)
-        .where(inArray(projects.teamId, teamIds))
-        .for("update");
-      await queueDeletedProjectCleanup(tx, deletedProjects);
-      await tx.delete(teams).where(inArray(teams.id, teamIds));
-    }
-    await tx.delete(pinnedProjects).where(eq(pinnedProjects.userId, userId));
+    await deleteUserWorkspace(tx, userId);
     await tx
       .update(userResetCycles)
       .set({
         lastResetAt: now,
-        nextResetAt: nextResetAt(now),
+        nextResetAt: null,
       })
       .where(eq(userResetCycles.userId, userId));
     return true;
   });
+}
+
+/** Shared transaction boundary keeps login-time and scheduled resets identical. */
+async function deleteUserWorkspace(
+  tx: Transaction,
+  userId: string,
+): Promise<void> {
+  const ownedTeams = await tx
+    .select({ id: teams.id })
+    .from(teams)
+    .where(eq(teams.ownerId, userId))
+    .for("update");
+  const teamIds = ownedTeams.map((team) => team.id);
+  if (teamIds.length > 0) {
+    // Lock parents before collecting keys, preventing new child inserts
+    // from escaping the durable cleanup snapshot.
+    const deletedProjects = await tx
+      .select({ id: projects.id, slug: projects.slug })
+      .from(projects)
+      .where(inArray(projects.teamId, teamIds))
+      .for("update");
+    await queueDeletedProjectCleanup(tx, deletedProjects);
+    await tx.delete(teams).where(inArray(teams.id, teamIds));
+  }
+  await tx.delete(pinnedProjects).where(eq(pinnedProjects.userId, userId));
 }
