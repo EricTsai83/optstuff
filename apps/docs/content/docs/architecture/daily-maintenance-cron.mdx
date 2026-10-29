@@ -151,9 +151,18 @@ It is disabled unless `DEMO_RESET_ENABLED=true` and
 Other users receive a persistent 14-day cycle beginning at their first
 authenticated dashboard/onboarding visit or protected API call after activation.
 Existing users are backfilled from their oldest team's creation timestamp.
-Returning visits and API traffic do not extend the cycle. The weekly check means
-normal deletion occurs 14–21 days after a cycle starts. After a successful reset,
-a fresh 14-day cycle starts at the reset time, even if the user remains inactive.
+Ordinary visits and API traffic do not extend an active cycle. If a user returns
+at or after the deadline, authenticated entry routes and protected dashboard API
+calls clear the expired workspace before continuing, then start a full new
+14-day cycle. A saved team or project URL redirects to onboarding when its old
+workspace has been removed.
+
+Weekly cleanup still removes expired data for users who are away, normally
+14–21 days after a cycle starts. It sets `nextResetAt` to null: no further cycle
+runs until the next authenticated visit. Returning weeks or months later starts
+a fresh full 14-day window, rather than inheriting an offline cleanup deadline.
+Clerk accounts remain usable throughout. Both visit-time and scheduled resets
+lock and recheck the same cycle row, so old queued tasks skip a resumed cycle.
 
 Resets retain Clerk accounts, but delete all selected users' teams (including
 personal teams), projects, API keys, request logs, usage records and pins.
@@ -166,7 +175,7 @@ anything, then handles up to 50 users immediately. Weekly and daily maintenance 
 in batches of 200. The response reports failures, newly queued users and the
 remaining backlog. A backlog can delay resets beyond the normal 14–21 days.
 Queued resets recheck the enable flag, protected IDs and cycle deadline.
-Each user's deletion and next-cycle update commit in one transaction. Row locks
+Each user's deletion and cycle-state update commit in one transaction. Row locks
 serialize duplicate resets and protect the parent/child deletion snapshot.
 New teams created after that snapshot survive as fresh data.
 
@@ -184,3 +193,30 @@ The retry task types `cleanup_deleted_project` and `revoke_deleted_api_key` exte
 the existing maintenance queue. Project cleanup uses a JSON task key containing
 the project ID and slug. Inspect exhausted tasks if Redis remains unavailable;
 a failed cleanup does not roll back an already committed reset.
+
+### Demo notice
+
+The dashboard and onboarding pages display a nonmodal notice only when demo
+resets are enabled and the protected-user configuration is valid. It explains
+the 14-day window, retained accounts, and self-hosting for lasting projects.
+The notice appears after entry without moving focus and remains visible until
+the user clicks “Got it”; it has no timer or swipe dismissal.
+Navigation does not automatically close it. Only an explicit dismissal is saved,
+so refreshing before acknowledging shows the reminder again. The footer’s “Demo notice” button (also
+available on onboarding) always reopens it, even after dismissal or signing back
+in within the same tab. A versioned sessionStorage key shows it once
+per login session and cycle in each tab; when storage is unavailable, an in-memory guard
+prevents repeated notices during the current page session. The active window's
+end date is shown in the browser's locale and time zone. Protected users see the
+general demo explanation without a personal reset deadline.
+
+Deployments upgrading from the original reset implementation must allow nulls in
+`user_reset_cycle.nextResetAt` before deploying the new code. This is an additive,
+backwards-compatible schema change; it does not delete existing records.
+
+For an existing deployment, the targeted schema update is:
+
+```sql
+ALTER TABLE public.user_reset_cycle
+  ALTER COLUMN "nextResetAt" DROP NOT NULL;
+```

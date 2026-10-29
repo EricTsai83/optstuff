@@ -30,7 +30,9 @@ Use IDs from the same Clerk instance as the deployment; development and
 production accounts may have different IDs. Never configure a placeholder ID.
 
 Before enabling this feature, synchronize the database schema with
-`pnpm --filter optstuff-dashboard db:push` so `user_reset_cycle` exists.
+`pnpm --filter optstuff-dashboard db:push --strict --verbose` so `user_reset_cycle` exists
+and its `nextResetAt` column is nullable. Review the proposed SQL before applying
+it; unrelated schema differences should be resolved separately.
 Configure the protected IDs, `DEMO_RESET_ENABLED=true`, and `CRON_SECRET` in Vercel, then deploy.
 Do not invoke the reset route to verify a production deployment: it deletes data.
 
