@@ -1,5 +1,6 @@
 import { db } from "@/server/db";
 import { teams } from "@/server/db/schema";
+import { recordResetCycle } from "@/server/lib/user-reset";
 import { auth } from "@workspace/auth/server";
 import { and, asc, eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
@@ -22,6 +23,8 @@ export default async function DashboardEntryPage() {
   if (!userId) {
     redirect("/sign-in");
   }
+
+  await recordResetCycle(userId);
 
   const personalTeam = await db.query.teams.findFirst({
     where: and(eq(teams.ownerId, userId), eq(teams.isPersonal, true)),

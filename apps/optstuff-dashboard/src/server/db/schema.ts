@@ -319,3 +319,14 @@ export const maintenanceRetryTasks = pgTable(
     index("maintenance_retry_task_next_run_idx").on(t.nextRunAt),
   ],
 );
+
+/** Persists reset cycles independently of teams and Clerk accounts. */
+export const userResetCycles = pgTable(
+  "user_reset_cycle",
+  (d) => ({
+    userId: d.varchar({ length: 255 }).primaryKey(),
+    nextResetAt: d.timestamp({ withTimezone: true }).notNull(),
+    lastResetAt: d.timestamp({ withTimezone: true }),
+  }),
+  (t) => [index("user_reset_cycle_due_idx").on(t.nextResetAt)],
+);

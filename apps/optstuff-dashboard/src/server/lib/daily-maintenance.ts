@@ -9,6 +9,15 @@ import {
 import { cleanupOldRequestLogs } from "@/server/lib/request-logger";
 import { flushUsageBufferToDatabase } from "@/server/lib/usage-tracker";
 
+import {
+  CLEANUP_DELETED_PROJECT,
+  REVOKE_DELETED_API_KEY,
+  cleanupDeletedProject,
+  revokeDeletedApiKey,
+} from "./deleted-project-cleanup";
+
+import { RESET_DEMO_USER, resetUserData } from "./user-reset";
+
 const RETRY_BATCH_LIMIT = 200;
 const RETRY_BASE_DELAY_MS = 60_000;
 const RETRY_MAX_DELAY_MS = 6 * 60 * 60 * 1000;
@@ -72,10 +81,23 @@ async function executeMaintenanceRetryTask(task: {
     return;
   }
 
+  if (task.taskType === RESET_DEMO_USER) {
+    await resetUserData(task.taskKey);
+    return;
+  }
+  if (task.taskType === CLEANUP_DELETED_PROJECT) {
+    await cleanupDeletedProject(task.taskKey);
+    return;
+  }
+  if (task.taskType === REVOKE_DELETED_API_KEY) {
+    await revokeDeletedApiKey(task.taskKey);
+    return;
+  }
+
   throw new Error(`Unknown maintenance retry task type: ${task.taskType}`);
 }
 
-async function processMaintenanceRetryTasks(now = new Date()): Promise<{
+export async function processMaintenanceRetryTasks(now = new Date()): Promise<{
   processed: number;
   succeeded: number;
   failed: number;

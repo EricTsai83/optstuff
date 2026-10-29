@@ -1,6 +1,7 @@
 import { OnboardingForm } from "@/modules/onboarding/ui/components/onboarding-form";
 import { db } from "@/server/db";
 import { teams } from "@/server/db/schema";
+import { recordResetCycle } from "@/server/lib/user-reset";
 import { auth, currentUser } from "@workspace/auth/server";
 import {
   Card,
@@ -19,6 +20,8 @@ export default async function OnboardingPage() {
   if (!userId) {
     redirect("/sign-in");
   }
+
+  await recordResetCycle(userId);
 
   // Check if user already has a personal team
   const existingPersonalTeam = await db.query.teams.findFirst({

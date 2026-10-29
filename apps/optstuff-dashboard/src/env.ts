@@ -17,6 +17,9 @@ export const env = createEnv({
     UPSTASH_REDIS_REST_TOKEN: z.string().min(1),
     // Shared secret for Vercel cron route authentication
     CRON_SECRET: z.string().min(1).optional(),
+    // Empty/missing disables destructive demo resets. Comma-separated Clerk user IDs.
+    DEMO_RESET_PROTECTED_USER_IDS: z.string().optional(),
+    DEMO_RESET_ENABLED: z.enum(["true", "false"]).default("false"),
     // Success request log sampling rate (0.0 ~ 1.0). Errors are always logged.
     REQUEST_LOG_SUCCESS_SAMPLE_RATE: z.coerce.number().min(0).max(1).optional(),
   },
@@ -44,6 +47,8 @@ export const env = createEnv({
     UPSTASH_REDIS_REST_URL: process.env.UPSTASH_REDIS_REST_URL,
     UPSTASH_REDIS_REST_TOKEN: process.env.UPSTASH_REDIS_REST_TOKEN,
     CRON_SECRET: process.env.CRON_SECRET,
+    DEMO_RESET_PROTECTED_USER_IDS: process.env.DEMO_RESET_PROTECTED_USER_IDS,
+    DEMO_RESET_ENABLED: process.env.DEMO_RESET_ENABLED,
     REQUEST_LOG_SUCCESS_SAMPLE_RATE:
       process.env.REQUEST_LOG_SUCCESS_SAMPLE_RATE,
   },

@@ -550,3 +550,21 @@ export function updateApiKeyLastUsed(
       );
     });
 }
+
+/** Remove only this deleted project's fields from shared usage buckets. */
+export async function clearProjectUsageBuffer(
+  projectId: string,
+): Promise<void> {
+  const redis = getRedis();
+  for (const key of await listUsageBufferKeys()) {
+    const hash = await redis.hgetall<Record<string, string>>(key);
+    if (!hash) continue;
+    const fields = Object.keys(hash).filter(
+      (field) => decodeUsageField(field)?.projectId === projectId,
+    );
+    for (let offset = 0; offset < fields.length; offset += 100) {
+      await redis.hdel(key, ...fields.slice(offset, offset + 100));
+    }
+  }
+  await redis.del(`usage:project:${projectId}`);
+}

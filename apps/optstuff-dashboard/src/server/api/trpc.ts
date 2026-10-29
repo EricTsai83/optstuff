@@ -11,6 +11,7 @@ import superjson from "superjson";
 import { ZodError } from "zod";
 
 import { db } from "@/server/db";
+import { recordResetCycle } from "@/server/lib/user-reset";
 import { auth } from "@workspace/auth/server";
 
 /**
@@ -118,6 +119,8 @@ const authMiddleware = t.middleware(async ({ ctx, next }) => {
   if (!userId) {
     throw new TRPCError({ code: "UNAUTHORIZED" });
   }
+
+  await recordResetCycle(userId);
 
   return next({
     ctx: {
