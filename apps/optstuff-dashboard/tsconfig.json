@@ -3,6 +3,8 @@
   "compilerOptions": {
     /* Base Options: */
     "esModuleInterop": true,
+    "declaration": false,
+    "declarationMap": false,
     "skipLibCheck": true,
     "target": "es2022",
     "allowJs": true,
